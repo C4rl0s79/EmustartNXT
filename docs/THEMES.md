@@ -10,7 +10,7 @@ wspólny z samodzielnym EmuStart i motyw go nie zmienia.
 | Warstwa | Gdzie | Co |
 |---|---|---|
 | 1. Paleta | `src/renderer/src/tv/themes.ts` → `palette` | kolory jako zmienne CSS na `.tv`; kontrast pilnują testy |
-| 2. Warianty | `themes.ts` → `games.layout`, `games.reflection`, `ambient` | przetestowane układy: lista (`list`) albo wstęga okładek (`coverflow`), odbicie, ruchome tło (`embers`, `stars`) |
+| 2. Warianty | `themes.ts` → `games.layout`, `games.reflection`, `ambient`, `logoTint` | przetestowane układy: lista (`list`) albo wstęga okładek (`coverflow`), odbicie, ruchome tło (`embers`, `stars`), logo platform przemalowane na barwę motywu (`--tv-logo-fill`) |
 | 3. Arkusz motywu | `src/renderer/src/tv/theme-css/<id>.css` | własne style, zawsze w zakresie `.tv[data-theme='<id>']`; tylko motywy wbudowane |
 | Edytor „Wygląd” | `look.ts`, `TvLook.tsx` | działa pod każdym motywem; klucze z `locks` motywu są w nim ukryte, żeby nie było ustawień, które nic nie robią |
 
@@ -24,8 +24,21 @@ wspólny z samodzielnym EmuStart i motyw go nie zmienia.
 ## Wbudowane motywy
 
 - **EmuStart:** dotychczasowy wygląd; kolory i rozmiary z edytora „Wygląd”.
-- **Kronika (fantasy):** układ listy jak w EmuStart. Złocony baner zaznaczenia, oprawione okładka i zrzut, iskry w tle. Czcionki Cinzel (nazwy, tytuły) i Alegreya (tekst).
-- **Horyzont (SF):** pozioma wstęga okładek z odbiciem nad linią światła („horyzont”). Grafika gry na całym ekranie, gwiazdy w trzech warstwach, narożniki HUD. Czcionki Oxanium i Exo 2.
+- **Kronika (fantasy):** układ listy jak w EmuStart.
+  - złocony baner zaznaczenia i iskry w tle;
+  - okładka i zrzut w gotyckich łukach ze złotą ramą i maswerkiem;
+  - opis na papirusie: atrament, inicjał, drewniane wałki;
+  - logo platform w złocie;
+  - czcionki Cinzel (nazwy, tytuły) i Alegreya (tekst).
+- **Horyzont (SF):** pozioma wstęga okładek z odbiciem nad linią światła („horyzont”).
+  - pod wstęgą panel z tytułem i opisem (ok. 9 linii) oraz kolumna danych gry;
+  - grafika gry w tle, gwiazdy w trzech warstwach, narożniki HUD;
+  - logo platform w lodowym gradiencie;
+  - czcionki Oxanium i Exo 2.
+
+W obu motywach tekst rośnie z wysokością ekranu: na 4K nie ma limitu 20 px, który ma domyślny wygląd.
+
+**Logo platform:** logo z serwera jest używane jako maska CSS i wypełniane barwą motywu (`SystemLogo.tsx`). Protokół `lumen-art` odpowiada więc z nagłówkiem CORS, bo `mask-image` pobiera grafiki w trybie CORS. Własne grafiki logo dla motywu (pliki per platforma) to możliwe rozszerzenie.
 
 Czcionki są wbudowane w aplikację (`@fontsource-variable/*`), więc Lumen niczego nie pobiera z sieci.
 
