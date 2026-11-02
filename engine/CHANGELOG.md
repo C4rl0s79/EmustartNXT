@@ -115,7 +115,7 @@ i panelem serwera — największa część). Każdy krok: testy, potem sprawdzen
 | Etap | Testy (fixture'y) | Na żywo (prawdziwy emulator) | Commit |
 |---|---|---|---|
 | 4. Dolphin i PPSSPP (rdzenie) | 10 testów, cały zestaw 419 ✓ | czeka — nikt jeszcze nie grał tymi rdzeniami | `7acab25` |
-| 4b-1. FBNeo (`fbneo\<set>.fs`), Kronos (`kronos\saturn\<gra>.ram`, `-ext*.ram`; z `kronos_use_beetle_saves` — wprost), rozszerzenia `.fs` `.ps2` `.nvr`, karta Flycast `<gra>.A1.bin` | 5 testów, cały zestaw 424 ✓ | czeka | `b31a9c5` |
+| 4b-1. FBNeo (`fbneo\<set>.fs`), Kronos (`kronos\saturn\<gra>.ram`; kartridż `-ext*.ram` — poza paczką, pkt 4 poprawek; z `kronos_use_beetle_saves` — wprost), rozszerzenia `.fs` `.ps2` `.nvr`, karta Flycast `<gra>.A1.bin` | 5 testów, cały zestaw 424 ✓ | czeka | `b31a9c5` |
 | 4b-2. Nauczone nazwy (karta / podfolder zmieniony w czasie gry, bez nazw innych gier rdzenia; pobranie paczki gry też uczy) + PUAE `WHDSaves\<gra>\` (paczka `retroarch/puae/memcards`; obraz `WHDSaves.hdf` — wspólny dla gier, bez synchronizacji) | 4 testy (Flycast: ID gry, nazwy innych gier; PUAE: podfolder, drugie urządzenie), cały zestaw 428 ✓; podpięcie w `launcher._sync_before/_sync_after` bez osobnego testu | czeka | `3100cd0` |
 | 2 + 3. Flycast i LRPS2 — osobna karta dla gry: opcje `reicast_per_content_vmus` = „VMU A1”, `pcsx2_shared_memory_cards` = „disabled” raz (znacznik `emustart-opcje-rdzeni-1.txt`) w pliku opcji, który czyta RetroArch; pierwsza karta gry — kopia wspólnej (`system\dc\vmu_save_A1.bin`, `system\pcsx2\memcards\Mcd001.ps2`), także bez synchronizacji; karta gry w paczce zapisów gry (z rozdzieleniem na graczy) | 4 testy (plik opcji: wspólny / rdzenia, raz; kopia karty: Flycast, LRPS2), cały zestaw 432 ✓; podpięcie w `launcher._play` bez osobnego testu | czeka (Flycast: nazwa karty pod ID gry i odczyt starszej nazwy — z kodu rdzenia, nie z gry) | (ten etap) |
 | 4b-3. Play! (PS2) | — | **zablokowane:** miejsce kart (`Play Data Files\…\mc0`) do ustalenia na żywo — rdzeń nie był uruchomiony | — |
@@ -123,7 +123,7 @@ i panelem serwera — największa część). Każdy krok: testy, potem sprawdzen
 | 1b. Xenia Edge — stały profil gracza (zrobione): po grze urządzenie zgłasza profil, z którego grał gracz (`PUT /v1/emuprofiles`, konto z tokenu); panel serwera → konto → „Profil Xbox 360”: przypięcie profilu zgłoszonego przez urządzenie tego konta (`emu_profile_pin`; cudzego nie można); przed grą przypięty profil (`GET /v1/emuprofiles`) — jest na urządzeniu: paczka w jego folderze i należy do tego gracza (zamiast „pierwszy gracz”); bez sieci — jak dotąd | 6 testów (serwer: zgłoszenie, przypięcie, odpięcie, cudzy profil; klient: przypięty profil, zgłoszenie przez serwer), cały zestaw 442 ✓ | czeka (panel — składnia `node --check`, bez kliknięcia w przeglądarce) | `2f352a1` |
 | 1c. Xenia Edge — profil (konto, osiągnięcia `FFFE07D1`) na urządzeniach, gdzie go nie ma, i logowanie przypiętego profilu na czas gry | — | **zablokowane:** rdzeń ma `xenia-edge.config.toml` z `logged_profile_slot_0_xuid` (plik rdzenia), ale sekcja TOML, format XUID i miejsce pliku nieustalone; bez tego nowe urządzenie miałoby dwa profile i Xenia mogłaby zalogować zły — do sprawdzenia na żywo, potem implementacja | — |
 | 7. APK — te same reguły w `Saves.kt` (rozszerzenia, przyrostki, podfoldery FBNeo, rdzenie Dolphin/PPSSPP, Flycast) | — | **zablokowane:** na tym komputerze nie ma Android SDK, JDK ani wrappera Gradle, APK nie ma testów jednostkowych — zmiany w Kotlinie nie dałoby się zbudować ani sprawdzić. Analiza bezpieczeństwa (kod `SaveSync.kt` / `Saves.kt`): APK nie skasuje nowych zapisów z PC — pusty zestaw lokalny nie jest wysyłany (`push`: „pusty zestaw nie kasuje zapisów”), rdzenie FBNeo / Flycast / Kronos / PUAE nie tworzą na Androidzie plików z listy rozszerzeń APK, paczek `retroarch/*/memcards` (PUAE, Xenia) APK nie zakłada. Skutek: te zapisy nie synchronizują się na telefonie; APK pobiera je jako nieużywane pliki do głównego folderu zapisów (nieszkodliwe) | — |
-| 5. Silnik Lumena (`git subtree`) | — | — | — |
+| 5. Silnik Lumena (`git subtree` z gałęzi `zapisy-system` na gałąź Lumena `zapisy-system`; `lumen.py` → opcje gry też przez `xenia_claim`) | testy silnika w Lumenie 498 ✓ (1 pominięty), testy Lumena 200 ✓, typecheck ✓; błąd znaleziony testem Lumena (obiekt zastępczy bez `core_id`) — poprawiony w `8fdcd7f` | czeka | Lumen: `f1a2841`, `db3ebc4`, `a2827d2`; EmuStart: `8fdcd7f` |
 | 6. Przygotowanie wydania (lokalny build, checklista) | — | — | — |
 
 Ustalone ze źródeł i z plików rdzeni zainstalowanych na serwerze (2026-11-02): FBNeo `"%s%cfbneo%c%s.fs"` (libretro.cpp),
@@ -137,8 +137,8 @@ Ryzyka: (a) podfolder `WHDSaves` przypisany źle (dwie gry WHDLoad z tym samym f
 obejmie cudzy folder; WHDLoad nazywa folder od gry, więc mało prawdopodobne. (b) Nazwy poznane są zapisane na
 urządzeniu (baza biblioteki), nie na serwerze — drugie urządzenie poznaje je z paczki gry albo po swojej grze.
 
-(c) Kopia wspólnej karty dla pierwszej gry zawiera też zapisy innych gier (i graczy, którzy grali na wspólnej karcie);
-wspólna karta zostaje nietknięta. (d) Flycast „VMU A1”: karty B1–D1 dalej wspólne w `system\dc\`, bez synchronizacji.
+(c) Kopia wspólnej karty dla pierwszej gry zawiera też zapisy innych gier; robi ją tylko gracz-właściciel urządzenia
+(pkt 7 poprawek); wspólna karta zostaje nietknięta. (d) Flycast „VMU A1”: karty B1–D1 dalej wspólne w `system\dc\`, bez synchronizacji.
 (e) Opcje rdzeni wpisane raz nadpisują wcześniejszy wybór „wspólna karta” (jak skróty LB w 0.52.4); pliki `.opt`
 gry / folderu mają pierwszeństwo w RetroArchu i nie są zmieniane.
 
@@ -146,8 +146,40 @@ Zmiana planu pkt 1 (2026-11-02, po sprawdzeniu pliku rdzenia): zamiast podmiany 
 każdy gracz ma własny profil (XUID) w tym samym `content\`, a EmuStart wskazuje Xenii profil do zalogowania
 (`logged_profile_slot_0_xuid`); zapisy Xboksa są i tak rozdzielone po profilach. Bez przenoszenia folderów z danymi.
 
-Następny krok: 5 — silnik Lumena: `git subtree pull --prefix engine emustart zapisy-system --squash` na gałęzi
-roboczej Lumena (nie `main`), testy `npm run test:engine`, `npm test`, typecheck; potem 6 (wydanie: lokalny build, checklista).
+**Checklista wydania** (EmuStart 0.55.0 + Lumen 1.0.35; ✓ zrobione, ☐ do zrobienia, ⏸ za zgodą użytkownika):
+- ✓ wersja 0.55.0 na gałęzi (`6764b1a`); ☐ wpis `[0.55.0]` z tego planu (co weszło, co nie, sprawdzone / niesprawdzone)
+- ✓ testy EmuStart (cały zestaw), ✓ testy silnika w Lumenie, testy Lumena, typecheck
+- ✓ przegląd kodu (code-review, poziom high): 10 ustaleń, wszystkie poprawione (niżej), testy na każde
+- ☐ lokalny build EmuStart (`build.ps1` bez `-Deploy`: klient i serwer, ZIP-y w `dist\`)
+- ☐ testowy build Lumena (osobny folder `release\zapisy-test`, bez zmiany wersji)
+- ⏸ PR `zapisy-system` → `main` (EmuStart), scalenie, tag `v0.55.0` (CI: serwer, klient PC, APK)
+- ⏸ Lumen: silnik z `main` EmuStart (`git subtree`), wersja 1.0.35, `npm run dist`, podpisy, push, GitHub Release
+  (gałąź Lumena `zapisy-system` zawiera też niewypchniętą poprawkę Steam `6b1709d`)
+- ☐ **na żywo, przed wydaniem albo zaraz po** (prawdziwy emulator, kopia zapasowa zapisów): rdzeń Dolphin i PPSSPP
+  (folder zapisów przy sortowaniu po rdzeniu), FBNeo (`.fs`), Kronos, Flycast (karta pod ID gry, odczyt starszej
+  nazwy, kopia wspólnej karty), LRPS2 (`<gra>.ps2`), PUAE (podfolder `WHDSaves`), Xenia (zapis gry na drugim
+  urządzeniu, zgłoszenie profilu, przypięcie w panelu — kliknięcie w przeglądarce)
+- ⏸ zablokowane do sprawdzenia na żywo: Play! (miejsce kart), Xenia — profil na nowych urządzeniach i logowanie
+  przypiętego profilu (`xenia-edge.config.toml`); APK — brak środowiska do budowania
+
+**Poprawki po przeglądzie kodu** (code-review, poziom high, 2026-11-02):
+1. Rdzeń Dolphin / PPSSPP i samodzielny emulator na jednym urządzeniu dzieliły stan synchronizacji przy różnych
+   folderach (zapisy nadpisywały się bez pytania) — paczka rdzenia ma na urządzeniu rdzeń `libretro` (osobny stan),
+   serwer i tak zapisuje ją bez rdzenia: ta sama paczka, zapis przechodzi w obie strony.
+2. Sloty zapisów gubiły nazwy paczek `retroarch/memcards` (PUAE, Xenia) — błąd przy starcie gry; teraz nazwy
+   i tryb nauki zostają.
+3. Podfolder z paczki serwera tylko dla poprawnej ścieżki i folderu, który nie należy do innej gry.
+4. Kartridż pamięci Kronos (`-ext*.ram`) poza paczką: klient sprzed 0.55 wysłałby paczkę bez niego.
+5. Widoki (opcje gry, sloty, Lumen) nie zajmują profilu Xenii — tylko profil, który już należy do gracza.
+6. Kilka profili Xenii na urządzeniu — bez synchronizacji Xenii (nie wiadomo, który profil zaloguje rdzeń, do 1c).
+7. Kopia wspólnej karty (Flycast, LRPS2) tylko dla gracza, do którego konta należy urządzenie (karta zawiera zapisy
+   wszystkich graczy).
+8. Kopia zapasowa przed pobraniem — z podfolderami (pliki o tej samej nazwie w różnych folderach).
+9. `spec` / `from_spec` z trybem nauki (pobieranie w tle po starcie).
+10. Profil Xenii może być przypięty tylko jednemu kontu.
+
+Następny krok: commit poprawek → silnik Lumena (subtree, `lumen.py` z `claim=False`) → lokalne buildy (EmuStart
+ponownie, Lumen testowy) → końcowy przegląd i raport.
 
 Moduły: klient Windows i Lumen (silnik `engine/`) — zmiana; serwer — nowe rodzaje paczek (format jak dotychczas);
 APK — Flycast (RetroArch na Androidzie) przez tę samą kartę w `saves\`, Xenia i LRPS2 — nie dotyczy (nie ma ich
