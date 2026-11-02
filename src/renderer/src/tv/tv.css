@@ -715,6 +715,8 @@
   flex: 0 0 auto;
 }
 .steam-logo__word {
+  /* the wordmark keeps its own face whatever the theme sets for text */
+  font-family: 'Manrope Variable', 'Segoe UI', system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
@@ -729,4 +731,171 @@
 }
 .tv-pill .icon {
   margin-right: 0.15em;
+}
+
+/* ---------- themes (themes.ts): shared pieces every theme can use ---------- */
+
+/* moving background layer (the theme's stylesheet draws it); under the screens, over the page */
+.tv-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* theme chooser: a side panel, the whole layout stays visible behind it as the live preview */
+.tv-modal--side {
+  justify-content: flex-end;
+  padding-right: 3vw;
+  background: none;
+  backdrop-filter: none;
+}
+.tv-themes {
+  width: 30vw;
+  min-width: 0;
+}
+.tv-themes li {
+  gap: 1em;
+}
+.tv-themes__now {
+  margin-left: auto;
+  font-size: 0.78em;
+  opacity: 0.75;
+}
+.tv-themes__desc {
+  margin: 1.6vh 0 0;
+  min-height: 4.4em;
+  color: var(--tv-dim);
+  line-height: 1.45;
+}
+
+/* ---------- cover ribbon (games.layout = "coverflow") ---------- */
+.tv-games--flow {
+  grid-template-columns: minmax(0, 1fr);
+  /* head | ribbon (with its reflection) | title | description | details bar */
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  row-gap: 1.2vh;
+}
+.tv-flow {
+  position: relative;
+  min-height: 0;
+  container-type: size;
+}
+.tv-flow__stage {
+  /* a cover is 2:3; its height fits the ribbon's row with room for the reflection below it */
+  --tv-flow-h: min(40vh, 68cqh);
+  --tv-flow-w: calc(var(--tv-flow-h) * 2 / 3);
+  position: absolute;
+  inset: 0;
+}
+.tv-flow__item {
+  position: absolute;
+  left: 50%;
+  top: calc(46% - var(--tv-flow-h) / 2);
+  width: var(--tv-flow-w);
+  height: var(--tv-flow-h);
+  transform-style: preserve-3d;
+  transition:
+    transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s,
+    filter 0.3s;
+  filter: brightness(0.6) saturate(0.85);
+  cursor: pointer;
+}
+.tv-flow__item.sel {
+  filter: none;
+}
+.tv-flow__cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+}
+.tv-flow__cover .art-placeholder {
+  font-size: 1.1em;
+}
+/* the mirror image under each cover, fading out towards the floor */
+.tv-flow--mirror .tv-flow__cover {
+  -webkit-box-reflect: below 0.8vh linear-gradient(transparent 60%, rgba(255, 255, 255, 0.3));
+}
+/* the selected cover: a ring in the theme's accent (part of the pad contract — always visible) */
+.tv-flow__item.sel .tv-flow__cover {
+  box-shadow:
+    0 0 0 3px var(--tv-accent),
+    0 0 46px color-mix(in srgb, var(--tv-accent) 45%, transparent),
+    0 26px 60px rgba(0, 0, 0, 0.6);
+}
+.tv-flow__title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 7vh;
+  text-align: center;
+}
+.tv-flow__title h1 {
+  margin: 0;
+  font-size: calc(2.1em * var(--tv-fs-title));
+  font-weight: 600;
+  line-height: 1.1;
+}
+.tv-flow__title .tv-logo .tv-logo__img {
+  height: 9vh;
+  max-width: 42vw;
+  object-position: center;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+}
+.tv-desc.tv-flow__desc {
+  justify-self: center;
+  width: min(100%, 72ch);
+  text-align: center;
+  max-height: calc(min(var(--tv-desc-lines), 3) * 1.45em);
+}
+.tv-games--flow .tv-info {
+  justify-content: center;
+}
+
+/* the selected game's art behind everything, fading into the page at the bottom */
+.tv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.45;
+  animation: tv-backdrop-in 0.7s ease both;
+}
+.tv-backdrop .art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  animation: tv-backdrop-drift 40s ease-in-out infinite alternate;
+}
+.tv-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tv-bg) 55%, transparent) 0%, transparent 30%, color-mix(in srgb, var(--tv-bg) 80%, transparent) 62%, var(--tv-bg) 88%),
+    radial-gradient(120% 90% at 50% 40%, transparent 40%, var(--tv-bg) 100%);
+}
+@keyframes tv-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tv-backdrop-drift {
+  to {
+    transform: scale(1.08) translate(-1.5%, -1%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-backdrop .art,
+  .tv-ambient,
+  .tv-ambient::before,
+  .tv-ambient::after {
+    animation: none !important;
+  }
 }

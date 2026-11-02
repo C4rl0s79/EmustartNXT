@@ -1,0 +1,183 @@
+/* Theme "Horyzont" (science fiction) — themes.ts id "sf". The game list becomes a ribbon of covers
+   (TvCoverflow) standing on a line of light — the horizon — where their reflections fall; the
+   selected game's art fills the screen behind. Oxanium (squared, technical) for names and titles,
+   Exo 2 for reading. The one bold thing is the horizon with the covers on it; panels stay thin
+   glass with corner brackets. Colours: themes.ts palette (ice accent, amber for warnings). */
+
+.tv[data-theme='sf'] {
+  --tv-line: rgba(126, 224, 255, 0.16);
+  --tv-accent2: #b5ecff;
+  --tv-ok: #6ee7b7;
+  --tv-warn: #ffc56b;
+  --tv-hud: rgba(126, 224, 255, 0.85);
+  font-family: 'Exo 2 Variable', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 420;
+  background:
+    radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
+    radial-gradient(60% 50% at 88% 92%, rgba(14, 92, 120, 0.42) 0%, transparent 70%),
+    radial-gradient(130% 110% at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.55) 100%),
+    var(--tv-bg);
+}
+
+.tv[data-theme='sf'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
+  font-family: 'Oxanium Variable', 'Segoe UI', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.tv[data-theme='sf'] .tv-brand {
+  color: var(--tv-accent);
+}
+.tv[data-theme='sf'] .tv-sysinfo h1 {
+  text-shadow: 0 0 24px rgba(126, 224, 255, 0.35);
+}
+.tv[data-theme='sf'] .tv-syscard img,
+.tv[data-theme='sf'] .tv-syscard .steam-logo {
+  filter: drop-shadow(0 0 22px rgba(126, 224, 255, 0.35)) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
+}
+
+/* the horizon: a line of light across the ribbon at the covers' feet, the reflections fall on it */
+.tv[data-theme='sf'] .tv-flow::before {
+  content: '';
+  position: absolute;
+  left: -3vw;
+  right: -3vw;
+  top: calc(46% + min(40vh, 68cqh) / 2 + 0.4vh);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(126, 224, 255, 0.15) 12%, rgba(181, 236, 255, 0.95) 50%, rgba(126, 224, 255, 0.15) 88%, transparent 100%);
+  box-shadow: 0 0 18px 2px rgba(126, 224, 255, 0.35);
+}
+.tv[data-theme='sf'] .tv-flow::after {
+  /* the floor's glow under the horizon line */
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: calc(46% + min(40vh, 68cqh) / 2);
+  height: 14vh;
+  background: radial-gradient(60% 100% at 50% 0%, rgba(126, 224, 255, 0.14), transparent 70%);
+  pointer-events: none;
+}
+.tv[data-theme='sf'] .tv-flow__cover {
+  border-radius: 6px;
+}
+/* the selected cover: ice ring and HUD corner brackets just outside it */
+.tv[data-theme='sf'] .tv-flow__item.sel::after {
+  content: '';
+  position: absolute;
+  inset: -1.6vh -1.2vh;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--tv-hud), var(--tv-hud)) top left / 2.4vh 2px,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) top left / 2px 2.4vh,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) top right / 2.4vh 2px,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) top right / 2px 2.4vh,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) bottom left / 2.4vh 2px,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) bottom left / 2px 2.4vh,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) bottom right / 2.4vh 2px,
+    linear-gradient(var(--tv-hud), var(--tv-hud)) bottom right / 2px 2.4vh;
+  background-repeat: no-repeat;
+}
+.tv[data-theme='sf'] .tv-flow__title h1 {
+  text-shadow: 0 0 30px rgba(126, 224, 255, 0.3);
+}
+
+/* panels: dark glass, a thin ice edge and corner brackets */
+.tv[data-theme='sf'] :is(.tv-info, .tv-panel) {
+  border-radius: 4px;
+  border: 1px solid rgba(126, 224, 255, 0.22);
+  background: var(--tv-panel);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(181, 236, 255, 0.12), 0 24px 70px rgba(0, 0, 0, 0.55);
+  --tv-hud-c: rgba(126, 224, 255, 0.7);
+  background-image:
+    linear-gradient(var(--tv-hud-c), var(--tv-hud-c)),
+    linear-gradient(var(--tv-hud-c), var(--tv-hud-c)),
+    linear-gradient(var(--tv-hud-c), var(--tv-hud-c)),
+    linear-gradient(var(--tv-hud-c), var(--tv-hud-c));
+  background-size:
+    1.6vh 2px,
+    2px 1.6vh,
+    1.6vh 2px,
+    2px 1.6vh;
+  background-position:
+    top left,
+    top left,
+    bottom right,
+    bottom right;
+  background-repeat: no-repeat;
+}
+.tv[data-theme='sf'] .tv-info dt {
+  color: var(--tv-dim);
+}
+.tv[data-theme='sf'] .tv-menulist li {
+  border-radius: 3px;
+}
+.tv[data-theme='sf'] .tv-menulist li.sel,
+.tv[data-theme='sf'] .tv-row.sel {
+  color: var(--tv-sel-text);
+  background: var(--tv-sel-bg);
+  box-shadow: 0 0 24px rgba(126, 224, 255, 0.35);
+}
+.tv[data-theme='sf'] .tv-row.sel .g,
+.tv[data-theme='sf'] .tv-row.sel .tv-tag {
+  color: var(--tv-sel-text);
+}
+.tv[data-theme='sf'] .tv-pill {
+  background: rgba(126, 224, 255, 0.1);
+}
+
+/* drifting stars: three layers of points at three depths, the nearest one also twinkles */
+.tv-ambient--stars::before,
+.tv-ambient--stars::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+}
+.tv-ambient--stars {
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.55), transparent 60%),
+    radial-gradient(1px 1px at 63% 71%, rgba(200, 225, 255, 0.5), transparent 60%),
+    radial-gradient(1px 1px at 37% 88%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1px 1px at 86% 36%, rgba(220, 235, 255, 0.5), transparent 60%);
+  background-size: 300px 300px;
+  animation: tv-stars-far 240s linear infinite;
+}
+.tv-ambient--stars::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255, 255, 255, 0.75), transparent 60%),
+    radial-gradient(1.5px 1.5px at 72% 12%, rgba(181, 236, 255, 0.7), transparent 60%),
+    radial-gradient(1.5px 1.5px at 51% 64%, rgba(255, 255, 255, 0.6), transparent 60%);
+  background-size: 520px 520px;
+  animation: tv-stars-mid 160s linear infinite;
+}
+.tv-ambient--stars::after {
+  background-image:
+    radial-gradient(2px 2px at 15% 72%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(2px 2px at 78% 48%, rgba(181, 236, 255, 0.85), transparent 60%);
+  background-size: 820px 820px;
+  animation:
+    tv-stars-near 110s linear infinite,
+    tv-stars-twinkle 7s ease-in-out infinite alternate;
+}
+/* leftwards by exactly two tiles of each layer: no seam when the loop starts again */
+@keyframes tv-stars-far {
+  to {
+    background-position: -600px 0;
+  }
+}
+@keyframes tv-stars-mid {
+  to {
+    background-position: -1040px 0;
+  }
+}
+@keyframes tv-stars-near {
+  to {
+    background-position: -1640px 0;
+  }
+}
+@keyframes tv-stars-twinkle {
+  to {
+    opacity: 0.45;
+  }
+}

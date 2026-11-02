@@ -361,6 +361,8 @@ export interface Settings {
   /** filled in by the main process: XInput could be loaded on this PC */
   xinputAvailable?: boolean
   language: string
+  /** theme of the TV layout (renderer: tv/themes.ts); an unknown id falls back to the default */
+  tvTheme: string
   hasSgdbKey: boolean
   hasSteamWebKey: boolean
   secretsEncrypted: boolean
@@ -382,6 +384,7 @@ export type SettingsPatch = Partial<
     | 'emustartEnabled'
     | 'emustartHome'
     | 'pythonPath'
+    | 'tvTheme'
   >
 >
 

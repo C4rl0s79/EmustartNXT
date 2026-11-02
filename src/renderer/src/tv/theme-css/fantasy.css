@@ -1,0 +1,154 @@
+/* Theme "Kronika" (fantasy) — themes.ts id "fantasy". The EmuStart layout kept as it is; what
+   changes is the material: dark oiled wood, gilded rules, an engraved display face (Cinzel) over a
+   sturdy book face (Alegreya) that stays readable from the couch. The one bold thing is the gilded
+   banner of the selected row; everything around it stays quiet. Colours: themes.ts palette. */
+
+.tv[data-theme='fantasy'] {
+  --tv-line: rgba(216, 164, 65, 0.18);
+  --tv-accent2: #e9c27a;
+  --tv-ok: #9fcf7f;
+  --tv-warn: #e9b450;
+  --tv-gild: linear-gradient(90deg, rgba(216, 164, 65, 0) 0%, #d8a441 18%, #f3d68e 50%, #d8a441 82%, rgba(216, 164, 65, 0) 100%);
+  font-family: 'Alegreya Variable', 'Palatino Linotype', Georgia, serif;
+  font-weight: 450;
+  background:
+    radial-gradient(90% 60% at 50% -10%, rgba(120, 62, 28, 0.55) 0%, transparent 60%),
+    radial-gradient(70% 50% at 50% 115%, rgba(94, 26, 28, 0.45) 0%, transparent 70%),
+    radial-gradient(140% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.65) 100%),
+    var(--tv-bg);
+}
+
+/* display face: names and titles only — never body text or labels */
+.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
+  font-family: 'Cinzel Variable', 'Trajan Pro', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.tv[data-theme='fantasy'] .tv-brand {
+  color: var(--tv-accent);
+}
+.tv[data-theme='fantasy'] .tv-brand b {
+  color: var(--tv-text);
+}
+.tv[data-theme='fantasy'] .tv-sysinfo h1 {
+  color: var(--tv-accent2);
+  text-shadow: 0 2px 18px rgba(216, 164, 65, 0.25);
+}
+
+/* the selected row: a gilded banner — oxblood field, gold rules above and below, gold edge */
+.tv[data-theme='fantasy'] .tv-row {
+  border-radius: 3px;
+}
+.tv[data-theme='fantasy'] .tv-row.sel {
+  position: relative;
+  color: var(--tv-sel-text);
+  background:
+    linear-gradient(90deg, var(--tv-sel-bg) 0%, rgba(94, 26, 28, 0.82) 55%, rgba(94, 26, 28, 0.35) 100%);
+  box-shadow:
+    inset 4px 0 0 var(--tv-accent),
+    inset 0 1px 0 rgba(243, 214, 142, 0.55),
+    inset 0 -1px 0 rgba(243, 214, 142, 0.55),
+    0 6px 24px rgba(0, 0, 0, 0.45);
+}
+.tv[data-theme='fantasy'] .tv-row.sel .g {
+  color: rgba(255, 246, 224, 0.82);
+}
+.tv[data-theme='fantasy'] .tv-tag {
+  border-radius: 3px;
+  background: rgba(216, 164, 65, 0.1);
+}
+.tv[data-theme='fantasy'] .tv-row.sel .tv-tag {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--tv-sel-text);
+}
+
+/* cover and screenshot in gilded frames: a fine gold line, a dark mat, a second faint line */
+.tv[data-theme='fantasy'] :is(.tv-box .tv-boxart, .tv-snap .tv-snapart) {
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgba(243, 214, 142, 0.85),
+    0 0 0 6px rgba(19, 14, 11, 0.92),
+    0 0 0 7px rgba(216, 164, 65, 0.4),
+    0 22px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* panels: leather with a gold rule along the top */
+.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel) {
+  position: relative;
+  border-radius: 4px;
+  border: 1px solid rgba(216, 164, 65, 0.3);
+  background:
+    linear-gradient(180deg, rgba(58, 36, 22, 0.55), transparent 60%),
+    var(--tv-panel);
+}
+.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel)::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: -1px;
+  height: 2px;
+  background: var(--tv-gild);
+}
+.tv[data-theme='fantasy'] .tv-menulist li {
+  border-radius: 3px;
+}
+.tv[data-theme='fantasy'] .tv-menulist li.sel {
+  color: var(--tv-sel-text);
+  background: linear-gradient(90deg, var(--tv-sel-bg), rgba(94, 26, 28, 0.45));
+  box-shadow: inset 4px 0 0 var(--tv-accent);
+}
+.tv[data-theme='fantasy'] .tv-pill {
+  background: rgba(216, 164, 65, 0.12);
+}
+.tv[data-theme='fantasy'] .tv-btn--sq {
+  background: rgba(216, 164, 65, 0.22);
+  color: var(--tv-text);
+}
+
+/* the system carousel: logos warmed with candlelight */
+.tv[data-theme='fantasy'] .tv-syscard img {
+  filter: drop-shadow(0 6px 26px rgba(216, 120, 40, 0.35)) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
+}
+
+/* embers rising from the bottom of the screen: two layers of small glowing dots at two speeds */
+.tv-ambient--embers::before,
+.tv-ambient--embers::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+}
+.tv-ambient--embers::before {
+  background-image:
+    radial-gradient(3px 3px at 12% 78%, rgba(255, 176, 80, 0.95), transparent 70%),
+    radial-gradient(2px 2px at 33% 42%, rgba(255, 140, 60, 0.85), transparent 70%),
+    radial-gradient(3.5px 3.5px at 58% 66%, rgba(255, 196, 110, 0.9), transparent 70%),
+    radial-gradient(2px 2px at 81% 24%, rgba(255, 150, 70, 0.8), transparent 70%),
+    radial-gradient(3px 3px at 91% 88%, rgba(255, 186, 96, 0.85), transparent 70%);
+  background-size: 520px 520px;
+  opacity: 0.75;
+  animation: tv-embers-a 38s linear infinite;
+}
+.tv-ambient--embers::after {
+  background-image:
+    radial-gradient(1px 1px at 22% 18%, rgba(255, 200, 120, 0.9), transparent 70%),
+    radial-gradient(1.5px 1.5px at 47% 83%, rgba(255, 160, 80, 0.8), transparent 70%),
+    radial-gradient(1px 1px at 69% 51%, rgba(255, 210, 140, 0.85), transparent 70%),
+    radial-gradient(1px 1px at 8% 60%, rgba(255, 170, 90, 0.7), transparent 70%);
+  background-size: 360px 360px;
+  opacity: 0.4;
+  animation: tv-embers-b 62s linear infinite;
+}
+/* upwards by exactly two tiles of each layer, so the loop has no seam */
+@keyframes tv-embers-a {
+  to {
+    background-position: 0 -1040px;
+  }
+}
+@keyframes tv-embers-b {
+  to {
+    background-position: 0 -720px;
+  }
+}

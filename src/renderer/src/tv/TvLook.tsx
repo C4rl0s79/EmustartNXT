@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { api, attempt, useStore } from '../store'
 import { useActions } from '../nav/input'
 import {
-  LOOK_SPEC,
   choiceValue,
   getLook,
   isChoice,
@@ -14,6 +13,7 @@ import {
   stepLook,
   useLook,
   type LookItem,
+  type LookRow,
   type LookValues
 } from './look'
 
@@ -23,8 +23,6 @@ import {
 
 type Settings = { gamesLogo: boolean; lookScope: 'profile' | 'machine' }
 type EngineState = { look?: unknown; look_scope?: string; games_logo?: boolean }
-
-const firstItem = LOOK_SPEC.findIndex((r) => 'k' in r)
 
 /** Loads the stored look when the engine is ready and again after a profile change (look per profile). */
 export function useLookSync(): void {
@@ -43,9 +41,20 @@ export function useLookSync(): void {
   }, [ready, profile])
 }
 
-export function TvLook({ onClose, onPreview, previewLabel }: { onClose: () => void; onPreview: () => void; previewLabel: string }) {
+export function TvLook({
+  onClose,
+  onPreview,
+  previewLabel,
+  spec
+}: {
+  onClose: () => void
+  onPreview: () => void
+  previewLabel: string
+  /** the editor's rows: the whole look, without what the TV theme decides itself (themes.ts) */
+  spec: LookRow[]
+}) {
   const values = useLook()
-  const [idx, setIdx] = useState(firstItem)
+  const [idx, setIdx] = useState(() => Math.max(0, spec.findIndex((r) => 'k' in r)))
   const [left, setLeft] = useState(false)
   const [settings, setSettings] = useState<Settings | null>(null)
   const saved = useRef(JSON.stringify(lookToSave(getLook())))
@@ -67,13 +76,13 @@ export function TvLook({ onClose, onPreview, previewLabel }: { onClose: () => vo
   }, [idx])
 
   const item = (): LookItem | undefined => {
-    const r = LOOK_SPEC[idx]
+    const r = spec[idx]
     return r && 'k' in r ? r : undefined
   }
   const move = (dir: number): void => {
     let i = idx
-    do i = (i + dir + LOOK_SPEC.length) % LOOK_SPEC.length
-    while (!('k' in LOOK_SPEC[i]))
+    do i = (i + dir + spec.length) % spec.length
+    while (!('k' in spec[i]))
     setIdx(i)
   }
   const step = (it: LookItem | undefined, dir: number, times = 1): void => {
@@ -146,7 +155,7 @@ export function TvLook({ onClose, onPreview, previewLabel }: { onClose: () => vo
     <div className={`tv-look ${left ? 'left' : ''}`}>
       <h2>Wygląd</h2>
       <div className="tv-look__list" ref={listRef}>
-        {LOOK_SPEC.map((r, i) => {
+        {spec.map((r, i) => {
           if (!('k' in r))
             return (
               <div key={r.head} className="tv-lkrow head">

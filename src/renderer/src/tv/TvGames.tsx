@@ -14,6 +14,8 @@ import { useRatings } from './ratings'
 import { activeParts, apply, loadFilter, saveFilter, type Filter } from './filters'
 import { useLook } from './look'
 import { listTop } from './listWindow'
+import { TvCoverflow } from './TvCoverflow'
+import type { TvTheme } from './themes'
 
 // Game list of one system (EmuStart look): titles on the left, cover | details | screenshot on the
 // right, the description below. The main action is the same as in the desktop details
@@ -51,7 +53,21 @@ const letterOf = (g: Game): string => {
   return /[A-ZĄĆĘŁŃÓŚŹŻ]/.test(c) ? c : '#'
 }
 
-export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; onBack: () => void; onMenu: () => void; active: boolean }) {
+export function TvGames({
+  system,
+  onBack,
+  onMenu,
+  active,
+  theme
+}: {
+  system: TvSystem
+  onBack: () => void
+  onMenu: () => void
+  active: boolean
+  theme: TvTheme
+}) {
+  // the theme decides how the list is shown: titles in a column, or covers on a horizontal ribbon
+  const flow = theme.games.layout === 'coverflow'
   const favorites = useStore((s) => s.prefs?.favorites)
   const opened = useStore((s) => s.uiSelection)
   const steam = system.key === STEAM
@@ -93,7 +109,7 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [look, hasRows])
+  }, [look, hasRows, flow]) // flow: back from the ribbon to the column, the rows are measured again
   useEffect(() => {
     const t = listTop(top, idx, visible, games.length)
     if (t !== top) setTop(t)
@@ -106,6 +122,8 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     if (sel) api().ui.select(sel.id)
   }, [sel])
 
+  // LB / RB jump a screenful: the rows that fit, or the covers on one side of the ribbon
+  const page = flow ? 5 : visible
   const go = (i: number): boolean => {
     if (games.length) setIdx(Math.max(0, Math.min(games.length - 1, i)))
     return true
@@ -134,12 +152,13 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
 
   useActions(
     {
-      up: () => go(idx - 1),
-      down: () => go(idx + 1),
-      left: () => true,
-      right: () => true,
-      lb: () => go(idx - visible),
-      rb: () => go(idx + visible),
+      // column: up / down; ribbon: left / right (the other pair does nothing, so nothing jumps)
+      up: () => (flow ? true : go(idx - 1)),
+      down: () => (flow ? true : go(idx + 1)),
+      left: () => (flow ? go(idx - 1) : true),
+      right: () => (flow ? go(idx + 1) : true),
+      lb: () => go(idx - page),
+      rb: () => go(idx + page),
       lt: () => jumpLetter(-1),
       rt: () => jumpLetter(1),
       confirm: play,
@@ -173,6 +192,7 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     {
       enabled: active && !filters && !options,
       hints: [
+        ...(flow ? [{ action: 'left' as const, label: 'Gra' }] : []),
         { action: 'confirm', label: primary?.label ?? 'Graj' },
         { action: 'x', label: activeFilters.length ? `Filtry (${activeFilters.length})` : 'Filtry' },
         { action: 'y', label: 'Opcje gry' },
@@ -186,9 +206,7 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     }
   )
 
-  return (
-    <section className="tv-screen tv-games">
-      <div className="tv-gamelist">
+  const head = (
         <div className="tv-listhead">
           {steam ? (
             <SteamLogo className="tv-listlogo-steam" />
@@ -206,22 +224,10 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
             {activeFilters.length > 0 && <p className="tv-filters-on">{activeFilters.join(' · ')}</p>}
           </div>
         </div>
-        <div className="tv-rows" ref={rowsRef}>
-          {games.slice(top, top + visible).map((g, i) => (
-            <TvRow
-              key={g.id}
-              game={g}
-              sel={top + i === idx}
-              fav={!!favorites?.includes(g.id)}
-              asLogo={asLogo}
-              onClick={() => (top + i === idx ? play() : setIdx(top + i))}
-            />
-          ))}
-          {!games.length && <p className="tv-dim">Brak gier{activeFilters.length ? ' dla tych filtrów (X — zmień albo wyczyść)' : ''}.</p>}
-        </div>
-      </div>
-      {sel && <TvPreview game={sel} details={d} />}
-      {sel && <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} />}
+  )
+  const empty = <p className="tv-dim">Brak gier{activeFilters.length ? ' dla tych filtrów (X — zmień albo wyczyść)' : ''}.</p>
+  const modals = (
+    <>
       {options && sel && (
         <GameOptions
           game={sel}
@@ -236,6 +242,51 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
       {filters && (
         <TvFilters system={system.display} games={system.games} steam={steam} filter={filter} onChange={setFilter} onClose={() => setFilters(false)} />
       )}
+    </>
+  )
+
+  if (flow)
+    return (
+      <section className="tv-screen tv-games tv-games--flow">
+        {sel && <TvBackdrop key={sel.id} game={sel} />}
+        {head}
+        {games.length ? (
+          <TvCoverflow games={games} idx={Math.min(idx, games.length - 1)} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
+        ) : (
+          <div className="tv-flow">{empty}</div>
+        )}
+        {sel && (
+          <div className="tv-flow__title">
+            <LogoTitle key={sel.id} game={sel} text={<h1>{sel.name}</h1>} />
+          </div>
+        )}
+        {sel && <TvDesc game={sel} details={d} className="tv-flow__desc" />}
+        {sel && <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} noLogo />}
+        {modals}
+      </section>
+    )
+
+  return (
+    <section className="tv-screen tv-games">
+      <div className="tv-gamelist">
+        {head}
+        <div className="tv-rows" ref={rowsRef}>
+          {games.slice(top, top + visible).map((g, i) => (
+            <TvRow
+              key={g.id}
+              game={g}
+              sel={top + i === idx}
+              fav={!!favorites?.includes(g.id)}
+              asLogo={asLogo}
+              onClick={() => (top + i === idx ? play() : setIdx(top + i))}
+            />
+          ))}
+          {!games.length && empty}
+        </div>
+      </div>
+      {sel && <TvPreview game={sel} details={d} />}
+      {sel && <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} />}
+      {modals}
     </section>
   )
 }
@@ -368,9 +419,6 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
     setBoxOk(true)
     setSnapOk(true)
   }, [game.id])
-  const d = dr?.ok ? dr.details : undefined
-  const descRef = useDescScroll()
-  const desc = d?.descriptionText ? d.descriptionText.split(/\n+/) : d?.descriptionHtml ? htmlToParagraphs(d.descriptionHtml, 20) : d?.shortDescription ? [d.shortDescription] : []
   return (
     <div className="tv-preview" ref={fitH.ref} style={fitH.h ? { ['--tv-media-fit' as string]: `${fitH.h}px` } : undefined}>
       <div className="tv-box">
@@ -396,15 +444,34 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
           />
         )}
       </div>
-      <div className="tv-desc" ref={descRef}>
-        {/* keyed by game: a new game starts its description from the top (and its scroll from the pause) */}
-        <div className="tv-desc__in" key={game.id}>
-          {desc.slice(0, 20).map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-          {game.source !== 'emustart' && !desc.length && <p>Gra z biblioteki Steam.</p>}
-        </div>
+      <TvDesc game={game} details={dr} />
+    </div>
+  )
+}
+
+/** The game's description; longer than its box it scrolls slowly after a pause (useDescScroll). */
+function TvDesc({ game, details: dr, className }: { game: Game; details: DetailsResult | null; className?: string }) {
+  const d = dr?.ok ? dr.details : undefined
+  const descRef = useDescScroll()
+  const desc = d?.descriptionText ? d.descriptionText.split(/\n+/) : d?.descriptionHtml ? htmlToParagraphs(d.descriptionHtml, 20) : d?.shortDescription ? [d.shortDescription] : []
+  return (
+    <div className={`tv-desc ${className ?? ''}`} ref={descRef}>
+      {/* keyed by game: a new game starts its description from the top (and its scroll from the pause) */}
+      <div className="tv-desc__in" key={game.id}>
+        {desc.slice(0, 20).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+        {game.source !== 'emustart' && !desc.length && <p>Gra z biblioteki Steam.</p>}
       </div>
+    </div>
+  )
+}
+
+/** The selected game's background art over the whole screen (ribbon layout), faded into the theme. */
+function TvBackdrop({ game }: { game: Game }) {
+  return (
+    <div className="tv-backdrop" aria-hidden="true">
+      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager layout="tv" />
     </div>
   )
 }
@@ -448,7 +515,7 @@ function saveLine(o: EmuGameOptions): string {
  * The bar at the bottom of the screen, across its whole width: the game's logo on the left (always —
  * its title when there is none), the details next to it in a few lines.
  */
-function TvInfo({ game, details: dr, note, rev }: { game: Game; details: DetailsResult | null; note?: string; rev: number }) {
+function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details: DetailsResult | null; note?: string; rev: number; noLogo?: boolean }) {
   const d = dr?.ok ? dr.details : undefined
   const e = game.emu
   const status = e
@@ -490,9 +557,11 @@ function TvInfo({ game, details: dr, note, rev }: { game: Game; details: Details
   ]
   return (
     <div className="tv-info">
-      <div className="tv-info__logo">
-        <LogoTitle key={game.id} game={game} text={<h1>{game.name}</h1>} />
-      </div>
+      {!noLogo && (
+        <div className="tv-info__logo">
+          <LogoTitle key={game.id} game={game} text={<h1>{game.name}</h1>} />
+        </div>
+      )}
       <div className="tv-info__body">
         <dl>
           {rows

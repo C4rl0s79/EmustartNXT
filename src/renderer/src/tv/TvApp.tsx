@@ -9,6 +9,14 @@ import { useTvSystems } from './data'
 import { loginFlow, logoutFlow } from '../lib/account'
 import { lookStyle, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
+import { TvThemes } from './TvThemes'
+import { lookSpecFor, themeById, themeStyle } from './themes'
+import '@fontsource-variable/cinzel'
+import '@fontsource-variable/alegreya'
+import '@fontsource-variable/oxanium'
+import '@fontsource-variable/exo-2'
+import './theme-css/fantasy.css'
+import './theme-css/sf.css'
 import { Icon } from '../components/Icon'
 import './tv.css'
 
@@ -24,6 +32,11 @@ export function TvApp() {
   const [sysIdx, setSysIdx] = useState(0)
   const [menu, setMenu] = useState(false)
   const [lookEd, setLookEd] = useState(false)
+  const [themesOpen, setThemesOpen] = useState(false)
+  // the theme in use (Lumen's setting) or, while the chooser is open, the one being looked at
+  const savedTheme = useStore((s) => s.settings?.tvTheme)
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+  const theme = themeById(previewTheme ?? savedTheme)
   const selection = useStore((s) => s.detailsId)
   useLookSync()
   const look = useLook()
@@ -42,7 +55,8 @@ export function TvApp() {
 
   const sys = systems[sysIdx]
   return (
-    <div className="tv" data-layer inert={selection ? true : undefined} style={lookStyle(look) as CSSProperties}>
+    <div className="tv" data-theme={theme.id} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look), ...themeStyle(theme) } as CSSProperties}>
+      {theme.ambient && <div className={`tv-ambient tv-ambient--${theme.ambient}`} aria-hidden="true" />}
       <TvTopBar />
       {screen === 'systems' && (
         <TvSystems
@@ -51,13 +65,21 @@ export function TvApp() {
           onIndex={setSysIdx}
           onOpen={() => sys && setScreen('games')}
           onMenu={() => setMenu(true)}
-          active={!menu && !lookEd}
+          active={!menu && !lookEd && !themesOpen}
         />
       )}
-      {screen === 'games' && sys && <TvGames key={sys.key} system={sys} onBack={() => setScreen('systems')} onMenu={() => setMenu(true)} active={!menu && !lookEd} />}
+      {screen === 'games' && sys && (
+        <TvGames key={sys.key} system={sys} onBack={() => setScreen('systems')} onMenu={() => setMenu(true)} active={!menu && !lookEd && !themesOpen} theme={theme} />
+      )}
       {screen === 'settings' && <TvSettings onBack={() => setScreen('systems')} />}
       {menu && (
         <TvMenu
+          themeName={theme.name}
+          onTheme={() => {
+            setMenu(false)
+            if (screen === 'settings') setScreen('systems') // the chooser shows each theme on the layout underneath
+            setThemesOpen(true)
+          }}
           onClose={() => setMenu(false)}
           onSettings={() => {
             setMenu(false)
@@ -70,8 +92,25 @@ export function TvApp() {
           }}
         />
       )}
+      {themesOpen && (
+        <TvThemes
+          current={themeById(savedTheme).id}
+          onPreview={setPreviewTheme}
+          onDone={(id) => {
+            setThemesOpen(false)
+            setPreviewTheme(null)
+            if (id && id !== savedTheme)
+              void attempt(api().settings.patch({ tvTheme: id })).then((s) => {
+                if (!s) return
+                useStore.getState().setSettings(s)
+                useStore.getState().toast(`Motyw: ${themeById(id).name}`, 'info')
+              })
+          }}
+        />
+      )}
       {lookEd && (
         <TvLook
+          spec={lookSpecFor(theme)}
           onClose={() => setLookEd(false)}
           previewLabel={screen === 'games' ? 'systemy' : 'gry'}
           onPreview={() => setScreen((s) => (s === 'games' || !sys ? 'systems' : 'games'))}
@@ -168,10 +207,23 @@ function TvHints() {
   )
 }
 
-function TvMenu({ onClose, onSettings, onLook }: { onClose: () => void; onSettings: () => void; onLook: () => void }) {
+function TvMenu({
+  onClose,
+  onSettings,
+  onLook,
+  onTheme,
+  themeName
+}: {
+  onClose: () => void
+  onSettings: () => void
+  onLook: () => void
+  onTheme: () => void
+  themeName: string
+}) {
   const loggedIn = useStore((s) => !!s.snapshot?.emustart?.server)
   const items: [string, () => void][] = [
     ['Ustawienia', onSettings],
+    [`Motyw: ${themeName}`, onTheme],
     ['Wygląd', onLook],
     [
       'Zmień profil',

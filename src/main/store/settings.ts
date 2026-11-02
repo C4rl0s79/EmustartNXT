@@ -18,7 +18,8 @@ const defaults = (): StoredSettings => ({
   startMode: 'desktop',
   regionOrder: 'europe',
   emustartEnabled: true,
-  language: 'polish'
+  language: 'polish',
+  tvTheme: 'emustart'
 })
 
 const cleanPath = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() && v.length < 1024 ? v.trim() : undefined)
@@ -41,7 +42,8 @@ function migrate(raw: unknown): StoredSettings {
     regionOrder: r.regionOrder === 'usa' || r.regionOrder === 'japan' ? r.regionOrder : 'europe',
     emustartEnabled: r.emustartEnabled !== false,
     emustartHome: cleanPath(r.emustartHome),
-    pythonPath: cleanPath(r.pythonPath)
+    pythonPath: cleanPath(r.pythonPath),
+    tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart'
   }
 }
 
