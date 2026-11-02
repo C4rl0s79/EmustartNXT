@@ -223,7 +223,13 @@ export function GroupScreen({ category, active }: { category: Category; active: 
           Sortuj: <strong>{SORTS.find(([s]) => s === sort)![1]}</strong>
         </button>
       </div>
-      {moreParts.length > 0 && <p className="group__filters">{moreParts.join(' · ')}</p>}
+      {moreParts.length > 0 && (
+        <ul className="group__filters" aria-label="Aktywne filtry">
+          {moreParts.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+      )}
       {category.smart === 'all' && <LibraryNotice />}
       {category.kind === 'emustart' && <EmuNotice />}
       {games.length ? (

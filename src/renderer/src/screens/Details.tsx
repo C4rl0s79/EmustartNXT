@@ -12,6 +12,7 @@ import { EmuSaves } from '../components/EmuSaves'
 import { GameOptions } from '../components/GameOptions'
 import { Controllers } from '../components/Controllers'
 import { usePrimaryAction } from '../lib/primary'
+import { setGlowFrom } from '../lib/glow'
 import { formatBytes, formatEta, formatLastPlayed, formatPlaytime, htmlToParagraphs, STATE_LABEL, stateLabel, versionCountLabel } from '../lib/format'
 
 export function DetailsScreen({ gameId }: { gameId: string }) {
@@ -42,6 +43,9 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
       alive = false
     }
   }, [gameId])
+
+  // the open game lights the room with its own colour (its cover, as on the grid)
+  useEffect(() => setGlowFrom(api().art.url(gameId, 'grid', useStore.getState().artRev[gameId] ?? 0)), [gameId])
 
   useEffect(() => {
     if (ref.current) focusFirst(ref.current)

@@ -133,12 +133,13 @@ function Spotlight({ game: shown, primary }: { game: Game | null; primary: Prima
   useEffect(() => setLogoOk(true), [shown?.id])
 
   if (!shown) return <div className="spotlight spotlight--empty" />
+  // label (dim) + value (bright) pairs, set apart by space — not a dotted string
   const meta = [
-    shown.running ? 'Uruchomiona' : STATE_LABEL[shown.installState],
-    formatPlaytime(shown.playtimeMinutes) && `Czas gry: ${formatPlaytime(shown.playtimeMinutes)}`,
-    formatLastPlayed(shown.lastPlayed) && `Ostatnio: ${formatLastPlayed(shown.lastPlayed)}`,
-    shown.shortcut?.tags.length ? shown.shortcut.tags.join(', ') : undefined
-  ].filter(Boolean)
+    { k: '', v: shown.running ? 'Uruchomiona' : STATE_LABEL[shown.installState] },
+    { k: 'Czas gry', v: formatPlaytime(shown.playtimeMinutes) },
+    { k: 'Ostatnio', v: formatLastPlayed(shown.lastPlayed) },
+    { k: 'Oznaczenia', v: shown.shortcut?.tags.length ? shown.shortcut.tags.join(', ') : undefined }
+  ].filter((m): m is { k: string; v: string } => !!m.v)
 
   return (
     <div className="spotlight">
@@ -154,7 +155,10 @@ function Spotlight({ game: shown, primary }: { game: Game | null; primary: Prima
         )}
         <div className="spotlight__meta">
           {meta.map((m) => (
-            <span key={m as string}>{m}</span>
+            <span key={m.k + m.v}>
+              {m.k && <span className="meta__k">{m.k}</span>}
+              {m.v}
+            </span>
           ))}
         </div>
         {primary && (

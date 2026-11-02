@@ -18,6 +18,7 @@ import { InGameMenu } from './components/InGameMenu'
 import { PadsOrder } from './components/PadsOrder'
 import { Controllers } from './components/Controllers'
 import { enrollCheck, enrollResume } from './lib/account'
+import { installGlow } from './lib/glow'
 
 /** Start, the pinned groups (in their order), Settings. */
 export function useTabs(): Tab[] {
@@ -62,7 +63,9 @@ export function App() {
       a.prefs.onChange(s.setPrefs),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),
-      installKeyboard()
+      installKeyboard(),
+      // Lightbox: the focused game's colour lights the desktop layout (lib/glow.ts)
+      installGlow((id) => a.art.url(id, 'grid', useStore.getState().artRev[id] ?? 0))
     ]
     return () => offs.forEach((off) => off())
   }, [])

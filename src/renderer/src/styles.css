@@ -1,18 +1,32 @@
-/* Lumen — dark, calm, poster-first. Sizes scale with the viewport so the same layout
-   reads well on a 1080p monitor and a 4K TV from the couch. */
+/* Lumen — "Lightbox". The room is quiet graphite; the only colour comes from the games: the focused
+   game's art lights the room (--glow, sampled and normalised in lib/glow.ts, so it is always a light
+   with dark ink on it). Sizes scale with the viewport so the same layout reads well on a 1080p
+   monitor and a 4K TV from the couch. One family, Bricolage Grotesque, with optical sizes: tight and
+   characterful in titles, calm in text. */
+
+@property --glow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f2c879;
+}
 
 :root {
-  --bg: #0a0c11;
-  --bg-2: #10131a;
-  --panel: rgba(22, 26, 36, 0.78);
-  --panel-solid: #161a24;
-  --line: rgba(255, 255, 255, 0.08);
-  --text: #eef0f5;
-  --text-2: #a9afbe;
-  --text-3: #8d94a5;
-  --accent: #ffc56b;
-  --accent-2: #ff9f5a;
-  --accent-ink: #1d1406;
+  --glow: #f2c879;
+  --room: #101114;
+  --surface: #17181d;
+  --surface-2: #1e2026;
+  --bg: var(--room);
+  --bg-2: var(--surface);
+  --panel: color-mix(in srgb, var(--surface) 86%, transparent);
+  --panel-solid: var(--surface);
+  --line: rgba(255, 255, 255, 0.09);
+  --text: #f2f1ee;
+  --text-2: #c4c2bd;
+  --text-3: #a7a6a1;
+  --accent: var(--glow);
+  --accent-2: color-mix(in oklab, var(--glow), white 30%);
+  --accent-ink: #121214;
+  transition: --glow 0.7s ease;
   --ok: #7bd88f;
   --danger: #ff7a7a;
   --radius: clamp(8px, 0.6vw, 14px);
@@ -37,7 +51,9 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Manrope Variable', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Bricolage Grotesque Variable', 'Manrope Variable', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 420;
   font-size: var(--fs);
   line-height: 1.45;
   overflow: hidden;
@@ -190,13 +206,14 @@ button {
   box-shadow: 0 0 8px var(--ok);
 }
 .pill--steam.is-warn i {
-  background: var(--accent);
+  /* a state colour: fixed, never taken from the game's light */
+  background: #f2b84b;
 }
 .pill--steam.is-notInstalled i {
   background: var(--danger);
 }
 .pill--demo {
-  background: rgba(255, 159, 90, 0.18);
+  background: color-mix(in srgb, var(--accent-2) 18%, transparent);
   color: var(--accent);
   font-weight: 700;
 }
@@ -324,8 +341,8 @@ button {
   cursor: default;
 }
 .btn--primary {
-  background: rgba(255, 197, 107, 0.16);
-  border-color: rgba(255, 197, 107, 0.35);
+  background: color-mix(in srgb, var(--glow) 16%, transparent);
+  border-color: color-mix(in srgb, var(--glow) 35%, transparent);
   color: var(--accent);
 }
 .btn--primary:focus {
@@ -354,7 +371,7 @@ button {
 }
 .btn--on {
   color: var(--accent);
-  border-color: rgba(255, 197, 107, 0.35);
+  border-color: color-mix(in srgb, var(--glow) 35%, transparent);
 }
 .btn--play {
   min-width: 11em;
@@ -364,15 +381,15 @@ button {
   border: 0;
   background: linear-gradient(120deg, var(--accent), var(--accent-2));
   color: var(--accent-ink);
-  box-shadow: 0 10px 40px rgba(255, 159, 90, 0.25);
+  box-shadow: 0 10px 40px color-mix(in srgb, var(--accent-2) 25%, transparent);
 }
 .btn--play:focus {
-  background: linear-gradient(120deg, #ffe0a8, var(--accent));
+  background: linear-gradient(120deg, var(--accent-2), var(--accent));
   color: var(--accent-ink);
   transform: scale(1.06);
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.9),
-    0 14px 50px rgba(255, 159, 90, 0.45);
+    0 14px 50px color-mix(in srgb, var(--accent-2) 45%, transparent);
 }
 .btn__icon {
   font-size: 0.8em;
@@ -457,7 +474,7 @@ button {
   transform: scale(1.07);
   box-shadow:
     0 18px 50px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(255, 197, 107, 0.18);
+    0 0 40px color-mix(in srgb, var(--glow) 18%, transparent);
 }
 .poster:focus .poster__frame::after {
   box-shadow:
@@ -500,8 +517,6 @@ button {
 .badge {
   font-size: 0.68em;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   padding: 0.25em 0.55em;
   border-radius: 5px;
   background: rgba(0, 0, 0, 0.7);
@@ -527,7 +542,7 @@ button {
   width: 1.7em;
   height: 1.7em;
   border-radius: 50%;
-  background: rgba(10, 12, 17, 0.78);
+  background: color-mix(in srgb, var(--room) 78%, transparent);
   color: var(--accent);
   font-size: 0.85em;
 }
@@ -640,8 +655,8 @@ button {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(10, 12, 17, 0.9) 0%, rgba(10, 12, 17, 0.5) 45%, rgba(10, 12, 17, 0.1) 75%),
-    linear-gradient(180deg, rgba(10, 12, 17, 0.45) 0%, transparent 25%, rgba(10, 12, 17, 0.75) 52%, var(--bg) 70%);
+    linear-gradient(90deg, color-mix(in srgb, var(--room) 90%, transparent) 0%, color-mix(in srgb, var(--room) 50%, transparent) 45%, color-mix(in srgb, var(--room) 10%, transparent) 75%),
+    linear-gradient(180deg, color-mix(in srgb, var(--room) 45%, transparent) 0%, transparent 25%, color-mix(in srgb, var(--room) 75%, transparent) 52%, var(--bg) 70%);
 }
 .spotlight__info {
   position: absolute;
@@ -669,15 +684,15 @@ button {
 .spotlight__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: 8px 2.2em;
   margin-top: 1em;
-  color: var(--text-2);
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 560;
 }
-.spotlight__meta span + span::before {
-  content: '·';
-  margin-right: 20px;
+.spotlight__meta .meta__k {
   color: var(--text-3);
+  font-weight: 500;
+  margin-right: 0.4em;
 }
 @keyframes fade-in {
   from {
@@ -764,8 +779,8 @@ button {
   max-width: calc(100% - 2 * var(--pad-x));
 }
 .notice--demo {
-  background: rgba(255, 159, 90, 0.12);
-  border-color: rgba(255, 159, 90, 0.35);
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-2) 35%, transparent);
   color: #ffd9b8;
   display: block;
 }
@@ -847,7 +862,7 @@ button {
 .field:focus {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(255, 197, 107, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glow) 20%, transparent);
 }
 .grid {
   flex: 1;
@@ -884,8 +899,8 @@ button {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(10, 12, 17, 0.96) 0%, rgba(10, 12, 17, 0.75) 40%, rgba(10, 12, 17, 0.1) 80%),
-    linear-gradient(180deg, transparent 35%, rgba(10, 12, 17, 0.8) 62%, var(--bg) 75%);
+    linear-gradient(90deg, color-mix(in srgb, var(--room) 96%, transparent) 0%, color-mix(in srgb, var(--room) 75%, transparent) 40%, color-mix(in srgb, var(--room) 10%, transparent) 80%),
+    linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--room) 80%, transparent) 62%, var(--bg) 75%);
 }
 .details__content {
   position: absolute;
@@ -983,7 +998,7 @@ button {
 }
 .details__desc:focus {
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 2px rgba(255, 197, 107, 0.45);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--glow) 45%, transparent);
 }
 .details__muted,
 .details__loading {
@@ -1011,8 +1026,6 @@ button {
 .facts__row dt {
   color: var(--text-3);
   font-size: 0.8em;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   font-weight: 700;
 }
 .facts__row dd {
@@ -1408,7 +1421,7 @@ p.card__desc[data-nav]:focus {
 }
 .toggle:focus {
   border-color: var(--accent);
-  background: rgba(255, 197, 107, 0.08);
+  background: color-mix(in srgb, var(--glow) 8%, transparent);
 }
 .cats {
   display: flex;
@@ -1424,7 +1437,7 @@ p.card__desc[data-nav]:focus {
   background: rgba(255, 255, 255, 0.03);
 }
 .cats__row.is-pinned {
-  background: rgba(255, 197, 107, 0.06);
+  background: color-mix(in srgb, var(--glow) 6%, transparent);
 }
 .cats__name {
   flex: 1;
@@ -1451,8 +1464,6 @@ p.card__desc[data-nav]:focus {
   color: var(--text-3);
   font-weight: 700;
   font-size: 0.82em;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* ---------- toasts ---------- */
@@ -1507,8 +1518,6 @@ p.card__desc[data-nav]:focus {
 .cats__heading {
   margin: 8px 0 0;
   font-size: 0.82em;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--text-3);
 }
 .chip--steam::before {
@@ -1574,11 +1583,6 @@ p.card__desc[data-nav]:focus {
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
-.group__filters {
-  margin: -4px 0 10px;
-  color: var(--accent);
-  font-size: 0.9em;
-}
 
 /* home sections */
 .home__sections {
@@ -1642,7 +1646,7 @@ p.card__desc[data-nav]:focus {
   align-self: start;
   padding: 1.1em 1.3em;
   border-radius: var(--radius);
-  background: rgba(10, 12, 17, 0.62);
+  background: color-mix(in srgb, var(--room) 62%, transparent);
   backdrop-filter: blur(14px);
   border: 1px solid var(--line);
 }
@@ -1668,8 +1672,8 @@ p.card__desc[data-nav]:focus {
 }
 
 .notice--warn {
-  border-color: rgba(255, 197, 107, 0.35);
-  background: rgba(255, 197, 107, 0.08);
+  border-color: color-mix(in srgb, var(--glow) 35%, transparent);
+  background: color-mix(in srgb, var(--glow) 8%, transparent);
 }
 .notice--warn ul {
   margin: 0.4em 0 0.6em 1.2em;
@@ -1741,8 +1745,6 @@ p.card__desc[data-nav]:focus {
 }
 .launch__system {
   color: var(--text-3);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   font-size: 0.82em;
 }
 .launch__title {
@@ -1900,7 +1902,7 @@ p.card__desc[data-nav]:focus {
   bottom: 8px;
   padding: 0.12em 0.45em;
   border-radius: 999px;
-  background: rgba(10, 12, 17, 0.82);
+  background: color-mix(in srgb, var(--room) 82%, transparent);
   color: var(--text);
   font-size: 0.78em;
   font-weight: 600;
@@ -1981,8 +1983,6 @@ p.card__desc[data-nav]:focus {
   color: var(--text-3);
   font-size: 0.78em;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   margin: 0 0 0.4em;
 }
 .stepper {
@@ -2254,8 +2254,6 @@ p.card__desc[data-nav]:focus {
 .ingame__sys {
   margin: 0;
   color: #8d97ab;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
   font-size: 0.8em;
 }
 .ingame__panel h2 {
@@ -2334,7 +2332,7 @@ p.card__desc[data-nav]:focus {
   min-width: 0;
   padding: 0.6em 1.4em;
   font-size: 1em;
-  box-shadow: 0 8px 28px rgba(255, 159, 90, 0.22);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--accent-2) 22%, transparent);
 }
 .btn--quick .glyph {
   font-size: 0.75em;
@@ -2343,18 +2341,64 @@ p.card__desc[data-nav]:focus {
   background: rgba(255, 255, 255, 0.35);
 }
 .btn--quick:hover {
-  background: linear-gradient(120deg, #ffe0a8, var(--accent));
+  background: linear-gradient(120deg, var(--accent-2), var(--accent));
 }
 
 /* the top bar sits over hero art of any brightness: status and tabs get their own backing */
 .topbar__status .pill {
-  background: rgba(10, 12, 17, 0.72);
+  background: color-mix(in srgb, var(--room) 72%, transparent);
   backdrop-filter: blur(10px);
   color: var(--text);
 }
 .topbar__status .clock {
   padding: 0.2em 0.6em;
   border-radius: 999px;
-  background: rgba(10, 12, 17, 0.72);
+  background: color-mix(in srgb, var(--room) 72%, transparent);
   backdrop-filter: blur(10px);
+}
+
+/* ---------- Lightbox: the light from the games ---------- */
+
+/* the room is lit from above by the focused game's colour */
+body {
+  background:
+    radial-gradient(90% 60% at 50% -14%, color-mix(in srgb, var(--glow) 24%, transparent), transparent 70%),
+    radial-gradient(70% 40% at 50% 112%, color-mix(in srgb, var(--glow) 10%, transparent), transparent 70%),
+    var(--room);
+}
+/* the focused poster is the brightest thing on screen: its ring and a halo in its own light */
+.poster:focus .poster__frame {
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.6),
+    0 0 70px color-mix(in srgb, var(--glow) 52%, transparent);
+}
+
+/* type: optical sizes do the work — big titles get the tight, characterful cut automatically */
+:is(h1, h2, h3, .group__head h1, .section__title, .spotlight__title, .details__title) {
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+.section__title {
+  font-size: 1.333em;
+}
+.brand {
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+/* filters of a group: each one its own tag, not a dotted line */
+.group__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px var(--pad-x) 12px;
+  padding: 0;
+  list-style: none;
+}
+.group__filters li {
+  padding: 0.25em 0.75em;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--glow) 45%, transparent);
+  color: var(--text);
+  font-size: 0.86em;
 }

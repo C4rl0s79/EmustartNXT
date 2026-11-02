@@ -1,5 +1,5 @@
 import { useStore } from '../store'
-import { gameCountLabel } from '../lib/format'
+import { gameCountLabel, plural } from '../lib/format'
 
 /**
  * Honest description of where the library comes from. Local detection is never presented
@@ -23,10 +23,10 @@ export function LibraryNotice({ compact }: { compact?: boolean }) {
   let accountText: string
   switch (account.state) {
     case 'ok':
-      accountText = `pełna biblioteka konta: ${gameCountLabel(account.count)}${account.fromCache ? ' (z pamięci podręcznej)' : ''}`
+      accountText = `Cała biblioteka konta: ${gameCountLabel(account.count)}${account.fromCache ? ' (z pamięci podręcznej)' : ''}.`
       break
     case 'private':
-      accountText = 'pełna biblioteka konta niedostępna — szczegóły gier w profilu Steam są prywatne'
+      accountText = 'Całej biblioteki konta nie widać, bo szczegóły gier w profilu Steam są prywatne.'
       break
     case 'error':
       accountText = account.message
@@ -34,8 +34,8 @@ export function LibraryNotice({ compact }: { compact?: boolean }) {
     case 'disabled':
       accountText =
         account.reason === 'noKey'
-          ? 'pokazuję tylko gry wykryte na dysku — dodaj klucz Steam Web API, aby zobaczyć całą bibliotekę konta'
-          : 'nie ustalono konta Steam (SteamID) — pokazuję tylko gry wykryte na dysku'
+          ? 'Widać tylko gry wykryte na dysku. Dodaj klucz Steam Web API w Ustawieniach, aby zobaczyć całą bibliotekę konta.'
+          : 'Nie ustalono konta Steam (SteamID), więc widać tylko gry wykryte na dysku.'
   }
 
   // On the home screen only problems are worth the space; the full explanation lives in the library.
@@ -44,14 +44,14 @@ export function LibraryNotice({ compact }: { compact?: boolean }) {
   return (
     <div className={`notice ${compact ? 'notice--compact' : ''}`}>
       <span>
-        Na dysku: <strong>{gameCountLabel(local)}</strong>
+        Na dysku <strong>{gameCountLabel(local)}</strong>
         {shortcuts > 0 && (
           <>
             {' '}
-            · skróty spoza Steam: <strong>{shortcuts}</strong>
+            i <strong>{shortcuts}</strong> {plural(shortcuts, 'skrót', 'skróty', 'skrótów')} spoza Steam
           </>
-        )}{' '}
-        · {accountText}
+        )}
+        . {accountText}
       </span>
       {warnings.map((w) => (
         <span key={w} className="notice__warn">
