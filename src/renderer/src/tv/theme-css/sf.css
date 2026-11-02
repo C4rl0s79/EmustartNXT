@@ -12,10 +12,7 @@
   --tv-hud: rgba(126, 224, 255, 0.85);
   --tv-logo-fill: linear-gradient(180deg, #ffffff 0%, #c9f3ff 42%, #6fd3f5 100%);
   --tv-logo-tone: #c9f3ff;
-  font-family: 'Exo 2 Variable', 'Segoe UI', system-ui, sans-serif;
   font-weight: 430;
-  /* text grows with the screen (no 20 px cap of the default look): readable on a 4K TV from the couch */
-  font-size: calc(clamp(16px, 1.95vh, 44px) * var(--tv-fs));
   background:
     radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
     radial-gradient(60% 50% at 88% 92%, rgba(14, 92, 120, 0.42) 0%, transparent 70%),
@@ -24,7 +21,6 @@
 }
 
 .tv[data-theme='sf'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
-  font-family: 'Oxanium Variable', 'Segoe UI', sans-serif;
   font-weight: 600;
   letter-spacing: 0.02em;
 }

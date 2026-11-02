@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_THEME, THEMES, contrast, lookSpecFor, themeById, themeStyle } from '../src/renderer/src/tv/themes'
+import { DEFAULT_THEME, THEMES, contrast, lookDefaults, lookSpecFor, themeById, themeStyle } from '../src/renderer/src/tv/themes'
+import { FONTS, type LookChoice } from '../src/renderer/src/tv/look'
 import { LOOK_ITEMS } from '../src/renderer/src/tv/look'
 import { flowOffset } from '../src/renderer/src/tv/TvCoverflow'
 
@@ -35,6 +36,16 @@ describe('TV themes', () => {
       })
     }
     expect(lookSpecFor(themeById('emustart')).filter((r) => 'k' in r)).toHaveLength(LOOK_ITEMS.length)
+  })
+
+  it('offers its own typefaces in the look editor, each one bundled, the legible one in every theme', () => {
+    for (const t of THEMES) {
+      for (const f of [...t.fonts.text, ...t.fonts.head]) expect(FONTS[f], `${t.id}: ${f}`).toBeTruthy()
+      expect(t.fonts.text).toContain('atkinson')
+      const font = lookSpecFor(t).find((r) => 'k' in r && r.k === 'font') as LookChoice
+      expect(font.opts).toEqual(t.fonts.text)
+      expect(font.def).toBe(lookDefaults(t).font)
+    }
   })
 
   it('the palette becomes the CSS variables of the TV frame', () => {

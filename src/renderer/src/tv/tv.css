@@ -38,8 +38,13 @@
   inset: 0;
   background: radial-gradient(120% 90% at 50% 0%, var(--tv-bg-grad) 0%, var(--tv-bg) 60%) fixed, var(--tv-bg);
   color: var(--tv-text);
-  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
-  font-size: calc(clamp(14px, 1.55vh, 20px) * var(--tv-fs));
+  /* typefaces: the look of the theme in use (look.ts FONTS, "Czcionka tekstu" / "Czcionka nagłówków") */
+  font-family: var(--tv-font, 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif);
+  /* one size rule for every theme — grows with the screen, so 4K stays readable from the couch —
+     and the same x-height whatever the typeface: the same "Wielkość czcionek" gives the same size of
+     text in Segoe, Alegreya or Exo 2 */
+  font-size: calc(clamp(14px, 1.6vh, 48px) * var(--tv-fs));
+  font-size-adjust: 0.52;
   user-select: none;
   overflow: hidden;
 }
@@ -603,10 +608,11 @@
   bottom: 7vh;
   right: 1.5vw;
   width: min(44vw, 780px);
-  z-index: 20;
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  background: var(--tv-panel);
+  /* opaque: the live layout beside it is the preview, nothing should show through the settings */
+  background: linear-gradient(var(--tv-panel), var(--tv-panel)), var(--tv-bg);
   border: 1px solid var(--tv-line);
   border-radius: 16px;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
@@ -640,9 +646,8 @@
   min-height: 0;
   padding: 1.2em 0.8em 0.3em;
   color: var(--tv-dim);
-  font-size: 0.8em;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.85em;
+  font-weight: 600;
   cursor: default;
 }
 .tv-lkrow.sel {
@@ -979,4 +984,11 @@
   .tv-ambient::after {
     animation: none !important;
   }
+}
+
+/* headings and names in the theme's display typeface, at their own proportions (not x-height matched:
+   engraved capitals or squared display faces keep their character) */
+.tv :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-look h2) {
+  font-family: var(--tv-font-head, inherit);
+  font-size-adjust: none;
 }

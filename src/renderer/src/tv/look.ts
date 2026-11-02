@@ -23,6 +23,8 @@ export interface LookChoice extends Base {
   def: string
   fmt: (v: string) => string
   swatch?: boolean
+  /** Lumen's own setting: never saved into EmuStart's shared look (EmuStart does not know it) */
+  lumen?: boolean
 }
 /** an engine setting shown in the editor (not part of "look"): saved through the shared options */
 export interface LookSetting extends Base {
@@ -51,6 +53,23 @@ export const BACKS: Record<string, [string, string, string]> = {
   bordo: ['#120a0b', '#3a171c', 'bordowe']
 }
 
+/**
+ * Typefaces the TV layout can use (all bundled — nothing is downloaded): id → [name, CSS family].
+ * Each theme offers its own selection of them (themes.ts); Atkinson Hyperlegible is in every one —
+ * it was drawn for the best legibility.
+ */
+export const FONTS: Record<string, [string, string]> = {
+  segoe: ['Segoe UI', "'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif"],
+  atkinson: ['Atkinson Hyperlegible', "'Atkinson Hyperlegible Next Variable', 'Segoe UI', system-ui, sans-serif"],
+  manrope: ['Manrope', "'Manrope Variable', 'Segoe UI', system-ui, sans-serif"],
+  bricolage: ['Bricolage Grotesque', "'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif"],
+  alegreya: ['Alegreya', "'Alegreya Variable', 'Palatino Linotype', Georgia, serif"],
+  cinzel: ['Cinzel', "'Cinzel Variable', 'Trajan Pro', Georgia, serif"],
+  exo2: ['Exo 2', "'Exo 2 Variable', 'Segoe UI', system-ui, sans-serif"],
+  oxanium: ['Oxanium', "'Oxanium Variable', 'Segoe UI', system-ui, sans-serif"]
+}
+const fontName = (v: string): string => (FONTS[v] ?? FONTS.segoe)[0]
+
 const pct = (v: number): string => `${Math.round(v)}%`
 const vh = (v: number): string => `${+v.toFixed(1)} vh`
 const fs = (k: string, t: string, min: number, max: number): LookRange => ({ k, t, min, max, step: 5, def: 100, fmt: pct })
@@ -68,6 +87,9 @@ export const LOOK_SPEC: LookRow[] = [
   { k: 'media_h', t: 'Wysokość okładki i zrzutu', min: 20, max: 62, step: 1, def: 44, fmt: vh },
   { k: 'setrow', t: 'Wysokość wiersza w ustawieniach', min: 2.4, max: 8, step: 0.2, def: 4.6, fmt: vh },
   { k: 'desc_lines', t: 'Liczba linii opisu gry', min: 3, max: 40, step: 1, def: 14, fmt: (v: number) => String(v) },
+  { head: 'Czcionki' },
+  { k: 'font', t: 'Czcionka tekstu', opts: Object.keys(FONTS), def: 'segoe', fmt: fontName, lumen: true },
+  { k: 'font_head', t: 'Czcionka nagłówków', opts: Object.keys(FONTS), def: 'segoe', fmt: fontName, lumen: true },
   { head: 'Wielkość czcionek' },
   fs('fs', 'Cały interfejs', 70, 170),
   fs('fs_list', 'Lista gier', 60, 200),
@@ -115,13 +137,30 @@ export function stepLook(values: LookValues, it: LookRange | LookChoice, dir: nu
   return { ...values, [it.k]: +Math.min(it.max, Math.max(it.min, v)).toFixed(2) }
 }
 
-/** what EmuStart stores: only known keys that differ from the default (look.js closeLook) */
+export const isLumenOnly = (it: LookItem): boolean => isChoice(it) && !!it.lumen
+
+/** what EmuStart stores: only its own keys that differ from the default (look.js closeLook) */
 export function lookToSave(values: LookValues): LookValues {
   const out: LookValues = {}
   for (const it of LOOK_ITEMS) {
-    if (isSetting(it) || values[it.k] === undefined) continue
+    if (isSetting(it) || isLumenOnly(it) || values[it.k] === undefined) continue
     const v = lookValue(values, it)
     if (v !== it.def) out[it.k] = v
+  }
+  return out
+}
+
+/**
+ * What Lumen stores for a theme (Settings.tvLooks): the known keys that differ from the theme's own
+ * defaults. `onlyLumen`: just Lumen's own keys (the EmuStart theme keeps the rest in EmuStart's look).
+ */
+export function lookOverrides(values: LookValues, defaults: LookValues, onlyLumen = false): LookValues {
+  const out: LookValues = {}
+  for (const it of LOOK_ITEMS) {
+    if (isSetting(it) || values[it.k] === undefined) continue
+    if (onlyLumen && !isLumenOnly(it)) continue
+    const v = lookValue(values, it)
+    if (v !== lookValue(defaults, it)) out[it.k] = v
   }
   return out
 }
@@ -139,10 +178,11 @@ export function lookFromEngine(raw: unknown): LookValues {
   return out
 }
 
-/** CSS variables of the .tv frame (tv.css) for a look */
-export function lookStyle(values: LookValues): Record<string, string> {
-  const n = (k: string): number => rangeValue(values, item(k) as LookRange)
-  const c = (k: string): string => choiceValue(values, item(k) as LookChoice)
+/** CSS variables of the .tv frame (tv.css) for a look over the theme's defaults (themes.ts lookDefaults) */
+export function lookStyle(values: LookValues, defaults: LookValues = {}): Record<string, string> {
+  const eff: LookValues = { ...defaults, ...values }
+  const n = (k: string): number => rangeValue(eff, item(k) as LookRange)
+  const c = (k: string): string => choiceValue(eff, item(k) as LookChoice)
   const back = BACKS[c('bg')] ?? BACKS.granat
   const style: Record<string, string> = {
     '--tv-tlogo-h': String(n('tlogo') / 100),
@@ -157,7 +197,9 @@ export function lookStyle(values: LookValues): Record<string, string> {
     '--tv-desc-lines': String(n('desc_lines')),
     '--tv-accent': c('accent'),
     '--tv-bg': back[0],
-    '--tv-bg-grad': back[1]
+    '--tv-bg-grad': back[1],
+    '--tv-font': (FONTS[c('font')] ?? FONTS.segoe)[1],
+    '--tv-font-head': (FONTS[c('font_head')] ?? FONTS.segoe)[1]
   }
   for (const k of ['fs', 'fs_list', 'fs_title', 'fs_meta', 'fs_desc', 'fs_sys', 'fs_sysdesc', 'fs_menu', 'fs_hint', 'fs_top'])
     style[`--tv-${k.replace('_', '-')}`] = String(n(k) / 100)
@@ -174,7 +216,24 @@ export const carouselGap = (values: LookValues): number => {
   return Math.max(rangeValue(values, item('car_gap') as LookRange), +(0.775 * cardW + 1).toFixed(2))
 }
 
-// ---- the look in force (one per window; loaded from the engine by the TV layout) ----
+// ---- EmuStart's stored look (shared with standalone EmuStart; the EmuStart theme shows it) ----
+let engine: LookValues = {}
+const engineListeners = new Set<() => void>()
+export function setEngineLook(values: LookValues): void {
+  engine = values
+  for (const l of engineListeners) l()
+}
+export function useEngineLook(): LookValues {
+  return useSyncExternalStore(
+    (cb) => {
+      engineListeners.add(cb)
+      return () => engineListeners.delete(cb)
+    },
+    () => engine
+  )
+}
+
+// ---- the look in force: the current theme's (one per window; TvApp picks it, the editor changes it) ----
 let current: LookValues = {}
 const listeners = new Set<() => void>()
 

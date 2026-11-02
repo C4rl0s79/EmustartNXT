@@ -7,8 +7,11 @@ import {
   isChoice,
   isSetting,
   lookFromEngine,
+  lookOverrides,
   lookToSave,
+  lookValue,
   rangeValue,
+  setEngineLook,
   setLook,
   stepLook,
   useLook,
@@ -16,10 +19,13 @@ import {
   type LookRow,
   type LookValues
 } from './look'
+import { DEFAULT_THEME, lookDefaults, type TvTheme } from './themes'
 
 // The look editor of the TV layout (EmuStart's look.js in React): a side panel over the live layout,
-// every change shows at once; B saves to EmuStart's config ("look", with the profile unless the look is
-// kept for this computer), so EmuStart and Lumen share one look.
+// every change shows at once. The look belongs to the theme in use: the EmuStart theme saves to
+// EmuStart's config ("look", with the profile unless kept for this computer), so standalone EmuStart
+// shares it — only Lumen's own keys (typefaces) go to Lumen's settings; every other theme keeps its
+// whole look in Lumen's settings (Settings.tvLooks), on top of the theme's own defaults.
 
 type Settings = { gamesLogo: boolean; lookScope: 'profile' | 'machine' }
 type EngineState = { look?: unknown; look_scope?: string; games_logo?: boolean }
@@ -33,7 +39,7 @@ export function useLookSync(): void {
     let alive = true
     void api()
       .emustart.account('get_state')
-      .then((r) => alive && setLook(lookFromEngine((r as EngineState | null)?.look)))
+      .then((r) => alive && setEngineLook(lookFromEngine((r as EngineState | null)?.look)))
       .catch(() => undefined)
     return () => {
       alive = false
@@ -45,19 +51,25 @@ export function TvLook({
   onClose,
   onPreview,
   previewLabel,
-  spec
+  spec,
+  theme
 }: {
   onClose: () => void
   onPreview: () => void
   previewLabel: string
   /** the editor's rows: the whole look, without what the TV theme decides itself (themes.ts) */
   spec: LookRow[]
+  /** the theme whose look this is (its defaults, and where the look is saved) */
+  theme: TvTheme
 }) {
   const values = useLook()
+  const defaults = lookDefaults(theme)
+  // what is shown: the player's values over the theme's defaults
+  const eff: LookValues = { ...defaults, ...values }
   const [idx, setIdx] = useState(() => Math.max(0, spec.findIndex((r) => 'k' in r)))
   const [left, setLeft] = useState(false)
   const [settings, setSettings] = useState<Settings | null>(null)
-  const saved = useRef(JSON.stringify(lookToSave(getLook())))
+  const saved = useRef(JSON.stringify(getLook()))
   const armed = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
   const toast = useStore((s) => s.toast)
@@ -94,9 +106,10 @@ export function TvLook({
       void attempt(api().emustart.setOptions(patch))
       return
     }
-    let v: LookValues = getLook()
+    let v: LookValues = { ...defaults, ...getLook() }
     for (let i = 0; i < (isChoice(it) ? 1 : times); i++) v = stepLook(v, it, dir)
-    setLook(v)
+    // keep only what differs from the theme's defaults (the rest follows the theme)
+    setLook(lookOverrides(v, defaults))
   }
   const reset = (it: LookItem | undefined): void => {
     if (!it || isSetting(it)) return
@@ -105,11 +118,25 @@ export function TvLook({
     setLook(v)
   }
   const close = async (): Promise<void> => {
+    const data = getLook()
+    if (JSON.stringify(data) === saved.current) return onClose()
+    const st = useStore.getState()
+    const looks = st.settings?.tvLooks ?? {}
+    const emu = theme.id === DEFAULT_THEME
+    const own = lookOverrides(data, defaults, emu)
+    // the stores first, so the layout keeps showing the new look when the editor closes
+    if (emu) setEngineLook(lookToSave(data))
+    if (st.settings) st.setSettings({ ...st.settings, tvLooks: { ...looks, [theme.id]: own } })
     onClose()
-    const data = lookToSave(getLook())
-    if (JSON.stringify(data) === saved.current) return
-    const r = await attempt(api().emustart.account('look_save', data))
-    toast((r as { ok?: boolean } | null)?.ok ? 'Zapisano wygląd.' : 'Nie udało się zapisać wyglądu.', (r as { ok?: boolean } | null)?.ok ? 'info' : 'error')
+    let ok = !!(await attempt(api().settings.patch({ tvLooks: { ...looks, [theme.id]: own } })))
+    if (emu) {
+      const engineData = lookToSave(data)
+      if (JSON.stringify(engineData) !== JSON.stringify(lookToSave(JSON.parse(saved.current) as LookValues))) {
+        const r = await attempt(api().emustart.account('look_save', engineData))
+        ok = ok && !!(r as { ok?: boolean } | null)?.ok
+      }
+    }
+    toast(ok ? `Zapisano wygląd motywu ${theme.name}.` : 'Nie udało się zapisać wyglądu.', ok ? 'info' : 'error')
   }
 
   useActions(
@@ -131,7 +158,7 @@ export function TvLook({
         }
         armed.current = 0
         setLook({})
-        toast('Przywrócono domyślny wygląd.')
+        toast(`Przywrócono wygląd motywu ${theme.name}.`)
         return true
       },
       back: () => (void close(), true),
@@ -153,7 +180,7 @@ export function TvLook({
 
   return (
     <div className={`tv-look ${left ? 'left' : ''}`}>
-      <h2>Wygląd</h2>
+      <h2>Wygląd: {theme.name}</h2>
       <div className="tv-look__list" ref={listRef}>
         {spec.map((r, i) => {
           if (!('k' in r))
@@ -184,8 +211,8 @@ export function TvLook({
               </>
             )
           } else if (isChoice(r)) {
-            const v = choiceValue(values, r)
-            chg = v !== r.def
+            const v = choiceValue(eff, r)
+            chg = v !== lookValue(defaults, r)
             val = (
               <>
                 <span className="ch" onClick={pick(-1)}>
@@ -199,7 +226,7 @@ export function TvLook({
               </>
             )
           } else {
-            const v = rangeValue(values, r)
+            const v = rangeValue(eff, r)
             chg = v !== r.def
             val = (
               <>

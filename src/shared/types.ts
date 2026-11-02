@@ -363,6 +363,11 @@ export interface Settings {
   language: string
   /** theme of the TV layout (renderer: tv/themes.ts); an unknown id falls back to the default */
   tvTheme: string
+  /**
+   * the look editor's values per TV theme (only what differs from the theme's defaults). The EmuStart
+   * theme keeps its look in EmuStart's shared config; here only Lumen's own keys (typefaces).
+   */
+  tvLooks: Record<string, Record<string, number | string>>
   hasSgdbKey: boolean
   hasSteamWebKey: boolean
   secretsEncrypted: boolean
@@ -385,6 +390,7 @@ export type SettingsPatch = Partial<
     | 'emustartHome'
     | 'pythonPath'
     | 'tvTheme'
+    | 'tvLooks'
   >
 >
 

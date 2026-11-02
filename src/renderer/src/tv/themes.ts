@@ -1,4 +1,4 @@
-import { LOOK_SPEC, type LookRow } from './look'
+import { LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from './look'
 
 // Themes of the TV layout. A theme is three layers on top of the look editor (look.ts):
 //   1. palette  — colours as CSS variables on the .tv frame (checked for contrast in tests),
@@ -42,6 +42,13 @@ export interface TvTheme {
   ambient?: 'embers' | 'stars'
   /** look editor keys this theme decides itself (hidden in the editor) */
   locks: string[]
+  /** typefaces offered in the look editor: text and headings, the first one is the theme's default */
+  fonts: { text: string[]; head: string[] }
+}
+
+/** the theme's own starting look (its typefaces); the player's changes are stored on top of it */
+export function lookDefaults(theme: TvTheme): LookValues {
+  return { font: theme.fonts.text[0], font_head: theme.fonts.head[0] }
 }
 
 export const DEFAULT_THEME = 'emustart'
@@ -52,7 +59,8 @@ export const THEMES: TvTheme[] = [
     name: 'EmuStart',
     description: 'Wygląd EmuStart: lista tytułów, okładka i zrzut obok. Kolory i rozmiary z edytora „Wygląd”.',
     games: { layout: 'list' },
-    locks: []
+    locks: [],
+    fonts: { text: ['segoe', 'atkinson', 'manrope', 'bricolage'], head: ['segoe', 'atkinson', 'manrope', 'bricolage'] }
   },
   {
     id: 'fantasy',
@@ -70,7 +78,8 @@ export const THEMES: TvTheme[] = [
     games: { layout: 'list' },
     logoTint: true,
     ambient: 'embers',
-    locks: ['accent', 'bg']
+    locks: ['accent', 'bg'],
+    fonts: { text: ['alegreya', 'atkinson', 'segoe'], head: ['cinzel', 'alegreya', 'atkinson'] }
   },
   {
     id: 'sf',
@@ -89,7 +98,8 @@ export const THEMES: TvTheme[] = [
     logoTint: true,
     ambient: 'stars',
     // the list's sizes and the title logos do not apply to the cover ribbon
-    locks: ['accent', 'bg', 'row', 'list_w', 'media_h', 'tlogo', 'tlogo_w', 'games_logo']
+    locks: ['accent', 'bg', 'row', 'list_w', 'media_h', 'tlogo', 'tlogo_w', 'games_logo'],
+    fonts: { text: ['exo2', 'atkinson', 'segoe'], head: ['oxanium', 'exo2', 'atkinson'] }
   }
 ]
 
@@ -112,9 +122,16 @@ export function themeStyle(theme: TvTheme): Record<string, string> {
   }
 }
 
-/** The look editor's rows without the keys the theme locks (and without headings left empty). */
+/**
+ * The look editor's rows for a theme: without the keys it locks (and headings left empty), the font
+ * rows offering only the theme's typefaces with its own default.
+ */
 export function lookSpecFor(theme: TvTheme): LookRow[] {
-  const rows = LOOK_SPEC.filter((r) => !('k' in r) || !theme.locks.includes(r.k))
+  const rows = LOOK_SPEC.filter((r) => !('k' in r) || !theme.locks.includes(r.k)).map((r): LookRow => {
+    if (!('k' in r) || (r.k !== 'font' && r.k !== 'font_head')) return r
+    const opts = r.k === 'font' ? theme.fonts.text : theme.fonts.head
+    return { ...(r as LookChoice), opts, def: opts[0] }
+  })
   return rows.filter((r, i) => 'k' in r || (i + 1 < rows.length && 'k' in rows[i + 1]))
 }
 

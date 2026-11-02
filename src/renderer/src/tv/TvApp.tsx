@@ -7,14 +7,15 @@ import { TvSystems } from './TvSystems'
 import { TvGames } from './TvGames'
 import { useTvSystems } from './data'
 import { loginFlow, logoutFlow } from '../lib/account'
-import { lookStyle, useLook } from './look'
+import { lookStyle, setLook, useEngineLook, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
 import { TvThemes } from './TvThemes'
-import { lookSpecFor, themeById, themeStyle } from './themes'
+import { DEFAULT_THEME, lookDefaults, lookSpecFor, themeById, themeStyle } from './themes'
 import '@fontsource-variable/cinzel'
 import '@fontsource-variable/alegreya'
 import '@fontsource-variable/oxanium'
 import '@fontsource-variable/exo-2'
+import '@fontsource-variable/atkinson-hyperlegible-next'
 import './theme-css/fantasy.css'
 import './theme-css/sf.css'
 import { Icon } from '../components/Icon'
@@ -37,6 +38,16 @@ export function TvApp() {
   const savedTheme = useStore((s) => s.settings?.tvTheme)
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
   const theme = themeById(previewTheme ?? savedTheme)
+  // each theme has its own look: the EmuStart theme EmuStart's stored one (+ Lumen's own keys),
+  // the others theirs from Lumen's settings — picked whenever the theme changes (the editor, while
+  // open, owns the values)
+  const engineLook = useEngineLook()
+  const themeLooks = useStore((s) => s.settings?.tvLooks)
+  useEffect(() => {
+    if (lookEd) return
+    const own = themeLooks?.[theme.id] ?? {}
+    setLook(theme.id === DEFAULT_THEME ? { ...engineLook, ...own } : own)
+  }, [theme.id, engineLook, themeLooks, lookEd])
   const selection = useStore((s) => s.detailsId)
   useLookSync()
   const look = useLook()
@@ -55,7 +66,7 @@ export function TvApp() {
 
   const sys = systems[sysIdx]
   return (
-    <div className="tv" data-theme={theme.id} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look), ...themeStyle(theme) } as CSSProperties}>
+    <div className="tv" data-theme={theme.id} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look, lookDefaults(theme)), ...themeStyle(theme) } as CSSProperties}>
       {theme.ambient && <div className={`tv-ambient tv-ambient--${theme.ambient}`} aria-hidden="true" />}
       <TvTopBar />
       {screen === 'systems' && (
@@ -112,6 +123,7 @@ export function TvApp() {
       {lookEd && (
         <TvLook
           spec={lookSpecFor(theme)}
+          theme={theme}
           onClose={() => setLookEd(false)}
           previewLabel={screen === 'games' ? 'systemy' : 'gry'}
           onPreview={() => setScreen((s) => (s === 'games' || !sys ? 'systems' : 'games'))}

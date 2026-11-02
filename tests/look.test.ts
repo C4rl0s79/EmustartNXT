@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { toEngineSettings } from '../src/main/emustart/ipc'
-import { LOOK_ITEMS, carouselGap, isChoice, isRange, isSetting, lookFromEngine, lookStyle, lookToSave, rangeValue, stepLook, type LookChoice, type LookRange } from '../src/renderer/src/tv/look'
+import { LOOK_ITEMS, carouselGap, isChoice, isLumenOnly, isRange, isSetting, lookFromEngine, lookOverrides, lookStyle, lookToSave, rangeValue, stepLook, type LookChoice, type LookRange } from '../src/renderer/src/tv/look'
 
 const item = <T>(k: string): T => LOOK_ITEMS.find((i) => i.k === k) as T
 
@@ -11,8 +11,10 @@ describe('TV look editor (EmuStart look.js in Lumen)', () => {
     const js = readFileSync(resolve(import.meta.dirname, '../engine/web/look.js'), 'utf8')
     const engine = new Map<string, string>()
     for (const m of js.matchAll(/\{ k: "(\w+)"[^\n]*/g)) engine.set(m[1], m[0])
-    expect([...engine.keys()]).toEqual(LOOK_ITEMS.map((i) => i.k))
-    for (const it of LOOK_ITEMS) {
+    // Lumen's own keys (typefaces) are not EmuStart's and are never saved into its look
+    const shared = LOOK_ITEMS.filter((i) => !isLumenOnly(i))
+    expect([...engine.keys()]).toEqual(shared.map((i) => i.k))
+    for (const it of shared) {
       const line = engine.get(it.k)!
       if (isRange(it)) {
         for (const f of ['min', 'max', 'step', 'def'] as const) expect(line, `${it.k}.${f}`).toMatch(new RegExp(`\\b${f}: ${it[f]},`))
@@ -67,5 +69,16 @@ describe('TV look editor (EmuStart look.js in Lumen)', () => {
     expect(LOOK_ITEMS.filter(isSetting).map((i) => i.setting)).toEqual(['gamesLogo', 'lookScope'])
     expect(toEngineSettings({ lookScope: 'machine' })).toEqual({ look_scope: 'machine' })
     expect(toEngineSettings({ lookScope: 'x' as never })).toEqual({})
+  })
+
+  it('typefaces are Lumen-only: never in the EmuStart look, kept per theme over the theme defaults', () => {
+    expect(lookToSave({ font: 'atkinson', fs: 120 })).toEqual({ fs: 120 })
+    // only what differs from the theme's defaults is stored
+    expect(lookOverrides({ font: 'alegreya', fs: 120 }, { font: 'alegreya', font_head: 'cinzel' })).toEqual({ fs: 120 })
+    expect(lookOverrides({ font: 'atkinson', fs: 120 }, { font: 'alegreya' }, true)).toEqual({ font: 'atkinson' })
+    const s = lookStyle({}, { font: 'alegreya', font_head: 'cinzel' })
+    expect(s['--tv-font']).toContain('Alegreya')
+    expect(s['--tv-font-head']).toContain('Cinzel')
+    expect(lookStyle({ font: 'atkinson' }, { font: 'alegreya' })['--tv-font']).toContain('Atkinson')
   })
 })

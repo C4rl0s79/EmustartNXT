@@ -19,8 +19,26 @@ const defaults = (): StoredSettings => ({
   regionOrder: 'europe',
   emustartEnabled: true,
   language: 'polish',
-  tvTheme: 'emustart'
+  tvTheme: 'emustart',
+  tvLooks: {}
 })
+
+/** per-theme looks: theme id → { key: number | short string } — anything else is dropped */
+function cleanLooks(v: unknown): Record<string, Record<string, number | string>> {
+  const out: Record<string, Record<string, number | string>> = {}
+  if (!v || typeof v !== 'object') return out
+  for (const [id, look] of Object.entries(v as Record<string, unknown>).slice(0, 20)) {
+    if (!/^[a-z0-9-]{1,40}$/.test(id) || !look || typeof look !== 'object') continue
+    const clean: Record<string, number | string> = {}
+    for (const [k, x] of Object.entries(look as Record<string, unknown>).slice(0, 60)) {
+      if (!/^[a-z_]{1,20}$/.test(k)) continue
+      if (typeof x === 'number' && Number.isFinite(x)) clean[k] = x
+      else if (typeof x === 'string' && x.length <= 40) clean[k] = x
+    }
+    out[id] = clean
+  }
+  return out
+}
 
 const cleanPath = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() && v.length < 1024 ? v.trim() : undefined)
 
@@ -43,7 +61,8 @@ function migrate(raw: unknown): StoredSettings {
     emustartEnabled: r.emustartEnabled !== false,
     emustartHome: cleanPath(r.emustartHome),
     pythonPath: cleanPath(r.pythonPath),
-    tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart'
+    tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart',
+    tvLooks: cleanLooks(r.tvLooks)
   }
 }
 

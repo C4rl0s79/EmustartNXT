@@ -12,7 +12,16 @@ wspólny z samodzielnym EmuStart i motyw go nie zmienia.
 | 1. Paleta | `src/renderer/src/tv/themes.ts` → `palette` | kolory jako zmienne CSS na `.tv`; kontrast pilnują testy |
 | 2. Warianty | `themes.ts` → `games.layout`, `games.reflection`, `ambient`, `logoTint` | przetestowane układy: lista (`list`) albo wstęga okładek (`coverflow`), odbicie, ruchome tło (`embers`, `stars`), logo platform przemalowane na barwę motywu (`--tv-logo-fill`) |
 | 3. Arkusz motywu | `src/renderer/src/tv/theme-css/<id>.css` | własne style, zawsze w zakresie `.tv[data-theme='<id>']`; tylko motywy wbudowane |
-| Edytor „Wygląd” | `look.ts`, `TvLook.tsx` | działa pod każdym motywem; klucze z `locks` motywu są w nim ukryte, żeby nie było ustawień, które nic nie robią |
+| Edytor „Wygląd” | `look.ts`, `TvLook.tsx` | **osobny dla każdego motywu**; klucze z `locks` motywu są w nim ukryte, żeby nie było ustawień, które nic nie robią |
+
+## Wygląd per motyw i czcionki
+
+- Każdy motyw ma własny „Wygląd”: rozmiary, czcionki, wysokości. Zmiana w Kronice nie dotyka EmuStart ani Horyzontu.
+  - **EmuStart:** zapisuje się jak dotąd we wspólnym „Wyglądzie” z samodzielnym EmuStart. W ustawieniach Lumen (`Settings.tvLooks.emustart`) zapisują się tylko klucze Lumena, czyli czcionki, bo EmuStart ich nie zna.
+  - **Pozostałe motywy:** zapisują cały wygląd w `Settings.tvLooks.<id>`. Zapisane jest tylko to, co różni się od ustawień domyślnych motywu.
+- **„Czcionka tekstu” i „Czcionka nagłówków”:** każdy motyw oferuje swoją listę krojów (`themes.ts` → `fonts`, pierwszy jest domyślny), a w każdej jest Atkinson Hyperlegible, krój zaprojektowany dla najlepszej czytelności. Wszystkie kroje są wbudowane (`look.ts` → `FONTS`).
+- **Jeden wzór rozmiaru** dla wszystkich motywów: `clamp(14px, 1,6vh, 48px)` × „Cały interfejs”.
+- **Wyrównana wysokość małych liter** (`font-size-adjust: 0.52`): ta sama wielkość daje podobnie duży tekst w Segoe, Alegrei czy Exo 2. Nagłówki zachowują proporcje swojego kroju.
 
 ## Kontrakt (pad musi zawsze działać)
 
