@@ -15,3 +15,6 @@ LumenData/
 
 # local integration-test data (test server, test profiles)
 .lumen-test/
+
+# Graphify context folder
+graphify-out/
