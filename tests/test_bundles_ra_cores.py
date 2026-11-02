@@ -245,8 +245,13 @@ def test_core_defaults_once_in_the_file_retroarch_reads(env, tmp_path):
     assert 'reicast_per_content_vmus = "VMU A1"' in text and 'pcsx2_shared_memory_cards = "disabled"' in text
     assert 'reicast_internal_resolution = "1280x960"' in text           # pozostałe opcje gracza zostają
     (home / "retroarch-core-options.cfg").write_text('reicast_per_content_vmus = "disabled"\n')
-    a.core_defaults()                                                     # raz: zmiana gracza zostaje
-    assert (home / "retroarch-core-options.cfg").read_text() == 'reicast_per_content_vmus = "disabled"\n'
+    a.core_defaults()                                  # wybór gracza zostaje, brakująca opcja LRPS2 wraca
+    assert (home / "retroarch-core-options.cfg").read_text() == ('pcsx2_shared_memory_cards = "disabled"\n'
+                                                                 'reicast_per_content_vmus = "disabled"\n')
+    # plik opcji innego gracza (bez opcji EmuStart) — opcje dopisane znowu, bez znacznika „raz na komputer”
+    (home / "retroarch-core-options.cfg").write_text('reicast_internal_resolution = "640x480"\n')
+    a.core_defaults()
+    assert 'reicast_per_content_vmus = "VMU A1"' in (home / "retroarch-core-options.cfg").read_text()
 
 
 def test_core_defaults_per_core_file_when_it_exists(env, tmp_path):
@@ -332,7 +337,7 @@ def test_xenia_saves_reach_other_device_with_other_profile(net):
 
 
 def test_xenia_profile_of_one_player_on_shared_device(env, tmp_path):
-    """content\ Xenii nie jest rozdzielony na graczy: profil (XUID) należy do pierwszego gracza, który go użył —
+    """content\\ Xenii nie jest rozdzielony na graczy: profil (XUID) należy do pierwszego gracza, który go użył —
     inny gracz na tym urządzeniu nie dostaje paczki (nie nadpisze cudzych zapisów), dopóki nie ma własnego profilu."""
     _a, _c, _r, b = xenia(tmp_path / "RetroArch", tmp_path)
     assert savebundles.xenia_claim(b, 1) == b
@@ -381,6 +386,69 @@ def test_emuprofiles_from_device(net):
     st = syncclient.emu_profiles(cfgs[PC], PC)
     assert [p["xuid"] for p in st["xenia_edge"]["reported"]] == ["E030000000983487"]
     assert st["xenia_edge"]["pinned"] == ""
+
+
+# ── content\ Xenii osobno dla każdego gracza (dowiązanie do folderu gracza), aktualizacje i DLC wspólne ──
+
+SHARED = savebundles.XENIA_SHARED
+
+
+def _players(tmp_path, monkeypatch):
+    from emustart import profiles
+    monkeypatch.setattr(profiles, "LOCAL", tmp_path / "profiles")
+    return profiles, profiles.first_id(), profiles.create("Ola")["id"]
+
+
+def _x360(a, rom):
+    return [b for b in savebundles.for_game(a, "xenia_edge", rom, X360) if b.kind == "memcards"]
+
+
+def test_xenia_content_is_per_player_updates_shared(env, tmp_path, monkeypatch):
+    profiles, first, ola = _players(tmp_path, monkeypatch)
+    a, content, rom, _b = xenia(tmp_path / "RetroArch", tmp_path)
+    _write(content / SHARED / "4B4E0842" / "000B0000" / "tu.bin", b"TU")
+    savebundles.xenia_attach(a, ola)
+    # profil sprzed rozdzielenia (bez zapisanego właściciela) → pierwszy profil; Ola zaczyna bez profilu Xboksa
+    mine = profiles.local_dir(ola, "xenia_edge", "content")
+    assert profiles._is_junction(content) and profiles._same(profiles._junction_target(content), mine)
+    assert savebundles.xenia_xuids(content) == [] and _x360(a, rom) == []
+    assert (content / SHARED / "4B4E0842" / "000B0000" / "tu.bin").read_bytes() == b"TU"    # aktualizacje wspólne
+    assert (profiles.local_dir(first, "xenia_edge", "content") / "E030000000983487" / "FFFE07D1").is_dir()
+    # Ola: profil założony w rdzeniu, DLC pobrane w grze — DLC trafia do wspólnego folderu
+    _write(content / "E0300000AAAABBBB" / "FFFE07D1" / "00010000" / "E0300000AAAABBBB" / "Account", b"OLA")
+    _write(content / SHARED / "4B4E0842" / "00000002" / "dlc.bin", b"DLC")
+    savebundles.xenia_attach(a, first)
+    assert savebundles.xenia_xuids(content) == ["E030000000983487"]
+    assert (content / SHARED / "4B4E0842" / "00000002" / "dlc.bin").read_bytes() == b"DLC"
+    [b] = _x360(a, rom)
+    assert savebundles.xenia_claim([b], first) == [b]
+    savebundles.xenia_attach(a, first)                                     # ponownie — bez zmian
+    assert savebundles.xenia_xuids(content) == ["E030000000983487"]
+    savebundles.xenia_attach(a, ola)
+    assert savebundles.xenia_xuids(content) == ["E0300000AAAABBBB"] and len(_x360(a, rom)) == 1
+
+
+def test_xenia_split_gives_profile_to_its_recorded_owner(env, tmp_path, monkeypatch):
+    profiles, first, ola = _players(tmp_path, monkeypatch)
+    a, content, _rom, [b] = xenia(tmp_path / "RetroArch", tmp_path)
+    assert savebundles.xenia_claim([b], ola) == [b]                        # Ola grała z tego profilu wcześniej
+    savebundles.xenia_attach(a, first)
+    assert savebundles.xenia_xuids(content) == []
+    assert (profiles.local_dir(ola, "xenia_edge", "content") / "E030000000983487" / "FFFE07D1").is_dir()
+
+
+def test_xenia_pinned_profile_moves_to_the_player(env, tmp_path, monkeypatch):
+    profiles, first, ola = _players(tmp_path, monkeypatch)
+    a, content, rom, _b = xenia(tmp_path / "RetroArch", tmp_path)
+    savebundles.xenia_attach(a, first)
+    [b] = _x360(a, rom)
+    assert savebundles.xenia_claim([b], first) == [b]
+    savebundles.xenia_attach(a, ola, pinned="E030000000983487")            # panel serwera: profil Oli
+    assert savebundles.xenia_xuids(content) == ["E030000000983487"]
+    assert not (profiles.local_dir(first, "xenia_edge", "content") / "E030000000983487").exists()
+    [b] = _x360(a, rom)
+    assert savebundles.xenia_claim([b], ola) == [b]                        # folder gracza — jego, mimo starej mapy
+    assert savebundles.xenia_claim([b], ola, claim=False) == [b]
 
 
 def test_xenia_claim_leaves_other_objects(env):
