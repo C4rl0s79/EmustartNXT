@@ -370,6 +370,12 @@ class Session:
             if save_names:
                 profiles.unlock(self.cfg, self.profile_id)
             raise
+        if adapter.family == "retroarch":
+            try:   # osobna karta dla każdej gry (Flycast, LRPS2); pierwsza — kopia wspólnej z system\
+                adapter.core_defaults()
+                savebundles.seed_from_shared(adapter, savebundles.core_id(args), Path(rom), ps2_info(self.cfg, g))
+            except Exception:
+                log.exception("karta gry")
         self._t_prof = time.monotonic() - t_prof
         try:
             adapter.keyboard_game = systems.info(g["es"])["plat"] in systems.COMPUTER_PLATS
@@ -572,6 +578,13 @@ class Session:
         self._sync_bundles, self._sync_skip = [], set()
         try:
             bundles = savebundles.for_game(adapter, savebundles.core_id(args), Path(rom), ps2_info(self.cfg, g))
+            pinned = ""
+            if any(b.core_id == "xenia_edge" for b in bundles):
+                try:   # profil Xenii przypięty graczowi w panelu serwera
+                    pinned = (syncclient.emu_profiles(self.cfg, self.profile_id).get("xenia_edge") or {}).get("pinned", "")
+                except Exception as ex:
+                    log.info("profile emulatorów z serwera: %s", ex)
+            bundles = savebundles.xenia_claim(bundles, self.profile_id, pinned)   # profil Xenii — jednego gracza
             for b in bundles:
                 b.adopt_names()                     # nazwy od pliku, który uruchomi emulator
         except Exception:
@@ -596,6 +609,11 @@ class Session:
                 self._sync_skip = {c.bundle.key for c in res.conflicts}
         elif res.offline:
             self.notice = "Zapisy bez synchronizacji z serwerem — wyślę je, gdy wróci połączenie."
+        try:   # nazwy zapisów poznawane po grze (Flycast, PUAE): stan po pobraniu, przed grą
+            savebundles.remember_downloaded(bundles)
+            savebundles.learn_snapshot(bundles)
+        except Exception:
+            log.exception("nazwy zapisów przed grą")
         self.message = ""
 
     def _ask_conflict(self, conflicts: list) -> str:
@@ -618,6 +636,16 @@ class Session:
         for b in bundles:                           # stan PS2 zapisany pierwszy raz — poznany przedrostek
             if (b.emulator_id, b.kind) == ("pcsx2", "states"):
                 b.names = savebundles.ps2_prefixes(ps2_info(self.cfg, g))
+        try:   # karta / podfolder zapisany pierwszy raz w tej grze — poznana nazwa (Flycast, PUAE)
+            savebundles.learn_after(bundles)
+        except Exception:
+            log.exception("nazwy zapisów po grze")
+        xuids = sorted({b.folder.name for b in bundles if b.core_id == "xenia_edge"})
+        if xuids:
+            try:   # profil Xenii, z którego grał gracz → serwer (przypięcie w panelu)
+                syncclient.emu_report(self.cfg, self.profile_id, "xenia_edge", xuids)
+            except Exception as ex:
+                log.info("profile emulatorów na serwer: %s", ex)
         try:
             syncclient.after(self.cfg, self.profile_id, bundles, g, getattr(self, "_sync_skip", set()))
         except Exception:
