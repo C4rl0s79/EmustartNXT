@@ -9,7 +9,7 @@
   --line: rgba(255, 255, 255, 0.08);
   --text: #eef0f5;
   --text-2: #a9afbe;
-  --text-3: #6f7686;
+  --text-3: #8d94a5;
   --accent: #ffc56b;
   --accent-2: #ff9f5a;
   --accent-ink: #1d1406;
@@ -21,6 +21,7 @@
   --fs: clamp(14px, 0.95vw, 22px);
   --poster-w: clamp(132px, 10.2vw, 260px);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --hints-h: clamp(44px, 4.6vh, 64px);
   color-scheme: dark;
 }
 
@@ -188,6 +189,9 @@ button {
   background: var(--ok);
   box-shadow: 0 0 8px var(--ok);
 }
+.pill--steam.is-warn i {
+  background: var(--accent);
+}
 .pill--steam.is-notInstalled i {
   background: var(--danger);
 }
@@ -225,14 +229,26 @@ button {
   left: 0;
   right: 0;
   bottom: 0;
+  height: var(--hints-h);
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 26px;
-  padding: 12px var(--pad-x) 16px;
-  background: linear-gradient(transparent, rgba(5, 6, 9, 0.85) 55%);
-  color: var(--text-2);
+  gap: 28px;
+  padding: 0 var(--pad-x);
+  /* its own band: content scrolls behind a solid edge instead of under the labels */
+  background: rgba(8, 10, 14, 0.94);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  color: var(--text);
   font-size: 0.86em;
+  font-weight: 600;
   pointer-events: none;
+}
+:root[data-hints] .screens {
+  margin-bottom: var(--hints-h);
+}
+:root[data-hints] .details {
+  bottom: var(--hints-h);
 }
 .hints--empty {
   display: none;
@@ -505,9 +521,32 @@ button {
 .poster__fav {
   position: absolute;
   right: 8px;
-  top: 6px;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 50%;
+  background: rgba(10, 12, 17, 0.78);
   color: var(--accent);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  font-size: 0.85em;
+}
+/* the game's name inside the frame, under the art: shown while the image loads or when there is none */
+.poster__name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 12%;
+  font-weight: 750;
+  line-height: 1.2;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), transparent 60%);
+}
+.poster__frame .art,
+.poster__frame .art-placeholder {
+  position: relative;
 }
 .poster__cloud {
   position: absolute;
@@ -661,7 +700,8 @@ button {
   mask-image: linear-gradient(180deg, transparent 0, #000 3vh);
 }
 .home__spacer {
-  height: 22vh;
+  /* room to scroll the last row clear of the hints band */
+  height: 8vh;
 }
 .row {
   margin-bottom: clamp(16px, 2vh, 36px);
@@ -1501,8 +1541,10 @@ p.card__desc[data-nav]:focus {
   white-space: nowrap;
 }
 .tab--settings {
+  display: inline-grid;
+  place-items: center;
   font-size: 1.15em;
-  padding-inline: 0.75em;
+  padding: 0.45em 0.6em;
 }
 .topbar__status {
   flex: 0 0 auto;
@@ -1529,7 +1571,8 @@ p.card__desc[data-nav]:focus {
   letter-spacing: -0.01em;
 }
 .group__count {
-  color: var(--text-3);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
 .group__filters {
   margin: -4px 0 10px;
@@ -1576,17 +1619,22 @@ p.card__desc[data-nav]:focus {
   width: 100%;
 }
 
-/* titles under posters only for the focused one (the art carries the name) */
+/* every poster carries its name: many covers are only a logo or a photo, and art may be missing */
 .grid .poster__label,
 .grid-static .poster__label {
-  opacity: 0;
+  opacity: 1;
+  color: var(--text-2);
 }
 .grid .poster:focus .poster__label,
 .grid-static .poster:focus .poster__label,
 .grid .poster:hover .poster__label,
 .grid-static .poster:hover .poster__label {
-  opacity: 1;
   color: var(--text);
+}
+.grid .poster:focus .poster__label,
+.grid-static .poster:focus .poster__label {
+  /* the focused frame grows by 7% — keep its title clear of the scaled edge */
+  translate: 0 0.35em;
 }
 
 /* facts column on the right edge sits over the brightest part of hero art — give it a backing */
@@ -1822,8 +1870,10 @@ p.card__desc[data-nav]:focus {
   color: var(--accent-ink);
 }
 .picker__icon {
+  display: inline-grid;
+  place-items: center;
   width: 1.4em;
-  text-align: center;
+  color: var(--text-2);
 }
 .picker__name {
   flex: 1;
@@ -1842,6 +1892,9 @@ p.card__desc[data-nav]:focus {
 
 /* multi-disc EmuStart game: number of discs in the set */
 .poster__discs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   position: absolute;
   left: 8px;
   bottom: 8px;
@@ -2250,4 +2303,58 @@ p.card__desc[data-nav]:focus {
 .pads__prompt {
   font-size: 1.4em;
   letter-spacing: 0;
+}
+
+/* ---------- icons ---------- */
+.icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  vertical-align: -0.125em;
+}
+.icon--accent {
+  color: var(--accent);
+}
+.btn:focus .icon--accent {
+  color: inherit;
+}
+.toolbar__icon .icon {
+  display: block;
+}
+.pill--mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+/* ---------- start: the featured game's main action ---------- */
+.btn--quick {
+  pointer-events: auto;
+  margin-top: 1.1em;
+  min-width: 0;
+  padding: 0.6em 1.4em;
+  font-size: 1em;
+  box-shadow: 0 8px 28px rgba(255, 159, 90, 0.22);
+}
+.btn--quick .glyph {
+  font-size: 0.75em;
+  color: var(--accent-ink);
+  border-color: rgba(29, 20, 6, 0.4);
+  background: rgba(255, 255, 255, 0.35);
+}
+.btn--quick:hover {
+  background: linear-gradient(120deg, #ffe0a8, var(--accent));
+}
+
+/* the top bar sits over hero art of any brightness: status and tabs get their own backing */
+.topbar__status .pill {
+  background: rgba(10, 12, 17, 0.72);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+}
+.topbar__status .clock {
+  padding: 0.2em 0.6em;
+  border-radius: 999px;
+  background: rgba(10, 12, 17, 0.72);
+  backdrop-filter: blur(10px);
 }

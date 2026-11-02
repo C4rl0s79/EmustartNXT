@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { Game } from '@shared/types'
 import { Art } from './Art'
+import { Icon } from './Icon'
 import { isBusy, versionCountLabel } from '../lib/format'
 
 interface Props {
@@ -24,6 +25,10 @@ export const Poster = memo(function Poster({ game, favorite, onOpen, onFocusGame
       title={game.name}
     >
       <div className="poster__frame">
+        {/* under the art: the name stays readable while the image loads or when there is none */}
+        <span className="poster__name" aria-hidden="true">
+          {game.name}
+        </span>
         <Art gameId={game.id} name={game.name} kind="grid" />
         <div className="poster__badges">
           {game.running && <span className="badge badge--live">W grze</span>}
@@ -32,10 +37,16 @@ export const Poster = memo(function Poster({ game, favorite, onOpen, onFocusGame
           {game.source === 'demo' && <span className="badge badge--demo">DEMO</span>}
           {game.emu?.versions && <span className="badge badge--versions">{versionCountLabel(game.emu.versions.length)}</span>}
         </div>
-        {favorite && <span className="poster__fav" aria-label="Ulubiona">★</span>}
+        {favorite && (
+          <span className="poster__fav" title="Ulubiona">
+            <Icon name="starFilled" />
+            <span className="sr-only">Ulubiona</span>
+          </span>
+        )}
         {game.emu && game.emu.discs > 1 && (
           <span className="poster__discs" aria-label={`${game.emu.discs} płyty`} title={`${game.emu.discs} płyty`}>
-            💿{game.emu.discs}
+            <Icon name="disc" />
+            {game.emu.discs}
           </span>
         )}
         {!game.installed && <span className="poster__cloud" aria-label="Niezainstalowana" />}

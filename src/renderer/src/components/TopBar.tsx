@@ -4,6 +4,7 @@ import { Glyph } from './Hints'
 import { JobsPill } from './Jobs'
 import { UpdatePill } from './Update'
 import { api } from '../store'
+import { Icon } from './Icon'
 
 function Clock() {
   const [now, setNow] = useState(() => new Date())
@@ -70,7 +71,14 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
             onClick={() => setTab(t)}
             title={label(t)}
           >
-            {t === 'settings' ? <span aria-label="Ustawienia">⚙</span> : label(t)}
+            {t === 'settings' ? (
+              <>
+                <Icon name="settings" />
+                <span className="sr-only">Ustawienia</span>
+              </>
+            ) : (
+              label(t)
+            )}
           </button>
         ))}
       </nav>
@@ -80,7 +88,7 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
         <UpdatePill />
         <JobsPill />
         {emuLabel && (
-          <span className={`pill pill--steam ${emuOk ? 'is-running' : 'is-notRunning'}`} title={emu?.message ?? emuLabel}>
+          <span className={`pill pill--steam ${emuOk ? 'is-running' : emu?.engine === 'starting' || emu?.server?.checking ? 'is-notRunning' : 'is-warn'}`} title={emu?.message ?? emuLabel}>
             <i />
             {emuLabel}
           </span>
@@ -90,7 +98,8 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
           {steamLabel}
         </span>
         <button className="pill pill--mode" tabIndex={-1} onClick={() => void api().ui.setMode('fullscreen')} title="Tryb pełnoekranowy (F10 · View+Start)">
-          ⛶ Tryb TV
+          <Icon name="tv" />
+          Tryb TV
         </button>
         <Clock />
       </div>

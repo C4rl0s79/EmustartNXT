@@ -3,12 +3,13 @@ import type { FsEntry, FsListing } from '@shared/types'
 import { api, useStore } from '../store'
 import { focusEl, focusFirst } from '../nav/engine'
 import { Modal } from '../components/Modal'
+import { Icon, type IconName } from '../components/Icon'
 
 // Folder / file picker operated with a gamepad alone (the Windows dialog needs a mouse):
 // D-pad / stick — move, A — open / choose, B — up one level (closes on the first page),
 // X — choose the folder you are in. Keyboard and mouse work the same way.
 
-const ICON: Record<FsEntry['kind'], string> = { place: '★', drive: '💽', dir: '📁', file: '📄' }
+const ICON: Record<FsEntry['kind'], IconName> = { place: 'starFilled', drive: 'drive', dir: 'folder', file: 'file' }
 
 export function PathPicker() {
   const req = useStore((s) => s.picker)
@@ -91,7 +92,7 @@ function PickerDialog() {
         {listing?.entries.map((e) => (
           <button key={e.path} className={`picker__row picker__row--${e.kind}`} data-nav data-key={e.path} onClick={() => pick(e)} title={e.path}>
             <span className="picker__icon" aria-hidden>
-              {ICON[e.kind]}
+              <Icon name={ICON[e.kind]} />
             </span>
             <span className="picker__name">{e.name}</span>
             {e.note && <span className="picker__note">{e.note}</span>}

@@ -5,6 +5,10 @@ import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
 import { LibraryNotice } from '../components/LibraryNotice'
 import { PosterGridRows, toggleFavoriteOfFocused } from '../components/PosterGrid'
+import { Glyph } from '../components/Hints'
+import { Icon } from '../components/Icon'
+import { currentFocus } from '../nav/engine'
+import { usePrimaryAction, type PrimaryAction } from '../lib/primary'
 import { formatLastPlayed, formatPlaytime, STATE_LABEL } from '../lib/format'
 
 // Start: a featured game on top and two Steam-style poster grids — recently played and
@@ -38,17 +42,35 @@ export function HomeScreen({ active }: { active: boolean }) {
   // keep the spotlight in sync with live data (install state, running…)
   const spotGame = spot ? (snapshot.games.find((g) => g.id === spot.id) ?? null) : null
   const shown = spotGame ?? recent[0] ?? added[0] ?? null
+  // debounced, so fast movement through the grid doesn't thrash hero images or ask the engine
+  // about every game passed on the way
+  const settled = useSettled(shown, 160)
+  // the game's main action (Graj / Zainstaluj / Pobierz i graj…) — the same one as in its details
+  const { primary, busy } = usePrimaryAction(settled ?? undefined)
+  const canRun = !!primary?.run && !primary.disabled && !busy
 
   const onFocusGame = useCallback((g: Game) => setSpot(g), [])
   const favs = useMemo(() => new Set(prefs.favorites), [prefs.favorites])
   const open = useCallback((g: Game) => openDetails(g.id), [openDetails])
 
+  // X / F: the main action of the focused game without opening its details
+  const runFocused = (): boolean => {
+    const id = currentFocus()?.dataset.key
+    if (!id || !snapshot.games.some((g) => g.id === id)) return false
+    // still moving (the action belongs to the previous game): open the details instead
+    if (id !== settled?.id) openDetails(id)
+    else if (canRun) void primary!.run!()
+    else openDetails(id)
+    return true
+  }
+
   useActions(
-    { x: toggleFavoriteOfFocused, rs: toggleFavoriteOfFocused },
+    { x: runFocused, rs: toggleFavoriteOfFocused },
     {
       enabled: active,
       hints: [
         { action: 'confirm', label: 'Otwórz' },
+        ...(canRun ? [{ action: 'x' as const, label: primary!.label }] : []),
         { action: 'rs', label: 'Ulubiona' },
         { action: 'y', label: 'Szukaj' },
         { action: 'rb', label: 'Grupy' },
@@ -59,7 +81,7 @@ export function HomeScreen({ active }: { active: boolean }) {
 
   return (
     <div className="home">
-      <Spotlight game={shown} />
+      <Spotlight game={settled} primary={canRun ? primary : null} />
       <div className="home__sections" data-scroll="center">
         <LibraryNotice compact />
         {snapshot.games.length === 0 && <EmptyLibrary />}
@@ -96,14 +118,18 @@ export function HomeScreen({ active }: { active: boolean }) {
   )
 }
 
-function Spotlight({ game }: { game: Game | null }) {
-  // debounce so fast movement through the grid doesn't thrash big hero images
-  const [shown, setShown] = useState(game)
+function useSettled<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value)
   useEffect(() => {
-    const t = setTimeout(() => setShown(game), 160)
+    const t = setTimeout(() => setV(value), ms)
     return () => clearTimeout(t)
-  }, [game])
+  }, [value, ms])
+  return v
+}
+
+function Spotlight({ game: shown, primary }: { game: Game | null; primary: PrimaryAction | null }) {
   const [logoOk, setLogoOk] = useState(true)
+  const inputMode = useStore((s) => s.inputMode)
   useEffect(() => setLogoOk(true), [shown?.id])
 
   if (!shown) return <div className="spotlight spotlight--empty" />
@@ -131,6 +157,14 @@ function Spotlight({ game }: { game: Game | null }) {
             <span key={m as string}>{m}</span>
           ))}
         </div>
+        {primary && (
+          // the mouse way to the same action as X / F; the pad and keyboard stay on the posters
+          <button className="btn btn--play btn--quick" tabIndex={-1} onClick={() => void primary.run?.()}>
+            {inputMode !== 'mouse' && <Glyph action="x" />}
+            {primary.label === 'Graj' && <Icon name="play" className="btn__icon" />}
+            {primary.label}
+          </button>
+        )}
       </div>
     </div>
   )

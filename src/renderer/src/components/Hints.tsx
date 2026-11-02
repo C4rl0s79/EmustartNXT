@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useHints, type Action } from '../nav/input'
 import { useStore } from '../store'
 
@@ -39,7 +40,13 @@ export function Glyph({ action }: { action: Action }) {
 export function HintsBar() {
   const hints = useHints()
   const mode = useStore((s) => s.inputMode)
-  if (mode === 'mouse' || !hints.length) return <div className="hints hints--empty" />
+  const shown = mode !== 'mouse' && hints.length > 0
+  // the bar has its own band at the bottom: screens make room for it instead of running under it
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-hints', shown)
+  }, [shown])
+  useEffect(() => () => document.documentElement.removeAttribute('data-hints'), [])
+  if (!shown) return <div className="hints hints--empty" />
   return (
     <div className="hints" aria-hidden="true">
       {hints.map((h) => (

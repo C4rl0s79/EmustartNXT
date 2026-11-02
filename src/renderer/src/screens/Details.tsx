@@ -5,6 +5,7 @@ import { api, attempt, steamCollectionsOf, useStore } from '../store'
 import { useActions } from '../nav/input'
 import { focusEl, focusFirst } from '../nav/engine'
 import { Art } from '../components/Art'
+import { Icon } from '../components/Icon'
 import { CategoryPicker } from '../modals/CategoryPicker'
 import { ArtPicker } from '../modals/ArtPicker'
 import { EmuSaves } from '../components/EmuSaves'
@@ -168,7 +169,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
               disabled={primary.disabled || busy}
               onClick={() => void primary.run?.()}
             >
-              {game.installed && !game.running && primary.label === 'Graj' && <span className="btn__icon">▶</span>}
+              {game.installed && !game.running && primary.label === 'Graj' && <Icon name="play" className="btn__icon" />}
               {primary.label}
             </button>
             {primary.note && <p className="details__note">{primary.note}</p>}
@@ -184,7 +185,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
 
         <div className="details__actions" data-nav-group="details-actions">
           <button className="btn" data-nav data-key="fav" onClick={toggleFav}>
-            {isFav ? '★ W ulubionych' : '☆ Do ulubionych'}
+            <Icon name={isFav ? 'starFilled' : 'star'} className={isFav ? 'icon--accent' : undefined} />
+            {isFav ? 'W ulubionych' : 'Do ulubionych'}
           </button>
           <button className="btn" data-nav data-key="cats" onClick={() => setModal('categories')}>
             Kategorie{myCats.length ? ` (${myCats.length})` : ''}
