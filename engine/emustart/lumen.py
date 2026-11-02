@@ -194,13 +194,17 @@ class LumenApi(api_mod.Api):
         emit({"type": "quit"})
 
     # ── biblioteka dla Lumen ──
-    def lumen_library(self) -> dict:
-        """Wszystkie widoczne gry wszystkich systemów (te same filtry co lista gier EmuStart)."""
+    def lumen_library(self, only: list | None = None) -> dict:
+        """Wszystkie widoczne gry wszystkich systemów (te same filtry co lista gier EmuStart).
+        `only` — gry tylko tych systemów (po grze / pobraniu: Lumen podmienia gry tych systemów);
+        lista systemów zawsze cała (liczby gier i pobranych)."""
         systems = self.list_systems()
         discs = disc_counts()
         lb = launchbox_ids()
         games = []
         for s in systems:
+            if only is not None and s["es"] not in only:
+                continue
             try:
                 rows = catalog.list_games(self._cfg, s["es"], self._profile)
             except Exception:
@@ -218,10 +222,13 @@ class LumenApi(api_mod.Api):
                     "players": r.get("players", ""), "discs": discs.get(r["id"], 1),
                     "lb": lb.get(r["id"], 0)})
         prof = profiles.get(self._profile) or {}
-        return {"systems": systems, "games": games, "lib_version": getattr(self, "_lib_version", 0),
-                "profile": {"id": prof.get("id"), "name": prof.get("name", "")},   # bez PIN-u / tokenu
-                "server": self._server_state(),
-                "configured": bool(self._cfg.get("emu_root")) or bool(self._cfg.get("server_key"))}
+        out = {"systems": systems, "games": games, "lib_version": getattr(self, "_lib_version", 0),
+               "profile": {"id": prof.get("id"), "name": prof.get("name", "")},   # bez PIN-u / tokenu
+               "server": self._server_state(),
+               "configured": bool(self._cfg.get("emu_root")) or bool(self._cfg.get("server_key"))}
+        if only is not None:
+            out["only"] = list(only)
+        return out
 
     def lumen_status(self) -> dict:
         """Kolejka zadań EmuStart: uruchamianie, pobieranie, emulatory, wysyłka zapisów."""

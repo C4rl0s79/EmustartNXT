@@ -3,7 +3,7 @@ import type { Game } from '../src/shared/types'
 import { emuArtField, emuDetails, emuGames, emuGameId, isEmuGameId, type EmuLibrary, type EmuLibraryRow } from '../src/main/emustart/mapping'
 import { emuJobs, steamJobs } from '../src/main/core/jobs'
 import { toEngineSettings, toOptions } from '../src/main/emustart/ipc'
-import type { EmuStatusRaw } from '../src/main/emustart/provider'
+import { libraryUpdate, mergeLibrary, type EmuStatusRaw } from '../src/main/emustart/provider'
 import { defaultPrefs, migratePrefs, ops } from '../src/main/store/prefs'
 import { isModeCombo } from '../src/shared/pad'
 import { gamesForCategory, storeGames } from '../src/renderer/src/store'
@@ -245,5 +245,43 @@ describe('save slots — state edit messages', () => {
     expect(stateEditMessage('renumber', 'game.state5', 5)).toBe('Teraz stan #5.')
     expect(stateEditMessage('move_slot', 'game.state1', 3)).toBe('Przeniesiono do slotu 3 (stan #1).')
     expect(stateEditMessage('restore', 'game.state2')).toBe('Przywrócono (stan #2).')
+  })
+})
+
+describe('library after a game or a download — only the systems concerned', () => {
+  const st = (o: Partial<EmuStatusRaw> = {}): EmuStatusRaw =>
+    ({ launch: { phase: 'idle' }, copies: [], install: null, emu_sync: null, post: '', conflicts: [],
+       scan: { running: false, text: '', done: 0, total: 0 }, server: null, lib_version: 1,
+       cache: { games: 1, bytes: 10, pinned: 0 }, ...o }) as EmuStatusRaw
+  const esOf = (id: number): string | undefined => ({ 1: 'snes', 2: 'nes' } as Record<number, string>)[id]
+
+  it('a finished game refreshes its system only', () => {
+    const prev = st({ launch: { phase: 'running', game_id: 1 } })
+    expect(libraryUpdate(prev, st({ launch: { phase: 'finished', game_id: 1 } }), esOf)).toEqual({ full: false, systems: ['snes'] })
+  })
+  it('a copy that starts or ends refreshes the systems of its games, a cache change with it too', () => {
+    const prev = st({ copies: [{ game_id: 2, title: '', done: 0, total: 1 }] })
+    const now = st({ copies: [], cache: { games: 2, bytes: 20, pinned: 0 } })
+    expect(libraryUpdate(prev, now, esOf)).toEqual({ full: false, systems: ['nes'] })
+  })
+  it('new server data, an unknown game or a cache change of no known game — the whole library', () => {
+    expect(libraryUpdate(st(), st({ lib_version: 2 }), esOf).full).toBe(true)
+    expect(libraryUpdate(st({ launch: { phase: 'running', game_id: 9 } }), st({ launch: { phase: 'finished', game_id: 9 } }), esOf).full).toBe(true)
+    expect(libraryUpdate(st(), st({ cache: { games: 0, bytes: 0, pinned: 0 } }), esOf).full).toBe(true)
+  })
+  it('nothing changed — nothing to fetch; first status — only games already being copied', () => {
+    expect(libraryUpdate(st(), st(), esOf)).toEqual({ full: false, systems: [] })
+    expect(libraryUpdate(null, st({ lib_version: 5 }), esOf)).toEqual({ full: false, systems: [] })
+    expect(libraryUpdate(null, st({ copies: [{ game_id: 2, title: '', done: 0, total: 1 }] }), esOf)).toEqual({ full: false, systems: ['nes'] })
+  })
+  it('a partial answer replaces the games of its systems and keeps the others in order', () => {
+    const base: EmuLibrary = {
+      ...lib([row({ id: 1, sid: 'a', es: 'snes' }), row({ id: 2, sid: 'b', es: 'nes' })]),
+      systems: [{ es: 'snes', display: 'SNES', games: 1, cached: 0, emulator: '' }, { es: 'nes', display: 'NES', games: 1, cached: 0, emulator: '' }]
+    }
+    const part = { ...base, games: [row({ id: 2, sid: 'b', es: 'nes', cached: true })], lib_version: 1, only: ['nes'] }
+    const out = mergeLibrary(base, part)
+    expect(out.games.map((g) => [g.id, g.cached])).toEqual([[1, false], [2, true]])
+    expect(out.systems).toBe(part.systems)
   })
 })

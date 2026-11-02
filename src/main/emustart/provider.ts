@@ -38,6 +38,49 @@ export interface EmuInstallStatus {
 const POLL_MS = 1500
 const EMPTY: EmuLibrary = { systems: [], games: [], lib_version: 0, server: null, configured: false }
 
+const ENDED = ['finished', 'error', 'cancelled', 'idle']
+
+/**
+ * What a status tick means for the library. A game that ended, a copy that started or ended: the
+ * systems of those games (the whole library is ~50k games). New server data (lib_version), a game
+ * not in the library, a cache change with no known game: everything. First tick: only games already
+ * being copied (the library was just loaded when the engine became ready, without their download mark).
+ */
+export function libraryUpdate(
+  prev: EmuStatusRaw | null,
+  st: EmuStatusRaw,
+  esOf: (engineId: number) => string | undefined
+): { full: boolean; systems: string[] } {
+  if (!prev) prev = { ...st, copies: [], launch: st.launch }
+  if (prev.lib_version !== st.lib_version) return { full: true, systems: [] }
+  const ids = new Set<number>()
+  const key = (s: EmuStatusRaw): string => s.copies.map((c) => c.game_id).sort().join(',')
+  if (key(prev) !== key(st)) for (const c of [...prev.copies, ...st.copies]) ids.add(c.game_id)
+  const phase = st.launch?.phase ?? 'idle'
+  if ((prev.launch?.phase ?? 'idle') !== phase && ENDED.includes(phase) && st.launch?.game_id) ids.add(st.launch.game_id)
+  const cacheChanged = JSON.stringify(prev.cache) !== JSON.stringify(st.cache)
+  if (cacheChanged && !ids.size) return { full: true, systems: [] }
+  const systems = new Set<string>()
+  for (const id of ids) {
+    const es = esOf(id)
+    if (!es) return { full: true, systems: [] }
+    systems.add(es)
+  }
+  return { full: false, systems: [...systems] }
+}
+
+/** The library with the games of `part.only` systems replaced (system order kept, as the engine sends it). */
+export function mergeLibrary(lib: EmuLibrary, part: EmuLibrary & { only?: string[] }): EmuLibrary {
+  const only = new Set(part.only ?? [])
+  const bySystem = new Map<string, EmuLibraryRow[]>()
+  for (const g of [...lib.games.filter((x) => !only.has(x.es)), ...part.games]) {
+    const list = bySystem.get(g.es)
+    if (list) list.push(g)
+    else bySystem.set(g.es, [g])
+  }
+  return { ...part, games: part.systems.flatMap((s) => bySystem.get(s.es) ?? []) }
+}
+
 /**
  * EmuStart side of the unified library: the server library as seen by the engine (it keeps its own
  * offline copy), plus the live job state. A copy of the last library is saved so the games stay
@@ -56,8 +99,6 @@ export class EmustartProvider extends EventEmitter {
   private status: EmuStatusRaw | null = null
   private pollTimer: NodeJS.Timeout | undefined
   private refreshing: Promise<void> | null = null
-  private copyingKey = ''
-  private lastLaunchPhase = 'idle'
   private cache: JsonFile<EmuLibrary>
 
   constructor(
@@ -189,17 +230,44 @@ export class EmustartProvider extends EventEmitter {
     this.emit('library')
   }
 
-  /** Re-reads the library from the engine (after server sync, downloads, a finished game). */
+  /** Re-reads the library from the engine (after server sync, settings, a new profile…). */
   refresh(): Promise<void> {
+    this.want.full = true
+    return this.drain()
+  }
+
+  /** Re-reads the games of some systems (a game ended, a download started or finished there). */
+  refreshSystems(systems: string[]): Promise<void> {
+    for (const es of systems) this.want.systems.add(es)
+    return this.drain()
+  }
+
+  private want = { full: false, systems: new Set<string>() }
+
+  /** One request at a time; what was asked meanwhile runs after it (a full read covers the systems). */
+  private drain(): Promise<void> {
     if (this.refreshing) return this.refreshing
     this.refreshing = (async () => {
       try {
-        const lib = await this.engine.call<EmuLibrary>('lumen_library', [], 120_000)
-        this.fromCache = false
-        this.setLib(lib)
-        await this.cache.save(lib)
-      } catch (e) {
-        log.warn('emustart', `library: ${(e as Error).message}`)
+        while (this.want.full || this.want.systems.size) {
+          const { full, systems } = this.want
+          this.want = { full: false, systems: new Set() }
+          try {
+            if (full) {
+              const lib = await this.engine.call<EmuLibrary>('lumen_library', [], 120_000)
+              this.fromCache = false
+              this.setLib(lib)
+              await this.cache.save(lib)          // offline copy: full reads only
+            } else {
+              const part = await this.engine.call<EmuLibrary & { only?: string[] }>('lumen_library', [[...systems]], 60_000)
+              // nothing (or only the offline copy) to merge into, or new server data meanwhile: read everything
+              if (this.fromCache || !this.lib.games.length || part.lib_version !== this.lib.lib_version) this.want.full = true
+              else this.setLib(mergeLibrary(this.lib, part))
+            }
+          } catch (e) {
+            log.warn('emustart', `library: ${(e as Error).message}`)
+          }
+        }
       } finally {
         this.refreshing = null
       }
@@ -212,20 +280,12 @@ export class EmustartProvider extends EventEmitter {
     const tick = async (): Promise<void> => {
       try {
         const st = await this.engine.call<EmuStatusRaw>('lumen_status', [], 10_000)
-        const prevVersion = this.status?.lib_version
-        const prevCache = this.status?.cache
+        const prev = this.status
         this.status = st
-        const key = st.copies.map((c) => c.game_id).sort().join(',')
-        const phase = st.launch?.phase ?? 'idle'
         // the library changed under us: new server data, a download finished, a game ended
-        const libChanged =
-          (prevVersion !== undefined && prevVersion !== st.lib_version) ||
-          (prevCache !== undefined && JSON.stringify(prevCache) !== JSON.stringify(st.cache))
-        const copiesChanged = key !== this.copyingKey
-        const launchEnded = this.lastLaunchPhase !== phase && ['finished', 'error', 'cancelled', 'idle'].includes(phase)
-        this.copyingKey = key
-        this.lastLaunchPhase = phase
-        if (libChanged || copiesChanged || launchEnded) void this.refresh()
+        const u = libraryUpdate(prev, st, (id) => this.rowByEngineId(id)?.es)
+        if (u.full) void this.refresh()
+        else if (u.systems.length) void this.refreshSystems(u.systems)
         this.emit('status', st)
       } catch (e) {
         log.warn('emustart', `status: ${(e as Error).message}`)

@@ -71,6 +71,28 @@ def test_library_has_stable_ids_and_no_secrets(monkeypatch):
     assert "pin_hash" not in json.dumps(lib) and "pin_token" not in json.dumps(lib)
 
 
+def test_library_of_some_systems_only(monkeypatch):
+    """Po grze / pobraniu Lumen pyta tylko o systemy tych gier: te same wiersze, lista systemów cała."""
+    api = _bare_api()
+    asked = []
+    monkeypatch.setattr(lumen.LumenApi, "list_systems", lambda self: [{"es": "snes", "display": "SNES"},
+                                                                      {"es": "nes", "display": "NES"}])
+    monkeypatch.setattr(lumen.LumenApi, "_server_state", lambda self: {"ok": True})
+
+    def games(cfg, es, prof):
+        asked.append(es)
+        return [{"id": 1 if es == "snes" else 2, "name": f"Gra {es}", "title": "Gra", "tags": "", "size": 1,
+                 "cached": 0, "pinned": 0, "last": 0, "seconds": 0, "favorite": 0}]
+    monkeypatch.setattr(lumen.catalog, "list_games", games)
+    monkeypatch.setattr(lumen.profiles, "get", lambda pid: {"id": 1, "name": "Gracz"})
+    full = api.lumen_library()
+    part = api.lumen_library(["snes"])
+    assert asked == ["snes", "nes", "snes"]
+    assert [g["es"] for g in part["games"]] == ["snes"] and part["games"][0] == full["games"][0]
+    assert [s["es"] for s in part["systems"]] == ["snes", "nes"] and part["only"] == ["snes"]
+    assert "only" not in full
+
+
 def test_conflicts_reach_both_interfaces():
     api = _bare_api()
     api._keep_conflicts([{"profile": "Gracz", "file": "a.srm"}])

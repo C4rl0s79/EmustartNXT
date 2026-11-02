@@ -100,7 +100,7 @@ małe i opisane w `engine/CHANGELOG.md`:
 | Plik | Zmiana | Wpływ na samodzielny EmuStart |
 |---|---|---|
 | `engine_main.py` (nowy) | start bez okna, handshake na stdout, koniec po zamknięciu stdin | brak |
-| `emustart/lumen.py` (nowy) | `LumenApi`: `lumen_library`, `lumen_status`, `lumen_readiness`, konflikty dla obu UI | brak |
+| `emustart/lumen.py` (nowy) | `LumenApi`: `lumen_library` (całość albo gry wybranych systemów — po grze / pobraniu), `lumen_status`, `lumen_readiness`, konflikty dla obu UI | brak |
 | `emustart/paths.py` | katalog danych z `EMUSTART_HOME` | brak (bez zmiennej jak dotąd) |
 | `emustart/server.py` | `/api` wymaga `X-Lumen-Token`, gdy ustawiono `ENGINE_TOKEN` | brak (domyślnie pusty) |
 | `web/index.html` | CSP: `img-src` także `lumen-art:` | brak |
