@@ -13,6 +13,7 @@ import { TvFilters } from './TvFilters'
 import { useRatings } from './ratings'
 import { activeParts, apply, loadFilter, saveFilter, type Filter } from './filters'
 import { useLook } from './look'
+import { listTop } from './listWindow'
 
 // Game list of one system (EmuStart look): titles on the left, cover | details | screenshot on the
 // right, the description below. The main action is the same as in the desktop details
@@ -68,7 +69,8 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
   const ratings = useRatings(system.games, filter.sort)
   const games = useMemo(() => apply(system.games, filter, isFav, ratings), [system.games, filter, favorites, ratings]) // eslint-disable-line react-hooks/exhaustive-deps
   const activeFilters = activeParts(filter, steam)
-  const [idx, setIdx] = useState(() => Math.max(0, system.games.findIndex((g) => g.id === opened)))
+  // the game selected on the desktop, found in the list as shown (filters and order applied)
+  const [idx, setIdx] = useState(() => Math.max(0, games.findIndex((g) => g.id === opened)))
   const sel = games[Math.min(idx, games.length - 1)]
   const { primary, busy } = usePrimaryAction(sel)
   const d = useDetails(sel)
@@ -93,9 +95,9 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     return () => ro.disconnect()
   }, [look, hasRows])
   useEffect(() => {
-    if (idx < top) setTop(idx)
-    else if (idx >= top + visible) setTop(idx - visible + 1)
-  }, [idx, top, visible])
+    const t = listTop(top, idx, visible, games.length)
+    if (t !== top) setTop(t)
+  }, [idx, top, visible, games.length])
   useEffect(() => {
     if (idx >= games.length) setIdx(Math.max(0, games.length - 1))
   }, [games.length, idx])
@@ -146,9 +148,8 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
         return true
       },
       y: () => {
-        // EmuStart games: game options (the same window as on the desktop); Steam: details
-        if (sel?.emu) setOptions(true)
-        else if (sel) useStore.getState().openDetails(sel.id)
+        // one "Opcje gry" window for EmuStart and Steam games (rows differ by what the game supports)
+        if (sel) setOptions(true)
         return true
       },
       ls: () => {
@@ -294,13 +295,25 @@ function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
   )
 }
 
-/** Marks an element "is-cut" while its content is taller than its box (the CSS fades the last line). */
-function useCutMark(): (el: HTMLDivElement | null) => void {
+/**
+ * A description longer than its box: marked "is-cut" (the CSS fades the last line) and, after a pause
+ * on the game, scrolled slowly to its end and back (tv.css: --tv-desc-d distance, --tv-desc-t time) —
+ * about two seconds per line, so it can be read from the couch without pressing anything.
+ */
+function useDescScroll(): (el: HTMLDivElement | null) => void {
   const [el, setEl] = useState<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!el) return
     const check = (): void => {
-      el.classList.toggle('is-cut', el.scrollHeight > el.clientHeight + 1)
+      const inner = el.firstElementChild as HTMLElement | null
+      const over = (inner?.scrollHeight ?? el.scrollHeight) - el.clientHeight
+      const cut = over > 1
+      el.classList.toggle('is-cut', cut)
+      if (!cut) return
+      const line = parseFloat(getComputedStyle(el).lineHeight) || 24
+      el.style.setProperty('--tv-desc-d', `${Math.ceil(over)}px`)
+      // the move takes 80% of one way (pauses at both ends), at ~2 s per line
+      el.style.setProperty('--tv-desc-t', `${Math.max(6, ((over / line) * 2) / 0.8).toFixed(1)}s`)
     }
     check()
     const ro = new ResizeObserver(check)
@@ -356,7 +369,7 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
     setSnapOk(true)
   }, [game.id])
   const d = dr?.ok ? dr.details : undefined
-  const descRef = useCutMark()
+  const descRef = useDescScroll()
   const desc = d?.descriptionText ? d.descriptionText.split(/\n+/) : d?.descriptionHtml ? htmlToParagraphs(d.descriptionHtml, 20) : d?.shortDescription ? [d.shortDescription] : []
   return (
     <div className="tv-preview" ref={fitH.ref} style={fitH.h ? { ['--tv-media-fit' as string]: `${fitH.h}px` } : undefined}>
@@ -384,10 +397,13 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
         )}
       </div>
       <div className="tv-desc" ref={descRef}>
-        {desc.slice(0, 20).map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-        {game.source !== 'emustart' && !desc.length && <p>Gra z biblioteki Steam.</p>}
+        {/* keyed by game: a new game starts its description from the top (and its scroll from the pause) */}
+        <div className="tv-desc__in" key={game.id}>
+          {desc.slice(0, 20).map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          {game.source !== 'emustart' && !desc.length && <p>Gra z biblioteki Steam.</p>}
+        </div>
       </div>
     </div>
   )

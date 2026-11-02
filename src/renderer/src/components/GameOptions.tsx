@@ -9,10 +9,13 @@ import { EmuSaves } from './EmuSaves'
 import { OnScreenKeyboard } from './TextField'
 import { ArtPicker } from '../modals/ArtPicker'
 import { Controllers } from './Controllers'
+import { CategoryPicker } from '../modals/CategoryPicker'
 
-// "Opcje gry" of an EmuStart game — one implementation for both layouts (TV: X on the list,
-// desktop: the details' "Opcje gry"), with EmuStart's pages: version (translation), emulator,
-// emulator settings (and their history), saves, metadata, art, keep / remove on this PC.
+// "Opcje gry" — one window for every game and both layouts (TV: Y on the list, desktop: the details'
+// "Opcje gry"). EmuStart games get EmuStart's pages: version (translation), emulator, emulator
+// settings (and their history), saves, metadata, art, keep / remove on this PC. Steam games and
+// shortcuts get the same window with what they support: play, favourite, categories, art,
+// controllers and the Steam client's own pages.
 
 type Page = 'main' | 'versions' | 'variants' | 'emus' | 'emuset' | 'meta'
 
@@ -52,6 +55,82 @@ function syncValue(o: EmuGameOptions): string {
 }
 
 export function GameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
+  return game.emu ? <EmuGameOptions game={game} onClose={onClose} /> : <LibraryGameOptions game={game} onClose={onClose} />
+}
+
+/** Steam games and non-Steam shortcuts: the same window and rows as an EmuStart game's options. */
+function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
+  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | null>(null)
+  const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
+  const cats = useStore((s) => s.prefs?.gameCategories[game.id]?.length ?? 0)
+  const engineReady = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
+  const { primary, busy } = usePrimaryAction(game)
+  const listRef = useRef<HTMLDivElement>(null)
+  const toast = useStore((s) => s.toast)
+  const steam = game.source === 'steam'
+
+  useEffect(() => {
+    const t = setTimeout(() => listRef.current && focusFirst(listRef.current), 0)
+    return () => clearTimeout(t)
+  }, [])
+
+  const steamPage = (view: 'details' | 'store' | 'downloads'): void =>
+    void attempt(api().game.openInSteam(game.id, view)).then((r) => r && !r.ok && toast(r.error ?? 'Nie udało się otworzyć Steam.', 'error'))
+
+  const rows: Row[] = [
+    {
+      label: primary?.label ?? 'Graj',
+      value: primary?.note,
+      act: () => {
+        onClose()
+        void primary?.run?.()
+      },
+      disabled: !primary?.run || primary.disabled || busy
+    },
+    { label: isFav ? '★ W ulubionych' : '☆ Do ulubionych', act: () => void attempt(api().prefs.toggleFavorite(game.id)) },
+    { label: 'Kategorie', value: cats ? `${cats} ${plural(cats, 'kategoria', 'kategorie', 'kategorii')}` : 'przypisz do grup', act: () => setSub('categories') },
+    { label: 'Grafiki', value: 'plakat, tło, logo · SteamGridDB', act: () => setSub('art') },
+    ...(steam && game.appId && engineReady ? [{ label: 'Kontrolery', value: 'kolejność graczy, ukryte w tej grze', act: () => setSub('pads') }] : []),
+    ...(steam
+      ? [
+          ...(game.installState === 'installing' || game.installState === 'updating' || game.installState === 'updatePaused'
+            ? [{ label: 'Pokaż pobieranie w Steam', act: () => steamPage('downloads') }]
+            : []),
+          { label: 'Otwórz w Steam', value: 'strona gry w kliencie Steam', act: () => steamPage('details') },
+          { label: 'Strona sklepu', value: 'sklep Steam', act: () => steamPage('store') }
+        ]
+      : [])
+  ]
+
+  return (
+    <>
+      <Modal
+        title={`${TITLES.main} — ${game.name}`}
+        onClose={onClose}
+        wide
+        className="gopt"
+        hints={[
+          { action: 'confirm', label: 'Wybierz' },
+          { action: 'back', label: 'Zamknij' }
+        ]}
+      >
+        <div className="gopt__list" ref={listRef}>
+          {rows.map((r, i) => (
+            <button key={r.label + i} className="gopt__row" data-nav={r.disabled && !r.act ? undefined : true} data-autofocus={i === 0 || undefined} disabled={r.disabled} onClick={r.act}>
+              <span className="gopt__label">{r.label}</span>
+              {r.value && <span className="gopt__value">{r.value}</span>}
+            </button>
+          ))}
+        </div>
+      </Modal>
+      {sub === 'categories' && <CategoryPicker gameId={game.id} onClose={() => setSub(null)} />}
+      {sub === 'art' && <ArtPicker game={game} onClose={() => setSub(null)} />}
+      {sub === 'pads' && game.appId && <Controllers game={{ id: game.id, name: game.name, key: `steam:${game.appId}` }} onClose={() => setSub(null)} />}
+    </>
+  )
+}
+
+function EmuGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
   const [o, setO] = useState<EmuGameOptions | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState<Page>('main')

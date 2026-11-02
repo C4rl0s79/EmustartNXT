@@ -435,9 +435,29 @@
 .tv-desc p {
   margin: 0 0 0.6em;
 }
-/* longer than the room it has: fade the last line out instead of cutting it in half */
+/* longer than the room it has: fade the last line out instead of cutting it in half, and after a
+   pause on the game scroll slowly to the end and back (TvGames: useDescScroll) */
 .tv-desc.is-cut {
   mask-image: linear-gradient(#000 calc(100% - 2.6em), transparent);
+}
+.tv-desc.is-cut .tv-desc__in {
+  animation: tv-desc-scroll var(--tv-desc-t, 20s) linear 3s infinite alternate both;
+}
+@keyframes tv-desc-scroll {
+  0%,
+  10% {
+    translate: 0 0;
+  }
+  90%,
+  100% {
+    /* + the faded band, so the last line ends up clear of it */
+    translate: 0 calc(-1 * var(--tv-desc-d, 0px) - 2.6em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-desc.is-cut .tv-desc__in {
+    animation: none !important;
+  }
 }
 
 /* button hints */
