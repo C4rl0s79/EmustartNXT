@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_THEME, THEMES, contrast, lookDefaults, lookSpecFor, themeById, themeStyle } from '../src/renderer/src/tv/themes'
 import { FONTS, type LookChoice } from '../src/renderer/src/tv/look'
 import { LOOK_ITEMS } from '../src/renderer/src/tv/look'
-import { flowOffset } from '../src/renderer/src/tv/TvCoverflow'
+import { coverBox, flowLayout } from '../src/renderer/src/tv/TvCoverflow'
 
 describe('TV themes', () => {
   it('has the default theme and unique ids; an unknown id falls back to the default', () => {
@@ -55,15 +55,22 @@ describe('TV themes', () => {
 })
 
 describe('cover ribbon spacing', () => {
-  // widths in cover widths (W): the selected one scaled 1.08 (half = 0.54); a neighbour turned 58°,
-  // scaled 0.8, with its own perspective, measured 0.43 W on a 4K screen (half 0.215; 0.22 here)
-  const SEL_HALF = 0.54
-  const SIDE_HALF = 0.22
+  // turned neighbour shows ~0.64 of its width (half 0.32 w); the selected one 1.08 (half 0.54 w)
+  const covered = (x: number[], w: number[], sel: number): boolean =>
+    x.some((xi, i) => i + 1 < x.length && xi + (i === sel ? 0.54 : 0.32) * w[i] > x[i + 1] - (i + 1 === sel ? 0.54 : 0.32) * w[i + 1])
 
-  it('no cover covers the selected one or its neighbour', () => {
-    expect(flowOffset(0)).toBe(0)
-    expect(flowOffset(1) - SIDE_HALF).toBeGreaterThan(SEL_HALF)
-    for (let d = 1; d < 5; d++) expect(flowOffset(d + 1) - flowOffset(d)).toBeGreaterThan(2 * SIDE_HALF)
-    expect(flowOffset(-3)).toBe(-flowOffset(3))
+  it('no cover covers another, with posters, landscape boxes or both mixed', () => {
+    const poster = coverBox(2 / 3)[0]
+    const snes = coverBox(1.4)[0]
+    for (const w of [Array(9).fill(poster), Array(9).fill(snes), [poster, snes, poster, snes, snes, poster, snes, poster, poster]])
+      for (const sel of [0, 4, 8]) expect(covered(flowLayout(w, sel), w, sel)).toBe(false)
+    expect(flowLayout([poster, poster, poster], 1)[1]).toBe(0)
+  })
+
+  it('landscape boxes are as wide as allowed and lower; posters full height', () => {
+    expect(coverBox(2 / 3)).toEqual([2 / 3, 1])
+    const [w, h] = coverBox(1.4)
+    expect(w).toBe(1.1)
+    expect(h).toBeCloseTo(1.1 / 1.4)
   })
 })

@@ -1,47 +1,104 @@
-import { memo } from 'react'
+import { memo, useSyncExternalStore } from 'react'
 import type { Game } from '@shared/types'
 import { Art } from '../components/Art'
 
 // The game list as a horizontal ribbon of covers (themes with games.layout = "coverflow"): the
-// selected cover stands in the middle facing the player, its neighbours turn towards it. Spacing is
-// worked out so that no cover covers another. In cover widths (W): the selected one is scaled 1.08
-// (half = 0.54); a neighbour turned 58° and scaled 0.8, with its own perspective, is 0.43 W wide
-// (measured: 136 px at W = 318 px): first neighbour at 0.86 W, each next one 0.55 W further.
+// selected cover stands in the middle facing the player, its neighbours turn towards it.
+//
+// Every cover keeps the shape of its own picture: a portrait poster is as tall as the ribbon, a
+// landscape box (SNES, N64) is as wide as the frame allows and lower — all standing on one line (the
+// horizon), so the reflections start together. Until a picture has loaded it takes the shape usual
+// for this list (the median of the shapes already seen), so nothing jumps much.
+//
+// Sizes are in units of the ribbon's height H. Spacing is worked out from each cover's own width so
+// that none covers another: the selected cover is scaled 1.08 (half width 0.54 w); a neighbour turned
+// 58° and scaled 0.8, with its own perspective, shows about 0.64 of its width (measured: 136 px of a
+// 318 px cover) — half of it 0.32 w, counted as 0.33 w — and a gap of 0.07 H stays between covers.
 
 const SIDE = 5 // covers drawn on each side of the selected one
+const MAX_W = 1.1 // widest cover, in H (a landscape box)
+const GAP = 0.07
+const SEL_HALF = 0.54
+const SIDE_HALF = 0.33
 
-export function flowOffset(d: number): number {
-  if (d === 0) return 0
-  const a = Math.abs(d)
-  return Math.sign(d) * (0.86 + (a - 1) * 0.55)
+/** a cover's box for a picture's width / height: [width, height] in H */
+export function coverBox(ratio: number): [number, number] {
+  const r = Math.min(2.2, Math.max(0.45, ratio || 2 / 3))
+  const w = Math.min(r, MAX_W)
+  return [w, w / r]
+}
+
+/** the centre of each cover from the selected one (index `sel`), in H, from the covers' widths */
+export function flowLayout(widths: number[], sel: number): number[] {
+  const x = new Array<number>(widths.length).fill(0)
+  const half = (i: number): number => (i === sel ? SEL_HALF : SIDE_HALF) * widths[i]
+  for (let i = sel + 1; i < widths.length; i++) x[i] = x[i - 1] + half(i - 1) + GAP + half(i)
+  for (let i = sel - 1; i >= 0; i--) x[i] = x[i + 1] - half(i + 1) - GAP - half(i)
+  return x
+}
+
+// ---- picture shapes, as the covers load (shared by every ribbon of this window) ----
+const ratios = new Map<string, number>()
+let version = 0
+const listeners = new Set<() => void>()
+function setRatio(id: string, r: number): void {
+  if (!(r > 0) || Math.abs((ratios.get(id) ?? 0) - r) < 0.01) return
+  ratios.set(id, r)
+  version++
+  listeners.forEach((l) => l())
+}
+function useRatios(): number {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb)
+      return () => listeners.delete(cb)
+    },
+    () => version
+  )
+}
+
+function median(xs: number[]): number | undefined {
+  if (!xs.length) return undefined
+  const s = [...xs].sort((a, b) => a - b)
+  return s[Math.floor(s.length / 2)]
 }
 
 export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[]; idx: number; onPick: (i: number) => void; reflection: boolean }) {
+  useRatios()
   const from = Math.max(0, idx - SIDE)
   const to = Math.min(games.length - 1, idx + SIDE)
   const items: number[] = []
   for (let i = from; i <= to; i++) items.push(i)
+  // shape of a cover not loaded yet: the usual one in this list (SNES boxes, PS1 cases, posters…)
+  const usual = median(games.slice(Math.max(0, idx - 30), idx + 30).map((g) => ratios.get(g.id)).filter((r): r is number => !!r)) ?? 2 / 3
+  const boxes = items.map((i) => coverBox(ratios.get(games[i].id) ?? usual))
+  const x = flowLayout(
+    boxes.map((b) => b[0]),
+    idx - from
+  )
   return (
     <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''}`}>
       <div className="tv-flow__stage">
-        {items.map((i) => (
-          <FlowItem key={games[i].id} game={games[i]} d={i - idx} onPick={() => onPick(i)} />
+        {items.map((i, k) => (
+          <FlowItem key={games[i].id} game={games[i]} d={i - idx} x={x[k]} box={boxes[k]} onPick={() => onPick(i)} />
         ))}
       </div>
     </div>
   )
 }
 
-const FlowItem = memo(function FlowItem({ game, d, onPick }: { game: Game; d: number; onPick: () => void }) {
+const FlowItem = memo(function FlowItem({ game, d, x, box, onPick }: { game: Game; d: number; x: number; box: [number, number]; onPick: () => void }) {
   const a = Math.abs(d)
   const turn = d === 0 ? 0 : -Math.sign(d) * 58
   return (
     <div
       className={`tv-flow__item ${d === 0 ? 'sel' : ''}`}
       style={{
+        ['--w' as string]: box[0],
+        ['--h' as string]: box[1],
         // each cover has its own perspective (not the ribbon's): every turned cover then looks the same
-        // and is equally wide, however far from the middle it stands
-        transform: `translateX(calc(-50% + ${flowOffset(d)} * var(--tv-flow-w))) perspective(1100px) rotateY(${turn}deg) scale(${d === 0 ? 1.08 : 0.8})`,
+        // and its width is what the spacing counts on, however far from the middle it stands
+        transform: `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) perspective(1100px) rotateY(${turn}deg) scale(${d === 0 ? 1.08 : 0.8})`,
         zIndex: 20 - a,
         opacity: a > SIDE - 1 ? 0 : 1
       }}
@@ -52,7 +109,7 @@ const FlowItem = memo(function FlowItem({ game, d, onPick }: { game: Game; d: nu
         <span className="tv-flow__name" aria-hidden="true">
           {game.name}
         </span>
-        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" />
+        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" onRatio={(r) => setRatio(game.id, r)} />
       </div>
     </div>
   )

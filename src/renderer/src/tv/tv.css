@@ -814,9 +814,11 @@
 .tv-flow__item {
   position: absolute;
   left: 50%;
-  top: calc(46% - var(--tv-flow-h) / 2);
-  width: var(--tv-flow-w);
-  height: var(--tv-flow-h);
+  /* each cover its own shape (TvCoverflow coverBox: --w, --h in ribbon heights), all standing on the
+     horizon line at 46% + H / 2 */
+  top: calc(46% + var(--tv-flow-h) / 2 - var(--h, 1) * var(--tv-flow-h));
+  width: calc(var(--w, 0.6667) * var(--tv-flow-h));
+  height: calc(var(--h, 1) * var(--tv-flow-h));
   transform-style: preserve-3d;
   transition:
     transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -991,4 +993,12 @@
 .tv :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-look h2) {
   font-family: var(--tv-font-head, inherit);
   font-size-adjust: none;
+}
+
+/* the frame already has the picture's shape: no blurred copy around it, fill it exactly */
+.tv-flow__cover .art-fit__bg {
+  display: none;
+}
+.tv-flow__cover .art--fit {
+  object-fit: cover;
 }
