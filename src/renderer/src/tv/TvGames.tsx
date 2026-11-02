@@ -3,6 +3,8 @@ import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
 import { api, askText, attempt, useStore } from '../store'
 import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
+import { Icon } from '../components/Icon'
+import { SteamLogo } from '../components/SteamLogo'
 import { GameOptions } from '../components/GameOptions'
 import { usePrimaryAction } from '../lib/primary'
 import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel, versionCountLabel } from '../lib/format'
@@ -187,7 +189,13 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
     <section className="tv-screen tv-games">
       <div className="tv-gamelist">
         <div className="tv-listhead">
-          {system.logo ? <img src={api().art.url(`emusys:${system.key}`, 'logo')} alt="" draggable={false} /> : <h2>{system.display}</h2>}
+          {steam ? (
+            <SteamLogo className="tv-listlogo-steam" />
+          ) : system.logo ? (
+            <img src={api().art.url(`emusys:${system.key}`, 'logo')} alt="" draggable={false} />
+          ) : (
+            <h2>{system.display}</h2>
+          )}
           <div className="tv-lhtext">
             <p>
               {activeFilters.length || games.length !== system.games.length
@@ -198,7 +206,7 @@ export function TvGames({ system, onBack, onMenu, active }: { system: TvSystem; 
           </div>
         </div>
         <div className="tv-rows" ref={rowsRef}>
-          {games.slice(top, top + visible + 1).map((g, i) => (
+          {games.slice(top, top + visible).map((g, i) => (
             <TvRow
               key={g.id}
               game={g}
@@ -238,10 +246,18 @@ function TvRow({ game, sel, fav, asLogo, onClick }: { game: Game; sel: boolean; 
       {asLogo && e ? <LogoTitle key={game.id} game={game} text={<span className="t">{game.name}</span>} /> : <span className="t">{game.name}</span>}
       {e?.tags && <span className="g">{e.tags}</span>}
       <span className="ic">
-        {fav && <span className="tv-tag f">★</span>}
-        {e && e.discs > 1 && <span className="tv-tag">💿{e.discs}</span>}
+        {fav && (
+          <span className="tv-tag f" title="Ulubiona">
+            <Icon name="starFilled" />
+          </span>
+        )}
+        {e && e.discs > 1 && (
+          <span className="tv-tag" title={`${e.discs} płyty`}>
+            <Icon name="disc" /> {e.discs}
+          </span>
+        )}
         {e?.versions && <span className="tv-tag">{versionCountLabel(e.versions.length)}</span>}
-        {e?.pinned && <span className="tv-tag p">📌</span>}
+        {e?.pinned && <span className="tv-tag p">na dysku</span>}
         {e?.copying && <span className="tv-tag d">pobieranie</span>}
         {e ? e.cached && <span className="tv-tag c">lokalnie</span> : game.installed && <span className="tv-tag c">zainstalowana</span>}
         {game.running && <span className="tv-tag d">w grze</span>}
@@ -278,6 +294,27 @@ function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
   )
 }
 
+/** Marks an element "is-cut" while its content is taller than its box (the CSS fades the last line). */
+function useCutMark(): (el: HTMLDivElement | null) => void {
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!el) return
+    const check = (): void => {
+      el.classList.toggle('is-cut', el.scrollHeight > el.clientHeight + 1)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    const mo = new MutationObserver(check)
+    mo.observe(el, { childList: true, subtree: true, characterData: true })
+    return () => {
+      ro.disconnect()
+      mo.disconnect()
+    }
+  }, [el])
+  return setEl
+}
+
 /** Height for the cover and the screenshot so that both, at their shapes, fit the preview's width side by side. */
 function useMediaFit(boxRatio: number, snapRatio: number): { ref: (el: HTMLDivElement | null) => void; h: number } {
   const [el, setEl] = useState<HTMLDivElement | null>(null)
@@ -300,7 +337,9 @@ function useMediaFit(boxRatio: number, snapRatio: number): { ref: (el: HTMLDivEl
   const room = width - gap // cover | screenshot side by side (the details are below)
   let h = boxRatio + rSnap > 0 ? room / (boxRatio + rSnap) : full
   if (h * boxRatio > capBox) h = rSnap > 0 ? (room - capBox) / rSnap : full
-  h = Math.min(full, h)
+  // never taller than the preview itself: the description below keeps at least 30% of it
+  const room_h = el.clientHeight > 0 ? el.clientHeight * 0.7 : full
+  h = Math.min(full, h, room_h)
   return { ref: setEl, h: Math.max(0, Math.floor(h)) }
 }
 
@@ -317,6 +356,7 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
     setSnapOk(true)
   }, [game.id])
   const d = dr?.ok ? dr.details : undefined
+  const descRef = useCutMark()
   const desc = d?.descriptionText ? d.descriptionText.split(/\n+/) : d?.descriptionHtml ? htmlToParagraphs(d.descriptionHtml, 20) : d?.shortDescription ? [d.shortDescription] : []
   return (
     <div className="tv-preview" ref={fitH.ref} style={fitH.h ? { ['--tv-media-fit' as string]: `${fitH.h}px` } : undefined}>
@@ -343,7 +383,7 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
           />
         )}
       </div>
-      <div className="tv-desc">
+      <div className="tv-desc" ref={descRef}>
         {desc.slice(0, 20).map((p, i) => (
           <p key={i}>{p}</p>
         ))}

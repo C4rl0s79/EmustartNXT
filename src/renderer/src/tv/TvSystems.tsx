@@ -4,6 +4,7 @@ import { api } from '../store'
 import { useActions } from '../nav/input'
 import { STEAM, systemMeta, type TvSystem } from './data'
 import { SystemOptions } from '../components/SystemOptions'
+import { SteamLogo } from '../components/SteamLogo'
 import { carouselGap, useLook } from './look'
 
 // System carousel (EmuStart look): the selected platform's logo in the middle, neighbours smaller
@@ -60,7 +61,9 @@ function SysCard({ sys, d, gap }: { sys: TvSystem; d: number; gap: number }) {
         zIndex: 10 - ad
       }}
     >
-      {sys.logo && !broken ? (
+      {sys.key === STEAM ? (
+        <SteamLogo className="tv-syslogo-steam" />
+      ) : sys.logo && !broken ? (
         <img src={api().art.url(`emusys:${sys.key}`, 'logo')} alt="" onError={() => setBroken(true)} draggable={false} />
       ) : (
         <div className="txt">{sys.display}</div>

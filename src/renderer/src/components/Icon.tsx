@@ -1,7 +1,7 @@
 // Small line icons drawn in SVG (emoji render differently on every system and can't take the
 // text colour). 24×24 grid, 2px stroke, currentColor — they follow the text they sit in.
 
-export type IconName = 'settings' | 'tv' | 'disc' | 'search' | 'star' | 'starFilled' | 'play' | 'download' | 'folder' | 'file' | 'drive'
+export type IconName = 'settings' | 'tv' | 'disc' | 'search' | 'star' | 'starFilled' | 'play' | 'download' | 'folder' | 'file' | 'drive' | 'user'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   settings: (
@@ -37,6 +37,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
       <path d="M14 3v5h5" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
     </>
   ),
   drive: (

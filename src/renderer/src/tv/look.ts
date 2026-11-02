@@ -164,8 +164,15 @@ export function lookStyle(values: LookValues): Record<string, string> {
   return style
 }
 
-/** the carousel's spacing between system logos (vw) */
-export const carouselGap = (values: LookValues): number => rangeValue(values, item('car_gap') as LookRange)
+/**
+ * The carousel's spacing between system logos (vw): the editor's value, but never so small that a card
+ * covers its neighbour. The selected card is full size and its neighbours are scaled to 0.55, so the
+ * centre-to-neighbour distance must be at least half of both widths: (1 + 0.55) / 2 = 0.775 of a card.
+ */
+export const carouselGap = (values: LookValues): number => {
+  const cardW = (26 * rangeValue(values, item('syslogo') as LookRange)) / 100
+  return Math.max(rangeValue(values, item('car_gap') as LookRange), +(0.775 * cardW + 1).toFixed(2))
+}
 
 // ---- the look in force (one per window; loaded from the engine by the TV layout) ----
 let current: LookValues = {}

@@ -9,6 +9,7 @@ import { useTvSystems } from './data'
 import { loginFlow, logoutFlow } from '../lib/account'
 import { lookStyle, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
+import { Icon } from '../components/Icon'
 import './tv.css'
 
 // The TV layout of Lumen's one interface (fullscreen mode) with EmuStart's look: system carousel →
@@ -102,7 +103,11 @@ function TvTopBar() {
         Lu<b>men</b>
       </div>
       <div className="tv-status">
-        {emu?.profile && <span className="tv-pill">👤 {emu.profile}</span>}
+        {emu?.profile && (
+          <span className="tv-pill">
+            <Icon name="user" /> {emu.profile}
+          </span>
+        )}
         {emu?.engine === 'ready' && <span className={`tv-pill ${net.cls}`}>{net.text}</span>}
         <span className="tv-clock">{now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</span>
       </div>

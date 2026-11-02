@@ -51,6 +51,9 @@ describe('TV look editor (EmuStart look.js in Lumen)', () => {
     expect(d['--tv-car-w']).toBe('26vw')
     expect(d['--tv-bg']).toBe('#0b0d12')
     expect(carouselGap({})).toBe(25)
+    // big logos with a small gap: the gap grows so neighbouring cards never cover each other
+    expect(carouselGap({ syslogo: 150, car_gap: 14 })).toBe(31.23)
+    expect(carouselGap({ syslogo: 50, car_gap: 14 })).toBe(14)
     const s = lookStyle({ list_w: 55, syslogo: 150, fs_list: 120, accent: '#2fb36f', bg: 'czern', desc_lines: 6 })
     expect(s['--tv-list-w']).toBe('55%')
     expect(s['--tv-car-h']).toBe('51%')

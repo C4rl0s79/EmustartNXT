@@ -115,14 +115,17 @@
 
 /* system carousel */
 .tv-carousel {
+  /* at most 46% of the screen: the carousel ends above the system's name and description (top 60%) */
+  --tv-car-hh: min(46%, var(--tv-car-h));
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(35% - var(--tv-car-h) / 2);
-  height: var(--tv-car-h);
+  top: calc(35% - var(--tv-car-hh) / 2);
+  height: var(--tv-car-hh);
   overflow: hidden;
 }
 .tv-syscard {
+  container-type: size;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -155,7 +158,11 @@
   left: 0;
   right: 0;
   top: 60%;
+  bottom: 0;
+  overflow: hidden;
   text-align: center;
+  /* big fonts from the look editor: the text fades out above the hints instead of being cut */
+  mask-image: linear-gradient(#000 calc(100% - 2.4em), transparent);
 }
 .tv-sysinfo h1 {
   font-size: calc(2.6em * var(--tv-fs-sys));
@@ -269,6 +276,9 @@
   color: rgba(255, 255, 255, 0.8);
 }
 .tv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   padding: 0.05em 0.5em;
   border-radius: 5px;
   background: var(--tv-line);
@@ -291,6 +301,7 @@
 
 /* preview: cover | details | screenshot, description below */
 .tv-preview {
+  position: relative;
   display: grid;
   /* cover | screenshot at one height (--tv-media-fit from TvPreview lowers both when they do not fit
      side by side); the description below them (the logo and details: the bar under list and preview) */
@@ -316,13 +327,13 @@
   width: auto;
   max-width: 30vw;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 10px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   background: none;
 }
 .tv-noart {
-  height: var(--tv-media-h);
-  width: calc(var(--tv-media-h) * 0.75);
+  height: var(--tv-media-fit, var(--tv-media-h));
+  width: calc(var(--tv-media-fit, var(--tv-media-h)) * 0.75);
   border: 2px dashed var(--tv-line);
   border-radius: 8px;
   display: flex;
@@ -334,12 +345,12 @@
 /* --ar: the image's own shape (TvPreview); small native screenshots (256x224) are scaled up to the
    full height like the cover */
 .tv-snap .tv-snapart {
-  width: calc(var(--tv-media-fit, var(--tv-media-h)) * var(--ar, 1.3333));
-  height: auto;
-  aspect-ratio: var(--ar, 1.3333);
-  max-width: calc(var(--tv-media-fit, var(--tv-media-h)) * 16 / 9);
-  object-fit: contain;
-  border-radius: 12px;
+  /* always the cover's height: the image's own shape up to 16:9; wider art (Steam's 3:1 heroes) is
+     cropped to 16:9 instead of shrinking to a strip lower than the cover */
+  height: var(--tv-media-fit, var(--tv-media-h));
+  width: calc(var(--tv-media-fit, var(--tv-media-h)) * min(var(--ar, 1.3333), 1.7778));
+  object-fit: cover;
+  border-radius: 10px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   background: #000;
 }
@@ -423,6 +434,10 @@
 }
 .tv-desc p {
   margin: 0 0 0.6em;
+}
+/* longer than the room it has: fade the last line out instead of cutting it in half */
+.tv-desc.is-cut {
+  mask-image: linear-gradient(#000 calc(100% - 2.6em), transparent);
 }
 
 /* button hints */
@@ -663,4 +678,35 @@
   height: 1.1em;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Steam: drawn locally (the EmuStart server has no Steam platform, so no server logo) */
+.steam-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32em;
+  color: #fff;
+  line-height: 1;
+  white-space: nowrap;
+}
+.steam-logo svg {
+  width: 1.18em;
+  height: 1.18em;
+  flex: 0 0 auto;
+}
+.steam-logo__word {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+/* sized from the card like the server's logos (look editor: "Logo systemu w karuzeli") */
+.tv-syslogo-steam {
+  font-size: min(12.5cqw, 30cqh);
+  filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
+}
+.tv-listlogo-steam {
+  font-size: calc(var(--tv-listlogo-h) * 0.6);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+}
+.tv-pill .icon {
+  margin-right: 0.15em;
 }
