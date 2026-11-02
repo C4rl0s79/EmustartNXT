@@ -55,8 +55,9 @@ Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md).
     (silnik odmawia inaczej); okno po każdej zmianie czyta stan od nowa z silnika.
   - **Nie zmienia się:** lista gier, sterowanie poza oknem „Zapisy”, stany PS2 (PC ↔ telefon).
 - **Opcje gry (`lumen.py` → `_options_here`): profil Xenii jednego gracza** — paczki gry przez
-  `savebundles.xenia_claim`, jak w EmuStart (menedżer zapisów, sesja gry): inny gracz na tym urządzeniu nie
-  widzi i nie zmienia slotów zapisów cudzego profilu Xbox 360.
+  `savebundles.xenia_claim(…, claim=False)`, jak menedżer zapisów EmuStart: tylko profil, który już należy do
+  gracza (widok niczego nie zajmuje); inny gracz na tym urządzeniu nie widzi i nie zmienia slotów zapisów cudzego
+  profilu Xbox 360.
 
 ### Plan (zaakceptowany 2026-11-02): zapisy rdzeni RetroArcha w `system\` i w podfolderach `saves\`
 Przyczyna (sprawdzone 2026-11-02 na danych z Lumena i w dokumentacji libretro): synchronizacja RetroArcha

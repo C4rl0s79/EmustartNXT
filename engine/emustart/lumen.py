@@ -277,9 +277,9 @@ class LumenApi(api_mod.Api):
                 ad = ingame.adapter_for(emu["exe"])
                 profiles.bind(ad, self._profile)       # stany w folderze profilu, nie emulatora
                 core = savebundles.core_id(emu.get("args", ""))
-                bundles = savebundles.xenia_claim(          # profil Xenii — jednego gracza (jak w EmuStart)
+                bundles = savebundles.xenia_claim(          # profil Xenii — tylko już należący do gracza (widok)
                     savebundles.for_game(ad, core, launcher.content_guess(self._cfg, g, emu["exe"]),
-                                         launcher.ps2_info(self._cfg, g)), self._profile)
+                                         launcher.ps2_info(self._cfg, g)), self._profile, claim=False)
                 st = next((b for b in bundles if b.kind == "states"), None)
                 if st is not None:
                     st.collect()
