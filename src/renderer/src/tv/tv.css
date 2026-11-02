@@ -783,6 +783,21 @@
   grid-template-rows: auto minmax(0, 0.8fr) minmax(0, 1fr);
   row-gap: 1.2vh;
 }
+/* the ribbon also takes the head's row: the platform logo stays in the top left corner, the selected
+   cover rises past its lower edge (the side covers stay below it), so the covers can be taller */
+.tv-games--flow > .tv-listhead {
+  grid-area: 1 / 1;
+}
+.tv-games--flow > .tv-flow {
+  grid-area: 1 / 1 / 3;
+}
+.tv-games--flow > .tv-flow__panel {
+  grid-area: 3 / 1;
+}
+/* no games: the message stays below the head, where it was */
+.tv-games--flow > .tv-flow > .tv-dim {
+  margin-top: calc(var(--tv-listlogo-h) + 3.7vh);
+}
 .tv-flow__panel {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
@@ -803,10 +818,19 @@
   position: relative;
   min-height: 0;
   container-type: size;
+  /* the horizon (the covers' feet): a fixed room below it for the reflections */
+  --tv-flow-floor: 6vh;
+  --tv-flow-horizon: calc(100% - var(--tv-flow-floor));
 }
 .tv-flow__stage {
-  /* a cover is 2:3; its height fits the ribbon's row with room for the reflection below it */
-  --tv-flow-h: min(var(--tv-flow-max, 40vh), 72cqh);
+  /* a cover is 2:3, at most --tv-flow-max high. Above the horizon: the side covers (scaled 0.8, turned
+     towards the viewer: top edge at 0.94 H) stay below the head with the platform logo, the selected
+     one (1.08: top at 1.04 H, HUD corners 1.6vh above it) stays inside the ribbon */
+  --tv-flow-h: min(
+    var(--tv-flow-max, 40vh),
+    calc((100cqh - var(--tv-flow-floor) - var(--tv-listlogo-h) - 3.5vh) / 0.94),
+    calc((100cqh - var(--tv-flow-floor) - 1.6vh) / 1.04)
+  );
   --tv-flow-w: calc(var(--tv-flow-h) * 2 / 3);
   position: absolute;
   inset: 0;
@@ -815,8 +839,8 @@
   position: absolute;
   left: 50%;
   /* each cover its own shape (TvCoverflow coverBox: --w, --h in ribbon heights), all standing on the
-     horizon line at 46% + H / 2 */
-  top: calc(46% + var(--tv-flow-h) / 2 - var(--h, 1) * var(--tv-flow-h));
+     horizon line */
+  top: calc(var(--tv-flow-horizon) - var(--h, 1) * var(--tv-flow-h));
   width: calc(var(--w, 0.6667) * var(--tv-flow-h));
   height: calc(var(--h, 1) * var(--tv-flow-h));
   transform-style: preserve-3d;

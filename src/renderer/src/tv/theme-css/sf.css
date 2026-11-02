@@ -41,7 +41,7 @@
   position: absolute;
   left: -3vw;
   right: -3vw;
-  top: calc(46% + min(var(--tv-flow-max, 40vh), 72cqh) / 2 + 0.4vh);
+  top: calc(var(--tv-flow-horizon) + 0.4vh);
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(126, 224, 255, 0.15) 12%, rgba(181, 236, 255, 0.95) 50%, rgba(126, 224, 255, 0.15) 88%, transparent 100%);
   box-shadow: 0 0 18px 2px rgba(126, 224, 255, 0.35);
@@ -52,7 +52,7 @@
   position: absolute;
   left: 10%;
   right: 10%;
-  top: calc(46% + min(var(--tv-flow-max, 40vh), 72cqh) / 2);
+  top: var(--tv-flow-horizon);
   height: 14vh;
   background: radial-gradient(60% 100% at 50% 0%, rgba(126, 224, 255, 0.14), transparent 70%);
   pointer-events: none;
