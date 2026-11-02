@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import path from 'node:path'
 
 // Read-only access to the Windows registry through reg.exe (no native modules needed).
 // Steam writes a few runtime values under HKCU\Software\Valve\Steam; these are not a
@@ -22,10 +23,14 @@ export function parseRegQuery(output: string): RegValues {
   return values
 }
 
+// full path: Lumen may start with a PATH without System32 (Explorer, Task Scheduler, the updater), where a
+// bare "reg.exe" does not start — every read came back empty and Steam looked closed
+const REG_EXE = path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'reg.exe')
+
 export function queryRegistry(key: string, timeoutMs = 3000): Promise<RegValues | null> {
   if (process.platform !== 'win32') return Promise.resolve(null)
   return new Promise((resolve) => {
-    execFile('reg.exe', ['query', key], { timeout: timeoutMs, windowsHide: true }, (err, stdout) => {
+    execFile(REG_EXE, ['query', key], { timeout: timeoutMs, windowsHide: true }, (err, stdout) => {
       if (err) return resolve(null)
       resolve(parseRegQuery(stdout))
     })

@@ -14,7 +14,7 @@ import {
   scanAllLibraries,
   steamId64ToAccountId
 } from '../src/main/steam/local'
-import { parseRegQuery } from '../src/main/steam/registry'
+import { parseRegQuery, queryRegistry } from '../src/main/steam/registry'
 import { parseOwnedGames } from '../src/main/steam/webApi'
 import { parseAppDetails, parseReviewSummary, parseSteamSpy, StoreMetadataProvider } from '../src/main/steam/storeMeta'
 import { mergeLibrary, sortKey } from '../src/main/library/merge'
@@ -166,6 +166,24 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
     BetaName    REG_SZ
 `
     expect(parseRegQuery(out)).toEqual({ SteamPath: 'c:/program files (x86)/steam', RunningAppID: 620, BetaName: '' })
+  })
+
+  // Lumen starts with a PATH without System32 (Explorer / Task Scheduler / the updater): a bare "reg.exe"
+  // did not start, every read came back empty — Steam looked closed, no game exit, no window restore
+  it.runIf(process.platform === 'win32')('reads the registry with System32 missing from PATH', async () => {
+    const sys32 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32').toLowerCase()
+    const saved = process.env.PATH
+    process.env.PATH = (saved ?? '')
+      .split(';')
+      .filter((p) => !p.toLowerCase().replace(/\\+$/, '').startsWith(sys32))
+      .join(';')
+    try {
+      const v = await queryRegistry('HKCU\\Control Panel\\Desktop')
+      expect(v).not.toBeNull()
+      expect(Object.keys(v ?? {}).length).toBeGreaterThan(0)
+    } finally {
+      process.env.PATH = saved
+    }
   })
 })
 
