@@ -8,6 +8,31 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md).
 
+## [0.54.2] — 2026-10-30
+
+Zakres: klient Windows i serwer (`updater.py`). APK bez zmian.
+
+### Poprawione
+- **Aktualizacja stała w miejscu, gdy w PATH brakuje `C:WindowsSystem32`:** skrypt podmiany wołał `robocopy` i `schtasks` bez ścieżki — nie istniały, pusty kod wyjścia uznawany był za sukces, a pobrana wersja kasowana (program wracał do starej wersji). Teraz pełne ścieżki z folderu systemowego, a pusty kod = błąd i powrót do kopii zapasowej. Działa od następnej aktualizacji (skrypt tworzy wersja już zainstalowana); z wersji bez tej poprawki — raz ręcznie paczka ze strony.
+
+## [0.54.1] — 2026-10-30
+
+Zakres: klient Windows (`winutil.py`, `api.py`, `config.py`). Serwer, APK i Lumen bez zmian
+w działaniu (Lumen dostaje poprawkę okna z następnym silnikiem).
+
+### Poprawione
+- **Pad nie sterował interfejsem EmuStart**, gdy w przeglądarce była otwarta karta o tytule
+  „EmuStart” (np. strona serwera). EmuStart szukał swojego okna po tytule (`FindWindow`), a Windows
+  11 trzyma dla kart przeglądarki okna-zastępców (Alt+Tab) o tym samym tytule — EmuStart brał takie
+  okno za swoje, uznawał, że jego okno nie jest na wierzchu, i odrzucał każde naciśnięcie pada.
+  Teraz szuka okna tylko we własnym procesie i pomija okna-zastępców powłoki.
+
+### Zmienione
+- **Domyślny folder emulatorów: `Emulatory` w folderze programu** (np. `D:\emustart\Emulatory`), jak
+  `cache`. Nowa instalacja (i ustawienie z pustym folderem) od razu instaluje emulatory z serwera —
+  bez wskazywania folderu. Wybrany folder zostaje jak był. Lumen wybiera folder sam (bez zmian),
+  folder serwera nie dostaje domyślnego (tylko do odczytu).
+
 ## [0.54.0] — 2026-10-30
 
 Zakres: klient (`hidpad.py`, `sdlpads.py`, `pads.py`, `hotkey.py`, `uipad.py`, `ingame.py`, `launcher.py`,
