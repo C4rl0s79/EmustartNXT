@@ -772,10 +772,27 @@
 
 /* ---------- cover ribbon (games.layout = "coverflow") ---------- */
 .tv-games--flow {
+  --tv-flow-max: 30vh;
   grid-template-columns: minmax(0, 1fr);
-  /* head | ribbon (with its reflection) | title | description | details bar */
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  /* head | ribbon (with its reflection) | title + description and the details, side by side */
+  grid-template-rows: auto minmax(0, 0.8fr) minmax(0, 1fr);
   row-gap: 1.2vh;
+}
+.tv-flow__panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1.4vw;
+  min-height: 0;
+}
+.tv-flow__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  min-height: 0;
+  padding: 1.6vh 1.8vw;
+  background: var(--tv-panel);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
 }
 .tv-flow {
   position: relative;
@@ -784,7 +801,7 @@
 }
 .tv-flow__stage {
   /* a cover is 2:3; its height fits the ribbon's row with room for the reflection below it */
-  --tv-flow-h: min(40vh, 68cqh);
+  --tv-flow-h: min(var(--tv-flow-max, 40vh), 72cqh);
   --tv-flow-w: calc(var(--tv-flow-h) * 2 / 3);
   position: absolute;
   inset: 0;
@@ -818,6 +835,53 @@
 .tv-flow__cover .art-placeholder {
   font-size: 1.1em;
 }
+.tv-flow__name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 10%;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tv-dim);
+  overflow-wrap: anywhere;
+}
+.tv-flow__cover .art,
+.tv-flow__cover .art-placeholder {
+  position: relative;
+}
+
+/* platform logos repainted by the theme (SystemLogo.tsx): the server's logo becomes a mask over the
+   theme's fill; the image stays (invisible) to give the box its size */
+.sys-logo {
+  position: relative;
+  display: inline-flex;
+}
+.sys-logo.is-tinted > img {
+  visibility: hidden;
+}
+.sys-logo__fill {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  background: var(--tv-logo-fill, #fff);
+}
+.tv-syscard .sys-logo img {
+  max-width: 92cqw;
+  max-height: 80cqh;
+}
+.steam-logo.is-tinted {
+  color: var(--tv-logo-tone, #fff);
+}
+.steam-logo.is-tinted .steam-logo__word {
+  background: var(--tv-logo-fill, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 /* the mirror image under each cover, fading out towards the floor */
 .tv-flow--mirror .tv-flow__cover {
   -webkit-box-reflect: below 0.8vh linear-gradient(transparent 60%, rgba(255, 255, 255, 0.3));
@@ -831,10 +895,9 @@
 }
 .tv-flow__title {
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 7vh;
-  text-align: center;
+  flex: 0 0 auto;
+  min-height: 6vh;
 }
 .tv-flow__title h1 {
   margin: 0;
@@ -843,19 +906,37 @@
   line-height: 1.1;
 }
 .tv-flow__title .tv-logo .tv-logo__img {
-  height: 9vh;
-  max-width: 42vw;
-  object-position: center;
+  height: 7vh;
+  max-width: 30vw;
+  object-position: left center;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
 }
+/* the description fills the panel: full text colour, roomy lines; longer ones scroll (useDescScroll) */
 .tv-desc.tv-flow__desc {
-  justify-self: center;
-  width: min(100%, 72ch);
-  text-align: center;
-  max-height: calc(min(var(--tv-desc-lines), 3) * 1.45em);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  color: var(--tv-text);
+  font-size: calc(1.05em * var(--tv-fs-desc));
+  line-height: 1.55;
 }
+/* the details as a column of label / value rows, not one long line — beside the description */
 .tv-games--flow .tv-info {
-  justify-content: center;
+  grid-column: auto;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  min-height: 0;
+}
+.tv-games--flow .tv-info dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5em 1.2em;
+  font-size: calc(1em * var(--tv-fs-meta));
+}
+.tv-games--flow .tv-dlrow {
+  display: contents;
 }
 
 /* the selected game's art behind everything, fading into the page at the bottom */

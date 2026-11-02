@@ -4,7 +4,7 @@ import { api } from '../store'
 import { useActions } from '../nav/input'
 import { STEAM, systemMeta, type TvSystem } from './data'
 import { SystemOptions } from '../components/SystemOptions'
-import { SteamLogo } from '../components/SteamLogo'
+import { SystemLogo } from './SystemLogo'
 import { carouselGap, useLook } from './look'
 
 // System carousel (EmuStart look): the selected platform's logo in the middle, neighbours smaller
@@ -48,8 +48,7 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
   return d
 }
 
-function SysCard({ sys, d, gap }: { sys: TvSystem; d: number; gap: number }) {
-  const [broken, setBroken] = useState(false)
+function SysCard({ sys, d, gap, tint }: { sys: TvSystem; d: number; gap: number; tint: boolean }) {
   const ad = Math.abs(d)
   return (
     <div
@@ -61,13 +60,14 @@ function SysCard({ sys, d, gap }: { sys: TvSystem; d: number; gap: number }) {
         zIndex: 10 - ad
       }}
     >
-      {sys.key === STEAM ? (
-        <SteamLogo className="tv-syslogo-steam" />
-      ) : sys.logo && !broken ? (
-        <img src={api().art.url(`emusys:${sys.key}`, 'logo')} alt="" onError={() => setBroken(true)} draggable={false} />
-      ) : (
-        <div className="txt">{sys.display}</div>
-      )}
+      <SystemLogo
+        sysKey={sys.key}
+        display={sys.display}
+        hasLogo={sys.logo}
+        tint={tint}
+        className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
+        fallback={<div className="txt">{sys.display}</div>}
+      />
     </div>
   )
 }
@@ -78,7 +78,8 @@ export function TvSystems({
   onIndex,
   onOpen,
   onMenu,
-  active
+  active,
+  logoTint
 }: {
   systems: TvSystem[]
   index: number
@@ -86,6 +87,8 @@ export function TvSystems({
   onOpen: () => void
   onMenu: () => void
   active: boolean
+  /** the theme repaints platform logos (themes.ts logoTint) */
+  logoTint: boolean
 }) {
   const n = systems.length
   const sys = systems[index]
@@ -152,7 +155,7 @@ export function TvSystems({
           if (Math.abs(dd) > 3) return null
           return (
             <div key={s.key} onClick={() => (i === index ? onOpen() : onIndex(i))}>
-              <SysCard sys={s} d={dd} gap={gap} />
+              <SysCard sys={s} d={dd} gap={gap} tint={logoTint} />
             </div>
           )
         })}

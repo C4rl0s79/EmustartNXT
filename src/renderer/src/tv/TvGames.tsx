@@ -4,7 +4,7 @@ import { api, askText, attempt, useStore } from '../store'
 import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
 import { Icon } from '../components/Icon'
-import { SteamLogo } from '../components/SteamLogo'
+import { SystemLogo } from './SystemLogo'
 import { GameOptions } from '../components/GameOptions'
 import { usePrimaryAction } from '../lib/primary'
 import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel, versionCountLabel } from '../lib/format'
@@ -208,13 +208,14 @@ export function TvGames({
 
   const head = (
         <div className="tv-listhead">
-          {steam ? (
-            <SteamLogo className="tv-listlogo-steam" />
-          ) : system.logo ? (
-            <img src={api().art.url(`emusys:${system.key}`, 'logo')} alt="" draggable={false} />
-          ) : (
-            <h2>{system.display}</h2>
-          )}
+          <SystemLogo
+            sysKey={system.key}
+            display={system.display}
+            hasLogo={system.logo}
+            tint={!!theme.logoTint}
+            className={steam ? 'tv-listlogo-steam' : 'tv-listlogo'}
+            fallback={<h2>{system.display}</h2>}
+          />
           <div className="tv-lhtext">
             <p>
               {activeFilters.length || games.length !== system.games.length
@@ -256,12 +257,17 @@ export function TvGames({
           <div className="tv-flow">{empty}</div>
         )}
         {sel && (
-          <div className="tv-flow__title">
-            <LogoTitle key={sel.id} game={sel} text={<h1>{sel.name}</h1>} />
+          // under the ribbon: the title and the description (readable, many lines) | the details in a column
+          <div className="tv-flow__panel">
+            <div className="tv-flow__main">
+              <div className="tv-flow__title">
+                <LogoTitle key={sel.id} game={sel} text={<h1>{sel.name}</h1>} />
+              </div>
+              <TvDesc game={sel} details={d} className="tv-flow__desc" />
+            </div>
+            <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} noLogo />
           </div>
         )}
-        {sel && <TvDesc game={sel} details={d} className="tv-flow__desc" />}
-        {sel && <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} noLogo />}
         {modals}
       </section>
     )

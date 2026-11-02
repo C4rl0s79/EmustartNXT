@@ -37,7 +37,9 @@ const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
 const WINDOW_TITLE = 'Lumen'
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+  // corsEnabled + Access-Control-Allow-Origin on every art response: CSS masks (TV themes repaint platform
+  // logos through mask-image) are fetched in CORS mode, unlike <img>
+  { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }
 ])
 
 // Data folder: LumenData next to the exe in packaged builds (installer and portable) — settings,
@@ -283,37 +285,44 @@ function restoreWindow(): void {
 
 function registerArtProtocol(): void {
   protocol.handle(ART_SCHEME, async (req) => {
-    try {
-      const u = new URL(req.url)
-      const [, rawId, kind] = u.pathname.split('/')
-      const gameId = decodeURIComponent(rawId ?? '')
-      if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
-      if (gameId.startsWith('emusys:')) {
-        // platform logo from the EmuStart server (TV system carousel)
-        const logo = kind === 'logo' ? emu.systemLogo(gameId.slice(7)) : undefined
-        if (!logo || !engine.baseUrl) return new Response('not found', { status: 404 })
-        return (await engineMedia(logo)) ?? new Response('not found', { status: 404 })
-      }
-      if (u.searchParams.get('tv') === '1') {
-        const own = await tvArt(gameId, kind as ArtKind)
-        if (own) return own
-      }
-      if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
-      const game = findGame(gameId)
-      const shortcutId = /^shortcut:(\d+)$/.exec(gameId)
-      const file = shortcutId
-        ? await artwork.resolve(gameId, undefined, kind as ArtKind, game?.name, Number(shortcutId[1]))
-        : await artwork.resolve(gameId, game?.appId || steamAppIdOf(gameId), kind as ArtKind, game?.name)
-      if (!file) return new Response('not found', { status: 404 })
-      const res = await net.fetch(pathToFileURL(file).toString())
-      const headers = new Headers(res.headers)
-      headers.set('Cache-Control', 'max-age=31536000')
-      return new Response(res.body, { status: 200, headers })
-    } catch (e) {
-      log.warn('art', `protocol error: ${(e as Error).message}`)
-      return new Response('error', { status: 500 })
-    }
+    const res = await artResponse(req)
+    const headers = new Headers(res.headers)
+    headers.set('Access-Control-Allow-Origin', '*')
+    return new Response(res.body, { status: res.status, headers })
   })
+}
+
+async function artResponse(req: Request): Promise<Response> {
+  try {
+    const u = new URL(req.url)
+    const [, rawId, kind] = u.pathname.split('/')
+    const gameId = decodeURIComponent(rawId ?? '')
+    if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
+    if (gameId.startsWith('emusys:')) {
+      // platform logo from the EmuStart server (TV system carousel)
+      const logo = kind === 'logo' ? emu.systemLogo(gameId.slice(7)) : undefined
+      if (!logo || !engine.baseUrl) return new Response('not found', { status: 404 })
+      return (await engineMedia(logo)) ?? new Response('not found', { status: 404 })
+    }
+    if (u.searchParams.get('tv') === '1') {
+      const own = await tvArt(gameId, kind as ArtKind)
+      if (own) return own
+    }
+    if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
+    const game = findGame(gameId)
+    const shortcutId = /^shortcut:(\d+)$/.exec(gameId)
+    const file = shortcutId
+      ? await artwork.resolve(gameId, undefined, kind as ArtKind, game?.name, Number(shortcutId[1]))
+      : await artwork.resolve(gameId, game?.appId || steamAppIdOf(gameId), kind as ArtKind, game?.name)
+    if (!file) return new Response('not found', { status: 404 })
+    const res = await net.fetch(pathToFileURL(file).toString())
+    const headers = new Headers(res.headers)
+    headers.set('Cache-Control', 'max-age=31536000')
+    return new Response(res.body, { status: 200, headers })
+  } catch (e) {
+    log.warn('art', `protocol error: ${(e as Error).message}`)
+    return new Response('error', { status: 500 })
+  }
 }
 
 /**

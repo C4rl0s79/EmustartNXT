@@ -48,6 +48,10 @@ const FlowItem = memo(function FlowItem({ game, d, onPick }: { game: Game; d: nu
       onClick={onPick}
     >
       <div className="tv-flow__cover">
+        {/* under the art: the name while the cover loads (never an empty frame) */}
+        <span className="tv-flow__name" aria-hidden="true">
+          {game.name}
+        </span>
         <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" />
       </div>
     </div>

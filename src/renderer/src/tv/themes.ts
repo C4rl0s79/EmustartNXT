@@ -36,6 +36,8 @@ export interface TvTheme {
     /** coverflow: mirror image of the covers below them */
     reflection?: boolean
   }
+  /** platform logos repainted in the theme's material (--tv-logo-fill, SystemLogo.tsx) */
+  logoTint?: boolean
   /** moving background drawn by the theme's stylesheet (.tv-ambient); still with reduced motion */
   ambient?: 'embers' | 'stars'
   /** look editor keys this theme decides itself (hidden in the editor) */
@@ -66,6 +68,7 @@ export const THEMES: TvTheme[] = [
       panel: 'rgba(30, 21, 16, 0.94)'
     },
     games: { layout: 'list' },
+    logoTint: true,
     ambient: 'embers',
     locks: ['accent', 'bg']
   },
@@ -80,9 +83,10 @@ export const THEMES: TvTheme[] = [
       accent: '#7ee0ff',
       selText: '#04121c',
       selBg: '#7ee0ff',
-      panel: 'rgba(10, 14, 36, 0.86)'
+      panel: 'rgba(8, 11, 30, 0.92)'
     },
     games: { layout: 'coverflow', reflection: true },
+    logoTint: true,
     ambient: 'stars',
     // the list's sizes and the title logos do not apply to the cover ribbon
     locks: ['accent', 'bg', 'row', 'list_w', 'media_h', 'tlogo', 'tlogo_w', 'games_logo']

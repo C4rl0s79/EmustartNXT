@@ -152,3 +152,101 @@
     background-position: 0 -720px;
   }
 }
+
+/* ---- beyond the palette: scale, platform logos in gold, the description on parchment, gothic windows ---- */
+
+.tv[data-theme='fantasy'] {
+  /* text grows with the screen (no 20 px cap of the default look) */
+  font-size: calc(clamp(16px, 1.85vh, 42px) * var(--tv-fs));
+  /* platform logos struck in gold (SystemLogo.tsx) */
+  --tv-logo-fill: linear-gradient(180deg, #fff1c4 0%, #ecc46c 38%, #a8742a 52%, #e7c06a 70%, #fbe7a8 100%);
+  --tv-logo-tone: #e9c26c;
+  --tv-parchment: #ead9b0;
+  --tv-ink: #3a2513;
+}
+.tv[data-theme='fantasy'] :is(.sys-logo, .steam-logo) {
+  filter: drop-shadow(0 2px 0 rgba(58, 30, 10, 0.9)) drop-shadow(0 0 18px rgba(216, 150, 60, 0.35));
+}
+
+/* the description as a scroll of parchment: warm paper with darker, burnt edges, iron-gall ink, an
+   illuminated first letter, wooden rods at both ends */
+.tv[data-theme='fantasy'] .tv-desc {
+  position: relative;
+  padding: 1.8vh 1.8vw;
+  color: var(--tv-ink);
+  font-size: calc(1em * var(--tv-fs-desc));
+  font-weight: 500;
+  line-height: 1.5;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(255, 252, 235, 0.55), transparent 45%),
+    radial-gradient(ellipse at 85% 90%, rgba(150, 100, 40, 0.28), transparent 55%),
+    repeating-linear-gradient(2deg, rgba(120, 85, 35, 0.05) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #f1e3bf, var(--tv-parchment) 50%, #dcc590);
+  box-shadow:
+    inset 0 0 2.4vh rgba(120, 72, 20, 0.55),
+    inset 0 0 0.4vh rgba(90, 50, 10, 0.6),
+    0 14px 40px rgba(0, 0, 0, 0.55);
+  border-top: 1.1vh solid transparent;
+  border-bottom: 1.1vh solid transparent;
+  border-image: linear-gradient(180deg, #5a3618, #8a5a2b 50%, #3d230e) 1;
+  /* the paper fades into itself at the bottom, not into the page (overrides the default mask) */
+  mask-image: none;
+}
+.tv[data-theme='fantasy'] .tv-desc.is-cut::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.6em;
+  pointer-events: none;
+  background: linear-gradient(transparent, #dcc590 85%);
+}
+.tv[data-theme='fantasy'] .tv-desc p {
+  color: var(--tv-ink);
+}
+.tv[data-theme='fantasy'] .tv-desc__in > p:first-child::first-letter {
+  float: left;
+  margin: 0.06em 0.1em 0 0;
+  font-family: 'Cinzel Variable', Georgia, serif;
+  font-size: 2.9em;
+  font-weight: 700;
+  line-height: 0.85;
+  color: #7a1f1f;
+}
+
+/* gothic windows: cover and screenshot under pointed arches, in a gold frame with an inner line of
+   tracery; the frame is the box (gold) and the picture inside it, both cut to the same arch */
+.tv[data-theme='fantasy'] :is(.tv-box, .tv-snap) {
+  --tv-arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V36C0 15 30 4 50 0C70 4 100 15 100 36V100Z'/%3E%3C/svg%3E");
+  --tv-arch-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V36C0 15 30 4 50 0C70 4 100 15 100 36V100' fill='none' stroke='%23f3d68e' stroke-width='1.6' vector-effect='non-scaling-stroke' opacity='.85'/%3E%3C/svg%3E");
+  box-sizing: border-box;
+  padding: 0.8vh 0.8vh 1.6vh;
+  background: linear-gradient(180deg, #f3d68e, #b9832f 45%, #7d5420 70%, #d8a441);
+  -webkit-mask: var(--tv-arch) center / 100% 100% no-repeat;
+  mask: var(--tv-arch) center / 100% 100% no-repeat;
+}
+.tv[data-theme='fantasy'] .tv-snap {
+  /* a wider, lower arch over the landscape picture */
+  --tv-arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V26C0 10 30 3 50 0C70 3 100 10 100 26V100Z'/%3E%3C/svg%3E");
+  --tv-arch-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V26C0 10 30 3 50 0C70 3 100 10 100 26V100' fill='none' stroke='%23f3d68e' stroke-width='1.6' vector-effect='non-scaling-stroke' opacity='.85'/%3E%3C/svg%3E");
+}
+.tv[data-theme='fantasy'] :is(.tv-box .tv-boxart, .tv-snap .tv-snapart) {
+  display: block;
+  height: calc(var(--tv-media-fit, var(--tv-media-h)) - 2.4vh);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-mask: var(--tv-arch) center / 100% 100% no-repeat;
+  mask: var(--tv-arch) center / 100% 100% no-repeat;
+}
+.tv[data-theme='fantasy'] .tv-snap .tv-snapart {
+  width: calc((var(--tv-media-fit, var(--tv-media-h)) - 2.4vh) * min(var(--ar, 1.3333), 1.7778));
+}
+/* tracery: a fine gold arch drawn inside the picture */
+.tv[data-theme='fantasy'] :is(.tv-box, .tv-snap)::after {
+  content: '';
+  position: absolute;
+  inset: 2vh 1.6vh 2.8vh;
+  pointer-events: none;
+  background: var(--tv-arch-line) center / 100% 100% no-repeat;
+}

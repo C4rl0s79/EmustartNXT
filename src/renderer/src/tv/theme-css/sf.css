@@ -10,8 +10,12 @@
   --tv-ok: #6ee7b7;
   --tv-warn: #ffc56b;
   --tv-hud: rgba(126, 224, 255, 0.85);
+  --tv-logo-fill: linear-gradient(180deg, #ffffff 0%, #c9f3ff 42%, #6fd3f5 100%);
+  --tv-logo-tone: #c9f3ff;
   font-family: 'Exo 2 Variable', 'Segoe UI', system-ui, sans-serif;
-  font-weight: 420;
+  font-weight: 430;
+  /* text grows with the screen (no 20 px cap of the default look): readable on a 4K TV from the couch */
+  font-size: calc(clamp(16px, 1.95vh, 44px) * var(--tv-fs));
   background:
     radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
     radial-gradient(60% 50% at 88% 92%, rgba(14, 92, 120, 0.42) 0%, transparent 70%),
@@ -30,7 +34,7 @@
 .tv[data-theme='sf'] .tv-sysinfo h1 {
   text-shadow: 0 0 24px rgba(126, 224, 255, 0.35);
 }
-.tv[data-theme='sf'] .tv-syscard img,
+.tv[data-theme='sf'] .tv-syscard .sys-logo,
 .tv[data-theme='sf'] .tv-syscard .steam-logo {
   filter: drop-shadow(0 0 22px rgba(126, 224, 255, 0.35)) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
 }
@@ -41,7 +45,7 @@
   position: absolute;
   left: -3vw;
   right: -3vw;
-  top: calc(46% + min(40vh, 68cqh) / 2 + 0.4vh);
+  top: calc(46% + min(var(--tv-flow-max, 40vh), 72cqh) / 2 + 0.4vh);
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(126, 224, 255, 0.15) 12%, rgba(181, 236, 255, 0.95) 50%, rgba(126, 224, 255, 0.15) 88%, transparent 100%);
   box-shadow: 0 0 18px 2px rgba(126, 224, 255, 0.35);
@@ -52,7 +56,7 @@
   position: absolute;
   left: 10%;
   right: 10%;
-  top: calc(46% + min(40vh, 68cqh) / 2);
+  top: calc(46% + min(var(--tv-flow-max, 40vh), 72cqh) / 2);
   height: 14vh;
   background: radial-gradient(60% 100% at 50% 0%, rgba(126, 224, 255, 0.14), transparent 70%);
   pointer-events: none;
@@ -82,7 +86,7 @@
 }
 
 /* panels: dark glass, a thin ice edge and corner brackets */
-.tv[data-theme='sf'] :is(.tv-info, .tv-panel) {
+.tv[data-theme='sf'] :is(.tv-info, .tv-panel, .tv-flow__main) {
   border-radius: 4px;
   border: 1px solid rgba(126, 224, 255, 0.22);
   background: var(--tv-panel);
@@ -180,4 +184,16 @@
   to {
     opacity: 0.45;
   }
+}
+
+/* the game's art behind the ribbon stays a hint: the panels under it carry the text */
+.tv[data-theme='sf'] .tv-backdrop {
+  opacity: 0.32;
+}
+.tv[data-theme='sf'] .tv-flow__title h1 {
+  font-size: calc(1.7em * var(--tv-fs-title));
+}
+.tv[data-theme='sf'] .tv-info dt {
+  color: var(--tv-dim);
+  font-weight: 500;
 }
