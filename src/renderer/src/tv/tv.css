@@ -777,10 +777,11 @@
 
 /* ---------- cover ribbon (games.layout = "coverflow") ---------- */
 .tv-games--flow {
-  --tv-flow-max: 30vh;
+  --tv-flow-max: 45vh;
   grid-template-columns: minmax(0, 1fr);
-  /* head | ribbon (with its reflection) | title + description and the details, side by side */
-  grid-template-rows: auto minmax(0, 0.8fr) minmax(0, 1fr);
+  /* head | ribbon (with its reflection) | title + description and the details, side by side; the panels
+     a little lower than half, so the reflections under the covers show */
+  grid-template-rows: auto minmax(0, 0.96fr) minmax(0, 1fr);
   row-gap: 1.2vh;
 }
 /* the ribbon also takes the head's row: the platform logo stays in the top left corner, the selected
@@ -800,15 +801,17 @@
 }
 .tv-flow__panel {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 1.4vw;
   min-height: 0;
 }
 .tv-flow__main {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1vh;
   min-height: 0;
+  /* the game's logo stands above the panel (.tv-flow__title): the text starts at the top */
   padding: 1.6vh 1.8vw;
   background: var(--tv-panel);
   border: 1px solid var(--tv-line);
@@ -823,14 +826,9 @@
   --tv-flow-horizon: calc(100% - var(--tv-flow-floor));
 }
 .tv-flow__stage {
-  /* a cover is 2:3, at most --tv-flow-max high. Above the horizon: the side covers (scaled 0.8, turned
-     towards the viewer: top edge at 0.94 H) stay below the head with the platform logo, the selected
-     one (1.08: top at 1.04 H, HUD corners 1.6vh above it) stays inside the ribbon */
-  --tv-flow-h: min(
-    var(--tv-flow-max, 40vh),
-    calc((100cqh - var(--tv-flow-floor) - var(--tv-listlogo-h) - 3.5vh) / 0.94),
-    calc((100cqh - var(--tv-flow-floor) - 1.6vh) / 1.04)
-  );
+  /* a cover is 2:3, at most --tv-flow-max high. The selected one (scale 1.08 around a point 0.3 H above
+     its feet: top at 1.056 H above the horizon, HUD corners 1.6vh above it) ends at the top bar */
+  --tv-flow-h: min(var(--tv-flow-max, 40vh), calc((100cqh - var(--tv-flow-floor) - 1.6vh) / 1.056));
   --tv-flow-w: calc(var(--tv-flow-h) * 2 / 3);
   position: absolute;
   inset: 0;
@@ -843,6 +841,9 @@
   top: calc(var(--tv-flow-horizon) - var(--h, 1) * var(--tv-flow-h));
   width: calc(var(--w, 0.6667) * var(--tv-flow-h));
   height: calc(var(--h, 1) * var(--tv-flow-h));
+  /* covers shrink away from the middle (flowScale) around a point low on the cover: their tops fall
+     more than their feet rise, as in perspective */
+  transform-origin: 50% calc(100% - 0.3 * var(--tv-flow-h));
   transform-style: preserve-3d;
   transition:
     transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -924,11 +925,18 @@
     0 0 46px color-mix(in srgb, var(--tv-accent) 45%, transparent),
     0 26px 60px rgba(0, 0, 0, 0.6);
 }
+/* the game's logo (or name) just above the panel, out of it: the description gets its row */
 .tv-flow__title {
+  position: absolute;
+  bottom: calc(100% + 1vh);
+  left: 1.4vw;
+  max-width: calc(100% - 2.8vw);
   display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  min-height: 6vh;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.tv-flow__title h1 {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
 }
 .tv-flow__title h1 {
   margin: 0;
@@ -937,9 +945,9 @@
   line-height: 1.1;
 }
 .tv-flow__title .tv-logo .tv-logo__img {
-  height: 7vh;
+  height: 11vh;
   max-width: 30vw;
-  object-position: left center;
+  object-position: left bottom;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
 }
 /* the description fills the panel: full text colour, roomy lines; longer ones scroll (useDescScroll) */
@@ -960,14 +968,19 @@
   overflow: hidden;
   min-height: 0;
 }
+/* two pairs of label / value columns, filled row by row (Status | Rozmiar, Ostatnio | Czas gry…) */
 .tv-games--flow .tv-info dl {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 0.5em 1.2em;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 0.5em 1em;
   font-size: calc(1em * var(--tv-fs-meta));
 }
 .tv-games--flow .tv-dlrow {
   display: contents;
+}
+/* half the width: a long value goes to a second line instead of being cut */
+.tv-games--flow .tv-info dd {
+  white-space: normal;
 }
 
 /* the selected game's art behind everything, fading into the page at the bottom */

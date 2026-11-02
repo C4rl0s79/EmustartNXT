@@ -10,16 +10,24 @@ import { Art } from '../components/Art'
 // horizon), so the reflections start together. Until a picture has loaded it takes the shape usual
 // for this list (the median of the shapes already seen), so nothing jumps much.
 //
-// Sizes are in units of the ribbon's height H. Spacing is worked out from each cover's own width so
-// that none covers another: the selected cover is scaled 1.08 (half width 0.54 w); a neighbour turned
-// 58° and scaled 0.8, with its own perspective, shows about 0.64 of its width (measured: 136 px of a
-// 318 px cover) — half of it 0.32 w, counted as 0.33 w — and a gap of 0.07 H stays between covers.
+// Sizes are in units of the ribbon's height H. Covers get smaller away from the middle (flowScale: a
+// perspective without a shared 3D camera, so every cover's width on screen stays known). Spacing is
+// worked out from each cover's own width and scale so that none covers another: the selected cover is
+// scaled 1.08 (half width 0.54 w); a neighbour turned 58° with its own perspective shows about 0.8 of
+// its width per unit of scale (measured: 136 px of a 318 px cover at 0.8) — half of it 0.4 w per unit,
+// counted as 0.4125 — and a gap of 0.07 H stays between covers.
 
 const SIDE = 5 // covers drawn on each side of the selected one
 const MAX_W = 1.1 // widest cover, in H (a landscape box)
 const GAP = 0.07
 const SEL_HALF = 0.54
-const SIDE_HALF = 0.33
+const SIDE_HALF = 0.4125 // per unit of a neighbour's scale
+const SCALES = [1.08, 0.88, 0.74, 0.62, 0.52, 0.44]
+
+/** a cover's scale by its distance from the selected one (0 = selected) */
+export function flowScale(d: number): number {
+  return SCALES[Math.min(Math.abs(d), SCALES.length - 1)]
+}
 
 /** a cover's box for a picture's width / height: [width, height] in H */
 export function coverBox(ratio: number): [number, number] {
@@ -31,7 +39,7 @@ export function coverBox(ratio: number): [number, number] {
 /** the centre of each cover from the selected one (index `sel`), in H, from the covers' widths */
 export function flowLayout(widths: number[], sel: number): number[] {
   const x = new Array<number>(widths.length).fill(0)
-  const half = (i: number): number => (i === sel ? SEL_HALF : SIDE_HALF) * widths[i]
+  const half = (i: number): number => (i === sel ? SEL_HALF : SIDE_HALF * flowScale(i - sel)) * widths[i]
   for (let i = sel + 1; i < widths.length; i++) x[i] = x[i - 1] + half(i - 1) + GAP + half(i)
   for (let i = sel - 1; i >= 0; i--) x[i] = x[i + 1] - half(i + 1) - GAP - half(i)
   return x
@@ -98,7 +106,7 @@ const FlowItem = memo(function FlowItem({ game, d, x, box, onPick }: { game: Gam
         ['--h' as string]: box[1],
         // each cover has its own perspective (not the ribbon's): every turned cover then looks the same
         // and its width is what the spacing counts on, however far from the middle it stands
-        transform: `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) perspective(1100px) rotateY(${turn}deg) scale(${d === 0 ? 1.08 : 0.8})`,
+        transform: `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) perspective(1100px) rotateY(${turn}deg) scale(${flowScale(d)})`,
         zIndex: 20 - a,
         opacity: a > SIDE - 1 ? 0 : 1
       }}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_THEME, THEMES, contrast, lookDefaults, lookSpecFor, themeById, themeStyle } from '../src/renderer/src/tv/themes'
 import { FONTS, type LookChoice } from '../src/renderer/src/tv/look'
 import { LOOK_ITEMS } from '../src/renderer/src/tv/look'
-import { coverBox, flowLayout } from '../src/renderer/src/tv/TvCoverflow'
+import { coverBox, flowLayout, flowScale } from '../src/renderer/src/tv/TvCoverflow'
 
 describe('TV themes', () => {
   it('has the default theme and unique ids; an unknown id falls back to the default', () => {
@@ -55,9 +55,27 @@ describe('TV themes', () => {
 })
 
 describe('cover ribbon spacing', () => {
-  // turned neighbour shows ~0.64 of its width (half 0.32 w); the selected one 1.08 (half 0.54 w)
+  // the selected cover: half 0.54 w (scale 1.08); a turned neighbour shows ~0.4 of its width per unit of
+  // its scale (measured: 0.64 w at 0.8) — and the scale falls with the distance from the middle
+  const half = (i: number, w: number[], sel: number): number => (i === sel ? 0.54 : 0.4 * flowScale(i - sel)) * w[i]
   const covered = (x: number[], w: number[], sel: number): boolean =>
-    x.some((xi, i) => i + 1 < x.length && xi + (i === sel ? 0.54 : 0.32) * w[i] > x[i + 1] - (i + 1 === sel ? 0.54 : 0.32) * w[i + 1])
+    x.some((xi, i) => i + 1 < x.length && xi + half(i, w, sel) > x[i + 1] - half(i + 1, w, sel))
+
+  it('covers get smaller away from the middle (perspective) and stay as close as their sizes allow', () => {
+    for (let d = 1; d < 5; d++) expect(flowScale(d)).toBeLessThan(flowScale(d - 1))
+    expect(flowScale(-2)).toBe(flowScale(2))
+    const poster = coverBox(2 / 3)[0]
+    const w = Array(9).fill(poster)
+    const x = flowLayout(w, 4)
+    // between the visible edges of neighbours: a small gap everywhere (0.07 H and the margin), so smaller
+    // covers further out stand closer together
+    const gaps = x.slice(1).map((xi, i) => xi - half(i + 1, w, 4) - (x[i] + half(i, w, 4)))
+    for (const g of gaps) {
+      expect(g).toBeGreaterThan(0.05)
+      expect(g).toBeLessThan(0.1)
+    }
+    expect(x[1] - x[0]).toBeLessThan(x[3] - x[2])
+  })
 
   it('no cover covers another, with posters, landscape boxes or both mixed', () => {
     const poster = coverBox(2 / 3)[0]
