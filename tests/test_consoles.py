@@ -98,6 +98,56 @@ def test_arcade_has_no_console_and_nothing_found_is_remembered(env, monkeypatch)
     assert mediastore.exists(consoles.STORE, "ps2.console.none") and consoles.url_for("ps2")["url"] == ""
 
 
+def test_found_but_download_failed_is_tried_again_later(env, monkeypatch):
+    # Commons ma kandydata, ale pobranie obrazka się nie udało (sieć) — bez znacznika „brak”, następnym razem od nowa
+    monkeypatch.setattr(consoles, "search", lambda es: [{"title": "File:PS2-Versions.jpg", "thumb": "x"}])
+    monkeypatch.setattr(consoles, "fetch", lambda es, cand: False)
+    monkeypatch.setattr(consoles.art_sources, "online", lambda: True)
+    monkeypatch.setattr(consoles.art_sources, "last_error", lambda: "upload.wikimedia.org: HTTP 503")
+    consoles._run(["ps2"])
+    assert not mediastore.exists(consoles.STORE, "ps2.console.none")
+    # po błędzie sieci — przerwa: kolejne zapytania urządzeń nie szukają od nowa co chwilę
+    started = []
+    monkeypatch.setattr(consoles.threading, "Thread", lambda *a, **k: started.append(k) or type("T", (), {"start": lambda self: None})())
+    consoles.fetch_missing(["ps2"])
+    assert started == []
+    consoles.choose("ps2", "auto")                                          # ręczne „automatycznie” — od razu
+    consoles.fetch_missing(["ps2"])
+    assert len(started) == 1
+
+
+def test_candidates_that_are_not_images_mean_no_photo_not_a_network_error(env, monkeypatch):
+    monkeypatch.setattr(consoles, "search", lambda es: [{"title": "File:X.jpg", "thumb": "x"}])
+    monkeypatch.setattr(consoles.art_sources, "fetch", lambda url, timeout=20: b"to nie obraz")
+    monkeypatch.setattr(consoles, "PROGRESS", consoles.mediaprogress.Progress("konsola"))
+    consoles.PROGRESS.start(1)
+    consoles._run(["ps2"])
+    p = consoles.PROGRESS.snapshot()
+    assert mediastore.exists(consoles.STORE, "ps2.console.none") and p["none"] == 1 and not p["last_error"]
+
+
+def test_logo_network_error_is_retried_404_is_an_answer(env, monkeypatch):
+    import urllib.error
+    from emustart import art_sources, logos
+
+    def answer(code):
+        def urlopen(*a, **k):
+            raise urllib.error.HTTPError("https://raw.githubusercontent.com/x", code, "x", {}, None)
+        return urlopen
+    monkeypatch.setattr(art_sources, "online", lambda: True)
+    monkeypatch.setattr(logos, "PROGRESS", consoles.mediaprogress.Progress("logo"))
+    logos.PROGRESS.start(2)
+    monkeypatch.setattr(art_sources.urllib.request, "urlopen", answer(429))
+    logos._run({}, ["vectrex"])
+    assert not logos._has("vectrex.none")                                   # chwilowy błąd — bez znacznika
+    monkeypatch.setattr(art_sources.urllib.request, "urlopen", answer(404))
+    logos._retry_at.clear()
+    logos._run({}, ["vectrex"])
+    assert logos._has("vectrex.none")                                       # oba źródła: nie ma
+    p = logos.PROGRESS.snapshot()
+    assert (p["retry"], p["none"]) == (1, 1) and "HTTP 429" in p["last_error"]
+
+
 def test_choose_none_and_auto(env, monkeypatch):
     fetch, _asked = _fake_fetch(PS2_HITS, _jpeg_on_white())
     monkeypatch.setattr(consoles.art_sources, "fetch", fetch)
@@ -169,8 +219,14 @@ def test_server_systems_carry_console_and_missing_ones_are_fetched(env, monkeypa
     assert row["console_credit"].startswith("Evan-Amos") and asked == ["snes"]
     remote.API = s
     try:
+        # komputery i Lumen pytają /v1/library (server_systems), panel — systems_look: obie drogi też pobierają brakujące
+        asked.clear()
         rec = {x["es"]: x for x in libsync.server_systems()}["snes"]
         assert rec["console"] == row["console"] and rec["console_credit"] == row["console_credit"]
+        assert asked == ["snes"]
+        asked.clear()
+        assert {x["es"]: x for x in s.systems_look()}["snes"]["console"] == row["console"]
+        assert asked == ["snes"]
     finally:
         remote.API = None
 
@@ -192,6 +248,7 @@ def test_panel_actions_candidates_choose_and_upload(env, monkeypatch):
     from emustart import srvadmin, srvapi
     fetch, _asked = _fake_fetch(PS2_HITS, _jpeg_on_white())
     monkeypatch.setattr(consoles.art_sources, "fetch", fetch)
+    monkeypatch.setattr(consoles, "_exists", lambda u: False)               # motywy: bez sieci
     s = srvapi.ServerApi(start_background=False)
     r = srvadmin.ACTIONS_ARGS["system_console_candidates"](s, {"es": "ps2"})
     assert r["ok"] and [c["id"] for c in r["list"]][:2] == ["commons:File:PS2-Slim-Console-Set.png",
@@ -225,3 +282,137 @@ def test_panel_upload_body_may_be_larger_than_other_actions(monkeypatch):
     monkeypatch.setattr(srvadmin, "ENABLED", True)
     srvadmin.handle(H(), None)
     assert len(got.get("data", "")) == 300_000
+
+
+# ── paczki grafik konsol z motywów ES / ES-DE (jak paczki logo) ──
+
+def _pack(name_part: str) -> str:
+    return next(p["id"] for p in consoles.pack_sources() if name_part in p["id"])
+
+
+def test_theme_packs_are_listed_with_licences():
+    packs = {p["id"]: p["license"] for p in consoles.pack_sources()}
+    assert packs[_pack("Retrorama")] == "GPL-3.0"
+    assert packs[_pack("PlayStation X")] == packs[_pack("Analogue 3D")] == "brak licencji w repozytorium"
+
+
+def test_pack_sets_every_system_it_has_and_others_keep_theirs(env, monkeypatch):
+    src = _pack("Retrorama")
+    monkeypatch.setattr(consoles, "_exists", lambda u: "retrorama" in u and u.endswith("/snes.png"))
+    monkeypatch.setattr(consoles.art_sources, "fetch", lambda u, timeout=20: _png(600, 300, (200, 30, 30, 255)))
+    assert consoles.upload("psx", _png(), "moje")                           # psx ma własne — paczka go nie ma
+    r = consoles.apply_pack(src, ["snes", "psx"])
+    assert r == {"ok": True, "changed": ["snes"], "missing": ["psx"]}
+    snes = consoles.url_for("snes")
+    assert snes["url"] and "Retrorama" in snes["credit"] and "GPL-3.0" in snes["credit"]
+    assert consoles.url_for("psx")["credit"] == "moje"
+    assert not consoles.apply_pack("nie ma takiej", ["snes"])["ok"]
+
+
+def test_theme_candidates_and_choose_only_from_proposals(env, monkeypatch):
+    monkeypatch.setattr(consoles, "_exists", lambda u: u.endswith("/megadrive.webp") or u.endswith("/megadrive.png"))
+    monkeypatch.setattr(consoles.art_sources, "fetch", lambda u, timeout=20: _png(424, 238))
+    cands = consoles.theme_candidates("megadrive")
+    assert {c["source"] for c in cands} == {p["id"] for p in consoles.pack_sources()}
+    assert all(c["url"].startswith("https://raw.githubusercontent.com/") and c["license"] for c in cands)
+    assert consoles.choose("megadrive", "theme:" + cands[0]["url"])
+    assert not consoles.choose("megadrive", "theme:https://raw.githubusercontent.com/obcy/repo/main/megadrive.png")
+
+
+def test_pixel_art_is_enlarged_with_sharp_pixels():
+    im = Image.new("RGBA", (40, 20), (0, 0, 0, 0))
+    for x in range(40):
+        for y in range(20):
+            if (x + y) % 2:
+                im.putpixel((x, y), (250, 40, 40, 255))
+    buf = io.BytesIO()
+    im.save(buf, "PNG")
+    out, _lum = consoles.prepare(buf.getvalue(), pixel=True)
+    big = Image.open(io.BytesIO(out)).convert("RGBA")
+    assert big.size[0] >= 800                                               # tło pełnego ekranu, bez rozmycia
+    opaque = {c for _n, c in big.getcolors(1 << 20) if c[3] > 0}
+    assert len(opaque) <= 3                                                 # bez nowych, uśrednionych kolorów
+
+
+def test_panel_lists_and_applies_console_packs(env, monkeypatch):
+    import time
+    from emustart import scanner, srvadmin, srvapi
+    from test_core import _write
+    _, _roms, tmp = env
+    for es, f in (("psx", "A (USA).cue"), ("snes", "B (USA).sfc")):
+        _write(tmp / "roms" / es / f)
+        scanner.scan_system(es, tmp / "roms" / es)
+    s = srvapi.ServerApi(start_background=False)
+    monkeypatch.setattr(consoles, "fetch_missing", lambda es_list: None)
+    monkeypatch.setattr(consoles, "_exists", lambda u: "analogue-3d" in u and u.endswith("/psx.png"))
+    monkeypatch.setattr(consoles.art_sources, "fetch", lambda u, timeout=20: _png(450, 246))
+    packs = srvadmin.ACTIONS_ARGS["system_console_packs"](s, {})
+    assert packs["ok"] and len(packs["list"]) == 3
+    src = _pack("Analogue 3D")
+    assert srvadmin.ACTIONS_ARGS["system_console_pack_apply"](s, {"id": src})["ok"]
+    for _ in range(100):
+        st = srvadmin.ACTIONS_ARGS["system_console_pack_status"](s, {})
+        if not st["running"]:
+            break
+        time.sleep(0.05)
+    assert st["changed"] == ["psx"] and st["missing"] == ["snes"]
+    assert not srvadmin.ACTIONS_ARGS["system_console_pack_apply"](s, {"id": "nie ma"})["ok"]
+
+
+AMIGA_HITS = {"query": {"pages": {
+    "1": _page("File:Amiga-CD32-wController-L-TRSP.png", "Public domain"),                 # konsola CD32, nie Amiga
+    "2": _page("File:2019-08-04 Commodore Amiga personal computer.jpg", "CC BY-SA 4.0"),
+    "3": _page("File:Amiga 500 Plus (transparent background).png", "Public domain"),
+    "4": _page("File:Console videogiochi amiga 500 (milano).jpg", "CC BY 3.0")}}}
+
+
+def test_home_computers_are_searched_as_computers_not_consoles(env, monkeypatch):
+    fetch, asked = _fake_fetch(AMIGA_HITS, b"")
+    monkeypatch.setattr(consoles.art_sources, "fetch", fetch)
+    found = consoles.search("amiga")
+    assert [c["title"] for c in found][:2] == ["File:Amiga 500 Plus (transparent background).png",
+                                               "File:2019-08-04 Commodore Amiga personal computer.jpg"]
+    assert not any("CD32" in c["title"] or "Console" in c["title"] for c in found)
+    q = urllib.parse.parse_qs(urllib.parse.urlparse(asked[0]).query)["gsrsearch"][0]
+    assert q == "Amiga 500"                                                 # typowy model, bez „console Evan-Amos”
+    fetch, asked = _fake_fetch(PS2_HITS, b"")
+    monkeypatch.setattr(consoles.art_sources, "fetch", fetch)
+    consoles.search("ps2")                                                  # konsole — jak dotąd
+    assert urllib.parse.parse_qs(urllib.parse.urlparse(asked[0]).query)["gsrsearch"][0].endswith("console Evan-Amos")
+
+
+def test_background_download_reports_progress_and_network_errors(env, monkeypatch):
+    """Pasek w panelu: ile z ilu, wynik każdego systemu; błąd sieci (np. HTTP 429) — do ponowienia, z powodem,
+    bez znacznika „brak zdjęcia”."""
+    fetch, _asked = _fake_fetch(PS2_HITS, _jpeg_on_white())
+    monkeypatch.setattr(consoles.art_sources, "fetch", fetch)
+    monkeypatch.setattr(consoles.art_sources, "online", lambda: True)
+    monkeypatch.setattr(consoles, "PROGRESS", consoles.mediaprogress.Progress("konsola"))
+    consoles.PROGRESS.start(3)
+    consoles.art_sources._err.text = "stary błąd innego systemu"            # nie przechodzi na kolejny system
+    consoles._run(["ps2", "fbneo"])                                          # zdjęcie jest; automat — bez zdjęcia
+    monkeypatch.setattr(consoles, "search", lambda es: [])
+    monkeypatch.setattr(consoles.art_sources, "last_error", lambda: "commons.wikimedia.org: HTTP 429")
+    consoles._run(["snes"])
+    p = consoles.PROGRESS.snapshot()
+    assert (p["done"], p["total"], p["found"], p["none"], p["retry"], p["running"]) == (3, 3, 1, 1, 1, False)
+    assert p["last_error"] == "snes: commons.wikimedia.org: HTTP 429"
+    assert not mediastore.exists(consoles.STORE, "snes.console.none")       # następnym razem od nowa
+
+
+def test_fetch_tells_why_it_failed(monkeypatch):
+    import urllib.error
+    from emustart import art_sources
+
+    def boom(*a, **k):
+        raise urllib.error.HTTPError("https://upload.wikimedia.org/x.png", 429, "Too Many Requests", {}, None)
+    monkeypatch.setattr(art_sources.urllib.request, "urlopen", boom)
+    assert art_sources.fetch("https://upload.wikimedia.org/x.png") is None
+    assert art_sources.last_error() == "upload.wikimedia.org: HTTP 429"
+
+
+def test_panel_shows_media_progress(env):
+    from emustart import srvadmin, srvapi
+    s = srvapi.ServerApi(start_background=False)
+    r = srvadmin.ACTIONS_ARGS["systems_media_progress"](s, {})
+    assert r["ok"] and {"running", "done", "total", "current", "last_error"} <= set(r["consoles"]) <= set(r["logos"]) | set(r["consoles"])
