@@ -344,6 +344,15 @@ obrazki pobierają się z images.launchbox-app.com dopiero przy wyświetleniu (i
 
 LaunchBox nie ma plakatów 2:3 — pudełka mają kształt pudełek (te same, które ma serwer).
 
+## 6h. Grafiki platform w trybie TV (Lumen 1.0.37, EmuStart 0.56.0)
+
+- **Logo platformy** zawsze oryginalne (z serwera); w Kronice i Horyzoncie stoi na nośniku motywu (rzeźbiony
+  kartusz / szklany panel — `logoPlate`, obraz i pole logo w arkuszu motywu), EmuStart bez nośnika.
+- **Zdjęcie konsoli** za karuzelą systemów w Kronice i Horyzoncie (`consoleBackdrop`): serwer szuka go sam
+  (Wikimedia Commons, wolne licencje) albo administrator wybiera / wgrywa w panelu; silnik podaje przy systemie
+  `console`, `console_credit`, `console_lum`, Lumen pobiera je przez `lumen-art: emusys:<es>/hero` (jak logo:
+  `emusys:<es>/logo`). Ton nadaje motyw, jasność jest wyrównana wg `console_lum`; autor i licencja w rogu ekranu.
+
 ## 6e. Aktualizacja programu (jak EmuStart)
 
 `src/main/updater.ts` + `releaseSigning.ts`, ten sam przebieg co `emustart/updater.py`: najnowsze wydanie
