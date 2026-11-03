@@ -883,23 +883,11 @@
   position: relative;
 }
 
-/* platform logos repainted by the theme (SystemLogo.tsx): the server's logo becomes a mask over the
-   theme's fill; the image stays (invisible) to give the box its size */
+/* platform logos in the theme's craft (SystemLogo.tsx, lib/logoStyles.ts); Steam, drawn locally, is
+   struck in the theme's fill where the theme uses enamel (it has no colours to keep) */
 .sys-logo {
   position: relative;
   display: inline-flex;
-}
-.sys-logo.is-tinted > img {
-  visibility: hidden;
-}
-.sys-logo__fill {
-  position: absolute;
-  inset: 0;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  background: var(--tv-logo-fill, #fff);
 }
 .steam-logo.is-tinted {
   color: var(--tv-logo-tone, #fff);
@@ -910,7 +898,7 @@
   background-clip: text;
   color: transparent;
 }
-/* platform logos as retro neon (themes.ts logoNeon — Horyzont; SystemLogo.tsx, lib/neonLogo.ts): the
+/* platform logos as retro neon (themes.ts logoStyle neon — Horyzont; SystemLogo.tsx, lib/logoStyles.ts): the
    logo's own colours with a sharp light core and a halo in its hue (--neon); the platform in focus
    glows more */
 .neon-glow {

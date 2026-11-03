@@ -77,8 +77,7 @@ export function TvApp() {
           onOpen={() => sys && setScreen('games')}
           onMenu={() => setMenu(true)}
           active={!menu && !lookEd && !themesOpen}
-          logoTint={!!theme.logoTint}
-          logoNeon={!!theme.logoNeon}
+          logoStyle={theme.logoStyle}
         />
       )}
       {screen === 'games' && sys && (

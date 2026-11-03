@@ -151,17 +151,27 @@
   }
 }
 
-/* ---- beyond the palette: scale, platform logos in gold, the description on parchment, gothic windows ---- */
+/* ---- beyond the palette: scale, platform logos in enamel, the description on parchment, gothic windows ---- */
 
 .tv[data-theme='fantasy'] {
-  /* platform logos struck in gold (SystemLogo.tsx) */
+  /* Steam's logo struck in gold (SystemLogo.tsx; the other platforms are enamel in gold wire) */
   --tv-logo-fill: linear-gradient(180deg, #fff1c4 0%, #ecc46c 38%, #a8742a 52%, #e7c06a 70%, #fbe7a8 100%);
   --tv-logo-tone: #e9c26c;
   --tv-parchment: #ead9b0;
   --tv-ink: #3a2513;
 }
-.tv[data-theme='fantasy'] :is(.sys-logo, .steam-logo) {
+.tv[data-theme='fantasy'] .steam-logo {
   filter: drop-shadow(0 2px 0 rgba(58, 30, 10, 0.9)) drop-shadow(0 0 18px rgba(216, 150, 60, 0.35));
+}
+/* enamel in gold wire (lib/logoStyles.ts): a little relief — light from above, a dark edge below — and
+   candlelight around; the platform in focus catches more of it */
+.tv[data-theme='fantasy'] .sys-logo.is-enamel {
+  filter: drop-shadow(0 -1px 0 rgba(255, 236, 170, 0.35)) drop-shadow(0 1.5px 0 rgba(42, 22, 8, 0.95))
+    drop-shadow(0 0 14px rgba(216, 150, 60, 0.28));
+}
+.tv[data-theme='fantasy'] .tv-syscard.is-current :is(.sys-logo.is-enamel, .steam-logo) {
+  filter: drop-shadow(0 1px 0 rgba(40, 20, 6, 0.95)) drop-shadow(0 0 22px rgba(240, 170, 70, 0.55))
+    drop-shadow(0 0 4px rgba(255, 220, 150, 0.4));
 }
 
 /* the description as a scroll of parchment: warm paper with darker, burnt edges, iron-gall ink, an
