@@ -11,20 +11,40 @@ const BASE = 'https://www.steamgriddb.com/api/v2'
 
 const ENDPOINT: Record<ArtKind, string> = { grid: 'grids', hero: 'heroes', logo: 'logos', icon: 'icons' }
 
-/** Request only the sizes we actually display. */
-export function queryFor(kind: ArtKind): Record<string, string> {
-  const common = { nsfw: 'false', humor: 'false', epilepsy: 'false', types: 'static' }
+/** SteamGridDB returns at most 50 images per page (default 50). */
+export const PAGE_SIZE = 50
+
+/**
+ * Request only the sizes we actually display. The automatic pick stays static (an animated
+ * 3840 px hero weighs tens of MB); the "Grafiki" window also asks for animated images
+ * (APNG / WebP / GIF) and drops the mime filter so no animated format is cut out.
+ */
+export function queryFor(kind: ArtKind, opts: { animated?: boolean; page?: number } = {}): Record<string, string> {
+  const common: Record<string, string> = {
+    nsfw: 'false',
+    humor: 'false',
+    epilepsy: 'false',
+    types: opts.animated ? 'static,animated' : 'static',
+    limit: String(PAGE_SIZE),
+    page: String(Math.max(0, Math.floor(opts.page ?? 0)))
+  }
+  const mimes = (m: string): Record<string, string> => (opts.animated ? {} : { mimes: m })
   switch (kind) {
     case 'grid':
-      return { ...common, dimensions: '600x900,660x930', mimes: 'image/png,image/jpeg,image/webp' }
+      return { ...common, dimensions: '600x900,660x930', ...mimes('image/png,image/jpeg,image/webp') }
     case 'hero':
-      return { ...common, dimensions: '1920x620,3840x1240', mimes: 'image/png,image/jpeg,image/webp' }
+      return { ...common, dimensions: '1920x620,3840x1240', ...mimes('image/png,image/jpeg,image/webp') }
     case 'logo':
-      return { ...common, mimes: 'image/png,image/webp' }
+      return { ...common, ...mimes('image/png,image/webp') }
     case 'icon':
-      return { ...common, mimes: 'image/png' }
+      return { ...common, ...mimes('image/png') }
   }
 }
+
+const VIDEO_RE = /\.(webm|mp4)(?:\?|$)/i
+
+/** SteamGridDB serves an animated image's thumbnail as a short video. */
+export const isVideoThumb = (thumb: string): boolean => VIDEO_RE.test(thumb)
 
 export class SgdbAuthError extends Error {}
 export class SgdbNotFound extends Error {}
@@ -37,6 +57,9 @@ interface RawImage {
   height: number
   style?: string
   score?: number
+  mime?: string
+  /** "static" | "animated" */
+  type?: string
   author?: { name?: string }
   nsfw?: boolean
   humor?: boolean
@@ -55,7 +78,8 @@ export function toOptions(data: unknown): ArtOption[] {
       height: x.height,
       style: x.style,
       score: x.score,
-      author: x.author?.name
+      author: x.author?.name,
+      animated: x.type === 'animated' || x.mime === 'image/gif' || /\.gif(?:\?|$)/i.test(x.url) || isVideoThumb(x.thumb || '') || undefined
     }))
 }
 
@@ -124,9 +148,10 @@ export class SgdbClient {
     })
   }
 
-  async images(kind: ArtKind, by: { steamAppId: number } | { gameId: number }): Promise<ArtOption[]> {
+  /** One page (PAGE_SIZE) of images; `animated` also lists animated ones (the "Grafiki" window). */
+  async images(kind: ArtKind, by: { steamAppId: number } | { gameId: number }, opts: { animated?: boolean; page?: number } = {}): Promise<ArtOption[]> {
     const target = 'steamAppId' in by ? `steam/${by.steamAppId}` : `game/${by.gameId}`
-    const q = new URLSearchParams(queryFor(kind)).toString()
+    const q = new URLSearchParams(queryFor(kind, opts)).toString()
     try {
       return toOptions(await this.call(`/${ENDPOINT[kind]}/${target}?${q}`))
     } catch (e) {

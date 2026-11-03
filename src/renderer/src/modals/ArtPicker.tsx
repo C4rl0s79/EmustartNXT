@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { ArtKind, ArtLayout, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, SgdbGame } from '@shared/types'
+import { useEffect, useRef, useState } from 'react'
+import type { ArtKind, ArtLayout, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, SgdbGame } from '@shared/types'
 import { api, attempt, useStore, pickPath } from '../store'
 import { Modal } from '../components/Modal'
 import { TextField } from '../components/TextField'
@@ -16,6 +16,17 @@ const ZOOM_MAX = 2.4
 const ZOOM_STEP = 0.2
 let lastZoom = 1
 const isEmuGame = (g: Game): boolean => g.source === 'emustart'
+/** SteamGridDB gives an animated image's thumbnail as a short video */
+const isVideo = (u: string): boolean => /\.(webm|mp4)(?:\?|$)/i.test(u)
+
+/** a SteamGridDB thumbnail: picture, or a looping silent video for animated art */
+function SgdbThumb({ o }: { o: ArtOption }) {
+  return isVideo(o.thumb) ? (
+    <video src={o.thumb} autoPlay loop muted playsInline preload="metadata" />
+  ) : (
+    <img src={o.thumb} alt="" loading="lazy" decoding="async" />
+  )
+}
 
 /** the TV layout shows a cover whole, a screenshot slot and a logo */
 const TV_LABEL: Partial<Record<ArtKind, string>> = { grid: 'Okładka', hero: 'Zrzut / tło', logo: 'Logo' }
@@ -48,14 +59,20 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
     setKind(kinds[(i + step + kinds.length) % kinds.length][0])
   }
   const [result, setResult] = useState<ArtOptionsResult | null>(null)
+  // "Pokaż więcej": the next SteamGridDB page is appended to the list (like PyLinksWeb)
+  const [more, setMore] = useState<'idle' | 'loading' | 'error'>('idle')
+  // which list is on screen now — a page that arrives for another one is dropped
+  const listKey = useRef('')
   const [searching, setSearching] = useState(false)
   const gp = prefs.art[game.id]
+  listKey.current = `${game.id}|${kind}|${gp?.sgdbGameId ?? ''}`
   const current = (tv ? prefs.artTv?.[game.id] : gp)?.[kind]
   const isEmu = game.source === 'emustart'
 
   useEffect(() => {
     let alive = true
     setResult(null)
+    setMore('idle')
     if (!hasKey) {
       setResult({ ok: false, error: 'Dodaj klucz SteamGridDB w Ustawieniach, aby wybierać spośród grafik społeczności.' })
       return
@@ -70,6 +87,25 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
   }, [game.id, kind, hasKey, gp?.sgdbGameId])
 
   const done = (msg: string) => (p: unknown) => p && useStore.getState().toast(msg)
+
+  const loadMore = async (): Promise<void> => {
+    if (!result?.ok || !result.hasMore || more === 'loading') return
+    const key = listKey.current
+    setMore('loading')
+    try {
+      const r = await api().art.options(game.id, kind, result.page + 1)
+      if (key !== listKey.current) return
+      if (!r.ok) return setMore('error')
+      setResult((prev) => {
+        if (!prev?.ok) return prev
+        const seen = new Set(prev.options.map((o) => o.id))
+        return { ...prev, options: [...prev.options, ...r.options.filter((o) => !seen.has(o.id))], page: r.page, hasMore: r.hasMore }
+      })
+      setMore('idle')
+    } catch {
+      if (key === listKey.current) setMore('error')
+    }
+  }
 
   if (searching) return <MatchSearch game={game} onClose={() => setSearching(false)} />
 
@@ -110,7 +146,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           className="btn"
           data-nav
           onClick={async () => {
-            const file = await pickPath({ kind: 'file', title: 'Własny plik graficzny', extensions: ['png', 'jpg', 'jpeg', 'webp'] })
+            const file = await pickPath({ kind: 'file', title: 'Własny plik graficzny', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] })
             if (file) void attempt(api().art.useFile(game.id, kind, file, layout)).then(done('Ustawiono własny plik'))
           }}
         >
@@ -151,7 +187,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
       )}
       {result?.ok && result.options.length > 0 && (
         <div className={`thumbs thumbs--${kind}`} data-nav-group={`thumbs-${kind}`}>
-          {result.options.slice(0, 48).map((o) => {
+          {result.options.map((o) => {
             const chosen = current?.type === 'sgdb' && current.imageId === o.id
             return (
               <button
@@ -162,11 +198,24 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
                 title={o.author ? `Autor: ${o.author}` : undefined}
                 onClick={() => void attempt(api().art.choose(game.id, kind, o, layout)).then(done('Zapisano wybór grafiki'))}
               >
-                <img src={o.thumb} alt="" loading="lazy" decoding="async" />
-                {o.style && <span className="thumb__tag">{o.style}</span>}
+                <SgdbThumb o={o} />
+                {(o.style || o.animated) && <span className="thumb__tag">{[o.animated && 'animowana', o.style].filter(Boolean).join(' · ')}</span>}
               </button>
             )
           })}
+        </div>
+      )}
+      {result?.ok && result.options.length > 0 && (
+        <p className="details__muted">
+          SteamGridDB: {result.options.length} {result.hasMore ? '(są kolejne)' : '(wszystkie)'}
+          {more === 'error' && ' · nie udało się wczytać kolejnej strony'}
+        </p>
+      )}
+      {result?.ok && result.hasMore && (
+        <div className="modal__row">
+          <button className="btn" data-nav disabled={more === 'loading'} onClick={() => void loadMore()}>
+            {more === 'loading' ? 'Wczytywanie…' : more === 'error' ? 'Spróbuj ponownie' : 'Pokaż więcej'}
+          </button>
         </div>
       )}
       {isEmu && kind !== 'icon' && <LaunchBoxThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'launchbox' ? current.url : undefined} />}

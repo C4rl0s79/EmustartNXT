@@ -43,7 +43,7 @@ const api: LumenApi = {
   },
   art: {
     url: (gameId, kind, rev = 0, layout) => `${ART_SCHEME}://img/${encodeURIComponent(gameId)}/${kind}?r=${rev}${layout === 'tv' ? '&tv=1' : ''}`,
-    options: (id, kind) => invoke(IPC.artOptions, id, kind),
+    options: (id, kind, page) => invoke(IPC.artOptions, id, kind, page),
     search: (term) => invoke(IPC.artSearch, term),
     setMatch: (id, g) => invoke(IPC.artSetMatch, id, g),
     choose: (id, kind, option, layout) => invoke(IPC.artChoose, id, kind, option, layout),

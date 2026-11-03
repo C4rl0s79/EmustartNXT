@@ -4,7 +4,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
-import type { ActionResult, ArtKind, ArtLayout, ArtOption, DetailsResult, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
@@ -15,7 +15,7 @@ import { SettingsStore } from './store/settings'
 import { LibraryService } from './library/service'
 import { StoreMetadataProvider } from './steam/storeMeta'
 import { DRY_RUN, openSteam, openSteamUri, shortcutRunUri } from './steam/actions'
-import { pickBestMatch, pickExactMatch, SgdbAuthError, SgdbClient } from './art/sgdb'
+import { PAGE_SIZE as SGDB_PAGE_SIZE, pickBestMatch, pickExactMatch, SgdbAuthError, SgdbClient } from './art/sgdb'
 import { LaunchBoxService } from './launchbox/service'
 import { XInputPoller } from './input/xinput'
 import { RawHidPads } from './input/rawhid'
@@ -427,7 +427,7 @@ async function emuLbArt(gameId: string, kind: ArtKind, types: readonly string[])
   return null
 }
 
-const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
+const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' }
 async function fileResponse(file: string): Promise<Response> {
   const type = IMAGE_TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
   return new Response(new Uint8Array(await fs.readFile(file)), { status: 200, headers: { 'Content-Type': type, 'Cache-Control': 'max-age=86400' } })
@@ -803,33 +803,42 @@ function registerIpc(): void {
     return settings.get()
   })
 
-  handle(IPC.artOptions, async (gameId: string, kind: ArtKind) => {
+  handle(IPC.artOptions, async (gameId: string, kind: ArtKind, pageArg?: number) => {
     if (!sgdb.enabled) return { ok: false, error: 'Dodaj klucz SteamGridDB w Ustawieniach, aby przeglądać grafiki.' }
     const appId = steamAppIdOf(gameId)
     const manual = prefs.get().art[gameId]
+    const page = Math.max(0, Math.floor(Number(pageArg) || 0))
+    // the "Grafiki" window: animated images too, one page at a time ("Pokaż więcej")
+    const opts = { animated: true, page }
+    const result = (sgdbGame: SgdbGame | undefined, options: ArtOption[]): ArtOptionsResult => ({
+      ok: true,
+      sgdbGame,
+      options,
+      page,
+      hasMore: options.length >= SGDB_PAGE_SIZE
+    })
     try {
       if (manual?.sgdbGameId) {
-        return {
-          ok: true,
-          sgdbGame: { id: manual.sgdbGameId, name: manual.sgdbGameName ?? `#${manual.sgdbGameId}` },
-          options: await sgdb.images(kind, { gameId: manual.sgdbGameId })
-        }
+        return result(
+          { id: manual.sgdbGameId, name: manual.sgdbGameName ?? `#${manual.sgdbGameId}` },
+          await sgdb.images(kind, { gameId: manual.sgdbGameId }, opts)
+        )
       }
       if (isEmuGameId(gameId)) {
         // EmuStart: exact title match, like the automatic poster (correct it with "Zmień dopasowanie")
         const names = emuTitles(gameId)
         let match: SgdbGame | undefined
         for (const n of names.slice(0, 3)) if ((match = pickExactMatch(names, await sgdb.search(n)))) break
-        return { ok: true, sgdbGame: match, options: match ? await sgdb.images(kind, { gameId: match.id }) : [] }
+        return result(match, match ? await sgdb.images(kind, { gameId: match.id }, opts) : [])
       }
       if (!appId) {
         // non-Steam shortcut: match by title (the user can correct it with "Zmień dopasowanie")
         const name = findGame(gameId)?.name
         const match = name ? pickBestMatch(name, await sgdb.search(name)) : undefined
-        return { ok: true, sgdbGame: match, options: match ? await sgdb.images(kind, { gameId: match.id }) : [] }
+        return result(match, match ? await sgdb.images(kind, { gameId: match.id }, opts) : [])
       }
-      const [game, options] = await Promise.all([sgdb.gameBySteamId(appId), sgdb.images(kind, { steamAppId: appId })])
-      return { ok: true, sgdbGame: game, options }
+      const [game, options] = await Promise.all([page ? Promise.resolve(undefined) : sgdb.gameBySteamId(appId), sgdb.images(kind, { steamAppId: appId }, opts)])
+      return result(game, options)
     } catch (e) {
       return { ok: false, error: e instanceof SgdbAuthError ? e.message : 'Nie udało się połączyć ze SteamGridDB.' }
     }
@@ -872,7 +881,7 @@ function registerIpc(): void {
     const lay = layoutOf(layout)
     const choices = lay === 'tv' ? prefs.get().artTv : prefs.get().art
     if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
-    if (!/\.(png|jpe?g|webp)$/i.test(String(src))) throw new Error('Wybierz plik PNG, JPG albo WebP.')
+    if (!/\.(png|jpe?g|webp|gif)$/i.test(String(src))) throw new Error('Wybierz plik PNG, JPG, WebP albo GIF.')
     const stat = await fs.stat(src).catch(() => null)
     if (!stat?.isFile()) throw new Error('Wybrany plik nie istnieje.')
     if (stat.size > 25 * 1024 * 1024) throw new Error('Plik jest zbyt duży (maks. 25 MB).')

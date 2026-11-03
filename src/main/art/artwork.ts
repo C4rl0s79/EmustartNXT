@@ -53,8 +53,9 @@ const STEAM_CDN = 'https://shared.steamstatic.com/store_item_assets/steam/apps'
 function extFor(contentType: string | undefined, url: string): string {
   if (contentType?.includes('png')) return '.png'
   if (contentType?.includes('webp')) return '.webp'
+  if (contentType?.includes('gif')) return '.gif'
   if (contentType?.includes('jpeg') || contentType?.includes('jpg')) return '.jpg'
-  const m = /\.(png|jpe?g|webp)(?:\?|$)/i.exec(url)
+  const m = /\.(png|jpe?g|webp|gif)(?:\?|$)/i.exec(url)
   return m ? `.${m[1].toLowerCase().replace('jpeg', 'jpg')}` : '.img'
 }
 

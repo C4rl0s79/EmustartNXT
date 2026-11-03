@@ -425,6 +425,8 @@ export interface ArtOption {
   style?: string
   score?: number
   author?: string
+  /** animated (APNG / WebP / GIF); its thumb may be a short video */
+  animated?: boolean
 }
 
 /** An image from LaunchBox Games DB offered in the "Grafiki" window */
@@ -438,7 +440,7 @@ export interface LbArtOption {
 export type LbArtOptionsResult = { ok: true; options: LbArtOption[] } | { ok: false; error: string }
 
 export type ArtOptionsResult =
-  | { ok: true; sgdbGame?: SgdbGame; options: ArtOption[] }
+  | { ok: true; sgdbGame?: SgdbGame; options: ArtOption[]; page: number; hasMore: boolean }
   | { ok: false; error: string }
 
 export interface CacheStats {

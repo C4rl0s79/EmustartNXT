@@ -47,6 +47,24 @@ describe('SteamGridDB helpers', () => {
     expect(queryFor('hero').dimensions).toContain('1920x620')
   })
 
+  it('the picker pages 50 at a time and lets animated images (any mime) through', () => {
+    expect(queryFor('grid')).toMatchObject({ limit: '50', page: '0', mimes: 'image/png,image/jpeg,image/webp' })
+    const q = queryFor('hero', { animated: true, page: 2 })
+    expect(q).toMatchObject({ types: 'static,animated', page: '2', limit: '50', dimensions: '1920x620,3840x1240' })
+    expect(q.mimes).toBeUndefined()
+    expect(queryFor('logo', { animated: true, page: -3 }).page).toBe('0')
+  })
+
+  it('marks animated images: type, GIF mime / file, or a video thumbnail', () => {
+    const r = toOptions([
+      { id: 1, url: 'https://cdn2.steamgriddb.com/grid/a.png', thumb: 'https://cdn2.steamgriddb.com/thumb/a.jpg', width: 1, height: 1, type: 'static' },
+      { id: 2, url: 'https://cdn2.steamgriddb.com/grid/b.webp', thumb: 't', width: 1, height: 1, type: 'animated' },
+      { id: 3, url: 'https://cdn2.steamgriddb.com/grid/c.gif', thumb: 't', width: 1, height: 1 },
+      { id: 4, url: 'u', thumb: 'https://cdn2.steamgriddb.com/thumb/d.webm', width: 1, height: 1 }
+    ])
+    expect(r.map((o) => !!o.animated)).toEqual([false, true, true, true])
+  })
+
   it('filters NSFW / epilepsy images from API data', () => {
     const r = toOptions([
       { id: 1, url: 'u1', thumb: 't1', width: 1, height: 1 },
