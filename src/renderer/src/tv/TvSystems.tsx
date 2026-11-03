@@ -77,6 +77,7 @@ function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number
         display={sys.display}
         hasLogo={sys.logo}
         rev={sys.logoRev}
+        pixel={sys.logoPixel}
         plate={plate}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}

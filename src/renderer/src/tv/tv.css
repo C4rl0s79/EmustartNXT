@@ -949,6 +949,31 @@
   max-height: calc(var(--tv-plate-lh) * 1cqh);
   object-fit: contain;
 }
+/* pixel-art logo (SystemLogo.tsx PixelLogo): the span is the area the logo may fill; the image inside gets the
+   largest whole-number zoom that fits (set from script), drawn with sharp pixels */
+.sys-pixel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sys-pixel img {
+  image-rendering: pixelated;
+  object-fit: fill; /* the box is an exact whole-number multiple of the image */
+}
+.tv-syscard .sys-pixel {
+  width: 92cqw;
+  height: 80cqh;
+}
+.tv-listhead .sys-pixel {
+  width: 22vw;
+  height: var(--tv-listlogo-h);
+  justify-content: flex-start;
+}
+.sys-plate .sys-pixel {
+  width: calc(var(--tv-plate-lw) * 1cqw);
+  height: calc(var(--tv-plate-lh) * 1cqh);
+  justify-content: center;
+}
 .sys-plate .steam-logo {
   font-size: min(calc(var(--tv-plate-lw) * 0.16cqw), calc(var(--tv-plate-lh) * 0.42cqh));
 }

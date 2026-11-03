@@ -184,6 +184,8 @@ export interface EmuSystem {
    *  their lumen-art address, so a new picture is not served from the renderer's image cache */
   logoRev?: number
   consoleRev?: number
+  /** the logo is pixel art at its native size (server: RetroArch dot-art) — shown only at whole-number zoom */
+  logoPixel?: boolean
 }
 
 /** Platform description for the TV system carousel (EmuStart system_info) */

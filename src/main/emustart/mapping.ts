@@ -33,7 +33,7 @@ export interface EmuLibraryRow {
 }
 
 export interface EmuLibrary {
-  systems: (EmuSystem & { logo?: string; kind?: string; console?: string; console_credit?: string; console_lum?: number })[]
+  systems: (EmuSystem & { logo?: string; logo_pixel?: boolean; kind?: string; console?: string; console_credit?: string; console_lum?: number })[]
   games: EmuLibraryRow[]
   lib_version: number
   profile?: { id: number; name: string }
@@ -112,6 +112,7 @@ export function emuSystem(s: EmuLibrary['systems'][number]): EmuSystem {
   const out: EmuSystem = { es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo }
   if (s.console) Object.assign(out, { hasConsole: true, consoleCredit: s.console_credit ?? '', consoleLum: s.console_lum ?? 0.5 })
   if (s.logo) out.logoRev = mediaRev(s.logo)
+  if (s.logo && s.logo_pixel) out.logoPixel = true
   if (s.console) out.consoleRev = mediaRev(s.console)
   return out
 }

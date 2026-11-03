@@ -213,6 +213,7 @@ export function TvGames({
             display={system.display}
             hasLogo={system.logo}
             rev={system.logoRev}
+            pixel={system.logoPixel}
             plate={!!theme.logoPlate}
             className={steam ? 'tv-listlogo-steam' : 'tv-listlogo'}
             fallback={<h2>{system.display}</h2>}

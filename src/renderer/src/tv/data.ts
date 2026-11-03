@@ -22,6 +22,8 @@ export interface TvSystem {
   /** versions of the logo / console photo (EmuSystem.logoRev / consoleRev) — part of their addresses */
   logoRev: number
   consoleRev: number
+  /** pixel-art logo (EmuSystem.logoPixel): whole-number zoom, sharp pixels */
+  logoPixel?: boolean
 }
 
 const byName = (a: Game, b: Game): number => a.name.localeCompare(b.name, 'pl', { sensitivity: 'base' })
@@ -43,7 +45,7 @@ export function useTvSystems(): TvSystem[] {
     for (const s of snapshot.emustart?.systems ?? []) {
       const games = (emu.get(s.es) ?? []).sort(byName)
       if (!games.length) continue
-      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo, logoRev: s.logoRev ?? 0, consoleRev: s.consoleRev ?? 0, ...(s.hasConsole ? { console: { credit: s.consoleCredit ?? '', lum: s.consoleLum ?? 0.5 } } : {}) })
+      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo, logoRev: s.logoRev ?? 0, consoleRev: s.consoleRev ?? 0, logoPixel: !!s.logoPixel, ...(s.hasConsole ? { console: { credit: s.consoleCredit ?? '', lum: s.consoleLum ?? 0.5 } } : {}) })
     }
     return out
   }, [snapshot])
