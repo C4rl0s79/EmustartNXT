@@ -39,3 +39,12 @@ describe('neon platform logos (colours from the logo itself)', () => {
     expect(neonPixels(px([0, 0, 0, 255], [128, 128, 128, 255]))).toBe(NEON_HUE)
   })
 })
+
+describe('which theme shows platform logos how', () => {
+  it('neon only in Horyzont; Kronika keeps its gold; EmuStart shows the logos as they are', async () => {
+    const { themeById } = await import('../src/renderer/src/tv/themes')
+    expect([themeById('sf').logoNeon, themeById('sf').logoTint]).toEqual([true, undefined])
+    expect([themeById('fantasy').logoNeon, themeById('fantasy').logoTint]).toEqual([undefined, true])
+    expect([themeById('emustart').logoNeon, themeById('emustart').logoTint]).toEqual([undefined, undefined])
+  })
+})

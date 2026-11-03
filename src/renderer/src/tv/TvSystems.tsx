@@ -48,7 +48,7 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
   return d
 }
 
-function SysCard({ sys, d, gap }: { sys: TvSystem; d: number; gap: number }) {
+function SysCard({ sys, d, gap, tint, neon }: { sys: TvSystem; d: number; gap: number; tint: boolean; neon: boolean }) {
   const ad = Math.abs(d)
   return (
     <div
@@ -64,6 +64,8 @@ function SysCard({ sys, d, gap }: { sys: TvSystem; d: number; gap: number }) {
         sysKey={sys.key}
         display={sys.display}
         hasLogo={sys.logo}
+        tint={tint}
+        neon={neon}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}
       />
@@ -77,7 +79,9 @@ export function TvSystems({
   onIndex,
   onOpen,
   onMenu,
-  active
+  active,
+  logoTint,
+  logoNeon
 }: {
   systems: TvSystem[]
   index: number
@@ -85,6 +89,10 @@ export function TvSystems({
   onOpen: () => void
   onMenu: () => void
   active: boolean
+  /** the theme repaints platform logos (themes.ts logoTint) */
+  logoTint: boolean
+  /** platform logos as retro neon (themes.ts logoNeon) */
+  logoNeon: boolean
 }) {
   const n = systems.length
   const sys = systems[index]
@@ -151,7 +159,7 @@ export function TvSystems({
           if (Math.abs(dd) > 3) return null
           return (
             <div key={s.key} onClick={() => (i === index ? onOpen() : onIndex(i))}>
-              <SysCard sys={s} d={dd} gap={gap} />
+              <SysCard sys={s} d={dd} gap={gap} tint={logoTint} neon={logoNeon} />
             </div>
           )
         })}

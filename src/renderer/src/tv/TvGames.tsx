@@ -212,6 +212,8 @@ export function TvGames({
             sysKey={system.key}
             display={system.display}
             hasLogo={system.logo}
+            tint={!!theme.logoTint}
+            neon={!!theme.logoNeon}
             className={steam ? 'tv-listlogo-steam' : 'tv-listlogo'}
             fallback={<h2>{system.display}</h2>}
           />

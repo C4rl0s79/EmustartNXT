@@ -883,12 +883,36 @@
   position: relative;
 }
 
-/* platform logos as retro neon in every theme (SystemLogo.tsx, lib/neonLogo.ts): the logo's own
-   colours with a sharp light core and a halo in its hue (--neon); the platform in focus glows more */
+/* platform logos repainted by the theme (SystemLogo.tsx): the server's logo becomes a mask over the
+   theme's fill; the image stays (invisible) to give the box its size */
 .sys-logo {
   position: relative;
   display: inline-flex;
 }
+.sys-logo.is-tinted > img {
+  visibility: hidden;
+}
+.sys-logo__fill {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  background: var(--tv-logo-fill, #fff);
+}
+.steam-logo.is-tinted {
+  color: var(--tv-logo-tone, #fff);
+}
+.steam-logo.is-tinted .steam-logo__word {
+  background: var(--tv-logo-fill, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* platform logos as retro neon (themes.ts logoNeon — Horyzont; SystemLogo.tsx, lib/neonLogo.ts): the
+   logo's own colours with a sharp light core and a halo in its hue (--neon); the platform in focus
+   glows more */
 .neon-glow {
   filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 5px var(--neon))
     drop-shadow(0 0 16px var(--neon-soft));
