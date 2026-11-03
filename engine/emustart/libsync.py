@@ -119,7 +119,8 @@ def sync(cfg: dict, progress=None, force: bool = False) -> dict:
             progress("Gotowe", len(remote), len(remote))
         library.meta_set("server_full", json.dumps(fulls))
         log.info("biblioteka z serwera: %d systemów (%d zmienionych), %d gier", len(remote), changed, games)
-        return {"ok": True, "systems": len(remote), "games": games, "changed": changed}
+        # look: zmieniło się samo logo / zdjęcie konsoli / poświata (gry bez zmian) — interfejs też przerysowuje
+        return {"ok": True, "systems": len(remote), "games": games, "changed": changed, "look": rec != old_rec}
     except (OSError, ValueError) as ex:
         log.warning("biblioteka z serwera: %s", ex)
         return {"ok": False, "reason": f"Biblioteka z serwera: {ex}"}
@@ -330,6 +331,9 @@ def server_systems() -> list:
                     "emu_rec": sc.get("emu_rec", ""), "core": sc.get("core_rec", ""),
                     "logo": lg["url"], "logo_glow": bool(lg["glow"]),
                     "console": cn["url"], "console_credit": cn["credit"], "console_lum": cn["lum"]})
+    # urządzenia pytają tędy (/v1/library) — brakujące zdjęcia konsol serwer pobiera w tle, jak logo
+    from emustart import consoles
+    consoles.fetch_missing([s["es"] for s in out])
     return out
 
 
