@@ -355,6 +355,8 @@ LaunchBox nie ma plakatów 2:3 — pudełka mają kształt pudełek (te same, kt
 - **Nowe logo / zdjęcie z serwera** (1.0.38, EmuStart 0.56.2): silnik podbija `lib_version` także wtedy, gdy
   zmieniło się tylko logo albo zdjęcie konsoli; adres obrazka w Lumenie ma wersję (`logoRev`, `consoleRev` z adresu
   na serwerze), więc nowy obraz nie przychodzi z pamięci przeglądarki, a nieudany jest próbowany od nowa.
+- **Logo SVG bez rozmiaru** (1.0.39, EmuStart 0.56.3): silnik (i serwer) podaje logo systemów w SVG bez
+  `width`/`height` z rozmiarem z `viewBox` — inaczej `<img>` w ramce logo (`.sys-plate`, karuzela) ma 0×0.
 
 ## 6e. Aktualizacja programu (jak EmuStart)
 
