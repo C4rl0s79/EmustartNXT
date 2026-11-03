@@ -51,11 +51,11 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
 /** The platform's console photo behind the carousel (the theme's tone; bright consoles toned down by lum). */
 function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
   const [broken, setBroken] = useState(false)
-  useEffect(() => setBroken(false), [sys.key])
+  useEffect(() => setBroken(false), [sys.key, sys.rev])
   if (!sys.console || broken) return null
   return (
     <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': sys.console.lum } as CSSProperties}>
-      <img src={api().art.url(`emusys:${sys.key}`, 'hero')} alt="" draggable={false} onError={() => setBroken(true)} />
+      <img src={api().art.url(`emusys:${sys.key}`, 'hero', sys.rev)} alt="" draggable={false} onError={() => setBroken(true)} />
     </div>
   )
 }
@@ -76,6 +76,7 @@ function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number
         sysKey={sys.key}
         display={sys.display}
         hasLogo={sys.logo}
+        rev={sys.rev}
         plate={plate}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}

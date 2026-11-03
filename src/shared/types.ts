@@ -180,6 +180,9 @@ export interface EmuSystem {
   consoleCredit?: string
   /** mean brightness of the console photo, 0–1 (the theme tones bright consoles down) */
   consoleLum?: number
+  /** version of the platform's logo and console photo (changes when the server sets a new one) — part of
+   *  their lumen-art address, so a new picture is not served from the renderer's image cache */
+  mediaRev?: number
 }
 
 /** Platform description for the TV system carousel (EmuStart system_info) */

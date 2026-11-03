@@ -111,7 +111,15 @@ export function emuGames(lib: EmuLibrary, copying: ReadonlySet<number> = new Set
 export function emuSystem(s: EmuLibrary['systems'][number]): EmuSystem {
   const out: EmuSystem = { es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo }
   if (s.console) Object.assign(out, { hasConsole: true, consoleCredit: s.console_credit ?? '', consoleLum: s.console_lum ?? 0.5 })
+  if (s.logo || s.console) out.mediaRev = mediaRev(`${s.logo ?? ''}|${s.console ?? ''}`)
   return out
+}
+
+/** Small number from the media addresses (the server puts the file's version in them: ?v=…). */
+function mediaRev(key: string): number {
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return h
 }
 
 export function emuArtField(kind: string): 'box' | 'snap' | 'logo' | null {

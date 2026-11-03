@@ -14,6 +14,15 @@ describe("console photo behind the system carousel", () => {
     expect(s).toMatchObject({ hasLogo: true, hasConsole: true, consoleCredit: 'Evan-Amos, Wikimedia Commons (Public domain)', consoleLum: 0.18 })
     expect(s).not.toHaveProperty('console') // the media path stays in the main process (lumen-art: emusys:<es> / hero)
   })
+  it('a new logo or console photo on the server is a new picture address (renderer image cache)', () => {
+    const a = emuSystem({ ...sys, logo: '/media/_systems/ps2.png', console: '/media/_systems/ps2.console.webp?v=1' })
+    const b = emuSystem({ ...sys, logo: '/media/_systems/ps2.png', console: '/media/_systems/ps2.console.webp?v=2' })
+    const c = emuSystem({ ...sys, logo: '/media/_systems/ps2.custom.png?v=9', console: '/media/_systems/ps2.console.webp?v=1' })
+    expect(a.mediaRev).toBeTypeOf('number')
+    expect(new Set([a.mediaRev, b.mediaRev, c.mediaRev]).size).toBe(3)
+    expect(emuSystem({ ...sys, logo: '/media/_systems/ps2.png', console: '/media/_systems/ps2.console.webp?v=1' }).mediaRev).toBe(a.mediaRev)
+    expect(emuSystem(sys).mediaRev).toBeUndefined()
+  })
   it('a platform without a photo (or an older engine without the field) has no console', () => {
     for (const row of [{ ...sys, console: '' }, sys]) {
       const s = emuSystem(row)

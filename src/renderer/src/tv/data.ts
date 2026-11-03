@@ -19,6 +19,8 @@ export interface TvSystem {
   logo: boolean
   /** photo of the platform's console from the server (lumen-art: emusys:<es> / hero) */
   console?: { credit: string; lum: number }
+  /** version of the logo / console photo (EmuSystem.mediaRev) — part of their address */
+  rev: number
 }
 
 const byName = (a: Game, b: Game): number => a.name.localeCompare(b.name, 'pl', { sensitivity: 'base' })
@@ -29,7 +31,7 @@ export function useTvSystems(): TvSystem[] {
     if (!snapshot) return []
     const out: TvSystem[] = []
     const steam = snapshot.games.filter((g) => g.source !== 'emustart' && g.source !== 'demo').sort(byName)
-    if (steam.length) out.push({ key: STEAM, display: 'Steam', games: steam, ready: steam.filter((g) => g.installed).length, logo: false })
+    if (steam.length) out.push({ key: STEAM, display: 'Steam', games: steam, ready: steam.filter((g) => g.installed).length, logo: false, rev: 0 })
     const emu = new Map<string, Game[]>()
     for (const g of snapshot.games) {
       if (!g.emu) continue
@@ -40,7 +42,7 @@ export function useTvSystems(): TvSystem[] {
     for (const s of snapshot.emustart?.systems ?? []) {
       const games = (emu.get(s.es) ?? []).sort(byName)
       if (!games.length) continue
-      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo, ...(s.hasConsole ? { console: { credit: s.consoleCredit ?? '', lum: s.consoleLum ?? 0.5 } } : {}) })
+      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo, rev: s.mediaRev ?? 0, ...(s.hasConsole ? { console: { credit: s.consoleCredit ?? '', lum: s.consoleLum ?? 0.5 } } : {}) })
     }
     return out
   }, [snapshot])
