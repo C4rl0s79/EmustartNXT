@@ -78,6 +78,7 @@ export function TvApp() {
           onMenu={() => setMenu(true)}
           active={!menu && !lookEd && !themesOpen}
           logoPlate={!!theme.logoPlate}
+          consoleBackdrop={!!theme.consoleBackdrop}
         />
       )}
       {screen === 'games' && sys && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { EmuSystemInfo } from '@shared/types'
 import { api } from '../store'
 import { useActions } from '../nav/input'
@@ -48,6 +48,18 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
   return d
 }
 
+/** The platform's console photo behind the carousel (the theme's tone; bright consoles toned down by lum). */
+function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
+  const [broken, setBroken] = useState(false)
+  useEffect(() => setBroken(false), [sys.key])
+  if (!sys.console || broken) return null
+  return (
+    <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': sys.console.lum } as CSSProperties}>
+      <img src={api().art.url(`emusys:${sys.key}`, 'hero')} alt="" draggable={false} onError={() => setBroken(true)} />
+    </div>
+  )
+}
+
 function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number; plate: boolean }) {
   const ad = Math.abs(d)
   return (
@@ -79,7 +91,8 @@ export function TvSystems({
   onOpen,
   onMenu,
   active,
-  logoPlate
+  logoPlate,
+  consoleBackdrop
 }: {
   systems: TvSystem[]
   index: number
@@ -89,6 +102,8 @@ export function TvSystems({
   active: boolean
   /** platform logos on the theme's plate (themes.ts logoPlate) */
   logoPlate: boolean
+  /** the console photo behind the carousel (themes.ts consoleBackdrop) */
+  consoleBackdrop: boolean
 }) {
   const n = systems.length
   const sys = systems[index]
@@ -147,6 +162,7 @@ export function TvSystems({
   const facts = d ? [d.manufacturer, d.release ? (d.end ? `${d.release}–${d.end}` : `premiera ${d.release}`) : '', d.media, d.controllers ? `pady: ${d.controllers}` : ''].filter(Boolean) : []
   return (
     <section className="tv-screen tv-systems">
+      {consoleBackdrop && <ConsoleBackdrop sys={sys} />}
       <div className="tv-carousel">
         {systems.map((s, i) => {
           let dd = i - index
@@ -175,6 +191,7 @@ export function TvSystems({
           </div>
         )}
       </div>
+      {consoleBackdrop && sys.console?.credit && <p className="tv-concredit">Zdjęcie konsoli: {sys.console.credit}</p>}
     </section>
   )
 }

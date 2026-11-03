@@ -299,8 +299,9 @@ async function artResponse(req: Request): Promise<Response> {
     const gameId = decodeURIComponent(rawId ?? '')
     if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
     if (gameId.startsWith('emusys:')) {
-      // platform logo from the EmuStart server (TV system carousel)
-      const logo = kind === 'logo' ? emu.systemLogo(gameId.slice(7)) : undefined
+      // platform logo / console photo from the EmuStart server (TV system carousel)
+      const es = gameId.slice(7)
+      const logo = kind === 'logo' ? emu.systemLogo(es) : kind === 'hero' ? emu.systemConsole(es) : undefined
       if (!logo || !engine.baseUrl) return new Response('not found', { status: 404 })
       return (await engineMedia(logo)) ?? new Response('not found', { status: 404 })
     }

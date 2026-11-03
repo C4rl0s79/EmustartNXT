@@ -15,6 +15,9 @@
   --tv-plate-ar: 1200 / 400;
   --tv-plate-lw: 78;
   --tv-plate-lh: 60;
+  /* the platform's console behind the carousel, cooled down, with a violet-ice tint (.tv-console::before) */
+  --tv-con-filter: grayscale(0.35) brightness(0.55) contrast(1.1);
+  --tv-con-op: 0.34;
   font-weight: 430;
   background:
     radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
@@ -198,4 +201,13 @@
 .tv[data-theme='sf'] .tv-info dt {
   color: var(--tv-dim);
   font-weight: 500;
+}
+
+.tv[data-theme='sf'] .tv-console::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(126, 224, 255, 0.05), rgba(76, 42, 140, 0.12));
+  mix-blend-mode: screen;
 }

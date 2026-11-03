@@ -749,6 +749,46 @@
   overflow: hidden;
 }
 
+/* the platform's console photo behind the system carousel (themes.ts consoleBackdrop): the theme sets
+   its tone (--tv-con-filter, --tv-con-op); bright consoles are toned down and dark ones lifted by the
+   photo's mean brightness (--con-lum from the server, 0–1): 0.15 → ×1.2, 0.8 → ×0.68 */
+.tv-console {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  filter: brightness(calc(1.32 - 0.8 * var(--con-lum, 0.5)));
+  animation: tv-backdrop-in 0.7s ease both;
+}
+.tv-console img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* wide sets fill the width, tall consoles (towers, handhelds standing up) stay inside the height */
+  width: min(78vw, 140vh);
+  height: 78vh;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  opacity: var(--tv-con-op, 0.3);
+  filter: var(--tv-con-filter, none);
+}
+.tv-console::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 70% at 50% 45%, transparent 30%, var(--tv-bg) 88%);
+}
+.tv-concredit {
+  position: absolute;
+  right: 2.5vw;
+  bottom: 0;
+  margin: 0;
+  font-size: 0.75em;
+  color: var(--tv-dim);
+  opacity: 0.75;
+}
+
 /* theme chooser: a side panel, the whole layout stays visible behind it as the live preview */
 .tv-modal--side {
   justify-content: flex-end;

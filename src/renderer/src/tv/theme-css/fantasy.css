@@ -162,6 +162,9 @@
   --tv-plate-ar: 1200 / 440;
   --tv-plate-lw: 74;
   --tv-plate-lh: 54;
+  /* the platform's console behind the carousel as an old sepia print by candlelight */
+  --tv-con-filter: sepia(0.6) saturate(0.7) brightness(0.62) contrast(1.05);
+  --tv-con-op: 0.3;
   --tv-parchment: #ead9b0;
   --tv-ink: #3a2513;
 }

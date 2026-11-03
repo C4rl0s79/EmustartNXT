@@ -33,7 +33,7 @@ export interface EmuLibraryRow {
 }
 
 export interface EmuLibrary {
-  systems: (EmuSystem & { logo?: string; kind?: string })[]
+  systems: (EmuSystem & { logo?: string; kind?: string; console?: string; console_credit?: string; console_lum?: number })[]
   games: EmuLibraryRow[]
   lib_version: number
   profile?: { id: number; name: string }
@@ -107,6 +107,13 @@ export function emuGames(lib: EmuLibrary, copying: ReadonlySet<number> = new Set
 }
 
 /** Art kind in Lumen → EmuStart media: poster = box art, hero = screenshot, logo = Clear Logo. */
+/** A platform for the renderer: counts and which server media it has (logo, console photo). */
+export function emuSystem(s: EmuLibrary['systems'][number]): EmuSystem {
+  const out: EmuSystem = { es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo }
+  if (s.console) Object.assign(out, { hasConsole: true, consoleCredit: s.console_credit ?? '', consoleLum: s.console_lum ?? 0.5 })
+  return out
+}
+
 export function emuArtField(kind: string): 'box' | 'snap' | 'logo' | null {
   return kind === 'grid' ? 'box' : kind === 'hero' ? 'snap' : kind === 'logo' ? 'logo' : null
 }

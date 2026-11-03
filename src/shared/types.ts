@@ -174,6 +174,12 @@ export interface EmuSystem {
   emulator: string
   /** the server has a logo of this platform (lumen-art: emusys:<es> / logo) */
   hasLogo?: boolean
+  /** the server has a photo of the platform's console (lumen-art: emusys:<es> / hero) */
+  hasConsole?: boolean
+  /** author and licence of the console photo (shown with it) */
+  consoleCredit?: string
+  /** mean brightness of the console photo, 0–1 (the theme tones bright consoles down) */
+  consoleLum?: number
 }
 
 /** Platform description for the TV system carousel (EmuStart system_info) */

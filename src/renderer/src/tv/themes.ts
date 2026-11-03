@@ -38,6 +38,8 @@ export interface TvTheme {
   }
   /** platform logos as they are, on the theme's plate (SystemLogo.tsx; image and logo area: --tv-plate in its stylesheet) */
   logoPlate?: boolean
+  /** the platform's console photo behind the system carousel (TvSystems.tsx; tone: --tv-con-* in its stylesheet) */
+  consoleBackdrop?: boolean
   /** moving background drawn by the theme's stylesheet (.tv-ambient); still with reduced motion */
   ambient?: 'embers' | 'stars'
   /** look editor keys this theme decides itself (hidden in the editor) */
@@ -77,6 +79,7 @@ export const THEMES: TvTheme[] = [
     },
     games: { layout: 'list' },
     logoPlate: true,
+    consoleBackdrop: true,
     ambient: 'embers',
     locks: ['accent', 'bg'],
     fonts: { text: ['alegreya', 'atkinson', 'segoe'], head: ['cinzel', 'alegreya', 'atkinson'] }
@@ -96,6 +99,7 @@ export const THEMES: TvTheme[] = [
     },
     games: { layout: 'coverflow', reflection: true },
     logoPlate: true,
+    consoleBackdrop: true,
     ambient: 'stars',
     // the list's sizes and the title logos do not apply to the cover ribbon
     locks: ['accent', 'bg', 'row', 'list_w', 'media_h', 'tlogo', 'tlogo_w', 'games_logo'],

@@ -17,6 +17,8 @@ export interface TvSystem {
   emulator?: string
   /** platform logo from the EmuStart server (lumen-art: emusys:<es>) */
   logo: boolean
+  /** photo of the platform's console from the server (lumen-art: emusys:<es> / hero) */
+  console?: { credit: string; lum: number }
 }
 
 const byName = (a: Game, b: Game): number => a.name.localeCompare(b.name, 'pl', { sensitivity: 'base' })
@@ -38,7 +40,7 @@ export function useTvSystems(): TvSystem[] {
     for (const s of snapshot.emustart?.systems ?? []) {
       const games = (emu.get(s.es) ?? []).sort(byName)
       if (!games.length) continue
-      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo })
+      out.push({ key: s.es, display: s.display, games, ready: games.filter((g) => g.emu?.cached).length, emulator: s.emulator, logo: !!s.hasLogo, ...(s.hasConsole ? { console: { credit: s.consoleCredit ?? '', lum: s.consoleLum ?? 0.5 } } : {}) })
     }
     return out
   }, [snapshot])

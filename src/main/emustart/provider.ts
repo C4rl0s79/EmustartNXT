@@ -3,7 +3,7 @@ import type { EmuLaunchStatus, EmuRuntime, EmustartSummary, Game, RegionOrder } 
 import { log } from '../logger'
 import { JsonFile } from '../store/jsonFile'
 import type { EmustartEngine } from './engine'
-import { emuGames, isEmuGameId, type EmuLibrary, type EmuLibraryRow } from './mapping'
+import { emuGames, emuSystem, isEmuGameId, type EmuLibrary, type EmuLibraryRow } from './mapping'
 import { GROUP_PREFIX, groupVersions } from './versions'
 
 /** Raw `lumen_status` from the engine (emustart/lumen.py). */
@@ -197,6 +197,11 @@ export class EmustartProvider extends EventEmitter {
     return this.lib.systems.find((s) => s.es === es)?.logo || undefined
   }
 
+  /** engine media path of a platform's console photo (TV system carousel background) */
+  systemConsole(es: string): string | undefined {
+    return this.lib.systems.find((s) => s.es === es)?.console || undefined
+  }
+
   summary(): EmustartSummary {
     const e = this.engine
     return {
@@ -205,7 +210,7 @@ export class EmustartProvider extends EventEmitter {
       version: e.version,
       server: this.status?.server ?? this.lib.server,
       profile: this.lib.profile?.name,
-      systems: this.lib.systems.map((s) => ({ es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo })),
+      systems: this.lib.systems.map(emuSystem),
       fromCache: this.fromCache,
       configured: this.lib.configured
     }
