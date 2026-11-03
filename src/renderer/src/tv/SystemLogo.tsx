@@ -22,7 +22,7 @@ export function SystemLogo({
   sysKey: string
   display: string
   hasLogo: boolean
-  /** version of the server's logo (TvSystem.rev): a new logo is a new address, a failed one is tried again */
+  /** version of the server's logo (TvSystem.logoRev): a new logo is a new address, a failed one is tried again */
   rev?: number
   plate?: boolean
   className?: string

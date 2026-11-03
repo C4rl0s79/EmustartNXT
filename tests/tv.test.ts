@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { STEAM, systemMeta, type TvSystem } from '../src/renderer/src/tv/data'
 
-const sys = (o: Partial<TvSystem>): TvSystem => ({ key: '3do', display: '3DO', games: [], ready: 0, logo: true, rev: 0, ...o })
+const sys = (o: Partial<TvSystem>): TvSystem => ({ key: '3do', display: '3DO', games: [], ready: 0, logo: true, logoRev: 0, consoleRev: 0, ...o })
 const games = (n: number) => Array.from({ length: n }, () => ({}) as TvSystem['games'][number])
 
 describe('TV layout: system line under the carousel (EmuStart wording)', () => {

@@ -111,7 +111,8 @@ export function emuGames(lib: EmuLibrary, copying: ReadonlySet<number> = new Set
 export function emuSystem(s: EmuLibrary['systems'][number]): EmuSystem {
   const out: EmuSystem = { es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo }
   if (s.console) Object.assign(out, { hasConsole: true, consoleCredit: s.console_credit ?? '', consoleLum: s.console_lum ?? 0.5 })
-  if (s.logo || s.console) out.mediaRev = mediaRev(`${s.logo ?? ''}|${s.console ?? ''}`)
+  if (s.logo) out.logoRev = mediaRev(s.logo)
+  if (s.console) out.consoleRev = mediaRev(s.console)
   return out
 }
 
