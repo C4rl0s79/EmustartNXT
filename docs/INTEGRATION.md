@@ -357,6 +357,9 @@ LaunchBox nie ma plakatów 2:3 — pudełka mają kształt pudełek (te same, kt
   na serwerze), więc nowy obraz nie przychodzi z pamięci przeglądarki, a nieudany jest próbowany od nowa.
 - **Logo SVG bez rozmiaru** (1.0.39, EmuStart 0.56.3): silnik (i serwer) podaje logo systemów w SVG bez
   `width`/`height` z rozmiarem z `viewBox` — inaczej `<img>` w ramce logo (`.sys-plate`, karuzela) ma 0×0.
+- **Pixel-art** (1.0.40, EmuStart 0.56.4): serwer podaje `logo_pixel` — rozmiar piksela grafiki w pikselach pliku
+  (RetroArch dot-art 8, motyw Pixel 1). Lumen (`SystemLogo.tsx`, `PixelLogo`) powiększa takie logo tylko o całe piksele
+  grafiki liczone w pikselach urządzenia (największe, które mieści się w polu logo) i stawia je na pełnym pikselu.
 
 ## 6e. Aktualizacja programu (jak EmuStart)
 
