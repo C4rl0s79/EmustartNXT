@@ -352,6 +352,9 @@ LaunchBox nie ma plakatów 2:3 — pudełka mają kształt pudełek (te same, kt
   (Wikimedia Commons, wolne licencje) albo administrator wybiera / wgrywa w panelu; silnik podaje przy systemie
   `console`, `console_credit`, `console_lum`, Lumen pobiera je przez `lumen-art: emusys:<es>/hero` (jak logo:
   `emusys:<es>/logo`). Ton nadaje motyw, jasność jest wyrównana wg `console_lum`; autor i licencja w rogu ekranu.
+- **Nowe logo / zdjęcie z serwera** (1.0.38, EmuStart 0.56.2): silnik podbija `lib_version` także wtedy, gdy
+  zmieniło się tylko logo albo zdjęcie konsoli; adres obrazka w Lumenie ma wersję (`logoRev`, `consoleRev` z adresu
+  na serwerze), więc nowy obraz nie przychodzi z pamięci przeglądarki, a nieudany jest próbowany od nowa.
 
 ## 6e. Aktualizacja programu (jak EmuStart)
 
