@@ -10,8 +10,6 @@
   --tv-ok: #6ee7b7;
   --tv-warn: #ffc56b;
   --tv-hud: rgba(126, 224, 255, 0.85);
-  --tv-logo-fill: linear-gradient(180deg, #ffffff 0%, #c9f3ff 42%, #6fd3f5 100%);
-  --tv-logo-tone: #c9f3ff;
   font-weight: 430;
   background:
     radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
@@ -29,10 +27,6 @@
 }
 .tv[data-theme='sf'] .tv-sysinfo h1 {
   text-shadow: 0 0 24px rgba(126, 224, 255, 0.35);
-}
-.tv[data-theme='sf'] .tv-syscard .sys-logo,
-.tv[data-theme='sf'] .tv-syscard .steam-logo {
-  filter: drop-shadow(0 0 22px rgba(126, 224, 255, 0.35)) drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
 }
 
 /* the horizon: a line of light across the ribbon at the covers' feet, the reflections fall on it */

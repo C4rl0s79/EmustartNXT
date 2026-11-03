@@ -883,36 +883,29 @@
   position: relative;
 }
 
-/* platform logos repainted by the theme (SystemLogo.tsx): the server's logo becomes a mask over the
-   theme's fill; the image stays (invisible) to give the box its size */
+/* platform logos as retro neon in every theme (SystemLogo.tsx, lib/neonLogo.ts): the logo's own
+   colours with a sharp light core and a halo in its hue (--neon); the platform in focus glows more */
 .sys-logo {
   position: relative;
   display: inline-flex;
 }
-.sys-logo.is-tinted > img {
-  visibility: hidden;
+.neon-glow {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 5px var(--neon))
+    drop-shadow(0 0 16px var(--neon-soft));
+  transition: filter 160ms ease-out;
 }
-.sys-logo__fill {
-  position: absolute;
-  inset: 0;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  background: var(--tv-logo-fill, #fff);
+.tv-syscard.is-current .neon-glow {
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 7px var(--neon))
+    drop-shadow(0 0 26px var(--neon)) drop-shadow(0 0 48px var(--neon-soft));
+}
+@media (prefers-reduced-motion: reduce) {
+  .neon-glow {
+    transition: none;
+  }
 }
 .tv-syscard .sys-logo img {
   max-width: 92cqw;
   max-height: 80cqh;
-}
-.steam-logo.is-tinted {
-  color: var(--tv-logo-tone, #fff);
-}
-.steam-logo.is-tinted .steam-logo__word {
-  background: var(--tv-logo-fill, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 /* the mirror image under each cover, fading out towards the floor */
 .tv-flow--mirror .tv-flow__cover {

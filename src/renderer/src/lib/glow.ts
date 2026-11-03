@@ -8,7 +8,7 @@ export const GLOW_INK = '#121214'
 
 type Rgb = [number, number, number]
 
-function toHsl([r, g, b]: Rgb): [number, number, number] {
+export function toHsl([r, g, b]: Rgb): [number, number, number] {
   const R = r / 255
   const G = g / 255
   const B = b / 255
