@@ -1,9 +1,9 @@
 // Steam's mark and wordmark, drawn locally: the EmuStart server has no Steam platform (by design),
 // so there is no server logo for it. Sized by font-size; white like the platform logos it sits among.
 
-export function SteamLogo({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function SteamLogo({ className }: { className?: string }) {
   return (
-    <span className={`steam-logo ${className ?? ''}`} style={style} role="img" aria-label="Steam">
+    <span className={`steam-logo ${className ?? ''}`} role="img" aria-label="Steam">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path
           fill="currentColor"

@@ -1,4 +1,3 @@
-import type { LogoStyle } from '../lib/logoStyles'
 import { LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from './look'
 
 // Themes of the TV layout. A theme is three layers on top of the look editor (look.ts):
@@ -37,8 +36,8 @@ export interface TvTheme {
     /** coverflow: mirror image of the covers below them */
     reflection?: boolean
   }
-  /** platform logos in the theme's craft, keeping their colours (SystemLogo.tsx, lib/logoStyles.ts) */
-  logoStyle?: LogoStyle
+  /** platform logos as they are, on the theme's plate (SystemLogo.tsx; image and logo area: --tv-plate in its stylesheet) */
+  logoPlate?: boolean
   /** moving background drawn by the theme's stylesheet (.tv-ambient); still with reduced motion */
   ambient?: 'embers' | 'stars'
   /** look editor keys this theme decides itself (hidden in the editor) */
@@ -77,7 +76,7 @@ export const THEMES: TvTheme[] = [
       panel: 'rgba(30, 21, 16, 0.94)'
     },
     games: { layout: 'list' },
-    logoStyle: 'enamel',
+    logoPlate: true,
     ambient: 'embers',
     locks: ['accent', 'bg'],
     fonts: { text: ['alegreya', 'atkinson', 'segoe'], head: ['cinzel', 'alegreya', 'atkinson'] }
@@ -96,7 +95,7 @@ export const THEMES: TvTheme[] = [
       panel: 'rgba(8, 11, 30, 0.92)'
     },
     games: { layout: 'coverflow', reflection: true },
-    logoStyle: 'neon',
+    logoPlate: true,
     ambient: 'stars',
     // the list's sizes and the title logos do not apply to the cover ribbon
     locks: ['accent', 'bg', 'row', 'list_w', 'media_h', 'tlogo', 'tlogo_w', 'games_logo'],

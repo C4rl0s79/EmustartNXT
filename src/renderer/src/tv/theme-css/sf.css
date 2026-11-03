@@ -10,6 +10,11 @@
   --tv-ok: #6ee7b7;
   --tv-warn: #ffc56b;
   --tv-hud: rgba(126, 224, 255, 0.85);
+  /* platform logos on a titanium-framed smoked-glass panel with an ice rim light (SystemLogo.tsx) */
+  --tv-plate: url('./assets/horyzont-plate.webp');
+  --tv-plate-ar: 1200 / 400;
+  --tv-plate-lw: 78;
+  --tv-plate-lh: 60;
   font-weight: 430;
   background:
     radial-gradient(70% 55% at 18% 8%, rgba(76, 42, 140, 0.5) 0%, transparent 65%),
@@ -27,6 +32,13 @@
 }
 .tv[data-theme='sf'] .tv-sysinfo h1 {
   text-shadow: 0 0 24px rgba(126, 224, 255, 0.35);
+}
+/* the system carousel: the panel in focus lights up the glass around it */
+.tv[data-theme='sf'] .tv-syscard .sys-plate {
+  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6));
+}
+.tv[data-theme='sf'] .tv-syscard.is-current .sys-plate {
+  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 28px rgba(126, 224, 255, 0.32));
 }
 
 /* the horizon: a line of light across the ribbon at the covers' feet, the reflections fall on it */

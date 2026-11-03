@@ -883,41 +883,46 @@
   position: relative;
 }
 
-/* platform logos in the theme's craft (SystemLogo.tsx, lib/logoStyles.ts); Steam, drawn locally, is
-   struck in the theme's fill where the theme uses enamel (it has no colours to keep) */
+/* platform logos as their makers drew them (SystemLogo.tsx) */
 .sys-logo {
   position: relative;
   display: inline-flex;
 }
-.steam-logo.is-tinted {
-  color: var(--tv-logo-tone, #fff);
-}
-.steam-logo.is-tinted .steam-logo__word {
-  background: var(--tv-logo-fill, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-/* platform logos as retro neon (themes.ts logoStyle neon — Horyzont; SystemLogo.tsx, lib/logoStyles.ts): the
-   logo's own colours with a sharp light core and a halo in its hue (--neon); the platform in focus
-   glows more */
-.neon-glow {
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55)) drop-shadow(0 0 5px var(--neon))
-    drop-shadow(0 0 16px var(--neon-soft));
-  transition: filter 160ms ease-out;
-}
-.tv-syscard.is-current .neon-glow {
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 7px var(--neon))
-    drop-shadow(0 0 26px var(--neon)) drop-shadow(0 0 48px var(--neon-soft));
-}
-@media (prefers-reduced-motion: reduce) {
-  .neon-glow {
-    transition: none;
-  }
-}
 .tv-syscard .sys-logo img {
   max-width: 92cqw;
   max-height: 80cqh;
+}
+/* the theme's plate under the logo (themes.ts logoPlate): its stylesheet gives the image (--tv-plate), its
+   proportions (--tv-plate-ar) and the area the logo may fill, in % of the plate (--tv-plate-lw/-lh) */
+.sys-plate {
+  display: grid;
+  place-items: center;
+  aspect-ratio: var(--tv-plate-ar);
+  background: var(--tv-plate) center / 100% 100% no-repeat;
+  container-type: size;
+  transition: filter 0.28s;
+}
+.sys-plate img {
+  width: auto;
+  height: auto;
+  max-width: calc(var(--tv-plate-lw) * 1cqw);
+  max-height: calc(var(--tv-plate-lh) * 1cqh);
+  object-fit: contain;
+}
+.sys-plate .steam-logo {
+  font-size: min(calc(var(--tv-plate-lw) * 0.16cqw), calc(var(--tv-plate-lh) * 0.42cqh));
+}
+.sys-plate :is(.txt, h2) {
+  max-width: calc(var(--tv-plate-lw) * 1cqw);
+  font-size: min(calc(var(--tv-plate-lw) * 0.1cqw), calc(var(--tv-plate-lh) * 0.4cqh));
+  text-align: center;
+  margin: 0;
+}
+.tv-syscard .sys-plate {
+  width: min(100cqw, calc(80cqh * var(--tv-plate-ar)));
+}
+.tv-listhead .sys-plate {
+  height: calc(var(--tv-listlogo-h) + 2.5vh);
 }
 /* the mirror image under each cover, fading out towards the floor */
 .tv-flow--mirror .tv-flow__cover {
