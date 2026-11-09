@@ -7,6 +7,7 @@ import yauzl from 'yauzl'
 import type { UpdateFlavor, UpdateInfo, UpdateState } from '@shared/types'
 import { log } from './logger'
 import { verifyRelease } from './releaseSigning'
+import { POWERSHELL, SCHTASKS } from './systemTools'
 
 // Self-update from GitHub releases, the way EmuStart does it (emustart/updater.py):
 //  1. check the latest release of C4rl0s79/Launcher and pick the file for this build
@@ -215,15 +216,13 @@ $exe = $target` +
  * runs in the user's session, independent of Lumen (the script deletes it). Fallback: a hidden child
  * process (not DETACHED_PROCESS — PowerShell without a console exits at once, see EmuStart).
  */
-// full paths: Lumen can run with a PATH without System32 (then `schtasks` → ENOENT and the fallback
-// child process dies with Lumen — the update never happened)
-const SYS32 = path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32')
-const POWERSHELL = path.join(SYS32, 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+// full paths (systemTools.ts): Lumen can run with a PATH without System32 (then `schtasks` → ENOENT and the
+// fallback child process dies with Lumen — the update never happened)
 
 function startScript(script: string, cwd: string): Promise<string> {
   const tr = `"${POWERSHELL}" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"`
   const run = (args: string[]): Promise<void> =>
-    new Promise((resolve, reject) => execFile(path.join(SYS32, 'schtasks.exe'), args, { windowsHide: true, timeout: 15000 }, (e) => (e ? reject(e) : resolve())))
+    new Promise((resolve, reject) => execFile(SCHTASKS, args, { windowsHide: true, timeout: 15000 }, (e) => (e ? reject(e) : resolve())))
   return run(['/Create', '/F', '/TN', UPDATE_TASK, '/SC', 'ONCE', '/ST', '00:00', '/IT', '/TR', tr])
     .then(() => run(['/Run', '/TN', UPDATE_TASK]))
     .then(() => 'zadanie Harmonogramu')

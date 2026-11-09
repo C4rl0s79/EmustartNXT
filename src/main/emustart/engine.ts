@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { POWERSHELL } from '../systemTools'
+import { POWERSHELL, PY_LAUNCHER } from '../systemTools'
 import type { EngineState } from '@shared/types'
 import { log, registerSecret } from '../logger'
 
@@ -240,7 +240,7 @@ export function resolveEngineCommand(opts: { resourcesPath?: string; appPath: st
   const py = opts.pythonPath || process.env.LUMEN_PYTHON
   if (py) return { file: py, args: [main], cwd: dir }
   // Windows launcher for Python (installed with python.org builds); picks the newest Python 3
-  return { file: process.platform === 'win32' ? 'py' : 'python3', args: process.platform === 'win32' ? ['-3', main] : [main], cwd: dir }
+  return { file: process.platform === 'win32' ? PY_LAUNCHER : 'python3', args: process.platform === 'win32' ? ['-3', main] : [main], cwd: dir }
 }
 
 /** Name of a running standalone EmuStart whose program folder is `dir` (it keeps its data there). */

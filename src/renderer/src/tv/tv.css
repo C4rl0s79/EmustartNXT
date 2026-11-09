@@ -484,8 +484,9 @@
   align-items: center;
   justify-content: flex-end;
   /* ten hints (the game list) must still fit inside the safe frame at the default text size, in the
-     widest theme typeface too */
-  gap: min(2em, 1.2vw);
+     widest theme typeface too; the gap follows "Wielkość podpowiedzi". One line only: a second one
+     would run into the details bar above and below the safe frame */
+  gap: min(2em, calc(1.2vw * var(--tv-fs-hint)));
   padding: 0 var(--tv-safe-x);
   color: var(--tv-dim);
   font-size: calc(0.9em * var(--tv-fs-hint));
@@ -632,7 +633,7 @@
 }
 .tv-look.left {
   right: auto;
-  left: 1.5vw;
+  left: var(--tv-safe-x);
 }
 .tv-look h2 {
   margin: 0;
