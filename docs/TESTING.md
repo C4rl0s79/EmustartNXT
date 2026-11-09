@@ -5,7 +5,7 @@
 Automatyczne: `tests/libraryNav.test.ts` (klasyfikacja Steam/GOG/EmuStart/skrótów, Pozostałe, ręczna platforma,
 drzewo nawigacji, te same rekordy w grupach/kolekcjach/ulubionych, przypięcia, migracja prefs v4),
 `tests/gog.test.ts` (id `gog:<pid>`, „zainstalowana” tylko z rejestru silnika, zadania, komunikat o nowszym buildzie,
-gra bez serwera). Razem `npm test` — 233; `npm run test:engine` — 640.
+gra bez serwera). Razem `npm test` — 233; `npm run test:engine` — 660.
 
 Na żywo (`LUMEN_USER_DATA=.lumen-test/userdata`, `LUMEN_DRY_RUN=1`, `LUMEN_NO_PAD=1`, serwer
 `scripts/test-server.py` z `LUMEN_TEST_GOG` = syntetyczne archiwum z `engine/tests/goghelp.py`, CDP):
