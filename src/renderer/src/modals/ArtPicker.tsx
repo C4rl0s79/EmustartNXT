@@ -1,6 +1,6 @@
 import { UserArtSection } from '../components/UserArt'
 import { useEffect, useRef, useState } from 'react'
-import type { ArtKind, ArtLayout, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, SgdbGame } from '@shared/types'
+import type { ArtKind, ArtLayout, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, OwnArtResult, SgdbGame } from '@shared/types'
 import { api, attempt, useStore, pickPath } from '../store'
 import { Modal } from '../components/Modal'
 import { TextField } from '../components/TextField'
@@ -37,6 +37,7 @@ const CHOICE_LABEL: Record<string, string> = {
   launchbox: 'wybrana z LaunchBox',
   file: 'plik lokalny (wyślę na serwer)',
   user: 'wgrana na serwer',
+  web: 'wybrana z IGDB / TheGamesDB (własny klucz)',
   steam: 'oficjalna grafika Steam',
   none: 'brak'
 }
@@ -45,6 +46,7 @@ const CHOICE_LABEL: Record<string, string> = {
 export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () => void; admin?: boolean }) {
   const prefs = useStore((s) => s.prefs)!
   const hasKey = useStore((s) => s.settings?.hasSgdbKey)
+  const hasOwnKey = useStore((s) => s.settings?.hasTgdbKey || (s.settings?.hasIgdbId && s.settings?.hasIgdbSecret))
   const [kind, setKind] = useState<ArtKind>('grid')
   // thumbnail size (LT smaller / RT larger), kept while the program runs
   const [zoom, setZoomState] = useState(lastZoom)
@@ -222,6 +224,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
         </div>
       )}
       {isEmu && kind !== 'icon' && <LaunchBoxThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'launchbox' ? current.url : undefined} />}
+      {hasOwnKey && (kind === 'grid' || kind === 'hero') && <OwnKeyThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'web' ? current.url : undefined} />}
       {isEmu && admin && kind !== 'icon' && <ServerArt game={game} kind={kind} />}
       <div className="modal__footer">
         <button className="btn btn--primary" data-nav onClick={onClose}>
@@ -349,6 +352,45 @@ function LaunchBoxThumbs({ game, kind, layout, chosen }: { game: Game; kind: Art
                 {o.type.replace(/^(Box|Fanart|Screenshot|Cart) - /, '')}
                 {o.region ? ` · ${o.region}` : ''}
               </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+/** IGDB / TheGamesDB through the player's own keys: straight from this device, not through the EmuStart server */
+function OwnKeyThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKind; layout: ArtLayout; chosen?: string }) {
+  const [res, setRes] = useState<OwnArtResult | null>(null)
+  useEffect(() => {
+    let alive = true
+    setRes(null)
+    void api()
+      .art.ownOptions(game.id, kind)
+      .then((r) => alive && setRes(r))
+      .catch(() => alive && setRes({ ok: false, error: 'Nie udało się zapytać IGDB / TheGamesDB.' }))
+    return () => {
+      alive = false
+    }
+  }, [game.id, kind])
+  return (
+    <>
+      <h3 className="saves__h">IGDB / TheGamesDB (własny klucz)</h3>
+      {!res && <p className="details__loading">Wczytywanie…</p>}
+      {res && !res.ok && <p className="details__muted">{res.error}</p>}
+      {res?.ok && res.options.length === 0 && <p className="details__muted">{res.error ? `Usługa nie odpowiedziała (${res.error}).` : 'Nie znaleziono grafik dla tej gry.'}</p>}
+      {res?.ok && res.options.length > 0 && (
+        <div className={`thumbs thumbs--${kind}`} data-nav-group={`own-${kind}`}>
+          {res.options.map((o) => (
+            <button
+              key={o.url}
+              className={`thumb thumb--fit ${chosen === o.url ? 'is-on' : ''}`}
+              data-nav
+              onClick={() => void attempt(api().art.chooseOwn(game.id, kind, o.url, layout)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))}
+            >
+              <img src={o.url} alt="" loading="lazy" decoding="async" />
+              <span className="thumb__tag">{o.source}</span>
             </button>
           ))}
         </div>

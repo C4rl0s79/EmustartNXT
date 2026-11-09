@@ -452,8 +452,7 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   emulator nie obsługuje — wyszarzone). Wejście: Lumen z fokusem — własny pad i klawiatura; bez fokusu
   — naciśnięcia odczytane przez silnik (żeby nie liczyć ich dwa razy).
 - **Reszta ustawień EmuStart** (Lumen 0.10.0): Ustawienia → EmuStart — „Wykryj emulatory” (`autodetect`),
-  „Pobierz brakujące emulatory” (`install_missing` → potwierdzenie → zadanie z postępem), administrator:
-  „Wyślij klucze źródeł grafik na serwer” (`art_keys_push`); Biblioteka EmuStart → Tryb TV → „Tytuły gier
+  „Pobierz brakujące emulatory” (`install_missing` → potwierdzenie → zadanie z postępem); Biblioteka EmuStart → Tryb TV → „Tytuły gier
   jako logo”; układ TV: **X na systemie = Opcje systemu** (`components/SystemOptions.tsx`: emulator
   systemu, pobierz emulator, ukryj system; administrator: logo z serwera, poświata, nazwa). Bez zmian
   (decyzja 20.10): lokalne foldery z grami (edytor wyglądu — niżej, od 24.10).

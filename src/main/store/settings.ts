@@ -6,7 +6,7 @@ import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
 import { isValidSteamId64 } from '../steam/local'
 
-type StoredSettings = Omit<Settings, 'hasSgdbKey' | 'hasSteamWebKey' | 'secretsEncrypted'>
+type StoredSettings = Omit<Settings, 'hasSgdbKey' | 'hasSteamWebKey' | 'hasIgdbId' | 'hasIgdbSecret' | 'hasTgdbKey' | 'secretsEncrypted'>
 
 const defaults = (): StoredSettings => ({
   version: 1,
@@ -126,6 +126,9 @@ export class SettingsStore {
       ...this.value,
       hasSgdbKey: !!this.secrets.sgdbApiKey,
       hasSteamWebKey: !!this.secrets.steamWebApiKey,
+      hasIgdbId: !!this.secrets.igdbClientId,
+      hasIgdbSecret: !!this.secrets.igdbClientSecret,
+      hasTgdbKey: !!this.secrets.tgdbApiKey,
       secretsEncrypted: safeStorage.isEncryptionAvailable(),
       ...this.runtime
     }

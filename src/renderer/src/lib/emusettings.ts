@@ -32,10 +32,3 @@ export async function installMissing(): Promise<void> {
   if (r) toast(r.ok ? (r.message ?? 'Pobieranie emulatorów — postęp na liście zadań.') : (r.error ?? 'Nie udało się.'), r.ok ? 'info' : 'error')
 }
 
-/** Administrator: art source keys (SteamGridDB, IGDB, TheGamesDB) from PyLinks on this PC → server. */
-export async function pushArtKeys(): Promise<void> {
-  const r = await api()
-    .emustart.account<{ ok?: boolean; reason?: string; sent?: string[]; sources?: string[] }>('art_keys_push')
-    .catch((e: Error) => ({ ok: false, reason: e.message }) as { ok?: boolean; reason?: string; sent?: string[]; sources?: string[] })
-  toast(r.ok ? `Klucze na serwerze (${(r.sent ?? []).length}). Źródła grafik: ${(r.sources ?? []).join(', ')}.` : (r.reason ?? 'Serwer nie odpowiada.'), r.ok ? 'info' : 'error')
-}

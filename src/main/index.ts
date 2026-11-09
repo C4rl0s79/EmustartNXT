@@ -45,7 +45,7 @@ const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
  * keep separate choices). Only real images are borrowed — "no image" / "the source's art" stay per layout.
  */
 function borrowable(c: ArtChoice | undefined): ArtChoice | undefined {
-  return c && (c.type === 'file' || c.type === 'user' || c.type === 'sgdb' || c.type === 'launchbox') ? c : undefined
+  return c && (c.type === 'file' || c.type === 'user' || c.type === 'sgdb' || c.type === 'launchbox' || c.type === 'web') ? c : undefined
 }
 function withBorrowed(own: GameArtPrefs | undefined, other: GameArtPrefs | undefined): GameArtPrefs | undefined {
   if (!other) return own
@@ -602,7 +602,7 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
     const f = await userArtFile(choice.sha, choice.ext)
     if (f) return fileResponse(f)
   }
-  if (choice?.type === 'sgdb' || choice?.type === 'launchbox') {
+  if (choice?.type === 'sgdb' || choice?.type === 'launchbox' || choice?.type === 'web') {
     const f = await artwork.fromUrl(gameId, k, choice.url)
     if (f) return fileResponse(f)
   }
@@ -941,7 +941,7 @@ function registerIpc(): void {
     return after
   })
   handle(IPC.settingsSecret, async (name: SecretName, value: string | null) => {
-    if (name !== 'sgdbApiKey' && name !== 'steamWebApiKey') throw new Error('Unknown secret')
+    if (!['sgdbApiKey', 'steamWebApiKey', 'igdbClientId', 'igdbClientSecret', 'tgdbApiKey'].includes(name)) throw new Error('Unknown secret')
     await settings.setSecret(name, value)
     if (name === 'steamWebApiKey') void library.refreshAccount(true)
     if (name === 'sgdbApiKey') {
@@ -1027,9 +1027,58 @@ function registerIpc(): void {
     return p
   })
   handle(IPC.artUserGallery, async (gameId: string, kind: ArtKind) => {
-    if (engine.state !== 'ready') return []
-    const r = await engine.call<{ items?: UserArtItem[] }>('art_user_gallery', [String(gameId), kind], 30_000).catch(() => null)
-    return r?.items ?? []
+    if (engine.state !== 'ready') return { ok: false, error: 'Silnik EmuStart jeszcze się uruchamia.' }
+    const r = await engine.call<{ items?: UserArtItem[]; reason?: string }>('art_user_gallery', [String(gameId), kind], 30_000).catch(() => null)
+    return r?.items ? { ok: true, items: r.items } : { ok: false, error: r?.reason || 'Serwer EmuStart nie odpowiada.' }
+  })
+  const KEY_SECRETS: [string, SecretName][] = [
+    ['sgdb_key', 'sgdbApiKey'],
+    ['igdb_client_id', 'igdbClientId'],
+    ['igdb_client_secret', 'igdbClientSecret'],
+    ['tgdb_key', 'tgdbApiKey']
+  ]
+  handle(IPC.artKeysImport, async (file: string | null, password: string) => {
+    if (engine.state !== 'ready') throw new Error('Silnik EmuStart jeszcze się uruchamia.')
+    const r = await engine.call<{ ok: boolean; reason?: string; keys?: Record<string, string> }>(
+      file ? 'art_keys_open' : 'art_keys_pylinks',
+      file ? [String(file), String(password)] : [],
+      60_000
+    )
+    if (!r.ok || !r.keys) throw new Error(r.reason || 'Nie udało się odczytać kluczy.')
+    for (const [from, to] of KEY_SECRETS) if (r.keys[from]) await settings.setSecret(to, r.keys[from])
+    for (const g of library.current.games) bumpArt(g.id)
+    send(IPC.settingsChanged, settings.get())
+    return settings.get()
+  })
+  handle(IPC.artKeysExport, async (folder: string, password: string) => {
+    if (engine.state !== 'ready') throw new Error('Silnik EmuStart jeszcze się uruchamia.')
+    const plain = Object.fromEntries(KEY_SECRETS.map(([from, to]) => [from, settings.getSecret(to) ?? '']))
+    const r = await engine.call<{ ok: boolean; reason?: string; file?: string }>('art_keys_export', [String(folder), String(password), plain], 60_000)
+    if (!r.ok || !r.file) throw new Error(r.reason || 'Nie udało się zapisać pliku.')
+    return r.file
+  })
+  // the user's own IGDB / TheGamesDB keys: asked from this device, never through the EmuStart server
+  handle(IPC.artOwnOptions, async (gameId: string, kind: ArtKind) => {
+    const keys = {
+      igdb_client_id: settings.getSecret('igdbClientId') ?? '',
+      igdb_client_secret: settings.getSecret('igdbClientSecret') ?? '',
+      tgdb_key: settings.getSecret('tgdbApiKey') ?? ''
+    }
+    if (!keys.tgdb_key && !(keys.igdb_client_id && keys.igdb_client_secret)) return { ok: false, error: 'Dodaj własny klucz IGDB albo TheGamesDB w Ustawieniach.' }
+    const sk = kind === 'grid' ? 'box' : kind === 'hero' ? 'snap' : ''
+    if (!sk) return { ok: true, options: [] }
+    if (engine.state !== 'ready') return { ok: false, error: 'Silnik EmuStart jeszcze się uruchamia.' }
+    const r = await engine
+      .call<{ options?: { url: string; source: string }[]; error?: string }>('art_own_candidates', [emu.engineId(gameId) ?? 0, findGame(gameId)?.name ?? '', sk, keys], 45_000)
+      .catch(() => null)
+    return r?.options ? { ok: true, options: r.options, error: r.error || undefined } : { ok: false, error: 'Nie udało się zapytać IGDB / TheGamesDB.' }
+  })
+  handle(IPC.artChooseOwn, async (gameId: string, kind: ArtKind, url: string, layout?: ArtLayout) => {
+    if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
+    if (!/^https:\/\/(images\.igdb\.com|cdn\.thegamesdb\.net)\//.test(String(url))) throw new Error('Nieoczekiwany adres grafiki.')
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'web', url: String(url) }, layoutOf(layout)))
+    bumpArt(gameId, kind)
+    return p
   })
   handle(IPC.artChooseUser, async (gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout) => {
     if (!ART_KINDS.includes(kind) || !/^[0-9a-f]{64}$/.test(String(sha)) || !/^(png|jpg|webp|gif)$/.test(String(ext))) throw new Error('Zła grafika.')

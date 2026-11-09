@@ -155,7 +155,7 @@ export class ArtworkService {
       if (choice.type === 'file') return (await exists(choice.file)) ? choice.file : null
       if (choice.type === 'user') return this.deps.userFile?.(choice.sha, choice.ext) ?? null
       if (choice.type === 'sgdb') return this.cachedDownload(`${gameId}|${kind}|sgdb-${choice.imageId}`, choice.url, gameId, kind)
-      if (choice.type === 'launchbox') return this.fromUrl(gameId, kind, choice.url)
+      if (choice.type === 'launchbox' || choice.type === 'web') return this.fromUrl(gameId, kind, choice.url)
       if (choice.type === 'steam') return (gridId && (await this.fromUserGrid(gridId, kind))) || (appId ? this.fromSteam(gameId, appId, kind) : null)
     }
 
@@ -190,7 +190,7 @@ export class ArtworkService {
       if (choice.type === 'file') return (await exists(choice.file)) ? choice.file : undefined
       if (choice.type === 'user') return (await this.deps.userFile?.(choice.sha, choice.ext)) ?? undefined
       if (choice.type === 'sgdb') return (await this.cachedDownload(`${gameId}|${kind}|sgdb-${choice.imageId}`, choice.url, gameId, kind)) ?? undefined
-      if (choice.type === 'launchbox') return (await this.fromUrl(gameId, kind, choice.url)) ?? undefined
+      if (choice.type === 'launchbox' || choice.type === 'web') return (await this.fromUrl(gameId, kind, choice.url)) ?? undefined
       return undefined // 'steam' here means the source's own (official) art
     }
     if (!auto) return undefined

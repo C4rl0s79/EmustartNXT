@@ -67,8 +67,8 @@ export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () =
           </button>
         ))}
       </div>
-      <UserArtSection gameId={id} kind="logo" layout="tv" />
-      <UserArtSection gameId={id} kind="hero" layout="tv" />
+      <UserArtSection gameId={id} kind="logo" layout="tv" label="logo" />
+      <UserArtSection gameId={id} kind="hero" layout="tv" label="tło" />
     </Modal>
   )
 }

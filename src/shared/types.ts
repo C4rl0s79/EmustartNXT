@@ -392,6 +392,8 @@ export type ArtChoice =
   | { type: 'steam' }
   /** image from LaunchBox Games DB (images.launchbox-app.com) */
   | { type: 'launchbox'; url: string }
+  /** image found with the user's own IGDB / TheGamesDB key */
+  | { type: 'web'; url: string }
   | { type: 'none' }
 
 export interface UserArtItem {
@@ -400,7 +402,18 @@ export interface UserArtItem {
   size: number
   by: string
   mine: boolean
+  /** game or group it was uploaded for */
+  game: string
 }
+
+export type UserArtGallery = { ok: true; items: UserArtItem[] } | { ok: false; error: string }
+
+export interface OwnArtOption {
+  url: string
+  source: string
+}
+
+export type OwnArtResult = { ok: true; options: OwnArtOption[]; error?: string } | { ok: false; error: string }
 
 export interface GameArtPrefs {
   sgdbGameId?: number
@@ -494,6 +507,9 @@ export interface Settings {
   tvLooks: Record<string, Record<string, number | string>>
   hasSgdbKey: boolean
   hasSteamWebKey: boolean
+  hasIgdbId: boolean
+  hasIgdbSecret: boolean
+  hasTgdbKey: boolean
   secretsEncrypted: boolean
 }
 
@@ -520,7 +536,7 @@ export type SettingsPatch = Partial<
   >
 >
 
-export type SecretName = 'sgdbApiKey' | 'steamWebApiKey'
+export type SecretName = 'sgdbApiKey' | 'steamWebApiKey' | 'igdbClientId' | 'igdbClientSecret' | 'tgdbApiKey'
 
 export interface SgdbGame {
   id: number
@@ -735,7 +751,6 @@ export type EmuAccountMethod =
   | 'lumen_hide_setup'
   | 'autodetect'
   | 'install_missing'
-  | 'art_keys_push'
   | 'system_options'
   | 'system_set'
   | 'system_logo_choose'

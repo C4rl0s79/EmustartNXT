@@ -1,9 +1,9 @@
 import type { SteamFamilyStatus } from '@shared/types'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, SettingsPatch } from '@shared/types'
+import type { CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Settings as AppSettings, SettingsPatch } from '@shared/types'
 import type { PickPathOptions } from '@shared/api'
 import { loginFlow, logoutFlow } from '../lib/account'
-import { detectEmulators, installMissing, pushArtKeys } from '../lib/emusettings'
+import { detectEmulators, installMissing } from '../lib/emusettings'
 import { api, attempt, pickPath, sortedCategories, useStore } from '../store'
 import { collectionGames } from '@shared/libraryNav'
 import { findSub, useNav } from '../lib/nav'
@@ -315,7 +315,64 @@ function ArtSection() {
         value={settings.artPriority === 'sgdbFirst'}
         onChange={(v) => void patch({ artPriority: v ? 'sgdbFirst' : 'steamFirst' })}
       />
+      <h3 className="card__desc">Własne klucze innych źródeł (IGDB, TheGamesDB)</h3>
+      <p className="card__desc">Klucze zostają na tym urządzeniu, a zapytania idą wprost do tych usług, nie przez serwer EmuStart. Grafiki pojawią się w oknie „Grafiki” gry.</p>
+      <SecretField name="igdbClientId" label="IGDB: Client ID" has={settings.hasIgdbId} />
+      <SecretField name="igdbClientSecret" label="IGDB: Client Secret" has={settings.hasIgdbSecret} />
+      <SecretField name="tgdbApiKey" label="Klucz TheGamesDB" has={settings.hasTgdbKey} />
+      <KeysTransfer />
     </Section>
+  )
+}
+
+/** the art source keys: from PyLinks on this PC, or an encrypted file between devices */
+function KeysTransfer() {
+  const [password, setPassword] = useState('')
+  const toast = useStore((s) => s.toast)
+  const imported = (s: unknown): void => {
+    if (s) {
+      useStore.getState().setSettings(s as AppSettings)
+      toast('Zaimportowano klucze')
+      setPassword('')
+    }
+  }
+  return (
+    <>
+      <p className="card__desc">Przenoszenie kluczy: plik klucze-grafik.emustart jest zaszyfrowany hasłem wpisanym poniżej.</p>
+      <div className="field-row">
+        <label>Hasło pliku</label>
+        <TextField type="password" label="Hasło pliku" placeholder="Hasło pliku z kluczami" value={password} onChange={setPassword} />
+        <button className="btn" data-nav onClick={() => void attempt(api().art.keysImport(null, '')).then(imported)}>
+          Importuj z PyLinks
+        </button>
+        <button
+          className="btn"
+          data-nav
+          disabled={!password}
+          onClick={async () => {
+            const file = await pickPath({ kind: 'file', title: 'Plik z kluczami', extensions: ['emustart'] })
+            if (file) imported(await attempt(api().art.keysImport(file, password)))
+          }}
+        >
+          Importuj z pliku
+        </button>
+        <button
+          className="btn"
+          data-nav
+          disabled={!password}
+          onClick={async () => {
+            const folder = await pickPath({ kind: 'folder', title: 'Gdzie zapisać plik z kluczami' })
+            const f = folder && (await attempt(api().art.keysExport(folder, password)))
+            if (f) {
+              toast(`Zapisano: ${f}`)
+              setPassword('')
+            }
+          }}
+        >
+          Eksportuj do pliku
+        </button>
+      </div>
+    </>
   )
 }
 
@@ -618,15 +675,6 @@ function InterfaceSection() {
 function EmustartSection() {
   const settings = useStore((s) => s.settings)!
   const emu = useStore((s) => s.snapshot?.emustart)
-  // administrator of the server (art source keys) — from the engine, when it runs
-  const [admin, setAdmin] = useState(false)
-  useEffect(() => {
-    if (emu?.engine !== 'ready' || !emu.server) return setAdmin(false)
-    void api()
-      .emustart.account<{ admin?: boolean }>('get_state')
-      .then((st) => setAdmin(!!st.admin))
-      .catch(() => setAdmin(false))
-  }, [emu?.engine, emu?.server?.ok]) // eslint-disable-line react-hooks/exhaustive-deps
   const [es, setEs] = useState<EmuSettings | null>(null)
   const ready = emu?.engine === 'ready'
   useEffect(() => {
@@ -774,11 +822,6 @@ function EmustartSection() {
           <button className="btn" data-nav onClick={() => void installMissing()}>
             Pobierz brakujące emulatory
           </button>
-          {admin && (
-            <button className="btn" data-nav onClick={() => void pushArtKeys()} title="Klucze z PyLinks na tym komputerze — na serwer (połączenie szyfrowane)">
-              Wyślij klucze źródeł grafik na serwer
-            </button>
-          )}
         </div>
       )}
       <div className="modal__row">

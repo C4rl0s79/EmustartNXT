@@ -295,7 +295,6 @@ export function registerEmustartIpc(handle: Handle, ctx: Ctx): void {
     // settings: emulators, platform options (the name / logo on the server — administrator)
     autodetect: { timeout: 120_000, changes: true },
     install_missing: { timeout: 60_000 },
-    art_keys_push: { timeout: 60_000 },
     system_options: { timeout: 30_000 },
     system_set: { timeout: 30_000, changes: true },
     system_logo_choose: { timeout: 60_000, changes: true },

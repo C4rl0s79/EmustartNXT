@@ -1,3 +1,4 @@
+import type { OwnArtResult, UserArtGallery } from './types'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ArtKind, ArtLayout,
@@ -32,7 +33,6 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogVerifyResult,
   GogLaunchResult,
   GogSaveChoice,
-  UserArtItem,
   GogExtrasResult,
   SteamFamilyStatus,
   GogSavesStatus
@@ -135,7 +135,13 @@ export interface LumenApi {
     useSteam(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
     reset(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
     /** images uploaded to the server by its accounts (this game, this kind) */
-    userGallery(gameId: string, kind: ArtKind): Promise<UserArtItem[]>
+    /** gameId '' = everything uploaded to the server */
+    userGallery(gameId: string, kind: ArtKind): Promise<UserArtGallery>
+    ownOptions(gameId: string, kind: ArtKind): Promise<OwnArtResult>
+    /** the art source keys: from PyLinks on this PC (file null) or from an encrypted file */
+    keysImport(file: string | null, password: string): Promise<Settings>
+    keysExport(folder: string, password: string): Promise<string>
+    chooseOwn(gameId: string, kind: ArtKind, url: string, layout?: ArtLayout): Promise<Prefs>
     chooseUser(gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout): Promise<Prefs>
     onChanged(cb: (gameId: string, rev: number) => void): () => void
   }
@@ -289,6 +295,10 @@ export const IPC = {
   artUseSteam: 'art:useSteam',
   artUserGallery: 'art:userGallery',
   artChooseUser: 'art:chooseUser',
+  artOwnOptions: 'art:ownOptions',
+  artKeysImport: 'art:keysImport',
+  artKeysExport: 'art:keysExport',
+  artChooseOwn: 'art:chooseOwn',
   artReset: 'art:reset',
   artChanged: 'art:changed',
   appFullscreen: 'app:fullscreen',
