@@ -201,11 +201,32 @@ export function installKeyboard(): () => void {
     dispatch(action, 'keyboard')
   }
   const onMouse = (): void => useStore.getState().setInputMode('mouse')
+  // Pad / keyboard: the mouse cursor hides and the page stops reacting to it. A still cursor would otherwise
+  // "hover" whatever the pad scrolls under it (menus move their selection on mouseenter, :hover lights up a
+  // second item). Only a real mouse move (Chromium also sends moves without movement when content scrolls
+  // under the cursor), a wheel or a click brings it back.
+  const onMove = (e: MouseEvent): void => {
+    if (e.movementX || e.movementY) onMouse()
+  }
+  const root = document.documentElement
+  const applyCursor = (mode: InputMode): void => {
+    root.classList.toggle('no-pointer', mode !== 'mouse')
+  }
+  applyCursor(useStore.getState().inputMode)
+  const unsub = useStore.subscribe((s, prev) => {
+    if (s.inputMode !== prev.inputMode) applyCursor(s.inputMode)
+  })
   window.addEventListener('keydown', onKey)
   window.addEventListener('mousedown', onMouse, true)
+  window.addEventListener('mousemove', onMove, true)
+  window.addEventListener('wheel', onMouse, { capture: true, passive: true })
   return () => {
+    unsub()
+    root.classList.remove('no-pointer')
     window.removeEventListener('keydown', onKey)
     window.removeEventListener('mousedown', onMouse, true)
+    window.removeEventListener('mousemove', onMove, true)
+    window.removeEventListener('wheel', onMouse, true)
   }
 }
 

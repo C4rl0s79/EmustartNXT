@@ -37,7 +37,34 @@ export const Art = memo(function Art({
   layout,
 }: Props) {
   const rev = useStore((s) => s.artRev[gameId] ?? 0);
-  const src = api().art.url(gameId, kind, rev, layout);
+  const wanted = api().art.url(gameId, kind, rev, layout);
+  // A new version of the same image (the player picked other art): the old one stays on screen until the
+  // new one is downloaded and decoded — a large / animated file is not an empty frame for seconds.
+  // Another game in this slot switches at once.
+  const slot = `${gameId}|${kind}|${layout ?? ""}`;
+  const [cur, setCur] = useState({ slot, src: wanted });
+  let src = cur.src;
+  if (cur.slot !== slot) {
+    src = wanted;
+    setCur({ slot, src: wanted });
+  }
+  useEffect(() => {
+    if (cur.slot !== slot || cur.src === wanted) return;
+    if (shown.has(wanted)) {
+      setCur({ slot, src: wanted });
+      return;
+    }
+    let alive = true;
+    const next = new Image();
+    next.src = wanted;
+    void next
+      .decode()
+      .catch(() => undefined)
+      .finally(() => alive && setCur({ slot, src: wanted }));
+    return () => {
+      alive = false;
+    };
+  }, [wanted, slot, cur.slot, cur.src]);
   const [state, setState] = useState<"loading" | "ok" | "error">(() =>
     shown.has(src) ? "ok" : "loading",
   );

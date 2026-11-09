@@ -2474,3 +2474,13 @@ body {
 .details__error {
   color: var(--err, #ff7a7a);
 }
+
+/* Pad / klawiatura: kursor myszy znika, a strona nie reaguje na niego (najechanie nie zabiera zaznaczenia,
+   :hover nie podświetla drugiego elementu). Ruch myszą, kółko albo kliknięcie przywraca (nav/input.ts). */
+html.no-pointer,
+html.no-pointer * {
+  cursor: none !important;
+}
+html.no-pointer body {
+  pointer-events: none;
+}

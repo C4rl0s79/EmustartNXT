@@ -4,7 +4,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
-import type { ActionResult, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtChoice, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
@@ -36,6 +36,20 @@ import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
+
+/**
+ * Art picked in one layout shows in the other too, unless that layout has its own choice (TV and desktop
+ * keep separate choices). Only real images are borrowed — "no image" / "the source's art" stay per layout.
+ */
+function borrowable(c: ArtChoice | undefined): ArtChoice | undefined {
+  return c && (c.type === 'file' || c.type === 'sgdb' || c.type === 'launchbox') ? c : undefined
+}
+function withBorrowed(own: GameArtPrefs | undefined, other: GameArtPrefs | undefined): GameArtPrefs | undefined {
+  if (!other) return own
+  const out: GameArtPrefs = { ...own }
+  for (const k of ART_KINDS) if (!out[k]) out[k] = borrowable(other[k])
+  return out
+}
 /** the EmuStart engine finds Lumen's window by this title (in-game menu, return after a game) */
 const WINDOW_TITLE = 'Lumen'
 
@@ -136,7 +150,7 @@ const artwork = new ArtworkService({
   steamPath: () => library.steamPath,
   sgdb,
   priority: () => settings.get().artPriority,
-  prefsFor: (id) => prefs.get().art[id],
+  prefsFor: (id) => withBorrowed(prefs.get().art[id], prefs.get().artTv[id]),
   userGridDir: () => {
     const { installPath, activeSteamId } = library.current.steam
     const accountId = activeSteamId ? steamId64ToAccountId(activeSteamId) : undefined
@@ -503,7 +517,7 @@ const layoutOf = (layout: unknown): ArtLayout => (layout === 'tv' ? 'tv' : 'desk
  * desktop (Steam games, EmuStart games with neither).
  */
 async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
-  const choice = prefs.get().artTv[gameId]?.[k]
+  const choice = prefs.get().artTv[gameId]?.[k] ?? borrowable(prefs.get().art[gameId]?.[k])
   if (choice?.type === 'none') return new Response('none', { status: 404 })
   if (choice?.type === 'file' && (await fs.stat(choice.file).catch(() => null))) return fileResponse(choice.file)
   if (choice?.type === 'sgdb' || choice?.type === 'launchbox') {
