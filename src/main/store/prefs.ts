@@ -18,7 +18,7 @@ const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [] }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {} }
 }
 
 export function migratePrefs(raw: unknown): Prefs {
@@ -55,7 +55,8 @@ export function migratePrefs(raw: unknown): Prefs {
     platformOverrides: isRecord(r.platformOverrides)
       ? Object.fromEntries(Object.entries(r.platformOverrides).filter((e): e is [string, string] => typeof e[1] === 'string' && validOverride(e[1])))
       : {},
-    pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : []
+    pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : [],
+    lbTitles: cleanLbTitles(r.lbTitles)
   }
   if ((r.version ?? 1) < 4) {
     // v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces
@@ -68,6 +69,14 @@ export function migratePrefs(raw: unknown): Prefs {
       .map((c) => `col/${c.id}`)
   }
   return normalizeOrder(prefs)
+}
+
+/** LaunchBox names from the server: GOG games and shortcuts only, non-empty names */
+export function cleanLbTitles(v: unknown): Record<string, string> {
+  if (!isRecord(v)) return {}
+  return Object.fromEntries(
+    Object.entries(v).filter((e): e is [string, string] => /^(gog|shortcut):[A-Za-z0-9_.-]{1,64}$/.test(e[0]) && typeof e[1] === 'string' && !!e[1].trim() && e[1].length <= 200)
+  )
 }
 
 /** platform override of a Steam shortcut: pc | other | emu:<es> */

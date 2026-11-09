@@ -146,7 +146,9 @@ Gry Steam synchronizuje Steam Cloud.
 1. Zaloguj się na <https://www.steamgriddb.com> i skopiuj klucz z *Preferences → API*
    (<https://www.steamgriddb.com/profile/preferences/api>).
 2. W Lumen: **Ustawienia → Grafiki i opisy → Klucz SteamGridDB** → wklej → **Zapisz**.
-3. Przełącznik „Najpierw grafiki ze SteamGridDB” decyduje, czy domyślnie używać SteamGridDB, czy oficjalnych grafik Steam.
+3. Przełącznik „Najpierw grafiki ze SteamGridDB” decyduje, czy domyślnie używać SteamGridDB, czy grafik źródła gry.
+   Gdy jest włączony, można go wyłączyć osobno dla źródeł: **Steam** (oficjalne grafiki Steam), **GOG** (grafiki
+   z serwera EmuStart, folder GOG Managera) i **LaunchBox** (gry EmuStart: grafiki z serwera i bazy LaunchBox).
 4. W ekranie gry: **Grafiki** — wybór plakatu / tła / logo / ikony, własny plik, „Zmień dopasowanie gry”.
 
 ### Gdzie są dane

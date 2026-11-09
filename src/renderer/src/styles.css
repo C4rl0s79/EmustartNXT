@@ -1237,6 +1237,8 @@ button {
   background: rgba(0, 0, 0, 0.35);
   min-height: 2.2em;
   word-break: break-all;
+  /* a space next to the cursor (in the middle of the text) stays visible */
+  white-space: pre-wrap;
 }
 .osk__caret {
   display: inline-block;
@@ -1244,7 +1246,7 @@ button {
   height: 1em;
   background: var(--accent);
   vertical-align: -0.12em;
-  margin-left: 2px;
+  margin: 0 1px;
   animation: blink 1s steps(1) infinite;
 }
 @keyframes blink {
@@ -2233,7 +2235,7 @@ p.card__desc[data-nav]:focus {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- in-game menu (LB + A over the emulator; EmuStart look, both layouts) ---------- */
+/* ---------- in-game menu (Select + A over the emulator; EmuStart look, both layouts) ---------- */
 .ingame {
   position: fixed;
   inset: 0;

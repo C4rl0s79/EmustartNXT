@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite'
 import type { GameDetails, LaunchBoxStatus } from '@shared/types'
 import { log } from '../logger'
 import createBuildWorker from './worker?nodeWorker'
-import { findGame, toDetails, type GameRow } from './lookup'
+import { findEdition, findGame, toDetails, type GameRow } from './lookup'
 import { SCHEMA_VERSION } from './builder'
 import { sortImages, type LbImage } from './images'
 import type { RegionOrder } from '@shared/types'
@@ -216,6 +216,19 @@ export class LaunchBoxService extends EventEmitter {
       const g = db.prepare('SELECT * FROM games WHERE id = ?').get(id) as unknown as GameRow | undefined
       return g ? toDetails(g) : null
     } catch {
+      return null
+    }
+  }
+
+  /** the closest edition of a store title (GOG) on a platform — lookup.findEdition */
+  edition(name: string, platform: string): GameDetails | null {
+    const db = this.open()
+    if (!db) return null
+    try {
+      const g = findEdition(db, name, platform)
+      return g ? toDetails(g) : null
+    } catch (e) {
+      log.warn('launchbox', `edition lookup failed for "${name}": ${(e as Error).message}`)
       return null
     }
   }

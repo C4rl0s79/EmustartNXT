@@ -93,7 +93,9 @@ const api: LumenApi = {
     status: () => invoke(IPC.launchboxStatus),
     update: () => invoke(IPC.launchboxUpdate),
     cancel: () => invoke(IPC.launchboxCancel),
-    onChange: (cb) => subscribe(IPC.launchboxChanged, cb)
+    onChange: (cb) => subscribe(IPC.launchboxChanged, cb),
+    title: (id) => invoke(IPC.launchboxTitle, id),
+    setTitle: (id, name) => invoke(IPC.launchboxSetTitle, id, name)
   },
   emustart: {
     launch: (id, state, takeover) => invoke(IPC.emuLaunch, id, state, takeover),

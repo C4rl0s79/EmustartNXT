@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Modal } from './Modal'
 
 // Text input that works from the couch: with a controller, pressing A opens an on-screen
-// keyboard; with a physical keyboard the field is typed into directly.
+// keyboard; with a physical keyboard the field is typed into directly. The D-pad's ←/→ moves the
+// field's cursor (nav/input.ts); the on-screen keyboard types at that cursor and moves it with LT / RT.
 
 interface Props {
   value: string
@@ -22,12 +23,12 @@ interface Props {
 export function TextField({ value, onChange, onSubmit, placeholder, label, type = 'text', className, inputRef, navKey, nav = true }: Props) {
   const own = useRef<HTMLInputElement>(null)
   const ref = inputRef ?? own
-  const [osk, setOsk] = useState(false)
+  const [osk, setOsk] = useState<number | null>(null)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const open = (): void => setOsk(true)
+    const open = (): void => setOsk(el.selectionStart ?? el.value.length)
     el.addEventListener('lumen-osk', open)
     return () => el.removeEventListener('lumen-osk', open)
   }, [ref])
@@ -53,14 +54,17 @@ export function TextField({ value, onChange, onSubmit, placeholder, label, type 
           }
         }}
       />
-      {osk && (
+      {osk !== null && (
         <OnScreenKeyboard
           label={label}
           initial={value}
+          initialCaret={osk}
           secret={type === 'password'}
           onChange={onChange}
-          onClose={(submit, v) => {
-            setOsk(false)
+          onClose={(submit, v, caret) => {
+            setOsk(null)
+            // the field's cursor where the keyboard left it (focus comes back after the dialog closes)
+            setTimeout(() => ref.current?.setSelectionRange(caret, caret), 0)
             if (submit) onSubmit?.(v)
           }}
         />
@@ -80,61 +84,83 @@ const ROWS = [
 export function OnScreenKeyboard({
   label,
   initial,
+  initialCaret,
   secret,
   onChange,
   onClose
 }: {
   label: string
   initial: string
+  /** where typing starts (default: the end) */
+  initialCaret?: number
   secret: boolean
   onChange: (v: string) => void
-  onClose: (submit: boolean, v: string) => void
+  onClose: (submit: boolean, v: string, caret: number) => void
 }) {
-  const [text, setText] = useState(initial)
+  const [ed, setEd] = useState(() => ({ text: initial, caret: Math.max(0, Math.min(initialCaret ?? initial.length, initial.length)) }))
+  const text = ed.text
   const [shift, setShift] = useState(false)
-  const update = (v: string): void => {
-    setText(v)
-    onChange(v)
+  // the current text and cursor between renders (several keys before React renders again); every change goes
+  // through apply(), which tells the field outside any state updater
+  const edRef = useRef(ed)
+  edRef.current = ed
+  const apply = (next: { text: string; caret: number }): void => {
+    const changed = next.text !== edRef.current.text
+    edRef.current = next
+    setEd(next)
+    if (changed) onChange(next.text)
+  }
+  // an edit at the cursor: insert (k) or delete the character before it (k = null)
+  const edit = (k: string | null): void => {
+    const e = edRef.current
+    if (k === null && e.caret === 0) return
+    apply(
+      k === null
+        ? { text: e.text.slice(0, e.caret - 1) + e.text.slice(e.caret), caret: e.caret - 1 }
+        : { text: e.text.slice(0, e.caret) + k + e.text.slice(e.caret), caret: e.caret + k.length }
+    )
   }
   const type = (k: string): void => {
-    update(text + (shift ? k.toLocaleUpperCase('pl') : k))
+    edit(shift ? k.toLocaleUpperCase('pl') : k)
     if (shift) setShift(false)
   }
   const backspace = (): boolean => {
-    update(text.slice(0, -1))
+    edit(null)
     return true
   }
+  const caretBy = (d: number): boolean => {
+    const e = edRef.current
+    apply({ ...e, caret: Math.max(0, Math.min(e.text.length, e.caret + d)) })
+    return true
+  }
+  const clear = (): void => apply({ text: '', caret: 0 })
+  const editRef = useRef(edit)
+  editRef.current = edit
 
   // physical keys also work while the OSK is open: letters, space, Backspace; Enter submits (a
   // controller's A goes through the input layer instead and presses the focused key)
-  const textRef = useRef(text)
-  textRef.current = text
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Enter' && !e.ctrlKey && !e.altKey) {
         e.stopImmediatePropagation()
         e.preventDefault()
-        onClose(true, textRef.current)
+        onClose(true, edRef.current.text, edRef.current.caret)
         return
       }
       const isChar = e.key.length === 1 && !e.ctrlKey && !e.altKey
       if (!isChar && e.key !== 'Backspace') return
       e.stopImmediatePropagation()
       e.preventDefault()
-      setText((t) => {
-        const v = e.key === 'Backspace' ? t.slice(0, -1) : t + e.key
-        onChange(v)
-        return v
-      })
+      editRef.current(e.key === 'Backspace' ? null : e.key)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onChange, onClose])
+  }, [onClose])
 
   return (
     <Modal
       title={label}
-      onClose={() => onClose(false, text)}
+      onClose={() => onClose(false, text, ed.caret)}
       className="osk"
       handlers={{
         x: backspace,
@@ -146,8 +172,10 @@ export function OnScreenKeyboard({
           setShift((s) => !s)
           return true
         },
+        lt: () => caretBy(-1),
+        rt: () => caretBy(1),
         menu: () => {
-          onClose(true, text)
+          onClose(true, text, ed.caret)
           return true
         }
       }}
@@ -156,11 +184,17 @@ export function OnScreenKeyboard({
         { action: 'x', label: 'Usuń' },
         { action: 'y', label: 'Spacja' },
         { action: 'lb', label: 'Wielkie litery' },
+        { action: 'lt', label: 'Kursor ←' },
+        { action: 'rt', label: 'Kursor →' },
         { action: 'menu', label: 'Gotowe' },
         { action: 'back', label: 'Zamknij' }
       ]}
     >
-      <div className="osk__display">{secret ? '•'.repeat(text.length) : text}<span className="osk__caret" /></div>
+      <div className="osk__display">
+        {secret ? '•'.repeat(ed.caret) : text.slice(0, ed.caret)}
+        <span className="osk__caret" />
+        {secret ? '•'.repeat(text.length - ed.caret) : text.slice(ed.caret)}
+      </div>
       <div className="osk__keys">
         {ROWS.map((row, r) => (
           <div className="osk__row" key={r}>
@@ -181,10 +215,10 @@ export function OnScreenKeyboard({
           <button className="osk__key osk__key--wide" data-nav onClick={backspace}>
             ⌫ Usuń
           </button>
-          <button className="osk__key osk__key--wide" data-nav onClick={() => update('')}>
+          <button className="osk__key osk__key--wide" data-nav onClick={clear}>
             Wyczyść
           </button>
-          <button className="osk__key osk__key--wide osk__key--done" data-nav onClick={() => onClose(true, text)}>
+          <button className="osk__key osk__key--wide osk__key--done" data-nav onClick={() => onClose(true, text, ed.caret)}>
             Gotowe
           </button>
         </div>

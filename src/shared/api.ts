@@ -20,6 +20,7 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   JobsSnapshot,
   UiMode,
   LaunchBoxStatus,
+  LbTitleInfo,
   PadState,
   LibrarySnapshot,
   Prefs,
@@ -152,6 +153,10 @@ export interface LumenApi {
     update(): Promise<LaunchBoxStatus>
     cancel(): Promise<void>
     onChange(cb: (s: LaunchBoxStatus) => void): () => void
+    /** name of a GOG game / shortcut in LaunchBox set by the server's administrator */
+    title(gameId: string): Promise<LbTitleInfo>
+    /** administrator: the name on the server for every device (empty = search by the store name) */
+    setTitle(gameId: string, name: string): Promise<ActionResult>
   }
   /** EmuStart games: every action runs in the EmuStart engine (engine/emustart) */
   emustart: {
@@ -317,6 +322,8 @@ export const IPC = {
   launchboxUpdate: 'launchbox:update',
   launchboxCancel: 'launchbox:cancel',
   launchboxChanged: 'launchbox:changed',
+  launchboxTitle: 'launchbox:title',
+  launchboxSetTitle: 'launchbox:setTitle',
   padState: 'pad:state',
   emuLaunch: 'emu:launch',
   emuSaves: 'emu:saves',

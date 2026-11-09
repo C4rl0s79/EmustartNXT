@@ -1,6 +1,6 @@
 import type { SteamFamilyStatus } from '@shared/types'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Settings as AppSettings, SettingsPatch } from '@shared/types'
+import type { ArtDataSource, CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Settings as AppSettings, SettingsPatch } from '@shared/types'
 import type { PickPathOptions } from '@shared/api'
 import { loginFlow, logoutFlow } from '../lib/account'
 import { detectEmulators, installMissing } from '../lib/emusettings'
@@ -294,6 +294,13 @@ function SteamSection() {
   )
 }
 
+/** data sources for which "SteamGridDB first" can be switched off */
+const ART_SOURCES: [ArtDataSource, string, string][] = [
+  ['steam', 'SteamGridDB przed grafikami Steam', 'Gry Steam: wyłączone — najpierw oficjalne grafiki Steam'],
+  ['gog', 'SteamGridDB przed grafikami GOG', 'Gry GOG: wyłączone — najpierw grafiki z serwera EmuStart (folder GOG Managera)'],
+  ['launchbox', 'SteamGridDB przed grafikami LaunchBox', 'Gry EmuStart: wyłączone — najpierw grafiki z serwera i bazy LaunchBox']
+]
+
 function ArtSection() {
   const settings = useStore((s) => s.settings)!
   return (
@@ -311,10 +318,26 @@ function ArtSection() {
       </p>
       <Toggle
         label="Najpierw grafiki ze SteamGridDB"
-        desc={settings.artPriority === 'sgdbFirst' ? 'SteamGridDB, a przy braku wyników — Steam' : 'Oficjalne grafiki Steam, a przy braku — SteamGridDB'}
+        desc={
+          settings.artPriority === 'sgdbFirst'
+            ? 'SteamGridDB, a przy braku wyników — grafiki źródła gry (dla źródeł włączonych niżej)'
+            : 'Grafiki źródła gry (Steam, GOG, LaunchBox), a przy braku — SteamGridDB'
+        }
         value={settings.artPriority === 'sgdbFirst'}
         onChange={(v) => void patch({ artPriority: v ? 'sgdbFirst' : 'steamFirst' })}
       />
+      {settings.artPriority === 'sgdbFirst' &&
+        ART_SOURCES.map(([src, label, desc]) => (
+          <Toggle
+            key={src}
+            label={label}
+            desc={desc}
+            value={!settings.sgdbFirstOff.includes(src)}
+            onChange={(v) =>
+              void patch({ sgdbFirstOff: v ? settings.sgdbFirstOff.filter((s) => s !== src) : [...settings.sgdbFirstOff, src] })
+            }
+          />
+        ))}
       <h3 className="card__desc">Własne klucze innych źródeł (IGDB, TheGamesDB)</h3>
       <p className="card__desc">Klucze zostają na tym urządzeniu, a zapytania idą wprost do tych usług, nie przez serwer EmuStart. Grafiki pojawią się w oknie „Grafiki” gry.</p>
       <SecretField name="igdbClientId" label="IGDB: Client ID" has={settings.hasIgdbId} />

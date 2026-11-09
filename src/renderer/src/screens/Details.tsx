@@ -13,6 +13,7 @@ import { EmuSaves } from '../components/EmuSaves'
 import { GameOptions } from '../components/GameOptions'
 import { GogActions, gogFacts, PlatformButton } from '../components/GogDetails'
 import { Controllers } from '../components/Controllers'
+import { LbTitleButton } from '../components/LbTitle'
 import { usePrimaryAction } from '../lib/primary'
 import { setGlowFrom } from '../lib/glow'
 import { formatBytes, formatEta, formatLastPlayed, formatPlaytime, htmlToParagraphs, STATE_LABEL, stateLabel, versionCountLabel } from '../lib/format'
@@ -25,6 +26,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
   const [details, setDetails] = useState<DetailsResult | null>(null)
   const [modal, setModal] = useState<'categories' | 'art' | 'saves' | 'options' | 'pads' | null>(null)
   const [logoOk, setLogoOk] = useState(true)
+  // bumped after the LaunchBox name changed: the description is read again
+  const [detailsRev, setDetailsRev] = useState(0)
   const isEmu = game?.source === 'emustart'
   const emuSummary = useStore((s) => s.snapshot?.emustart)
   const allJobs = useStore((s) => s.jobs.jobs)
@@ -44,7 +47,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
     return () => {
       alive = false
     }
-  }, [gameId])
+  }, [gameId, detailsRev])
 
   // the open game lights the room with its own colour (its cover, as on the grid)
   useEffect(() => setGlowFrom(api().art.url(gameId, 'grid', useStore.getState().artRev[gameId] ?? 0)), [gameId])
@@ -240,6 +243,9 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
           )}
           {game.gog && <GogActions game={game} />}
           {game.shortcut && <PlatformButton game={game} />}
+          {(game.gog || game.shortcut) && (
+            <LbTitleButton game={game} matched={d?.launchboxName ?? (d?.source === 'launchbox' ? d.name : undefined)} onSaved={() => setDetailsRev((n) => n + 1)} />
+          )}
           {game.source === 'steam' && (
             <>
               <button className="btn" data-nav data-key="steam" onClick={() => void attempt(api().game.openInSteam(gameId, 'details'))}>
@@ -306,8 +312,13 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
           </p>
         )}
         {details?.ok && details.stale && !game.emu && <p className="details__muted">Informacje z pamięci podręcznej (brak połączenia ze sklepem).</p>}
-        {details?.ok && d?.source === 'gog' && <p className="details__muted">Opis i grafiki: folder gry GOG Managera na serwerze EmuStart (zmiana grafik: „Grafiki”).</p>}
-        {details?.ok && d?.source === 'emustart' && <p className="details__muted">Opis: biblioteka serwera EmuStart. Plakat i tło: SteamGridDB, gdy jest klucz (zmiana: „Grafiki”), inaczej grafiki z serwera.</p>}
+        {details?.ok && d?.source === 'gog' && (
+          <p className="details__muted">
+            Opis i grafiki: folder gry GOG Managera na serwerze EmuStart (zmiana grafik: „Grafiki”)
+            {d.launchboxName ? ` · uzupełnione z LaunchBox („${d.launchboxName}”)` : ''}.
+          </p>
+        )}
+        {details?.ok && d?.source === 'emustart' && <p className="details__muted">Opis: biblioteka serwera EmuStart. Plakat i tło: SteamGridDB albo grafiki z serwera i LaunchBox — według ustawienia „Najpierw grafiki ze SteamGridDB” (zmiana dla tej gry: „Grafiki”).</p>}
       </div>
 
       {modal === 'categories' && <CategoryPicker gameId={gameId} onClose={() => setModal(null)} />}

@@ -351,6 +351,8 @@ export interface GameDetails {
   playerReviews?: number
   platform?: string
   launchboxId?: number
+  /** the LaunchBox entry the description was filled in from (GOG, shortcuts) */
+  launchboxName?: string
   /** how many times the game was started (EmuStart) */
   plays?: number
   /** Steam store data format (3: with Metacritic, reviews, co-op, age rating) — older cache is refreshed */
@@ -458,6 +460,14 @@ export interface Prefs {
   platformOverrides: Record<string, string>
   /** library groups pinned for quick access (top bar / TV carousel), in order: nav ids like 'console/emu:ps2', 'pc/gog', 'col/<categoryId>' */
   pinnedGroups: string[]
+  /** names in LaunchBox set by the server's administrator (GOG games, shortcuts): game id → name; a copy of the server's */
+  lbTitles: Record<string, string>
+}
+
+/** a game's name in LaunchBox (set by the server's administrator) and whether this device may change it */
+export interface LbTitleInfo {
+  name: string
+  admin: boolean
 }
 
 /** ratings of a game for sorting lists: LaunchBox community (0–5), critics (Metacritic 0–100), players (Steam reviews % positive) */
@@ -471,6 +481,8 @@ export interface GameRatings {
 export type ArtLayout = 'desktop' | 'tv'
 
 export type ArtSourcePriority = 'sgdbFirst' | 'steamFirst'
+/** where a game's own art and data come from: Steam, the EmuStart server's GOG folder, EmuStart games (server + LaunchBox) */
+export type ArtDataSource = 'steam' | 'gog' | 'launchbox'
 export type AfterLaunch = 'minimize' | 'keep'
 /** xinput = passive XInput polling in the main process (default); chromium = browser Gamepad API */
 /** One connected XInput pad (raw XINPUT_GAMEPAD values). */
@@ -489,6 +501,8 @@ export interface Settings {
   version: 1
   steamIdOverride?: string
   artPriority: ArtSourcePriority
+  /** data sources whose own art stays first although artPriority is sgdbFirst */
+  sgdbFirstOff: ArtDataSource[]
   afterLaunch: AfterLaunch
   restoreAfterGame: boolean
   startFullscreen: boolean
@@ -532,6 +546,7 @@ export type SettingsPatch = Partial<
     Settings,
     | 'steamIdOverride'
     | 'artPriority'
+    | 'sgdbFirstOff'
     | 'afterLaunch'
     | 'restoreAfterGame'
     | 'startFullscreen'
@@ -794,7 +809,7 @@ export interface EmuSystemLogo {
   label?: string
 }
 
-/** In-game menu (LB + A over the emulator) as the engine shows it (ingame_poll) */
+/** In-game menu (Select + A over the emulator) as the engine shows it (ingame_poll) */
 export interface EmuInGameMenu {
   open: boolean
   items: { id: string; label: string; on: boolean; hint?: string }[]

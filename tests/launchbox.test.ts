@@ -200,3 +200,57 @@ describe('LaunchBox images', () => {
     }
   })
 })
+
+describe('store editions in titles (GOG)', () => {
+  it('drops the edition at the end, keeps the title', async () => {
+    const { editionless } = await import('../src/main/launchbox/match')
+    expect(editionless('The Witcher 3: Wild Hunt - Game of the Year Edition')).toEqual(['The Witcher 3: Wild Hunt'])
+    expect(editionless("The Witcher: Enhanced Edition Director's Cut")).toContain('The Witcher')
+    expect(editionless('Heroes of Might and Magic® 3: Complete')).toEqual(['Heroes of Might and Magic 3'])
+    expect(editionless('Divinity: Original Sin - Enhanced Edition')).toEqual(['Divinity: Original Sin'])
+    expect(editionless('Fallout 2')).toEqual([])
+    expect(editionless('Deluxe')).toEqual([])
+    expect(editionless('Pac-Man Championship Edition')).toEqual([]) // no separator before the edition: one title
+    expect(editionless('Pac-Man: Championship Edition')).toEqual(['Pac-Man'])
+  })
+})
+
+describe('closest edition of a store title (GOG)', () => {
+  const game = (id: number, name: string, platform = 'Windows'): string =>
+    `<Game><Name>${name}</Name><DatabaseID>${id}</DatabaseID><Platform>${platform}</Platform></Game>`
+  const xml = (games: string[]): string => `<?xml version="1.0" standalone="yes"?><LaunchBox>${games.join('')}</LaunchBox>`
+
+  it('picks the edition that fits the store title, else the other one', async () => {
+    const { findEdition } = await import('../src/main/launchbox/lookup')
+    const out = path.join(mkdtempSync(path.join(tmpdir(), 'lumen-lb-')), 'launchbox.db')
+    await buildDatabase(
+      Readable.from([
+        xml([
+          game(1, 'The Witcher 3: Wild Hunt'),
+          game(2, 'The Witcher 3: Wild Hunt - Game of the Year Edition'),
+          game(3, 'The Witcher 2: Assassins of Kings'),
+          game(4, 'Divinity: Original Sin - Enhanced Edition'),
+          game(5, 'Heroes of Might and Magic III: Complete', 'MS-DOS'),
+          game(6, 'Star Wars', 'MS-DOS')
+        ])
+      ]),
+      out
+    )
+    const db = new DatabaseSync(out, { readOnly: true })
+    try {
+      expect(findEdition(db, 'The Witcher 3: Wild Hunt', 'Windows')?.id).toBe(1)
+      expect(findEdition(db, 'The Witcher 3 Wild Hunt - Game of the Year Edition', 'Windows')?.id).toBe(2)
+      expect(findEdition(db, 'The Witcher 3: Wild Hunt - Complete Edition', 'Windows')?.id).toBeOneOf([1, 2])
+      expect(findEdition(db, 'Divinity: Original Sin', 'Windows')?.id).toBe(4) // only the enhanced one in the database
+      expect(findEdition(db, 'The Witcher 2', 'Windows')?.id).toBe(3) // main title without the subtitle
+      expect(findEdition(db, 'The Witcher 2: Assassins of Kings Enhanced Edition', 'Windows')?.id).toBe(3)
+      expect(findEdition(db, 'The Witcher', 'Windows')).toBeNull() // another number: not the same game
+      expect(findEdition(db, 'Original Sin', 'Windows')).toBeNull() // a subtitle alone is not the title
+      expect(findEdition(db, 'Heroes of Might and Magic® III', 'MS-DOS')?.id).toBe(5)
+      expect(findEdition(db, 'The Witcher 3: Wild Hunt', 'MS-DOS')).toBeNull()
+      expect(findEdition(db, 'Star Wars: Rebel Assault', 'MS-DOS')).toBeNull() // a franchise's first game is not this one
+    } finally {
+      db.close()
+    }
+  })
+})

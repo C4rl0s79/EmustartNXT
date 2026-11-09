@@ -1,7 +1,7 @@
 import { safeStorage } from 'electron'
 import { homedir } from 'node:os'
 import path from 'node:path'
-import type { SecretName, Settings, SettingsPatch } from '@shared/types'
+import type { ArtDataSource, SecretName, Settings, SettingsPatch } from '@shared/types'
 import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
 import { isValidSteamId64 } from '../steam/local'
@@ -11,6 +11,7 @@ type StoredSettings = Omit<Settings, 'hasSgdbKey' | 'hasSteamWebKey' | 'hasIgdbI
 const defaults = (): StoredSettings => ({
   version: 1,
   artPriority: 'sgdbFirst',
+  sgdbFirstOff: [],
   afterLaunch: 'minimize',
   restoreAfterGame: true,
   startFullscreen: false,
@@ -36,6 +37,12 @@ export function defaultGogDir(): string {
 export function cleanLangs(v: unknown): string[] {
   if (!Array.isArray(v)) return ['pl', 'en']
   return [...new Set(v.filter((x): x is string => typeof x === 'string').map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z]{2,3}$/.test(x)))].slice(0, 8)
+}
+
+const ART_SOURCES: readonly ArtDataSource[] = ['steam', 'gog', 'launchbox']
+/** known data sources, each once */
+export function cleanArtSources(v: unknown): ArtDataSource[] {
+  return Array.isArray(v) ? ART_SOURCES.filter((s) => v.includes(s)) : []
 }
 
 /** absolute folder path, or undefined */
@@ -71,6 +78,7 @@ function migrate(raw: unknown): StoredSettings {
     ...d,
     steamIdOverride: typeof r.steamIdOverride === 'string' && isValidSteamId64(r.steamIdOverride) ? r.steamIdOverride : undefined,
     artPriority: r.artPriority === 'steamFirst' ? 'steamFirst' : 'sgdbFirst',
+    sgdbFirstOff: cleanArtSources(r.sgdbFirstOff),
     afterLaunch: r.afterLaunch === 'keep' ? 'keep' : 'minimize',
     restoreAfterGame: r.restoreAfterGame !== false,
     startFullscreen: r.startFullscreen === true,

@@ -19,6 +19,28 @@ export function plainTitle(name: string): string {
   return name.replace(TAG_RE, '').trim()
 }
 
+// a store edition at the end of a title: "… Game of the Year Edition", "…: Complete", "… - Director's Cut"
+const EDITION_RE =
+  /(?:\s*:\s*|\s+[-–—]\s+|\s+)(?:the\s+)?(?:game of the year|goty|enhanced|definitive|complete|gold|deluxe|digital deluxe|special|anniversary|director'?s cut|ultimate|premium|collector'?s|extended|classic)(?:\s+edition)?\s*$/i
+// "…: <anything> Edition" / "… - <anything> Edition": a dash only between spaces ("Pac-Man" is one word)
+const ANY_EDITION_RE = /(?:\s*:\s*|\s+[-–—]\s+)(?:(?!\s[-–—]\s|:).)*\bedition\s*$/i
+
+/**
+ * Shorter names of a store title without its edition, shortest last ("The Witcher: Enhanced Edition
+ * Director's Cut" → "The Witcher"). The title itself is not included.
+ */
+export function editionless(name: string): string[] {
+  const out: string[] = []
+  let s = plainTitle(name ?? '').replace(/[™®©]/g, '').trim()
+  for (let i = 0; i < 3; i++) {
+    const next = s.replace(EDITION_RE, '').replace(ANY_EDITION_RE, '').trim()
+    if (next === s || normTitle(next).length < 3) break
+    out.push(next)
+    s = next
+  }
+  return out
+}
+
 /** Dice coefficient on character bigrams. */
 export function similarity(a: string, b: string): number {
   const bigrams = (s: string): Set<string> => {

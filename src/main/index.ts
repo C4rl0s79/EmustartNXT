@@ -6,13 +6,14 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
 import type { UserArtItem } from '@shared/types'
-import type { ActionResult, ArtChoice, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { LbTitleInfo } from '@shared/types'
+import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
 import { Limiter } from './net'
 import { detectFlavor, Updater } from './updater'
-import { ops, PrefsError, PrefsStore } from './store/prefs'
+import { cleanLbTitles, ops, PrefsError, PrefsStore } from './store/prefs'
 import { SettingsStore } from './store/settings'
 import { LibraryService } from './library/service'
 import { factsOf, genresPl, StoreMetadataProvider } from './steam/storeMeta'
@@ -22,7 +23,7 @@ import { LaunchBoxService } from './launchbox/service'
 import { XInputPoller } from './input/xinput'
 import { RawHidPads } from './input/rawhid'
 import { foreground } from './input/foreground'
-import { platformForEs, platformForTags } from './launchbox/match'
+import { editionless, platformForEs, platformForTags } from './launchbox/match'
 import { IMAGE_BASE, LB_TYPES, PICKER_TYPES, regionsOfTags, type LbImage } from './launchbox/images'
 import { ArtworkService } from './art/artwork'
 import { isPlayable } from './steam/manifests'
@@ -154,7 +155,7 @@ const artwork = new ArtworkService({
   cacheDir: paths.artCache,
   steamPath: () => library.steamPath,
   sgdb,
-  priority: () => settings.get().artPriority,
+  priority: () => (sgdbFirstFor('steam') ? 'sgdbFirst' : 'steamFirst'),
   prefsFor: (id) => withBorrowed(prefs.get().art[id], prefs.get().artTv[id]),
   userFile: (sha, ext) => userArtFile(sha, ext),
   userGridDir: () => {
@@ -371,15 +372,28 @@ async function artResponse(req: Request): Promise<Response> {
       if (own) return own
     }
     if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
-    if (isGogId(gameId)) {
-      const own = await gogArt(gameId, kind as ArtKind, u.searchParams.get('tv') === '1')
+    // GOG: the server's art (GOG Manager's folder) first, SteamGridDB by name without it — the other
+    // way round when "SteamGridDB first" is on for GOG
+    const isGog = isGogId(gameId)
+    const gogSgdbFirst = isGog && sgdbFirstFor('gog')
+    const gogOwn = (): Promise<Response | null> => gogArt(gameId, kind as ArtKind, u.searchParams.get('tv') === '1')
+    if (isGog && !gogSgdbFirst) {
+      const own = await gogOwn()
       if (own) return own
     }
     const game = findGame(gameId)
+    if (gogSgdbFirst && !(await artwork.titledDecided(gameId, kind as ArtKind))) {
+      // a SteamGridDB lookup not made yet never holds the poster back: the server's art now, the lookup in
+      // the background (the image is swapped when it finds something) — as for EmuStart games
+      void artwork.resolve(gameId, undefined, kind as ArtKind, game?.name).then((f) => f && notifyArt(gameId))
+      const own = await gogOwn()
+      if (own) return own
+    }
     const shortcutId = /^shortcut:(\d+)$/.exec(gameId)
     const file = shortcutId
       ? await artwork.resolve(gameId, undefined, kind as ArtKind, game?.name, Number(shortcutId[1]))
       : await artwork.resolve(gameId, game?.appId || steamAppIdOf(gameId), kind as ArtKind, game?.name)
+    if (!file && gogSgdbFirst) return (await gogOwn()) ?? new Response('not found', { status: 404 })
     if (!file) return new Response('not found', { status: 404 })
     const served = u.searchParams.get('thumb') === '1' ? await artThumb(file) : file
     const res = await net.fetch(pathToFileURL(served).toString())
@@ -450,31 +464,82 @@ function emuLbId(gameId: string): number | undefined {
   return hit?.id
 }
 
-/** EmuStart details with what the server lacks filled in from LaunchBox (description, genre, year…) */
+/** SteamGridDB before the source's own art for games from this data source (Ustawienia → Grafiki) */
+function sgdbFirstFor(src: ArtDataSource): boolean {
+  const s = settings.get()
+  return s.artPriority === 'sgdbFirst' && !s.sgdbFirstOff.includes(src)
+}
+
+/** what a source's details lack, filled in from LaunchBox (description, genre, year, rating…) */
+function fillFromLaunchBox(d: GameDetails, lb: GameDetails): GameDetails {
+  return {
+    ...d,
+    descriptionText: d.descriptionText || lb.descriptionText,
+    genres: d.genres?.length ? d.genres : lb.genres,
+    releaseDate: d.releaseDate || lb.releaseDate,
+    developers: d.developers?.length ? d.developers : lb.developers,
+    publishers: d.publishers?.length ? d.publishers : lb.publishers,
+    players: d.players || lb.players,
+    rating: d.rating ?? lb.rating,
+    ratingCount: d.ratingCount ?? lb.ratingCount,
+    esrb: d.esrb || lb.esrb,
+    coop: d.coop ?? lb.coop,
+    releaseType: d.releaseType || lb.releaseType,
+    launchboxId: d.launchboxId ?? lb.launchboxId
+  }
+}
+
+/** EmuStart details with what the server lacks filled in from LaunchBox */
 function withLaunchBox(gameId: string, r: DetailsResult): DetailsResult {
   const lbId = emuLbId(gameId)
   const lb = lbId ? launchbox.detailsById(lbId) : null
   if (!lb) return r
   if (!r.ok) return { ok: true, details: { ...lb, name: emu.row(gameId)?.title ?? lb.name }, stale: false }
-  const d = r.details
-  return {
-    ...r,
-    details: {
-      ...d,
-      descriptionText: d.descriptionText || lb.descriptionText,
-      genres: d.genres?.length ? d.genres : lb.genres,
-      releaseDate: d.releaseDate || lb.releaseDate,
-      developers: d.developers?.length ? d.developers : lb.developers,
-      publishers: d.publishers?.length ? d.publishers : lb.publishers,
-      players: d.players || lb.players,
-      rating: d.rating ?? lb.rating,
-      ratingCount: d.ratingCount ?? lb.ratingCount,
-      esrb: d.esrb || lb.esrb,
-      coop: d.coop ?? lb.coop,
-      releaseType: d.releaseType || lb.releaseType,
-      launchboxId: d.launchboxId ?? lb.launchboxId
+  return { ...r, details: fillFromLaunchBox(r.details, lb) }
+}
+
+/** the name to look a GOG game / shortcut up in LaunchBox: the administrator's (server) or the store's */
+function lbTitle(gameId: string, name: string): string {
+  return prefs.get().lbTitles[gameId] || name
+}
+
+/** list facts from LaunchBox per game (cleared when the administrator changes a game's name) */
+const lbFacts = new Map<string, GameFacts>()
+/** this device may change LaunchBox names (the engine's answer, from the last sync) */
+let lbTitlesAdmin = false
+
+/** the administrator's LaunchBox names from the server: a local copy (offline too) */
+/** bumped by every change saved from this device: a sync started before it must not overwrite it */
+let lbTitlesRev = 0
+
+async function syncLbTitles(): Promise<void> {
+  const rev = lbTitlesRev
+  const r = await engine.call<{ titles?: Record<string, string>; admin?: boolean }>('art_lb_titles', [], 30_000).catch(() => null)
+  if (!r?.titles || rev !== lbTitlesRev) return
+  lbTitlesAdmin = !!r.admin
+  const next = cleanLbTitles(r.titles)
+  const before = prefs.get().lbTitles
+  if (JSON.stringify(next) === JSON.stringify(before)) return
+  for (const id of new Set([...Object.keys(before), ...Object.keys(next)])) if (before[id] !== next[id]) lbFacts.delete(id)
+  await updatePrefs((p) => ({ ...p, lbTitles: next }))
+}
+
+/**
+ * LaunchBox entry of a GOG game, on Windows, then MS-DOS (GOG sells many DOS classics): the closest
+ * edition among entries of the same title ("… Game of the Year Edition" ↔ the plain title), else the
+ * usual title lookup (alternate names, parts after " - "), also without the store edition. Needs the database.
+ */
+function gogLaunchBox(name: string): GameDetails | null {
+  for (const platform of ['Windows', 'MS-DOS']) {
+    const d = launchbox.edition(name, platform)
+    if (d) return d
+    // the usual title lookup (parts after " - ", prefix), name by name — stops at the first hit
+    for (const n of [name, ...editionless(name)]) {
+      const hit = launchbox.details(n, platform)
+      if (hit) return hit
     }
   }
+  return null
 }
 
 /** LaunchBox images of an EmuStart game, best first: the shown version's region, then preference */
@@ -542,6 +607,7 @@ async function syncArt(): Promise<void> {
         return { ...p, [map]: { ...p[map], [gameId]: { ...p[map][gameId], [kind]: { type: 'user', sha, ext } } } }
       })
     }
+    await syncLbTitles()
     const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get())], 60_000)
     if (!r.choices) return
     const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
@@ -578,6 +644,8 @@ async function fileResponse(file: string): Promise<Response> {
  *  - background: choice → SteamGridDB → LaunchBox "Fanart - Background" → the server's screenshot →
  *    LaunchBox screenshot;
  *  - logo: choice → the server (LaunchBox Clear Logo) → LaunchBox → SteamGridDB.
+ * With "SteamGridDB first" off for this source (Ustawienia → Grafiki) poster and background go like
+ * the logo: SteamGridDB only after the server's and LaunchBox's art.
  * LaunchBox images go by the LaunchBox id from the server's metadata (no title guessing). The first
  * SteamGridDB lookup can take a while: after a short wait the next source is shown and the image is
  * swapped in when it arrives (art revision bump).
@@ -585,7 +653,8 @@ async function fileResponse(file: string): Promise<Response> {
 async function emuArt(gameId: string, kind: string): Promise<Response> {
   const k = kind as ArtKind
   const names = emuTitles(gameId)
-  const auto = k !== 'logo'
+  const sgdbFirst = sgdbFirstFor('launchbox')
+  const auto = k !== 'logo' && sgdbFirst
   // a SteamGridDB lookup not made yet never holds the poster back: the source's art now, the
   // lookup in the background (the poster is swapped when it finds something)
   const decided = !auto || (await artwork.titledDecided(gameId, k))
@@ -611,7 +680,7 @@ async function emuArt(gameId: string, kind: string): Promise<Response> {
     const r = await step()
     if (r) return r
   }
-  if (k === 'logo' && first !== 'late') {
+  if ((k === 'logo' || !sgdbFirst) && first !== 'late') {
     const f = await artwork.resolveTitled(gameId, k, names, true)
     if (f) return fileResponse(f)
   }
@@ -860,11 +929,11 @@ function registerIpc(): void {
     return { ratings, missing: missing.length }
   })
   // the list filters' data of PC games: Steam store cache, GOG descriptions from the server, LaunchBox
-  const lbFacts = new Map<string, GameFacts>()
   const fromLaunchBox = (g: Game): GameFacts | undefined => {
     const hit = lbFacts.get(g.id)
     if (hit || !launchbox.ready) return hit
-    const d = launchbox.details(g.name, g.shortcut ? platformForTags(g.shortcut.tags) : 'Windows')
+    const name = lbTitle(g.id, g.name)
+    const d = g.source === 'gog' ? gogLaunchBox(name) : launchbox.details(name, g.shortcut ? platformForTags(g.shortcut.tags) : 'Windows')
     const f = d ? factsOf(d) : {}
     lbFacts.set(g.id, f)
     return f
@@ -921,34 +990,33 @@ function registerIpc(): void {
       return withLaunchBox(gameId, emuDetails(await engine.call<Record<string, unknown>>('game_detail', [game.emu.id], 30_000)))
     }
     if (game?.gog) {
-      // description from GOG Manager's game folder on the server; without it the LaunchBox database (Windows games)
+      // description from GOG Manager's game folder on the server, what it lacks (rating, players, age
+      // rating…) from the LaunchBox database; without a GOG description — LaunchBox alone
       const info = gog.info(gameId)
-      if (info?.description || info?.lead)
-        return {
-          ok: true,
-          stale: false,
-          details: {
-            appId: 0,
-            fetchedAt: Date.now(),
-            source: 'gog',
-            name: game.name,
-            shortDescription: info.lead || undefined,
-            descriptionText: info.description || info.lead,
-            genres: info.tags?.length ? info.tags : undefined,
-            releaseDate: info.release || undefined,
-            developers: info.developers?.length ? info.developers : undefined,
-            publishers: info.publishers?.length ? info.publishers : undefined
-          }
-        }
       const st = await launchbox.status()
+      const lb = st.ready ? gogLaunchBox(lbTitle(gameId, game.name)) : null
+      if (info?.description || info?.lead) {
+        const own: GameDetails = {
+          appId: 0,
+          fetchedAt: Date.now(),
+          source: 'gog',
+          name: game.name,
+          shortDescription: info.lead || undefined,
+          descriptionText: info.description || info.lead,
+          genres: info.tags?.length ? info.tags : undefined,
+          releaseDate: info.release || undefined,
+          developers: info.developers?.length ? info.developers : undefined,
+          publishers: info.publishers?.length ? info.publishers : undefined
+        }
+        return { ok: true, stale: false, details: lb ? { ...fillFromLaunchBox(own, lb), launchboxName: lb.name } : own }
+      }
       if (!st.ready) return { ok: false, error: 'Opisy gier GOG wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
-      const d = launchbox.details(game.name, 'Windows')
-      return d ? { ok: true, details: d, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
+      return lb ? { ok: true, details: lb, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
     }
     if (game?.shortcut) {
       const st = await launchbox.status()
       if (!st.ready) return { ok: false, error: 'Opisy gier spoza Steama wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
-      const d = launchbox.details(game.name, platformForTags(game.shortcut.tags))
+      const d = launchbox.details(lbTitle(gameId, game.name), platformForTags(game.shortcut.tags))
       return d ? { ok: true, details: d, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
     }
     const appId = steamAppIdOf(gameId)
@@ -962,6 +1030,24 @@ function registerIpc(): void {
     return launchbox.status()
   })
   handle(IPC.launchboxCancel, () => launchbox.cancel())
+  handle(IPC.launchboxTitle, async (gameId: string): Promise<LbTitleInfo> => {
+    if (engine.state === 'ready') await syncLbTitles()
+    return { name: prefs.get().lbTitles[String(gameId)] ?? '', admin: lbTitlesAdmin }
+  })
+  handle(IPC.launchboxSetTitle, async (gameId: string, name: string): Promise<ActionResult> => {
+    const id = String(gameId)
+    if (!/^(gog|shortcut):/.test(id)) return { ok: false, error: 'Nazwę w LaunchBox można ustawić grom GOG i skrótom spoza Steama.' }
+    if (engine.state !== 'ready') return { ok: false, error: 'Silnik EmuStart nie działa — nazwy zapisuje serwer.' }
+    const r = await engine
+      .call<{ ok?: boolean; reason?: string; titles?: Record<string, string> }>('art_lb_title_set', [id, String(name ?? '').trim()], 30_000)
+      .catch((e: Error) => ({ ok: false, reason: e.message, titles: undefined }))
+    if (!r.ok || !r.titles) return { ok: false, error: r.reason || 'Serwer nie zapisał nazwy.' }
+    lbTitlesRev++
+    lbFacts.delete(id)
+    const lbTitles = cleanLbTitles(r.titles)
+    await updatePrefs((p) => ({ ...p, lbTitles }))
+    return { ok: true, message: lbTitles[id] ? `Nazwa w LaunchBox: ${lbTitles[id]}` : 'Nazwa ręczna usunięta' }
+  })
 
   handle(IPC.prefsGet, () => prefs.get())
   handle(IPC.prefsOp, async (op: string, ...args: unknown[]) => {
@@ -995,7 +1081,9 @@ function registerIpc(): void {
   handle(IPC.settingsPatch, async (patch: SettingsPatch) => {
     const before = settings.get()
     const after = await settings.patch(patch)
-    if (before.artPriority !== after.artPriority) for (const g of library.current.games) bumpArt(g.id)
+    // the order of art sources changed: Steam, GOG and EmuStart games ask again
+    if (before.artPriority !== after.artPriority || before.sgdbFirstOff.join() !== after.sgdbFirstOff.join())
+      for (const g of unified.current.games) bumpArt(g.id)
     if (before.demoMode !== after.demoMode || before.showTools !== after.showTools || before.steamIdOverride !== after.steamIdOverride) {
       await library.scan()
       if (before.steamIdOverride !== after.steamIdOverride) void library.refreshAccount(true)

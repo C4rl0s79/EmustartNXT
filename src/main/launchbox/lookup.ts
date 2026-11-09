@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { GameDetails } from '@shared/types'
-import { normTitle, numbersMatch, plainTitle, similarity } from './match'
+import { editionless, normTitle, numbersMatch, plainTitle, similarity } from './match'
 
 // Queries on the LaunchBox SQLite file (schema compatible with EmuStart's launchbox.db).
 
@@ -36,6 +36,44 @@ export function findGame(db: DatabaseSync, name: string, platform: string | unde
     if (hit) return hit
   }
   return null
+}
+
+/** match key of a store title without its edition: "The Witcher 3: Wild Hunt - GOTY Edition" = "The Witcher 3 Wild Hunt" */
+function baseKey(name: string): string {
+  const shorter = editionless(name)
+  return normTitle(shorter.length ? shorter[shorter.length - 1] : name)
+}
+
+/** match key of the main title, before a subtitle: "The Witcher 2: Assassins of Kings" = "The Witcher 2" */
+function mainKey(name: string): string {
+  return normTitle(plainTitle(name).split(/:| - /)[0])
+}
+
+/**
+ * A store title (GOG) in LaunchBox: the exact title first (also an alternate name), else among the entries
+ * of the same game the closest to the full store title. The same game is the same title without the
+ * edition ("… Game of the Year Edition" ↔ the plain title), or the store title is the entry's main title
+ * without its subtitle ("The Witcher 2" → "The Witcher 2: Assassins of Kings"; never the other way round:
+ * "Star Wars: Rebel Assault" is not "Star Wars"). Sequel numbers must agree.
+ */
+export function findEdition(db: DatabaseSync, name: string, platform: string): GameRow | null {
+  const exact = findTitle(db, name, platform, false)
+  if (exact) return exact
+  const base = baseKey(name)
+  if (base.length < 3) return null
+  // keys are lowercase letters and digits: a range on the index instead of LIKE (which cannot use it)
+  const gids = (
+    db.prepare('SELECT DISTINCT gid FROM names WHERE platform=? AND norm >= ? AND norm < ? LIMIT 200').all(platform, base, base + '{') as { gid: number }[]
+  ).map((g) => g.gid)
+  if (!gids.length) return null
+  const tier = (g: GameRow): number => (baseKey(g.name) === base ? 2 : mainKey(g.name) === base ? 1 : 0)
+  const rows = (
+    db.prepare(`SELECT * FROM games WHERE id IN (${gids.map(() => '?').join(',')})`).all(...gids) as unknown as GameRow[]
+  ).filter((r) => tier(r) > 0 && numbersMatch(name, r.name))
+  if (!rows.length) return null
+  const t = plainTitle(name)
+  const score = (g: GameRow): number => tier(g) + similarity(t, g.name) + (g.overview ? 0.001 : 0)
+  return rows.reduce((a, b) => (score(b) > score(a) ? b : a))
 }
 
 function findTitle(db: DatabaseSync, name: string, platform: string | undefined, allowPrefix: boolean): GameRow | null {

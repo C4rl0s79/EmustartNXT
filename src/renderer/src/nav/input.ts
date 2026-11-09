@@ -103,10 +103,16 @@ export function dispatch(action: Action, source: InputMode): void {
   }
   // defaults
   switch (action) {
+    case 'left':
+    case 'right': {
+      // in a text field the D-pad moves the cursor one character; at the text's edge — to the next element
+      const el = currentFocus()
+      if (isTextInput(el) && moveCaret(el, action === 'left' ? -1 : 1)) return
+      move(action)
+      return
+    }
     case 'up':
     case 'down':
-    case 'left':
-    case 'right':
       move(action)
       return
     case 'lt':
@@ -128,6 +134,23 @@ export function dispatch(action: Action, source: InputMode): void {
 }
 
 // ---------------- keyboard ----------------
+
+/** the text cursor one character left / right; false at the edge of the text (or a field without a cursor) */
+export function moveCaret(el: HTMLInputElement | HTMLTextAreaElement, delta: number): boolean {
+  let pos: number | null
+  try {
+    pos = el.selectionStart
+  } catch {
+    return false // a field type without a text cursor
+  }
+  if (pos === null) return false
+  const end = el.selectionEnd ?? pos
+  const at = delta < 0 ? Math.min(pos, end) : Math.max(pos, end)
+  const next = at + (pos !== end ? 0 : delta) // a selection collapses to its side first
+  if (next < 0 || next > el.value.length) return false
+  el.setSelectionRange(next, next)
+  return true
+}
 
 function isTextInput(el: EventTarget | null): el is HTMLInputElement | HTMLTextAreaElement {
   return el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button'].includes(el.type))
@@ -329,7 +352,7 @@ function createPadProcessor(): (active: Set<Action>, t: number) => void {
     if (!hadFocus) {
       hadFocus = true
       // the pad state after regaining focus may arrive a moment later (the main process sends it only
-      // while Lumen is in front): buttons held then — e.g. LB + A that opened the in-game menu — are
+      // while Lumen is in front): buttons held then — e.g. Select + A that opened the in-game menu — are
       // not presses (A would pick „Wróć do gry” and close the menu at once)
       baselineUntil = t + 300
     }

@@ -130,3 +130,34 @@ describe('steam:// URIs', () => {
     expect(() => steamUri('install', -5)).toThrow()
   })
 })
+
+describe('D-pad in a text field', () => {
+  it('moves the cursor one character, false at the edge', async () => {
+    const { moveCaret } = await import('../src/renderer/src/nav/input')
+    let start = 2
+    let end = 2
+    const el = {
+      value: 'abcd',
+      get selectionStart() {
+        return start
+      },
+      get selectionEnd() {
+        return end
+      },
+      setSelectionRange(a: number, b: number) {
+        start = a
+        end = b
+      }
+    } as unknown as HTMLInputElement
+    expect(moveCaret(el, -1)).toBe(true)
+    expect(start).toBe(1)
+    expect(moveCaret(el, -1) && moveCaret(el, -1)).toBe(false) // 1 → 0, then the edge
+    expect(start).toBe(0)
+    start = 1
+    end = 3 // a selection collapses to its side first
+    expect(moveCaret(el, 1)).toBe(true)
+    expect([start, end]).toEqual([3, 3])
+    start = end = 4
+    expect(moveCaret(el, 1)).toBe(false)
+  })
+})
