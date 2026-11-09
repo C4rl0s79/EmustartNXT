@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
+import { POWERSHELL } from './systemTools'
 import type { FsEntry, FsListing, FsListOptions } from '@shared/types'
 
 // Read-only listing for the in-app path picker (operable with a gamepad — the Windows file
@@ -31,7 +32,7 @@ function driveLabels(): Promise<Map<string, { label: string; network: boolean }>
   if (process.platform !== 'win32') return Promise.resolve(new Map())
   return new Promise((resolve) => {
     execFile(
-      'powershell.exe',
+      POWERSHELL,
       ['-NoProfile', '-NonInteractive', '-Command', 'Get-CimInstance Win32_LogicalDisk | ForEach-Object { "$($_.DeviceID)|$($_.VolumeName)|$($_.DriveType)" }'],
       { windowsHide: true, timeout: 8000 },
       (err, out) => {

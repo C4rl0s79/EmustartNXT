@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
+import { POWERSHELL } from '../systemTools'
 import type { EngineState } from '@shared/types'
 import { log, registerSecret } from '../logger'
 
@@ -247,7 +248,7 @@ export function emustartRunningFrom(dir: string): Promise<string | null> {
   if (process.platform !== 'win32') return Promise.resolve(null)
   return new Promise((resolve) => {
     execFile(
-      'powershell.exe',
+      POWERSHELL,
       ['-NoProfile', '-NonInteractive', '-Command', "Get-Process EmuStart -ErrorAction SilentlyContinue | ForEach-Object { $_.Path }"],
       { windowsHide: true, timeout: 8000 },
       (err, stdout) => {
