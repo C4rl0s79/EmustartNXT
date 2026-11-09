@@ -288,7 +288,7 @@ export interface EmustartSummary {
 export interface GameDetails {
   appId: number
   fetchedAt: number
-  source: 'steamStore' | 'launchbox' | 'emustart'
+  source: 'steamStore' | 'launchbox' | 'emustart' | 'gog'
   name?: string
   shortDescription?: string
   descriptionHtml?: string

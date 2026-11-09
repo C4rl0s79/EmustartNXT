@@ -303,6 +303,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
           </p>
         )}
         {details?.ok && details.stale && !game.emu && <p className="details__muted">Informacje z pamięci podręcznej (brak połączenia ze sklepem).</p>}
+        {details?.ok && d?.source === 'gog' && <p className="details__muted">Opis i grafiki: folder gry GOG Managera na serwerze EmuStart (zmiana grafik: „Grafiki”).</p>}
         {details?.ok && d?.source === 'emustart' && <p className="details__muted">Opis: biblioteka serwera EmuStart. Plakat i tło: SteamGridDB, gdy jest klucz (zmiana: „Grafiki”), inaczej grafiki z serwera.</p>}
       </div>
 

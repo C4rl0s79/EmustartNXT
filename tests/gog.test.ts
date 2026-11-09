@@ -51,3 +51,17 @@ describe('GOG library mapping', () => {
     expect(jobs[1]).toMatchObject({ state: 'queued', phase: 'DLC — W kolejce', progress: undefined })
   })
 })
+
+describe('GOG description and art from the server', () => {
+  it('provider exposes the catalog info of a game (offline copy included)', async () => {
+    const { GogProvider } = await import('../src/main/gog/provider')
+    const engine = { on: () => undefined, state: 'stopped' } as unknown as ConstructorParameters<typeof GogProvider>[0]
+    const p = new GogProvider(engine, 'nie-istnieje.json')
+    ;(p as unknown as { lib: GogLibraryRaw }).lib = lib({}, [
+      { product_id: '1001', title: 'Testowa Gra', builds: [build], info: { description: 'Opis', lead: 'Krótko', tags: ['RPG'], art: ['grid', 'logo'] } }
+    ] as GogLibraryRaw['games'])
+    expect(p.info('gog:1001')).toMatchObject({ description: 'Opis', art: ['grid', 'logo'] })
+    expect(p.info('gog:9')).toBeUndefined()
+    expect(p.info('steam:1')).toBeUndefined()
+  })
+})

@@ -30,7 +30,7 @@ import { EmustartProvider } from './emustart/provider'
 import { emuArtField, emuDetails, isEmuGameId } from './emustart/mapping'
 import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
-import { GogProvider } from './gog/provider'
+import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -337,6 +337,10 @@ async function artResponse(req: Request): Promise<Response> {
       if (own) return own
     }
     if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
+    if (isGogId(gameId)) {
+      const own = await gogArt(gameId, kind as ArtKind, u.searchParams.get('tv') === '1')
+      if (own) return own
+    }
     const game = findGame(gameId)
     const shortcutId = /^shortcut:(\d+)$/.exec(gameId)
     const file = shortcutId
@@ -455,6 +459,21 @@ async function emuLbArt(gameId: string, kind: ArtKind, types: readonly string[])
 }
 
 const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' }
+/**
+ * GOG game art from the EmuStart server (GOG Manager's game folder: box art, background, logo, icon; the engine
+ * keeps a copy, so it shows offline too). The player's own choice comes first; without server art —
+ * SteamGridDB by name, as before.
+ */
+async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response | null> {
+  const chosen = (tv ? prefs.get().artTv[gameId]?.[k] : undefined) ?? withBorrowed(prefs.get().art[gameId], prefs.get().artTv[gameId])?.[k]
+  const pid = gogPid(gameId)
+  if (chosen || !pid || engine.state !== 'ready') return null
+  const info = gog.info(gameId)
+  if (info?.art && !info.art.includes(k)) return null
+  const r = await engine.call<{ path?: string }>('gog_art', [pid, k], 70_000).catch(() => null)
+  return r?.path ? fileResponse(r.path) : null
+}
+
 async function fileResponse(file: string): Promise<Response> {
   const type = IMAGE_TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
   return new Response(new Uint8Array(await fs.readFile(file)), { status: 200, headers: { 'Content-Type': type, 'Cache-Control': 'max-age=86400' } })
@@ -760,7 +779,25 @@ function registerIpc(): void {
       return withLaunchBox(gameId, emuDetails(await engine.call<Record<string, unknown>>('game_detail', [game.emu.id], 30_000)))
     }
     if (game?.gog) {
-      // GOG archive has no descriptions: the LaunchBox database (Windows games), as for shortcuts
+      // description from GOG Manager's game folder on the server; without it the LaunchBox database (Windows games)
+      const info = gog.info(gameId)
+      if (info?.description || info?.lead)
+        return {
+          ok: true,
+          stale: false,
+          details: {
+            appId: 0,
+            fetchedAt: Date.now(),
+            source: 'gog',
+            name: game.name,
+            shortDescription: info.lead || undefined,
+            descriptionText: info.description || info.lead,
+            genres: info.tags?.length ? info.tags : undefined,
+            releaseDate: info.release || undefined,
+            developers: info.developers?.length ? info.developers : undefined,
+            publishers: info.publishers?.length ? info.publishers : undefined
+          }
+        }
       const st = await launchbox.status()
       if (!st.ready) return { ok: false, error: 'Opisy gier GOG wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
       const d = launchbox.details(game.name, 'Windows')

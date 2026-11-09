@@ -10,10 +10,22 @@ import type { EmustartEngine } from '../emustart/engine'
 
 /** gog_library (engine) */
 export interface GogLibraryRaw {
-  games: { product_id: string; title: string; slug?: string; local_only?: boolean; builds: GogBuildRaw[] }[]
+  games: { product_id: string; title: string; slug?: string; local_only?: boolean; builds: GogBuildRaw[]; info?: GogInfoRaw }[]
   installs: Record<string, GogInstallRaw>
   fresh: boolean
   error?: string
+}
+
+/** description and art of a game from GOG Manager's game folder on the server (EmuStart gogmeta) */
+export interface GogInfoRaw {
+  description?: string
+  lead?: string
+  release?: string
+  developers?: string[]
+  publishers?: string[]
+  tags?: string[]
+  /** art kinds the server has: grid (box art), hero (background), logo, icon */
+  art?: string[]
 }
 
 export interface GogBuildRaw {
@@ -180,6 +192,12 @@ export class GogProvider extends EventEmitter {
 
   game(id: string): Game | undefined {
     return this.games.find((g) => g.id === id)
+  }
+
+  /** description / art list of a game from the server's catalog (or its offline copy) */
+  info(id: string): GogInfoRaw | undefined {
+    const pid = gogPid(id)
+    return pid ? this.lib.games.find((g) => g.product_id === pid)?.info : undefined
   }
 
   private apply(): void {
