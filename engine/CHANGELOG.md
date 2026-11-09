@@ -11,6 +11,38 @@ nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te sa
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);
 jedno zapytanie przygotowujące grę — po pomiarach kroków z prawdziwych startów.
 
+### Do zrobienia (zgłoszone 2026-11-09)
+
+Stan: zrobione lokalnie (bez wydania): 1, 5, 6, 7, 9, 10, 11. Grafiki grup (2): prompty gotowe, czekają na pliki.
+Czeka na decyzję: 3 (Family Sharing wymaga logowania do Steam), 4 (dodatki w Lumenie). 8 (grafiki): log wolnych
+grafik (`slow … ms` w lumen.log), do zmierzenia na prawdziwej bibliotece.
+Na żywo nie sprawdzono: pasek w szczegółach gry GOG przy prawdziwej instalacji, siatka na pulpicie, pad.
+
+**Zapisy GOG (gałąź `gog-saves`, gotowe lokalnie, bez wydania):** sprawdzenie okna „Zapisy i ustawienia” na żywo,
+test na dwóch komputerach, zgoda na zależność PyYAML (serwer), obsługa rejestru Windows (~62 gry), opis w
+dokumentacji Lumena, wydanie.
+
+**Serwer / biblioteka**
+1. Panel: pokazać liczbę gier z opisami z folderów `<katalog GOG>/<slug>/`, żeby było widać, czy opisy się wczytały.
+2. Grafiki grup i platform bez platformy EmuStart (PC, Steam, GOG, Komputery, Konsole, Arcade, Pozostałe, Kolekcje,
+   Ulubione, Ostatnio grane): serwer ich nie ma, Lumen je obsługuje. Grafiki domyślne — prompt:
+   `D:\GIT\Launcher\docs\ART-PROMPTS.md`.
+3. Steam: pokazywać gry dostępne przez Family Sharing.
+4. Dodatki (extras) GOG: dziś leżą w `<katalog GOG>/<slug>/extras`; serwer ani Lumen ich nie udostępniają.
+
+**Instalacja i zadania**
+5. Brak paska postępu przy instalacji z depotów.
+6. Tryb TV: brak jakiejkolwiek informacji i paska postępu instalacji, dla każdej platformy.
+7. Gra jest i na Steam, i w GOG: przy pobieraniu z GOG interfejs pokazuje też pobieranie Steam. W grupie GOG liczy
+   się tylko GOG.
+
+**Interfejs Lumen**
+8. Blokowanie interfejsu przy wczytywaniu grafik mimo dysku lokalnego (NVMe) — zmierzyć na Twoim Lumenie.
+9. Filtry: „Resetuj filtry” o jedną pozycję wyżej, gdy włączona jest funkcja; „Sortuj” o jedną niżej po włączeniu.
+10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
+    przełącza się między nimi bez końca.
+11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
 ### Plan: synchronizacja zapisów i ustawień gier GOG przez serwer EmuStart (gałąź `gog-saves`)
 
 **Co się zmieni.**
