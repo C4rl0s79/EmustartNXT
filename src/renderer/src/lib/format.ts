@@ -53,8 +53,19 @@ export const STATE_LABEL: Record<InstallState, string> = {
   broken: 'Wymaga weryfikacji w Steam'
 }
 
-/** Install state in words for any source (EmuStart: local copy of a game from the server). */
+const GOG_STATE: Record<NonNullable<Game['gog']>['state'], string> = {
+  notInstalled: 'Na serwerze EmuStart',
+  installing: 'Instalowanie z serwera EmuStart',
+  installed: 'Zainstalowana',
+  needs_admin: 'Wymaga zgody administratora',
+  failed: 'Instalacja nieudana',
+  cancelled: 'Instalacja przerwana',
+  damaged: 'Uszkodzone pliki'
+}
+
+/** Install state in words for any source (EmuStart: local copy of a game from the server; GOG: its own states). */
 export function stateLabel(g: Game): string {
+  if (g.gog) return GOG_STATE[g.gog.state]
   if (g.emu) {
     if (g.emu.copying) return 'Pobieranie z serwera'
     if (g.emu.cached) return g.emu.pinned ? 'Na dysku (zachowana)' : 'Na dysku'

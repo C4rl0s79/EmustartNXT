@@ -174,3 +174,22 @@ describe('duża biblioteka (40 tys. gier)', () => {
     expect(ms).toBeLessThan(1500)                     // localeCompare z opcjami: kilka sekund
   })
 })
+
+describe('etykiety i wstęga okładek', () => {
+  it('gra GOG nigdy nie mówi o Steam', async () => {
+    const { stateLabel } = await import('../src/renderer/src/lib/format')
+    const g = { ...base('gog:1', 'gog', 'X', { installState: 'installing', installed: false }), gog: { productId: '1', state: 'installing', onServer: true } } as Game
+    expect(stateLabel(g)).toBe('Instalowanie z serwera EmuStart')
+    expect(stateLabel({ ...g, gog: { ...g.gog!, state: 'damaged' }, installState: 'broken' })).toBe('Uszkodzone pliki')
+  })
+  it('krótka lista powiela okładki i zawija się', async () => {
+    const { flowWindow } = await import('../src/renderer/src/tv/TvCoverflow')
+    const two = flowWindow(2, 0)
+    expect(two).toHaveLength(11)
+    expect(two.map((x) => x.i)).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
+    expect(two[5]).toMatchObject({ i: 0, d: 0 })
+    expect(new Set(two.map((x) => `${x.i}#${x.copy}`)).size).toBe(11)              // klucze bez powtórzeń
+    expect(flowWindow(100, 99).map((x) => x.i).slice(5, 8)).toEqual([99, 0, 1])    // koniec listy przechodzi w początek
+    expect(flowWindow(0, 0)).toEqual([])
+  })
+})

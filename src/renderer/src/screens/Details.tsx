@@ -1,3 +1,4 @@
+import { useGameJob } from '../components/Jobs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { DetailsResult, Game, Job } from '@shared/types'
@@ -319,7 +320,34 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
   )
 }
 
+/** GOG install: progress of the engine's job (nothing from Steam — a GOG game has no Steam download). */
+function GogJobStatus({ game }: { game: Game }) {
+  const job = useGameJob(game.id)
+  const p = job?.progress
+  const pct = p?.total ? Math.min(100, Math.floor((p.done / p.total) * 100)) : null
+  return (
+    <div className="download">
+      <div className="download__head">
+        <strong>{job?.phase ?? stateLabel(game)}</strong>
+        {pct !== null && (
+          <span>
+            {pct}% · {formatBytes(p!.done) ?? '0 B'} z {formatBytes(p!.total)}
+            {p?.speed ? ` · ${formatBytes(p.speed)}/s` : ''}
+            {formatEta(p?.eta) ? ` · zostało ${formatEta(p?.eta)}` : ''}
+          </span>
+        )}
+      </div>
+      {pct !== null && (
+        <div className="download__bar">
+          <i style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DownloadStatus({ game }: { game: Game }) {
+  if (game.gog) return <GogJobStatus game={game} />
   const p = game.progress
   const total = p ? p.bytesToDownload || p.bytesToStage : 0
   const done = p ? (p.bytesToDownload ? p.bytesDownloaded : p.bytesStaged) : 0

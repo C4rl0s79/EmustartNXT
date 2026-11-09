@@ -1123,3 +1123,26 @@
   text-transform: uppercase;
   opacity: 0.6;
 }
+
+/* zadania (pobieranie, instalacja) na każdym ekranie trybu TV */
+.tv-jobs {
+  flex: 0 1 38vw;
+  min-width: 0;
+  margin: 0 2vw;
+  font-size: 0.9em;
+  color: var(--tv-dim);
+}
+.tv-jobs__text {
+  display: flex;
+  gap: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tv-jobs__text b {
+  color: var(--tv-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-jobs .download__bar {
+  margin-top: 0.25em;
+}

@@ -9,7 +9,7 @@ import { Glyph } from '../components/Hints'
 import { Icon } from '../components/Icon'
 import { currentFocus } from '../nav/engine'
 import { usePrimaryAction, type PrimaryAction } from '../lib/primary'
-import { formatLastPlayed, formatPlaytime, STATE_LABEL } from '../lib/format'
+import { formatLastPlayed, formatPlaytime, stateLabel } from '../lib/format'
 
 // Start: a featured game on top and two Steam-style poster grids — recently played and
 // recently added. Everything else lives in the group tabs of the top bar.
@@ -135,7 +135,7 @@ function Spotlight({ game: shown, primary }: { game: Game | null; primary: Prima
   if (!shown) return <div className="spotlight spotlight--empty" />
   // label (dim) + value (bright) pairs, set apart by space — not a dotted string
   const meta = [
-    { k: '', v: shown.running ? 'Uruchomiona' : STATE_LABEL[shown.installState] },
+    { k: '', v: shown.running ? 'Uruchomiona' : stateLabel(shown) },
     { k: 'Czas gry', v: formatPlaytime(shown.playtimeMinutes) },
     { k: 'Ostatnio', v: formatLastPlayed(shown.lastPlayed) },
     { k: 'Oznaczenia', v: shown.shortcut?.tags.length ? shown.shortcut.tags.join(', ') : undefined }

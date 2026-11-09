@@ -78,6 +78,15 @@ export function currentFocus(): HTMLElement | null {
 }
 
 /** `within`: only targets inside this element (a pane that must not be left by moving) */
+/** vertical menus: past the last row to the first and back */
+const WRAP_LISTS = '.gopt__list, .settings__menu, [data-nav-wrap]'
+const wrapHandlers = new WeakMap<HTMLElement, (dir: Dir, cur: HTMLElement) => boolean>()
+
+/** a virtual list (only part of it is in the page) says itself where the edge leads */
+export function setNavWrap(el: HTMLElement, fn: (dir: Dir, cur: HTMLElement) => boolean): void {
+  wrapHandlers.set(el, fn)
+}
+
 export function move(dir: Dir, smooth = true, within?: HTMLElement): boolean {
   const cur = currentFocus()
   if (!cur) {
@@ -98,6 +107,17 @@ export function move(dir: Dir, smooth = true, within?: HTMLElement): boolean {
   const from = cur.getBoundingClientRect()
   const idx = pickInDirection(from, list.map((e) => e.getBoundingClientRect()), dir)
   if (idx < 0) {
+    const custom = wrapHandlers.get(cur.closest('[data-nav-group]') as HTMLElement)
+    if (custom?.(dir, cur)) return true
+    const box = dir === 'up' || dir === 'down' ? cur.closest<HTMLElement>(WRAP_LISTS) : null
+    if (box) {
+      const inBox = focusables(within).filter((e) => box.contains(e))
+      const target = dir === 'down' ? inBox[0] : inBox[inBox.length - 1]
+      if (target && target !== cur) {
+        focusEl(target, smooth)
+        return true
+      }
+    }
     cur.classList.remove('nav-bump')
     void cur.offsetWidth
     cur.classList.add('nav-bump')

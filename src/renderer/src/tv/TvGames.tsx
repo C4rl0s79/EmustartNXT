@@ -1,3 +1,4 @@
+import { useGameJob } from '../components/Jobs'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
 import { api, askText, attempt, useStore } from '../store'
@@ -129,6 +130,11 @@ export function TvGames({
     if (games.length) setIdx(Math.max(0, Math.min(games.length - 1, i)))
     return true
   }
+  // one step goes round the list: past the last game to the first and back
+  const step = (d: 1 | -1): boolean => {
+    if (games.length) setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
+    return true
+  }
   const jumpLetter = (dir: 1 | -1): boolean => {
     if (!sel) return true
     const cur = letterOf(sel)
@@ -154,10 +160,10 @@ export function TvGames({
   useActions(
     {
       // column: up / down; ribbon: left / right (the other pair does nothing, so nothing jumps)
-      up: () => (flow ? true : go(idx - 1)),
-      down: () => (flow ? true : go(idx + 1)),
-      left: () => (flow ? go(idx - 1) : true),
-      right: () => (flow ? go(idx + 1) : true),
+      up: () => (flow ? true : step(-1)),
+      down: () => (flow ? true : step(1)),
+      left: () => (flow ? step(-1) : true),
+      right: () => (flow ? step(1) : true),
       lb: () => go(idx - page),
       rb: () => go(idx + page),
       lt: () => jumpLetter(-1),
@@ -529,6 +535,7 @@ function saveLine(o: EmuGameOptions): string {
 function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details: DetailsResult | null; note?: string; rev: number; noLogo?: boolean }) {
   const d = dr?.ok ? dr.details : undefined
   const e = game.emu
+  const job = useGameJob(game.id)
   const status = e
     ? e.copying
       ? 'pobieranie…'
@@ -537,7 +544,9 @@ function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details:
         : e.cached
           ? 'pobrana'
           : 'na serwerze'
-    : stateLabel(game)
+    : job
+      ? `${job.phase}${job.progress?.total ? ` · ${Math.floor((job.progress.done / job.progress.total) * 100)}%` : ''}`
+      : stateLabel(game)
   const o = useEmuOptions(game, rev)
   const size = e ? e.size : game.sizeOnDisk
   const local = o?.local ?? 0

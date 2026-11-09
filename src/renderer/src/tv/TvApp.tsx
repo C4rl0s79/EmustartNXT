@@ -1,3 +1,4 @@
+import { JobsStrip } from '../components/Jobs'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { api, attempt, useStore } from '../store'
 import { useActions, useHints, type Action } from '../nav/input'
@@ -219,6 +220,7 @@ function TvTopBar() {
       <div className="tv-brand">
         Lu<b>men</b>
       </div>
+      <JobsStrip />
       <div className="tv-status">
         {emu?.profile && (
           <span className="tv-pill">
@@ -356,6 +358,13 @@ function TvMenu({
           else if (u.phase === 'none') t('Lumen jest aktualny.', 'info')
           else if (u.phase === 'error') t(u.error ?? 'Nie udało się sprawdzić aktualizacji.', 'error')
         })
+      }
+    ],
+    [
+      'Zadania',
+      () => {
+        onClose()
+        useStore.getState().setJobsOpen(true)
       }
     ],
     ['Wyjdź z Lumen', () => void api().app.quit()]

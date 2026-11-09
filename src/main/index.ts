@@ -310,7 +310,9 @@ function restoreWindow(): void {
 
 function registerArtProtocol(): void {
   protocol.handle(ART_SCHEME, async (req) => {
+    const t0 = Date.now()
     const res = await artResponse(req)
+    if (Date.now() - t0 > 1500) log.info('art', `slow ${Date.now() - t0} ms: ${new URL(req.url).pathname}`)
     const headers = new Headers(res.headers)
     headers.set('Access-Control-Allow-Origin', '*')
     return new Response(res.body, { status: res.status, headers })

@@ -140,7 +140,7 @@ export function gogJobs(st: GogStatusRaw | null): Job[] {
     title: j.title,
     phase: j.kind === 'dlc' ? `DLC — ${j.label}` : j.kind === 'repair' ? `Naprawa — ${j.label}` : j.label,
     state: j.active ? 'active' : 'queued',
-    progress: j.total > 0 ? { done: j.done, total: j.total, speed: j.speed || undefined } : undefined,
+    progress: j.total > 0 ? { done: j.done, total: j.total, speed: j.speed || undefined, eta: j.speed > 0 ? Math.max(0, j.total - j.done) / j.speed : undefined } : undefined,
     cancellable: j.cancellable
   }))
 }

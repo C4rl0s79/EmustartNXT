@@ -12,6 +12,39 @@ import { formatBytes, formatEta } from '../lib/format'
 
 const isLive = (j: Job): boolean => j.state === 'active' || j.state === 'queued'
 
+/** the running job of one game (progress in its details, either layout) */
+export function useGameJob(gameId: string): Job | undefined {
+  return useStore((s) => s.jobs.jobs.find((j) => j.gameId === gameId && isLive(j) && j.kind !== 'emuLaunch'))
+}
+
+/** TV layout: what is downloading / installing, on any platform (Steam, GOG, EmuStart) — always visible in the top bar. */
+export function JobsStrip() {
+  const jobs = useStore((s) => s.jobs.jobs)
+  const live = jobs.filter((j) => isLive(j) && j.kind !== 'emuLaunch')
+  if (!live.length) return null
+  const first = live.find((j) => j.state === 'active') ?? live[0]
+  const p = first.progress
+  const pct = p?.total ? Math.min(100, Math.floor((p.done / p.total) * 100)) : null
+  return (
+    <div className="tv-jobs" role="status">
+      <div className="tv-jobs__text">
+        <b>{first.title}</b>
+        <span>
+          {first.phase}
+          {pct !== null ? ` · ${pct}%` : ''}
+          {p?.speed ? ` · ${formatBytes(p.speed)}/s` : ''}
+          {live.length > 1 ? ` · +${live.length - 1}` : ''}
+        </span>
+      </div>
+      {pct !== null && (
+        <div className="download__bar">
+          <i style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function JobsPill() {
   const jobs = useStore((s) => s.jobs.jobs)
   const open = useStore((s) => s.setJobsOpen)
@@ -35,7 +68,7 @@ function JobRow({ job }: { job: Job }) {
     <div className={`job job--${job.state}`}>
       <div className="job__head">
         <strong>{job.title}</strong>
-        <span className="job__src">{job.source === 'steam' ? 'Steam' : 'EmuStart'}</span>
+        <span className="job__src">{job.source === 'steam' ? 'Steam' : job.source === 'gog' ? 'GOG' : 'EmuStart'}</span>
       </div>
       <div className="job__phase">
         {job.phase}

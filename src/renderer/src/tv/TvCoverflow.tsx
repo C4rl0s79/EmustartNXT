@@ -71,24 +71,34 @@ function median(xs: number[]): number | undefined {
   return s[Math.floor(s.length / 2)]
 }
 
+/** covers of the ribbon, left to right: list index, distance from the selected one, which repeat of the list */
+export function flowWindow(n: number, idx: number): { i: number; d: number; copy: number }[] {
+  if (n <= 0) return []
+  const out = []
+  for (let d = -SIDE; d <= SIDE; d++) {
+    const v = idx + d
+    out.push({ i: ((v % n) + n) % n, d, copy: Math.floor(v / n) })
+  }
+  return out
+}
+
 export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[]; idx: number; onPick: (i: number) => void; reflection: boolean }) {
   useRatios()
-  const from = Math.max(0, idx - SIDE)
-  const to = Math.min(games.length - 1, idx + SIDE)
-  const items: number[] = []
-  for (let i = from; i <= to; i++) items.push(i)
+  const n = games.length
+  // the ribbon goes round: SIDE covers on each side always, a short list repeats its covers to fill the screen
+  const items = flowWindow(n, idx)
   // shape of a cover not loaded yet: the usual one in this list (SNES boxes, PS1 cases, posters…)
   const usual = median(games.slice(Math.max(0, idx - 30), idx + 30).map((g) => ratios.get(g.id)).filter((r): r is number => !!r)) ?? 2 / 3
-  const boxes = items.map((i) => coverBox(ratios.get(games[i].id) ?? usual))
+  const boxes = items.map((it) => coverBox(ratios.get(games[it.i].id) ?? usual))
   const x = flowLayout(
     boxes.map((b) => b[0]),
-    idx - from
+    SIDE
   )
   return (
     <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''}`}>
       <div className="tv-flow__stage">
-        {items.map((i, k) => (
-          <FlowItem key={games[i].id} game={games[i]} d={i - idx} x={x[k]} box={boxes[k]} onPick={() => onPick(i)} />
+        {items.map((it, k) => (
+          <FlowItem key={n > SIDE * 2 ? games[it.i].id : `${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} onPick={() => onPick(it.i)} />
         ))}
       </div>
     </div>

@@ -130,12 +130,6 @@ export function TvFilters({
             value: SHOW[f.show],
             act: () => open('show')
           },
-          {
-            id: 'sort',
-            label: 'Sortuj',
-            value: SORT[f.sort],
-            act: () => open('sort')
-          },
           ...(activeParts(f, steam).length || f.sort !== 'title'
             ? [
                 {
@@ -148,6 +142,12 @@ export function TvFilters({
                 }
               ]
             : []),
+          {
+            id: 'sort',
+            label: 'Sortuj',
+            value: SORT[f.sort],
+            act: () => open('sort')
+          },
           { label: 'Pokaż gry', value: String(shown), act: onClose }
         ].filter((r) => !(steam && META.includes(r.id ?? '')))
       : page === 'players'

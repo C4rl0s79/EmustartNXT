@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Game } from '@shared/types'
 import { api, attempt, useStore } from '../store'
-import { currentFocus } from '../nav/engine'
+import { currentFocus, focusEl, setNavWrap } from '../nav/engine'
 import { Poster } from './Poster'
 
 // Steam-style poster grid. Column count follows the available width so posters keep a
@@ -48,6 +48,35 @@ export function VirtualPosterGrid({ games, favs, onOpen, navGroup, autofocusFirs
     overscan: 3
   })
   useEffect(() => v.measure(), [rowH, v])
+
+  // past the edge of the grid: left / right go round the row, down from the last row returns to the first
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    setNavWrap(el, (dir, cur) => {
+      const row = cur.closest('.grid__row')
+      if (!row || dir === 'up') return false
+      const inRow = [...row.querySelectorAll<HTMLElement>('[data-nav]')]
+      if (dir !== 'down') {
+        const t = dir === 'right' ? inRow[0] : inRow[inRow.length - 1]
+        if (t && t !== cur) focusEl(t)
+        return !!t
+      }
+      if (games.length <= cols) return false
+      const col = inRow.indexOf(cur)
+      el.scrollTop = 0
+      v.scrollToIndex(0)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const first = [...el.querySelectorAll<HTMLElement>('.grid__row')].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]
+          const items = first ? [...first.querySelectorAll<HTMLElement>('[data-nav]')] : []
+          const t = items[Math.min(Math.max(col, 0), items.length - 1)]
+          if (t) focusEl(t)
+        })
+      )
+      return true
+    })
+  }, [games.length, cols, v])
 
   return (
     <div className="grid" ref={ref} data-nav-group={navGroup}>
