@@ -1114,3 +1114,12 @@
 .tv-flow__cover .art--fit {
   object-fit: cover;
 }
+
+/* group whose subgroups the carousel shows (Konsole › …) */
+.tv-syspath {
+  margin: 0 0 0.2em;
+  font-size: calc(1.05em * var(--tv-fs-sys, 1));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}

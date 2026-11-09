@@ -10,6 +10,7 @@ import { CategoryPicker } from '../modals/CategoryPicker'
 import { ArtPicker } from '../modals/ArtPicker'
 import { EmuSaves } from '../components/EmuSaves'
 import { GameOptions } from '../components/GameOptions'
+import { GogActions, gogFacts, PlatformButton } from '../components/GogDetails'
 import { Controllers } from '../components/Controllers'
 import { usePrimaryAction } from '../lib/primary'
 import { setGlowFrom } from '../lib/glow'
@@ -129,7 +130,9 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
     ['Zapisy na serwerze', isEmu && ready?.ok && ready.sync ? syncLabel(ready.sync.state, ready.sync.last) : undefined],
     ['Źródło', game.emu ? `Serwer EmuStart${emuSummary?.server?.name ? ` (${emuSummary.server.name})` : ''}` : undefined],
     ['Platforma', game.shortcut?.tags.join(', ') || undefined],
-    ['Źródło', game.shortcut ? 'Skrót spoza Steam (uruchamiany przez Steam)' : undefined]
+    ['Źródło', game.shortcut ? 'Skrót spoza Steam (uruchamiany przez Steam)' : undefined],
+    ['W bibliotece', game.platform ? `${game.platform.label}${game.platform.manual ? ' (wybrane ręcznie)' : ''}` : undefined],
+    ...gogFacts(game, emuSummary?.server?.name)
   ]
   const presentFacts = facts.filter((f): f is [string, string] => !!f[1])
   const chips = [
@@ -183,7 +186,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
         {!game.emu && (game.installState === 'installing' || game.installState === 'updating' || game.installState === 'updatePaused') && (
           <DownloadStatus game={game} />
         )}
-        {game.emu && gameJobs.map((j) => <EmuJobStatus key={j.id} job={j} />)}
+        {(game.emu || game.gog) && gameJobs.map((j) => <EmuJobStatus key={j.id} job={j} />)}
 
         {game.emu?.versions && <VersionPicker gameId={gameId} game={game} chosen={prefs.versions[gameId]} />}
 
@@ -232,6 +235,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
               </button>
             </>
           )}
+          {game.gog && <GogActions game={game} />}
+          {game.shortcut && <PlatformButton game={game} />}
           {game.source === 'steam' && (
             <>
               <button className="btn" data-nav data-key="steam" onClick={() => void attempt(api().game.openInSteam(gameId, 'details'))}>

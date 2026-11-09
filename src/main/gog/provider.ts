@@ -208,14 +208,19 @@ export class GogProvider extends EventEmitter {
         this.status = st
         const key = (s: GogStatusRaw | null): string => JSON.stringify([s?.jobs.map((j) => [j.product_id, j.phase]), s?.running])
         // a job finished or a game started/ended: read the local installs again (no server needed)
-        const ended = (prev?.jobs ?? []).some((j) => !st.jobs.some((x) => x.product_id === j.product_id))
-        if (ended) void this.refresh(false)
+        let ended = (prev?.jobs ?? []).some((j) => !st.jobs.some((x) => x.product_id === j.product_id))
+        // a job may start and finish between two ticks — its result message still says it ended
+        const seen = this.lastMsgAt
         for (const [pid, m] of Object.entries(st.last)) {
-          if (m.at > this.lastMsgAt) {
+          if (m.at > seen) {
             this.lastMsgAt = Math.max(this.lastMsgAt, m.at)
-            if (prev) this.emit('message', { gameId: gogId(pid), ...m })
+            if (prev) {
+              ended = true
+              this.emit('message', { gameId: gogId(pid), ...m })
+            }
           }
         }
+        if (ended) void this.refresh(false)
         if (key(prev) !== key(st) || JSON.stringify(prev?.jobs) !== JSON.stringify(st.jobs)) this.apply()
         this.emit('status', st)
       } catch (e) {

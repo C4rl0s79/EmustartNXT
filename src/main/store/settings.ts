@@ -139,6 +139,7 @@ export class SettingsStore {
   }
 
   async patch(p: SettingsPatch): Promise<Settings> {
+    if (p.gogInstallDir === '') p = { ...p, gogInstallDir: defaultGogDir() }   // "Przywróć domyślny"
     if (p.gogInstallDir !== undefined && !cleanAbsDir(p.gogInstallDir)) throw new Error('Podaj pełną ścieżkę folderu gier GOG (np. D:\\Gry\\GOG).')
     if (p.gogLanguages !== undefined && !cleanLangs(p.gogLanguages).length) throw new Error('Wybierz co najmniej jeden język.')
     if (p.steamIdOverride !== undefined && p.steamIdOverride !== '' && !isValidSteamId64(p.steamIdOverride))

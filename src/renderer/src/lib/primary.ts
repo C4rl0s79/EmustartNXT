@@ -46,6 +46,7 @@ export function usePrimaryAction(game: Game | undefined): { primary: PrimaryActi
     }
     if (game.source === 'demo') return { label: 'Gra demonstracyjna', disabled: true, note: 'Dane demonstracyjne — akcje są wyłączone.' }
     if (game.emu) return emuPrimary(game, emuSummary, ready, installing, setBusy)
+    if (game.gog) return gogPrimary(game, emuSummary, wrap)
     if (steamStatus === 'notInstalled') return { label: 'Steam niedostępny', disabled: true, note: 'Nie znaleziono klienta Steam na tym komputerze.' }
     const play = wrap(() => api().game.play(game.id))
     const downloads = wrap(() => api().game.openInSteam(game.id, 'downloads'))
@@ -137,3 +138,51 @@ export function emuPrimary(
   }
 }
 
+
+type Wrap = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) => () => Promise<void>
+
+/** GOG from the EmuStart server: install → progress → play; interrupted / damaged → resume or repair. */
+export function gogPrimary(game: Game, emu: EmustartSummary | undefined, wrap: Wrap): PrimaryAction {
+  const g = game.gog!
+  if (!emu || emu.engine !== 'ready')
+    return {
+      label: emu?.engine === 'starting' ? 'Uruchamianie EmuStart…' : 'EmuStart nie działa',
+      disabled: true,
+      note: 'Gry GOG instaluje i uruchamia silnik EmuStart — szczegóły w Ustawieniach → EmuStart.'
+    }
+  const serverOk = !!emu.server?.ok
+  switch (g.state) {
+    case 'installed':
+      return {
+        label: game.running ? 'Gra działa' : 'Graj',
+        run: game.running ? undefined : wrap(() => api().gog.launch(game.id)),
+        disabled: game.running,
+        note: g.updateNote ?? `GOG · ${g.version || g.buildId || ''} · działa bez serwera`
+      }
+    case 'installing':
+      return { label: 'Przerwij instalację', run: wrap(() => api().gog.cancel(game.id)), note: 'Postęp na liście zadań; przerwana instalacja wznowi się od miejsca przerwania.' }
+    case 'needs_admin':
+      return {
+        label: 'Dokończ instalację',
+        run: wrap(() => api().gog.finishAdmin(game.id)),
+        note: `Instalator gry zapisuje ${g.adminSteps ?? 1} wpis(y) rejestru wymagające uprawnień administratora — Windows zapyta o zgodę (UAC).`
+      }
+    case 'failed':
+    case 'cancelled':
+    case 'damaged': {
+      if (!serverOk)
+        return { label: 'Serwer niedostępny', disabled: true, note: `${g.error ?? 'Instalacja nie jest ukończona.'} Dokończenie wymaga serwera EmuStart.` }
+      const label = g.state === 'damaged' ? 'Napraw pliki' : 'Wznów instalację'
+      return { label, run: wrap(() => api().gog.resume(game.id)), note: g.error }
+    }
+    default:
+      if (!g.onServer) return { label: 'Niedostępna', disabled: true, note: 'Serwer EmuStart nie udostępnia już tej gry.' }
+      if (!serverOk)
+        return { label: 'Serwer niedostępny', disabled: true, note: emu.server ? 'Instalacja wymaga połączenia z serwerem EmuStart.' : 'To urządzenie nie jest zalogowane do serwera EmuStart (Ustawienia → EmuStart).' }
+      return {
+        label: 'Zainstaluj',
+        run: async () => useStore.getState().setGogInstall({ gameId: game.id, dlcOnly: false }),
+        note: `Z archiwum serwera EmuStart (${formatBytes(g.available?.size ?? 0) ?? '?'}) — bez GOG Galaxy i bez internetu.`
+      }
+  }
+}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Category, Game } from '@shared/types'
-import { gamesForCategory, useStore } from '../store'
+import type { Game } from '@shared/types'
+import { useStore } from '../store'
 import { useActions } from '../nav/input'
 import { focusEl, focusFirst } from '../nav/engine'
 import { TextField } from '../components/TextField'
@@ -14,7 +14,26 @@ import { TvFilters } from '../tv/TvFilters'
 import { useRatings } from '../tv/ratings'
 import { activeParts, apply, loadFilter, saveFilter, type Filter as GameFilter } from '../tv/filters'
 
-// One group (tab in the top bar): every game of the category as a Steam-style poster grid.
+// One library view (a tab in the top bar, or a subgroup chosen with the chips under its title): its games
+// as a Steam-style poster grid. Groups and chips come from the shared library hierarchy (lib/nav.ts).
+
+/** What a group screen shows: a subgroup of the library hierarchy (PC › GOG, Konsole › PS2, a collection…) */
+export interface GroupView {
+  /** stable id (view settings and filters are kept per view) */
+  key: string
+  title: string
+  games: Game[]
+  badge?: string
+  /** notice under the toolbar: Steam account library / EmuStart engine state */
+  notice?: 'steam' | 'emu'
+  emptyHint?: string
+  /** second level: the group's subgroups (Wszystkie, Steam, GOG… / platforms) */
+  chips?: { id: string; label: string; count: number }[]
+  chip?: string
+  onChip?: (id: string) => void
+  /** quick-access pin of the shown subgroup */
+  pin?: { pinned: boolean; toggle: () => void }
+}
 
 type Filter = 'all' | 'installed' | 'notInstalled'
 type Sort = 'name' | 'recent' | 'added' | 'playtime'
@@ -49,33 +68,38 @@ const norm = (s: string): string =>
     .replace(/[̀-ͯ]/g, '')
     .replace(/ł/g, 'l')
 
-export function GroupScreen({ category, active }: { category: Category; active: boolean }) {
-  const snapshot = useStore((s) => s.snapshot)!
+export function GroupScreen({ view, active }: { view: GroupView; active: boolean }) {
   const prefs = useStore((s) => s.prefs)!
   const openDetails = useStore((s) => s.openDetails)
   const mode = useStore((s) => s.inputMode)
-  const initial = useMemo(() => loadView(category.id), [category.id])
+  const initial = useMemo(() => loadView(view.key), [view.key])
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>(initial.filter)
   const [sort, setSort] = useState<Sort>(initial.sort)
   const searchRef = useRef<HTMLInputElement>(null)
   // the TV layout's filter window (genre, decade, players, region, developer…), kept per group
-  const [more, setMoreState] = useState<GameFilter>(() => loadFilter(`group:${category.id}`))
+  const [more, setMoreState] = useState<GameFilter>(() => loadFilter(`group:${view.key}`))
+  useEffect(() => setMoreState(loadFilter(`group:${view.key}`)), [view.key])
+  useEffect(() => {
+    const v = loadView(view.key)
+    setFilter(v.filter)
+    setSort(v.sort)
+  }, [view.key])
   const setMore = (f: GameFilter): void => {
     setMoreState(f)
-    saveFilter(`group:${category.id}`, f)
+    saveFilter(`group:${view.key}`, f)
   }
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     try {
-      localStorage.setItem(viewKey(category.id), JSON.stringify({ filter, sort }))
+      localStorage.setItem(viewKey(view.key), JSON.stringify({ filter, sort }))
     } catch {
       /* ignore */
     }
-  }, [category.id, filter, sort])
+  }, [view.key, filter, sort])
 
-  const all = useMemo(() => gamesForCategory(category, snapshot.games, prefs, snapshot.collections), [category, snapshot, prefs])
+  const all = view.games
   // emulator shortcuts are always installed — the install filter only matters when Steam games are in the group
   const hasInstallState = all.some((g) => g.source !== 'shortcut')
   const effectiveFilter: Filter = hasInstallState ? filter : 'all'
@@ -174,13 +198,35 @@ export function GroupScreen({ category, active }: { category: Category; active: 
   return (
     <div className="group">
       <header className="group__head">
-        <h1>{category.name}</h1>
+        <h1>{view.title}</h1>
         <span className="group__count">
           {games.length === all.length ? gameCountLabel(all.length) : `${games.length} z ${gameCountLabel(all.length)}`}
         </span>
-        {category.kind === 'steam' && <span className="pill">kolekcja Steam</span>}
-        {category.kind === 'emustart' && <span className="pill">EmuStart</span>}
+        {view.badge && <span className="pill">{view.badge}</span>}
       </header>
+      {(view.chips?.length || view.pin) && (
+        // second level of the hierarchy — reached with ↑ from the first row of posters (pad, arrows) or the mouse
+        <nav className="subgroups" aria-label="Podgrupy">
+          {view.chips?.map((c) => (
+            <button
+              key={c.id}
+              data-nav
+              data-key={`sub-${c.id}`}
+              className={`chip ${view.chip === c.id ? 'is-on' : ''}`}
+              aria-pressed={view.chip === c.id}
+              onClick={() => view.onChip?.(c.id)}
+            >
+              {c.label}
+              <span className="chip__count">{c.count}</span>
+            </button>
+          ))}
+          {view.pin && (
+            <button data-nav data-key="sub-pin" className={`chip chip--pin ${view.pin.pinned ? 'is-on' : ''}`} onClick={view.pin.toggle} title="Szybki dostęp w górnym pasku i w trybie TV">
+              {view.pin.pinned ? 'Odepnij' : 'Przypnij'}
+            </button>
+          )}
+        </nav>
+      )}
       <div className="toolbar">
         {mode === 'gamepad' && <Glyph action="y" />}
         <div className="toolbar__search">
@@ -191,7 +237,7 @@ export function GroupScreen({ category, active }: { category: Category; active: 
             inputRef={searchRef}
             nav={false}
             navKey="search"
-            label={`Szukaj w grupie ${category.name}`}
+            label={`Szukaj w grupie ${view.title}`}
             placeholder="Szukaj po nazwie…"
             value={query}
             onChange={setQuery}
@@ -230,10 +276,10 @@ export function GroupScreen({ category, active }: { category: Category; active: 
           ))}
         </ul>
       )}
-      {category.smart === 'all' && <LibraryNotice />}
-      {category.kind === 'emustart' && <EmuNotice />}
+      {view.notice === 'steam' && <LibraryNotice />}
+      {view.notice === 'emu' && <EmuNotice />}
       {games.length ? (
-        <VirtualPosterGrid games={games} favs={favs} onOpen={(g) => openDetails(g.id)} navGroup={`grid-${category.id}`} />
+        <VirtualPosterGrid key={view.key} games={games} favs={favs} onOpen={(g) => openDetails(g.id)} navGroup={`grid-${view.key}`} />
       ) : (
         <div className="empty empty--inline">
           <h2>{all.length ? 'Brak wyników' : 'Pusta grupa'}</h2>
@@ -242,16 +288,12 @@ export function GroupScreen({ category, active }: { category: Category; active: 
               ? `Żadna gra nie pasuje do „${query}”.`
               : all.length
                 ? 'Żadna gra nie spełnia wybranych filtrów.'
-                : category.kind === 'custom'
-                  ? 'Przypisz gry w ekranie gry → „Kategorie”.'
-                  : category.smart === 'favorites'
-                    ? 'Naciśnij R3 (lub U) na plakacie, aby dodać grę do ulubionych.'
-                    : 'Brak gier w tej grupie.'}
+                : (view.emptyHint ?? 'Brak gier w tej grupie.')}
           </p>
         </div>
       )}
       {filtersOpen && (
-        <TvFilters system={category.name} games={all} steam={noMeta} filter={more} onChange={setMore} onClose={() => setFiltersOpen(false)} />
+        <TvFilters system={view.title} games={all} steam={noMeta} filter={more} onChange={setMore} onClose={() => setFiltersOpen(false)} />
       )}
     </div>
   )

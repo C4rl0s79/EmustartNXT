@@ -22,6 +22,8 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
   useEffect(() => {
     if (!sys) return setD(null)
     if (sys.key === STEAM) return setD(STEAM_INFO)
+    // a library group (PC, Konsole, GOG…): its own short description, nothing asked from the engine
+    if (!sys.es) return setD(sys.about ? { description: sys.about } : null)
     if (info[sys.key]) return setD(info[sys.key])
     setD(null)
     let alive = true
@@ -94,7 +96,10 @@ export function TvSystems({
   onMenu,
   active,
   logoPlate,
-  consoleBackdrop
+  consoleBackdrop,
+  onBack,
+  pin,
+  title
 }: {
   systems: TvSystem[]
   index: number
@@ -106,6 +111,12 @@ export function TvSystems({
   logoPlate: boolean
   /** the console photo behind the carousel (themes.ts consoleBackdrop) */
   consoleBackdrop: boolean
+  /** B: one level up (subgroups → groups); absent on the first level */
+  onBack?: () => void
+  /** Y: pin / unpin the selected subgroup for quick access */
+  pin?: { pinned: (s: TvSystem) => boolean; toggle: (s: TvSystem) => void; can: (s: TvSystem) => boolean }
+  /** name of the group whose subgroups are shown */
+  title?: string
 }) {
   const n = systems.length
   const sys = systems[index]
@@ -133,18 +144,27 @@ export function TvSystems({
         return true
       },
       x: () => {
-        if (sys && sys.key !== STEAM) setOpts(true)
+        if (sys?.es) setOpts(true)
         return true
       },
-      back: () => true
+      y: () => {
+        if (sys && pin?.can(sys)) pin.toggle(sys)
+        return true
+      },
+      back: () => {
+        onBack?.()
+        return true
+      }
     },
     {
       enabled: active && !opts,
       hints: n
         ? [
-            { action: 'left', label: 'System' },
+            { action: 'left', label: onBack ? 'Podgrupa' : 'Grupa' },
             { action: 'confirm', label: 'Wybierz' },
-            ...(sys && sys.key !== STEAM ? [{ action: 'x' as const, label: 'Opcje systemu' }] : []),
+            ...(sys?.es ? [{ action: 'x' as const, label: 'Opcje systemu' }] : []),
+            ...(sys && pin?.can(sys) ? [{ action: 'y' as const, label: pin.pinned(sys) ? 'Odepnij' : 'Przypnij' }] : []),
+            ...(onBack ? [{ action: 'back' as const, label: 'Wstecz' }] : []),
             { action: 'menu', label: 'Menu' }
           ]
         : [{ action: 'menu', label: 'Menu' }]
@@ -178,8 +198,9 @@ export function TvSystems({
           )
         })}
       </div>
-      {opts && sys && <SystemOptions es={sys.key} onClose={() => setOpts(false)} />}
+      {opts && sys?.es && <SystemOptions es={sys.es} onClose={() => setOpts(false)} />}
       <div className="tv-sysinfo">
+        {title && <p className="tv-syspath">{title}</p>}
         <h1>{sys.display}</h1>
         <p>{systemMeta(sys)}</p>
         {(facts.length > 0 || d?.description) && (

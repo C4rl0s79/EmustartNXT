@@ -2404,3 +2404,73 @@ body {
   color: var(--text);
   font-size: 0.86em;
 }
+
+/* ---------- library hierarchy: subgroups under a group title (PC → Wszystkie / Steam / GOG…) ---------- */
+.subgroups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 var(--pad-x) 12px;
+}
+.subgroups .chip {
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--text-2);
+}
+.chip[aria-pressed] {
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.chip[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--glow) 55%, transparent);
+}
+.subgroups .chip.is-on {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--glow) 45%, transparent);
+}
+.subgroups .chip:focus {
+  outline: none;
+  background: var(--text);
+  color: var(--bg, #111);
+}
+.chip__count {
+  margin-left: 0.5em;
+  opacity: 0.6;
+  font-weight: 500;
+}
+.chip--pin {
+  margin-left: auto;
+  background: none;
+  border-color: var(--line) !important;
+}
+.tab--pin::before {
+  content: '';
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin-right: 0.45em;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+/* ---------- GOG: install window, warnings ---------- */
+.gog-install__h {
+  margin: 14px 0 6px;
+  font-size: 1em;
+  color: var(--text-2);
+}
+.list--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11em, 1fr));
+  gap: 6px;
+}
+.details__warn {
+  color: var(--warn, #f0b35a);
+}
+.details__error {
+  color: var(--err, #ff7a7a);
+}

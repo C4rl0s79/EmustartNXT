@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, groupTab, sortedCategories, tabCategoryId, useStore, type Tab } from './store'
+import { api, useStore, type Tab } from './store'
 import { installGamepad, installKeyboard, installXInputGamepad, useActions } from './nav/input'
 import { focusFirst } from './nav/engine'
 import { TopBar } from './components/TopBar'
 import { HintsBar } from './components/Hints'
 import { Toasts } from './components/Toasts'
 import { HomeScreen } from './screens/Home'
-import { GroupScreen } from './screens/Group'
+import { NavGroupScreen, NavPinnedScreen } from './screens/Nav'
+import { findSub, useNav, usePinned } from './lib/nav'
+import { GogInstallDialog } from './components/GogInstall'
 import { SettingsScreen } from './screens/Settings'
 import { DetailsScreen } from './screens/Details'
 import { EmuLaunchOverlay, JobsPanel } from './components/Jobs'
@@ -20,13 +22,15 @@ import { Controllers } from './components/Controllers'
 import { enrollCheck, enrollResume } from './lib/account'
 import { installGlow } from './lib/glow'
 
-/** Start, the pinned groups (in their order), Settings. */
+/** a tab showing games (search with Y lives there): a library group or a pinned subgroup */
+export const isLibraryTab = (t: Tab): boolean => t.startsWith('nav:') || t.startsWith('pin:')
+
+/** Start, pinned subgroups (quick access, in their order), the library hierarchy (PC, Komputery, Konsole,
+ *  Arcade, Pozostałe, Kolekcje, Ulubione, Ostatnio grane — non-empty ones), Settings. */
 export function useTabs(): Tab[] {
-  const prefs = useStore((s) => s.prefs)
-  return useMemo(
-    () => ['home', ...(prefs ? sortedCategories(prefs).filter((c) => c.pinned).map((c) => groupTab(c.id)) : []), 'settings'],
-    [prefs]
-  )
+  const nav = useNav()
+  const pinned = usePinned(nav)
+  return useMemo(() => ['home', ...pinned.map((p) => `pin:${p.sub.id}`), ...nav.map((g) => `nav:${g.id}`), 'settings'], [nav, pinned])
 }
 
 export function App() {
@@ -35,6 +39,7 @@ export function App() {
   const detailsId = useStore((s) => s.detailsId)
   const loaded = useStore((s) => !!s.snapshot && !!s.prefs && !!s.settings)
   const tabs = useTabs()
+  const nav = useNav()
   const tvLayout = useStore((s) => s.uiMode === 'fullscreen')
   const pads = useStore((s) => s.pads)
   const controllers = useStore((s) => s.controllers)
@@ -63,6 +68,8 @@ export function App() {
       a.prefs.onChange(s.setPrefs),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),
+      // GOG jobs run in the engine — their result (installed / failed / interrupted) as a toast in either layout
+      a.gog.onMessage((m) => s.toast(`${m.title || 'GOG'}: ${m.message}`, m.ok ? 'info' : 'error')),
       installKeyboard(),
       // Lightbox: the focused game's colour lights the desktop layout (lib/glow.ts)
       installGlow((id) => a.art.url(id, 'grid', useStore.getState().artRev[id] ?? 0))
@@ -155,7 +162,7 @@ export function App() {
     y: () => {
       // search lives in group views; from Start/Settings jump to the first group
       const s = useStore.getState()
-      const target = tabCategoryId(s.tab) ? s.tab : tabs.find((t) => tabCategoryId(t))
+      const target = isLibraryTab(s.tab) ? s.tab : tabs.find((t) => isLibraryTab(t))
       if (!target) return true
       s.setTab(target)
       setTimeout(
@@ -175,8 +182,6 @@ export function App() {
     )
   }
 
-  const categories = sortedCategories(prefs)
-
   // the TV layout of the same interface (fullscreen mode; docs/PLAN-TV-REACT.md)
   if (tvLayout)
     return (
@@ -187,6 +192,7 @@ export function App() {
         <EmuLaunchOverlay />
         <PathPicker />
         <Profiles />
+        <GogInstallDialog />
         {pads && <PadsOrder onClose={() => useStore.getState().setPads(false)} />}
         {controllers && <Controllers onClose={() => useStore.getState().setControllers(false)} />}
         <Dialogs />
@@ -203,14 +209,15 @@ export function App() {
           {tabs
             .filter((t) => t === tab || visited.has(t))
             .map((t) => {
-              const catId = tabCategoryId(t)
-              const cat = catId ? categories.find((c) => c.id === catId) : undefined
+              const group = t.startsWith('nav:') ? nav.find((g) => g.id === t.slice(4)) : undefined
+              const pin = t.startsWith('pin:') ? findSub(nav, t.slice(4)) : undefined
               const isActive = t === tab && !detailsId
               return (
                 <section key={t} className={`screen ${t === tab ? 'is-active' : ''}`} data-screen={t} inert={t !== tab ? true : undefined}>
                   {t === 'home' && <HomeScreen active={isActive} />}
                   {t === 'settings' && <SettingsScreen active={isActive} />}
-                  {cat && <GroupScreen category={cat} active={isActive} />}
+                  {group && <NavGroupScreen group={group} active={isActive} />}
+                  {pin && <NavPinnedScreen group={pin.group} sub={pin.sub} active={isActive} />}
                 </section>
               )
             })}
@@ -221,6 +228,7 @@ export function App() {
       <EmuLaunchOverlay />
       <PathPicker />
       <Profiles />
+      <GogInstallDialog />
       {pads && <PadsOrder onClose={() => useStore.getState().setPads(false)} />}
       {controllers && <Controllers onClose={() => useStore.getState().setControllers(false)} />}
       <Dialogs />

@@ -55,6 +55,9 @@ interface State {
   /** controllers window open (components/Controllers.tsx): labels, controller profiles */
   controllers: boolean
   setControllers(open: boolean): void
+  /** GOG install window (components/GogInstall.tsx): game id, and whether only DLC are added */
+  gogInstall: { gameId: string; dlcOnly: boolean } | null
+  setGogInstall(v: { gameId: string; dlcOnly: boolean } | null): void
   setEnroll(e: { code: string; account: string; mode: string } | null): void
   setUiMode(mode: UiMode, selection?: string | null): void
   setSnapshot(s: LibrarySnapshot): void
@@ -76,7 +79,7 @@ const savedTab = (): Tab => {
   try {
     const t = localStorage.getItem('lumen.tab')
     // a group tab is validated by the app once preferences are loaded
-    return t === 'settings' || t?.startsWith('group:') ? t : 'home'
+    return t === 'settings' || t?.startsWith('nav:') || t?.startsWith('pin:') ? t : 'home'
   } catch {
     return 'home'
   }
@@ -110,6 +113,8 @@ export const useStore = create<State>((set) => ({
   setPads: (pads) => set({ pads }),
   controllers: false,
   setControllers: (controllers) => set({ controllers }),
+  gogInstall: null,
+  setGogInstall: (gogInstall) => set({ gogInstall }),
   setUiMode: (uiMode, uiSelection = null) => set({ uiMode, uiSelection }),
   setSnapshot: (snapshot) => set({ snapshot }),
   setJobs: (jobs) => set({ jobs }),

@@ -3,7 +3,10 @@ import type { CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Se
 import type { PickPathOptions } from '@shared/api'
 import { loginFlow, logoutFlow } from '../lib/account'
 import { detectEmulators, installMissing, pushArtKeys } from '../lib/emusettings'
-import { api, attempt, gamesForCategory, pickPath, sortedCategories, useStore } from '../store'
+import { api, attempt, pickPath, sortedCategories, useStore } from '../store'
+import { collectionGames } from '@shared/libraryNav'
+import { findSub, useNav } from '../lib/nav'
+import { langName } from '../components/GogInstall'
 import { useActions } from '../nav/input'
 import { focusEl, focusFirst, move } from '../nav/engine'
 import { TextField } from '../components/TextField'
@@ -18,6 +21,7 @@ const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
   { id: 'interface', label: 'Interfejs', render: () => <InterfaceSection /> },
   { id: 'steam', label: 'Steam', render: () => <SteamSection /> },
   { id: 'emustart', label: 'EmuStart', render: () => <EmustartSection /> },
+  { id: 'gog', label: 'Gry GOG', render: () => <GogSection /> },
   {
     id: 'library',
     label: 'Biblioteka EmuStart',
@@ -39,7 +43,7 @@ const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
       </Section>
     )
   },
-  { id: 'groups', label: 'Grupy', render: () => <CategoriesSection /> },
+  { id: 'groups', label: 'Szybki dostęp', render: () => <CategoriesSection /> },
   {
     id: 'art',
     label: 'Grafiki i opisy',
@@ -362,14 +366,13 @@ function LaunchBoxSection() {
 function CategoriesSection() {
   const prefs = useStore((s) => s.prefs)!
   const snapshot = useStore((s) => s.snapshot)!
+  const nav = useNav()
   const [prompt, setPrompt] = useState<{ mode: 'new' } | { mode: 'rename'; cat: Category } | null>(null)
   const [confirm, setConfirm] = useState<Category | null>(null)
-  const cats = sortedCategories(prefs)
-  const pinned = cats.filter((c) => c.pinned)
-  const others = cats.filter((c) => !c.pinned)
+  const cols = sortedCategories(prefs).filter((c) => c.kind === 'custom' || c.kind === 'steam')
+  const pins = prefs.pinnedGroups
   const kindLabel = (c: Category): string => {
-    if (c.kind === 'smart') return 'wbudowana'
-    const count = gamesForCategory(c, snapshot.games, prefs, snapshot.collections).length
+    const count = collectionGames(c, snapshot.games, prefs, snapshot.collections).length
     if (c.kind !== 'steam') return `własna · ${gameCountLabel(count)}`
     const total = snapshot.collections?.find((col) => col.id === c.steamCollectionId)?.appIds.length ?? 0
     if (total === 0) return 'kolekcja Steam · pusta'
@@ -377,52 +380,69 @@ function CategoriesSection() {
     return `kolekcja Steam · ${gameCountLabel(count)}`
   }
   const dynamic = (snapshot.collections ?? []).filter((c) => c.dynamic)
-
-  const row = (c: Category, i: number, list: Category[]) => (
-    <div key={c.id} className={`cats__row ${c.pinned ? 'is-pinned' : ''}`}>
-      <span className="cats__name">
-        {c.name}
-        <small>{kindLabel(c)}</small>
-      </span>
-      <button className={`btn btn--sm ${c.pinned ? 'btn--on' : ''}`} data-nav data-key={`pin-${c.id}`} onClick={() => void attempt(api().prefs.setPinned(c.id, !c.pinned))}>
-        {c.pinned ? 'Odepnij' : 'Przypnij'}
-      </button>
-      {c.pinned && (
-        <>
-          <button className="btn btn--sm" data-nav data-key={`up-${c.id}`} aria-label="W górę" disabled={i === 0} onClick={() => void attempt(api().prefs.moveCategory(c.id, -1))}>
-            ↑
-          </button>
-          <button className="btn btn--sm" data-nav data-key={`down-${c.id}`} aria-label="W dół" disabled={i === list.length - 1} onClick={() => void attempt(api().prefs.moveCategory(c.id, 1))}>
-            ↓
-          </button>
-        </>
-      )}
-      {c.kind === 'custom' && (
-        <>
-          <button className="btn btn--sm" data-nav onClick={() => setPrompt({ mode: 'rename', cat: c })}>
-            Zmień nazwę
-          </button>
-          <button className="btn btn--sm btn--danger" data-nav onClick={() => setConfirm(c)}>
-            Usuń
-          </button>
-        </>
-      )}
-    </div>
-  )
+  const setPin = async (id: string, on: boolean): Promise<void> => {
+    const p = await attempt(api().prefs.setGroupPinned(id, on))
+    if (p) useStore.getState().setPrefs(p)
+  }
+  const move = async (id: string, delta: number): Promise<void> => {
+    const p = await attempt(api().prefs.moveGroupPin(id, delta))
+    if (p) useStore.getState().setPrefs(p)
+  }
+  const pinName = (id: string): string => {
+    const hit = findSub(nav, id)
+    if (hit) return hit.group.id === 'col' ? hit.sub.label : `${hit.group.label} › ${hit.sub.id.endsWith('/all') ? 'Wszystkie' : hit.sub.label}`
+    return `${id} (teraz pusta — wróci, gdy pojawią się gry)`
+  }
 
   return (
     <Section
-      title="Grupy na górnym pasku"
-      desc="Przypięte grupy to zakładki na górnym pasku (w tej kolejności; LB/RB lub Q/E przełączają między nimi). Kolekcje Steam są odczytywane z klienta Steam i aktualizują się same — Lumen ich nie zmienia. Własne kategorie przypisujesz w ekranie gry → „Kategorie”."
+      title="Szybki dostęp i kolekcje"
+      desc="Biblioteka jest podzielona na PC, Komputery, Konsole, Arcade (i Pozostałe) z podgrupami — w obu trybach. Przypięte podgrupy (np. PS2 albo GOG) są dodatkowymi zakładkami na górnym pasku i pierwszymi pozycjami karuzeli w trybie TV. Przypinasz je przyciskiem „Przypnij” przy podgrupach albo tutaj (kolekcje)."
     >
-      <h3 className="cats__heading">Przypięte ({pinned.length})</h3>
-      <div className="cats" data-nav-group="categories-pinned">
-        {pinned.map((c, i) => row(c, i, pinned))}
-        {!pinned.length && <p className="card__desc">Nic nie jest przypięte — na pasku będą tylko Start i Ustawienia.</p>}
+      <h3 className="cats__heading">Przypięte ({pins.length})</h3>
+      <div className="cats" data-nav-group="pins">
+        {pins.map((id, i) => (
+          <div key={id} className="cats__row is-pinned">
+            <span className="cats__name">{pinName(id)}</span>
+            <button className="btn btn--sm" data-nav aria-label="W górę" disabled={i === 0} onClick={() => void move(id, -1)}>
+              ↑
+            </button>
+            <button className="btn btn--sm" data-nav aria-label="W dół" disabled={i === pins.length - 1} onClick={() => void move(id, 1)}>
+              ↓
+            </button>
+            <button className="btn btn--sm btn--on" data-nav onClick={() => void setPin(id, false)}>
+              Odepnij
+            </button>
+          </div>
+        ))}
+        {!pins.length && <p className="card__desc">Nic nie jest przypięte — na pasku są Start, grupy biblioteki i Ustawienia.</p>}
       </div>
-      <h3 className="cats__heading">Pozostałe ({others.length})</h3>
-      <div className="cats" data-nav-group="categories-other">
-        {others.map((c, i) => row(c, i, others))}
+      <h3 className="cats__heading">Kolekcje ({cols.length})</h3>
+      <div className="cats" data-nav-group="collections">
+        {cols.map((c) => {
+          const pinned = pins.includes(`col/${c.id}`)
+          return (
+            <div key={c.id} className={`cats__row ${pinned ? 'is-pinned' : ''}`}>
+              <span className="cats__name">
+                {c.name}
+                <small>{kindLabel(c)}</small>
+              </span>
+              <button className={`btn btn--sm ${pinned ? 'btn--on' : ''}`} data-nav data-key={`pin-${c.id}`} onClick={() => void setPin(`col/${c.id}`, !pinned)}>
+                {pinned ? 'Odepnij' : 'Przypnij'}
+              </button>
+              {c.kind === 'custom' && (
+                <>
+                  <button className="btn btn--sm" data-nav onClick={() => setPrompt({ mode: 'rename', cat: c })}>
+                    Zmień nazwę
+                  </button>
+                  <button className="btn btn--sm btn--danger" data-nav onClick={() => setConfirm(c)}>
+                    Usuń
+                  </button>
+                </>
+              )}
+            </div>
+          )
+        })}
       </div>
       <div className="modal__row">
         <button className="btn btn--primary" data-nav onClick={() => setPrompt({ mode: 'new' })}>
@@ -461,6 +481,7 @@ function CategoriesSection() {
               data-nav
               onClick={async () => {
                 await attempt(api().prefs.deleteCategory(confirm.id))
+                if (pins.includes(`col/${confirm.id}`)) await setPin(`col/${confirm.id}`, false)
                 setConfirm(null)
               }}
             >
@@ -469,6 +490,76 @@ function CategoriesSection() {
           </div>
         </Modal>
       )}
+    </Section>
+  )
+}
+
+function GogSection() {
+  const settings = useStore((s) => s.settings)!
+  const gog = useStore((s) => s.snapshot?.gog)
+  const emu = useStore((s) => s.snapshot?.emustart)
+  const [lang, setLang] = useState('')
+  const langs = settings.gogLanguages
+  const setLangs = (v: string[]): void => void patch({ gogLanguages: v })
+  return (
+    <Section
+      title="Gry GOG z serwera EmuStart"
+      desc="Gry GOG z archiwum depotów na serwerze EmuStart (folder ustawia administrator w panelu serwera). Instalacja idzie wprost z serwera do folderu gry — bez GOG Galaxy, bez internetu i bez kopii archiwum na tym komputerze. Zainstalowane gry działają bez serwera. Ustawienia są wspólne dla obu trybów."
+    >
+      <dl className="facts facts--compact">
+        <div className="facts__row">
+          <dt>Katalog GOG na serwerze</dt>
+          <dd>
+            {emu?.engine !== 'ready'
+              ? 'silnik EmuStart nie działa'
+              : gog?.fromCache
+                ? `ostatnia kopia (${gog.games} gier)${gog.error ? ` — ${gog.error}` : ''}`
+                : `${gog?.games ?? 0} gier`}
+          </dd>
+        </div>
+      </dl>
+      <PathRow
+        label="Wspólny folder gier GOG"
+        value={settings.gogInstallDir}
+        fallback="domyślny"
+        pick={{ kind: 'folder', title: 'Folder na gry GOG (każda gra dostaje własny podfolder)' }}
+        onChange={(v) => void patch({ gogInstallDir: v })}
+      />
+      <p className="card__desc">
+        Zmiana dotyczy przyszłych instalacji — zainstalowane gry zostają na miejscu (nic nie jest przenoszone ani usuwane).
+        Folder nie może leżeć w pamięci podręcznej gier emulowanych (jest czyszczona automatycznie).
+      </p>
+      <div className="field-row">
+        <label>Domyślne języki (kolejność = pierwszeństwo)</label>
+        <span className="chips">
+          {langs.map((l, i) => (
+            <button key={l} className="chip is-on" data-nav title="Usuń" onClick={() => langs.length > 1 && setLangs(langs.filter((x) => x !== l))}>
+              {i + 1}. {langName(l)} ✕
+            </button>
+          ))}
+        </span>
+        <TextField label="Kod języka (np. de)" placeholder="kod, np. de" value={lang} onChange={setLang} onSubmit={(v) => {
+          const c = v.trim().toLowerCase()
+          if (/^[a-z]{2,3}$/.test(c) && !langs.includes(c)) setLangs([...langs, c])
+          setLang('')
+        }} />
+      </div>
+      <p className="card__desc">
+        Przy instalacji zaznaczone są te z domyślnych języków, które serwer ma kompletne dla danej gry. Gdy żadnego nie ma,
+        okno instalacji prosi o wybór — język nie jest po cichu zmieniany na angielski.
+      </p>
+      <div className="modal__row">
+        <button className="btn" data-nav disabled={emu?.engine !== 'ready'} onClick={async () => {
+          const r = await attempt(api().gog.refresh())
+          if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : r.error, r.ok ? 'info' : 'error')
+        }}>
+          Odśwież katalog GOG z serwera
+        </button>
+      </div>
+      <p className="card__desc">
+        Nie obsługiwane w tej wersji: aktualizacja zainstalowanej gry do nowego buildu (Lumen pokazuje, że serwer ma nowszy;
+        nowy build — usuń grę i zainstaluj ponownie) oraz synchronizacja zapisów gier PC.
+      </p>
     </Section>
   )
 }

@@ -8,7 +8,7 @@ import { SystemLogo } from './SystemLogo'
 import { GameOptions } from '../components/GameOptions'
 import { usePrimaryAction } from '../lib/primary'
 import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel, versionCountLabel } from '../lib/format'
-import { STEAM, type TvSystem } from './data'
+import type { TvSystem } from './data'
 import { TvFilters } from './TvFilters'
 import { useRatings } from './ratings'
 import { activeParts, apply, loadFilter, saveFilter, type Filter } from './filters'
@@ -70,7 +70,8 @@ export function TvGames({
   const flow = theme.games.layout === 'coverflow'
   const favorites = useStore((s) => s.prefs?.favorites)
   const opened = useStore((s) => s.uiSelection)
-  const steam = system.key === STEAM
+  // "installed" (Steam, GOG, PC groups) vs "in the game cache" (EmuStart platforms)
+  const steam = !system.es
   // EmuStart's filters, kept per system (X); search (L3) is the filter's first field
   const [filter, setFilterState] = useState<Filter>(() => loadFilter(system.key))
   const setFilter = (f: Filter): void => {
@@ -469,7 +470,9 @@ function TvDesc({ game, details: dr, className }: { game: Game; details: Details
         {desc.slice(0, 20).map((p, i) => (
           <p key={i}>{p}</p>
         ))}
-        {game.source !== 'emustart' && !desc.length && <p>Gra z biblioteki Steam.</p>}
+        {game.source !== 'emustart' && !desc.length && (
+          <p>{game.source === 'gog' ? 'Gra GOG z archiwum serwera EmuStart.' : game.source === 'shortcut' ? 'Skrót Steam do gry spoza sklepu.' : 'Gra z biblioteki Steam.'}</p>
+        )}
       </div>
     </div>
   )

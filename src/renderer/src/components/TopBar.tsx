@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { sortedCategories, tabCategoryId, useStore, type Tab } from '../store'
+import { useStore, type Tab } from '../store'
+import { findSub, pinLabel, useNav } from '../lib/nav'
 import { Glyph } from './Hints'
 import { JobsPill } from './Jobs'
 import { UpdatePill } from './Update'
@@ -15,17 +16,16 @@ function Clock() {
   return <span className="clock">{now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</span>
 }
 
-/** Top bar: Start, the pinned groups (Steam collections, own categories, built-ins), Settings. */
+/** Top bar: Start, pinned subgroups, the library hierarchy (PC, Komputery, Konsole, Arcade…), Settings. */
 export function TopBar({ tabs }: { tabs: Tab[] }) {
   const tab = useStore((s) => s.tab)
   const setTab = useStore((s) => s.setTab)
-  const prefs = useStore((s) => s.prefs)!
+  const nav = useNav()
   const steam = useStore((s) => s.snapshot?.steam.status)
   const demo = useStore((s) => s.snapshot?.demo)
   const emu = useStore((s) => s.snapshot?.emustart)
   const mode = useStore((s) => s.inputMode)
   const trackRef = useRef<HTMLDivElement>(null)
-  const cats = sortedCategories(prefs)
 
   // keep the active tab visible when switching with LB/RB
   useEffect(() => {
@@ -37,7 +37,9 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
   const label = (t: Tab): string => {
     if (t === 'home') return 'Start'
     if (t === 'settings') return 'Ustawienia'
-    return cats.find((c) => c.id === tabCategoryId(t))?.name ?? '?'
+    if (t.startsWith('nav:')) return nav.find((g) => g.id === t.slice(4))?.label ?? '?'
+    const p = t.startsWith('pin:') ? findSub(nav, t.slice(4)) : undefined
+    return p ? pinLabel(p.group, p.sub) : '?'
   }
   const emuLabel = !emu || emu.engine === 'disabled'
     ? null
@@ -67,7 +69,7 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
             key={t}
             tabIndex={-1}
             data-key={`tab-${t}`}
-            className={`tab ${tab === t ? 'is-active' : ''} ${t === 'settings' ? 'tab--settings' : ''}`}
+            className={`tab ${tab === t ? 'is-active' : ''} ${t === 'settings' ? 'tab--settings' : ''} ${t.startsWith('pin:') ? 'tab--pin' : ''}`}
             onClick={() => setTab(t)}
             title={label(t)}
           >

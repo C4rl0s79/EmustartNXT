@@ -597,6 +597,7 @@ async function playSteam(gameId: string): Promise<ActionResult> {
   if (!game) return fail('Nie znaleziono gry w bibliotece.')
   if (game.source === 'demo') return fail('To jest gra demonstracyjna — nie można jej uruchomić.')
   if (game.source === 'emustart') return fail('Gry z serwera EmuStart uruchamia EmuStart.')
+  if (game.source === 'gog') return fail('Gry GOG uruchamia silnik EmuStart, nie Steam.')
   if (library.current.steam.status === 'notInstalled') return fail('Nie znaleziono klienta Steam na tym komputerze.')
   if (!isPlayable(game.installState))
     return fail(game.source === 'shortcut' ? 'Nie znaleziono programu tego skrótu na dysku.' : 'Gra nie jest gotowa do uruchomienia.')
@@ -741,6 +742,13 @@ function registerIpc(): void {
       if (engine.state !== 'ready')
         return withLaunchBox(gameId, { ok: false, error: engine.message ?? 'Silnik EmuStart nie działa — opis jest niedostępny.' })
       return withLaunchBox(gameId, emuDetails(await engine.call<Record<string, unknown>>('game_detail', [game.emu.id], 30_000)))
+    }
+    if (game?.gog) {
+      // GOG archive has no descriptions: the LaunchBox database (Windows games), as for shortcuts
+      const st = await launchbox.status()
+      if (!st.ready) return { ok: false, error: 'Opisy gier GOG wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
+      const d = launchbox.details(game.name, 'Windows')
+      return d ? { ok: true, details: d, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
     }
     if (game?.shortcut) {
       const st = await launchbox.status()

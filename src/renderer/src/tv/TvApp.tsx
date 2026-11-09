@@ -1,11 +1,12 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { api, attempt, useStore } from '../store'
 import { useActions, useHints, type Action } from '../nav/input'
 import { focusFirst } from '../nav/engine'
 import { SettingsScreen } from '../screens/Settings'
 import { TvSystems } from './TvSystems'
 import { TvGames } from './TvGames'
-import { useTvSystems } from './data'
+import { subItem, useTvNav, type TvSystem } from './data'
+import { lastSub, pinnable, rememberSub, togglePin } from '../lib/nav'
 import { loginFlow, logoutFlow } from '../lib/account'
 import { lookStyle, setLook, useEngineLook, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
@@ -21,16 +22,22 @@ import './theme-css/sf.css'
 import { Icon } from '../components/Icon'
 import './tv.css'
 
-// The TV layout of Lumen's one interface (fullscreen mode) with EmuStart's look: system carousel →
-// game list → play. Same library, same actions and the same overlays (launch, save conflict,
-// profile lock, details) as the desktop layout — only the layout differs (docs/PLAN-TV-REACT.md).
+// The TV layout of Lumen's one interface (fullscreen mode) with EmuStart's look: group carousel (pinned
+// subgroups, PC, Komputery, Konsole, Arcade…) → subgroup carousel (Wszystkie, Steam, GOG / platforms) →
+// game list → play. The same library hierarchy, actions and overlays (launch, save conflict, profile lock,
+// details) as the desktop layout — only the layout differs (docs/PLAN-TV-REACT.md).
 
-type Screen = 'systems' | 'games' | 'settings'
+type Screen = 'top' | 'subs' | 'games' | 'settings'
 
 export function TvApp() {
-  const systems = useTvSystems()
-  const [screen, setScreen] = useState<Screen>('systems')
-  const [sysIdx, setSysIdx] = useState(0)
+  const { top, nav } = useTvNav()
+  const emuSystems = useStore((s) => s.snapshot?.emustart?.systems)
+  const pins = useStore((s) => s.prefs?.pinnedGroups ?? [])
+  const [screen, setScreen] = useState<Screen>('top')
+  const [topIdx, setTopIdx] = useState(0)
+  const [subIdx, setSubIdx] = useState<Record<string, number>>({})
+  // the game list was opened from the first level (pinned subgroup, single-subgroup group) or from subgroups
+  const [from, setFrom] = useState<'top' | 'subs'>('top')
   const [menu, setMenu] = useState(false)
   const [lookEd, setLookEd] = useState(false)
   const [themesOpen, setThemesOpen] = useState(false)
@@ -52,45 +59,102 @@ export function TvApp() {
   useLookSync()
   const look = useLook()
 
-  // opened from the desktop with a game selected: start on its system
+  const topItem = top[topIdx] as TvSystem | undefined
+  const group = topItem && !topItem.sub ? nav.find((g) => g.id === topItem.group?.id) : undefined
+  const subs = useMemo(() => (group ? group.subs.map((s) => subItem(group, s, emuSystems ?? [])) : []), [group, emuSystems])
+  const gi = group ? Math.min(subs.length - 1, subIdx[group.id] ?? Math.max(0, group.subs.findIndex((s) => s.id === lastSub(group).id))) : 0
+  const setSub = (i: number): void => {
+    if (!group) return
+    setSubIdx((m) => ({ ...m, [group.id]: i }))
+    if (subs[i]?.sub) rememberSub(group.id, subs[i].sub!.id)
+  }
+  const sys = screen === 'games' ? (from === 'subs' ? subs[gi] : group?.subs.length === 1 ? subs[0] : topItem) : topItem
+  const openTop = (): void => {
+    if (!topItem) return
+    if (topItem.sub || (group && group.subs.length === 1)) {
+      setFrom('top')
+      setScreen('games')
+    } else setScreen('subs')
+  }
+  const pin = {
+    can: (s: TvSystem) => !!s.sub && pinnable(s.sub),
+    pinned: (s: TvSystem) => !!s.sub && pins.includes(s.sub.id),
+    toggle: (s: TvSystem) => s.sub && void togglePin(s.sub.id, !pins.includes(s.sub.id))
+  }
+
+  // opened from the desktop with a game selected: start in its group, on its platform
   const opened = useStore((s) => s.uiSelection)
   useEffect(() => {
     if (!opened) return
-    const i = systems.findIndex((s) => s.games.some((g) => g.id === opened))
-    if (i >= 0) setSysIdx(i)
+    const ti = top.findIndex((t) => !t.sub && t.group?.games.some((g) => g.id === opened) && !['fav', 'recent', 'col'].includes(t.group.id))
+    if (ti < 0) return
+    setTopIdx(ti)
+    const g = top[ti].group!
+    const si = g.subs.findIndex((s, i) => i > 0 && s.games.some((x) => x.id === opened))
+    if (si > 0) setSubIdx((m) => ({ ...m, [g.id]: si }))
+    if (g.subs.length > 1) setScreen('subs')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened])
   useEffect(() => {
-    if (sysIdx >= systems.length && systems.length) setSysIdx(0)
-  }, [systems.length, sysIdx])
-
-  const sys = systems[sysIdx]
+    if (topIdx >= top.length && top.length) setTopIdx(0)
+  }, [top.length, topIdx])
+  // the group shown on the second level vanished (its last game removed): back to the first level
+  useEffect(() => {
+    if (screen === 'subs' && !group) setScreen('top')
+  }, [screen, group])
   return (
     <div className="tv" data-theme={theme.id} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look, lookDefaults(theme)), ...themeStyle(theme) } as CSSProperties}>
       {theme.ambient && <div className={`tv-ambient tv-ambient--${theme.ambient}`} aria-hidden="true" />}
       <TvTopBar />
-      {screen === 'systems' && (
+      {screen === 'top' && (
         <TvSystems
-          systems={systems}
-          index={sysIdx}
-          onIndex={setSysIdx}
-          onOpen={() => sys && setScreen('games')}
+          systems={top}
+          index={topIdx}
+          onIndex={setTopIdx}
+          onOpen={openTop}
           onMenu={() => setMenu(true)}
           active={!menu && !lookEd && !themesOpen}
           logoPlate={!!theme.logoPlate}
           consoleBackdrop={!!theme.consoleBackdrop}
+          pin={pin}
+        />
+      )}
+      {screen === 'subs' && group && (
+        <TvSystems
+          key={group.id}
+          systems={subs}
+          index={gi}
+          onIndex={setSub}
+          onOpen={() => {
+            setFrom('subs')
+            setScreen('games')
+          }}
+          onBack={() => setScreen('top')}
+          onMenu={() => setMenu(true)}
+          active={!menu && !lookEd && !themesOpen}
+          logoPlate={!!theme.logoPlate}
+          consoleBackdrop={!!theme.consoleBackdrop}
+          pin={pin}
+          title={group.label}
         />
       )}
       {screen === 'games' && sys && (
-        <TvGames key={sys.key} system={sys} onBack={() => setScreen('systems')} onMenu={() => setMenu(true)} active={!menu && !lookEd && !themesOpen} theme={theme} />
+        <TvGames
+          key={sys.key}
+          system={sys}
+          onBack={() => setScreen(from === 'subs' && group ? 'subs' : 'top')}
+          onMenu={() => setMenu(true)}
+          active={!menu && !lookEd && !themesOpen}
+          theme={theme}
+        />
       )}
-      {screen === 'settings' && <TvSettings onBack={() => setScreen('systems')} />}
+      {screen === 'settings' && <TvSettings onBack={() => setScreen('top')} />}
       {menu && (
         <TvMenu
           themeName={theme.name}
           onTheme={() => {
             setMenu(false)
-            if (screen === 'settings') setScreen('systems') // the chooser shows each theme on the layout underneath
+            if (screen === 'settings') setScreen('top') // the chooser shows each theme on the layout underneath
             setThemesOpen(true)
           }}
           onClose={() => setMenu(false)}
@@ -100,7 +164,7 @@ export function TvApp() {
           }}
           onLook={() => {
             setMenu(false)
-            if (screen === 'settings') setScreen('systems') // the editor shows its changes on the layout underneath
+            if (screen === 'settings') setScreen('top') // the editor shows its changes on the layout underneath
             setLookEd(true)
           }}
         />
@@ -127,7 +191,7 @@ export function TvApp() {
           theme={theme}
           onClose={() => setLookEd(false)}
           previewLabel={screen === 'games' ? 'systemy' : 'gry'}
-          onPreview={() => setScreen((s) => (s === 'games' || !sys ? 'systems' : 'games'))}
+          onPreview={() => setScreen((s) => (s === 'games' || !sys ? 'top' : 'games'))}
         />
       )}
       <TvHints />

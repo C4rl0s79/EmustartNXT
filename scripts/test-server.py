@@ -6,6 +6,7 @@ Uses the EmuStart code in engine/. Everything lives in <work dir> (use .lumen-te
 git): server data, a dummy NES file (an iNES header and zeros — not a real game), logs.
 Writes <work>/login.txt (one-time login link, as "Add device" in the server panel) and
 <work>/ready.txt once the library is scanned. Binds 127.0.0.1 only. Stop with Ctrl+C.
+LUMEN_TEST_GOG=<folder _depots> also serves a GOG depot archive (/v1/gog/...).
 """
 import json
 import os
@@ -48,11 +49,22 @@ cert, key, fp = tls.ensure(paths.SERVER)
 tport = server.start_tls(port + 1, tls.server_context(cert, key), bind="127.0.0.1")
 remote.TLS = {"port": tport, "fp": fp}
 
+# LUMEN_TEST_GOG=<folder _depots>: GOG depot archive (e.g. built with engine/tests/goghelp.py) — indexed, read only
+gog_dir = os.environ.get("LUMEN_TEST_GOG", "")
+if gog_dir:
+    from emustart import gogarchive  # noqa: E402
+    api._cfg["gog_depots_dir"] = gog_dir
+    gogarchive.refresh(gog_dir, wait=True)
+    print("gog:", gogarchive.status(), flush=True)
+
 api.rescan()
 while api.scan_status().get("running"):
     time.sleep(0.3)
 print("scan:", api.scan_status().get("result"), flush=True)
-(work / "login.txt").write_text(srvadmin.login_code(api).get("uri", ""), encoding="utf-8")
+lc = srvadmin.login_code(api, {"account": "Test", "create": True})   # login code of an account (EmuStart 0.40+)
+if not lc.get("ok"):
+    print("login code:", lc.get("reason"), flush=True)
+(work / "login.txt").write_text(lc.get("uri", ""), encoding="utf-8")
 (work / "ready.txt").write_text("ok", encoding="utf-8")
 print("ready", flush=True)
 while True:
