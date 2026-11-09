@@ -48,8 +48,8 @@
 .tv[data-theme='sf'] .tv-flow::before {
   content: '';
   position: absolute;
-  left: -3vw;
-  right: -3vw;
+  left: calc(-1 * var(--tv-safe-x));
+  right: calc(-1 * var(--tv-safe-x));
   top: calc(var(--tv-flow-horizon) + 0.4vh);
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(126, 224, 255, 0.15) 12%, rgba(181, 236, 255, 0.95) 50%, rgba(126, 224, 255, 0.15) 88%, transparent 100%);

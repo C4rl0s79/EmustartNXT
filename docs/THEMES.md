@@ -20,7 +20,9 @@ wspólny z samodzielnym EmuStart i motyw go nie zmienia.
   - **EmuStart:** zapisuje się jak dotąd we wspólnym „Wyglądzie” z samodzielnym EmuStart. W ustawieniach Lumen (`Settings.tvLooks.emustart`) zapisują się tylko klucze Lumena, czyli czcionki, bo EmuStart ich nie zna.
   - **Pozostałe motywy:** zapisują cały wygląd w `Settings.tvLooks.<id>`. Zapisane jest tylko to, co różni się od ustawień domyślnych motywu.
 - **„Czcionka tekstu” i „Czcionka nagłówków”:** każdy motyw oferuje swoją listę krojów (`themes.ts` → `fonts`, pierwszy jest domyślny), a w każdej jest Atkinson Hyperlegible, krój zaprojektowany dla najlepszej czytelności. Wszystkie kroje są wbudowane (`look.ts` → `FONTS`).
-- **Jeden wzór rozmiaru** dla wszystkich motywów: `clamp(14px, 1,6vh, 48px)` × „Cały interfejs”.
+- **Jeden wzór rozmiaru** dla wszystkich motywów: `clamp(18px, 2,2vh, 64px)` × „Cały interfejs” — ok. 24 px przy 1080p, ok. 48 px przy 4K (czytelne z ok. 3 m).
+- **Bezpieczna ramka (overscan):** górny pasek, treść i podpowiedzi trzymają `--tv-safe-x` (5vw) od boków i `--tv-safe-y` (3vh) od góry i dołu; tło i grafiki mogą sięgać krawędzi.
+- **Zaznaczenie w motywie EmuStart:** początek paska to akcent przyciemniony o 25% (`--tv-sel-start`), więc biały tekst ma ≥ 4,5:1 dla każdego akcentu z „Wyglądu”.
 - **Wyrównana wysokość małych liter** (`font-size-adjust: 0.52`): ta sama wielkość daje podobnie duży tekst w Segoe, Alegrei czy Exo 2. Nagłówki zachowują proporcje swojego kroju.
 
 ## Kontrakt (pad musi zawsze działać)

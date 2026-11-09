@@ -29,13 +29,24 @@
   transition: --glow 0.7s ease;
   --ok: #7bd88f;
   --danger: #ff7a7a;
-  --radius: clamp(8px, 0.6vw, 14px);
-  --gap: clamp(14px, 1.2vw, 28px);
-  --pad-x: clamp(24px, 4vw, 96px);
-  --fs: clamp(14px, 0.95vw, 22px);
-  --poster-w: clamp(132px, 10.2vw, 260px);
+  --radius: max(8px, 0.6vw);
+  --gap: max(14px, 1.2vw);
+  --pad-x: max(24px, 4vw);
+  --fs: max(14px, 0.95vw);
+  --poster-w: max(132px, 10.2vw);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --hints-h: clamp(44px, 4.6vh, 64px);
+  --hints-h: max(44px, 4.6vh);
+  /* sizes have a floor and no ceiling: a ceiling freezes them on 4K, where the same layout then reads
+     at half the size from the couch */
+  /* pad buttons, shared by the desktop hints and the TV hints (tv.css .tv-btn--*): white text on A/B/X
+     keeps ≥ 4.5:1, Y is light, so it takes dark ink */
+  --glyph-a: #2e7d37;
+  --glyph-b: #b04848;
+  --glyph-x: #3b67b5;
+  --glyph-y: #c99a1d;
+  --glyph-y-ink: #1a1300;
+  /* small labels on posters and art (badges, counters): never below this, whatever the screen */
+  --fs-min: 13px;
   color-scheme: dark;
 }
 
@@ -146,7 +157,7 @@ button {
   display: flex;
   align-items: center;
   gap: calc(var(--gap) * 1.5);
-  padding: clamp(14px, 1.4vw, 30px) var(--pad-x) 0;
+  padding: max(14px, 1.4vw) var(--pad-x) 0;
 }
 .tabs {
   display: flex;
@@ -296,16 +307,17 @@ button {
   background: rgba(255, 255, 255, 0.14);
 }
 .glyph--confirm {
-  background: #3f8f4f;
+  background: var(--glyph-a);
 }
 .glyph--back {
-  background: #b04848;
+  background: var(--glyph-b);
 }
 .glyph--x {
-  background: #3b67b5;
+  background: var(--glyph-x);
 }
 .glyph--y {
-  background: #b39126;
+  background: var(--glyph-y);
+  color: var(--glyph-y-ink);
 }
 
 /* ---------- buttons ---------- */
@@ -495,16 +507,10 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0;
-  transition: opacity 0.15s;
+  transition: color 0.15s;
 }
-.poster:focus .poster__label,
-.grid .poster__label {
-  opacity: 1;
+.poster:focus .poster__label {
   color: var(--text);
-}
-.grid .poster:not(:focus) .poster__label {
-  color: var(--text-3);
 }
 .poster__badges {
   position: absolute;
@@ -515,7 +521,7 @@ button {
   gap: 4px;
 }
 .badge {
-  font-size: 0.68em;
+  font-size: max(0.75em, var(--fs-min));
   font-weight: 800;
   padding: 0.25em 0.55em;
   border-radius: 5px;
@@ -563,15 +569,30 @@ button {
 .poster__frame .art-placeholder {
   position: relative;
 }
+/* not installed: an icon, and on focus its meaning in words (a bare dot said nothing) */
 .poster__cloud {
   position: absolute;
   right: 8px;
   bottom: 8px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  background: rgba(0, 0, 0, 0.5);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25em 0.45em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--room) 82%, transparent);
+  color: var(--text);
+  font-size: max(0.78em, var(--fs-min));
+  font-weight: 600;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.poster__cloud-txt {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.poster:focus .poster__cloud-txt {
+  max-width: 12em;
+  margin-left: 0.35em;
 }
 
 /* ---------- artwork ---------- */
@@ -674,7 +695,7 @@ button {
   filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.6));
 }
 .spotlight__title {
-  font-size: clamp(30px, 3.2vw, 72px);
+  font-size: max(30px, 3.2vw);
   line-height: 1.05;
   margin: 0;
   font-weight: 800;
@@ -719,7 +740,7 @@ button {
   height: 8vh;
 }
 .row {
-  margin-bottom: clamp(16px, 2vh, 36px);
+  margin-bottom: max(16px, 2vh);
 }
 .row__head {
   display: flex;
@@ -812,7 +833,7 @@ button {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: clamp(14px, 2vh, 30px);
+  padding-top: max(14px, 2vh);
 }
 .toolbar {
   display: flex;
@@ -921,7 +942,7 @@ button {
 }
 .details__title {
   margin: 0;
-  font-size: clamp(34px, 3.8vw, 86px);
+  font-size: max(34px, 3.8vw);
   line-height: 1.04;
   font-weight: 800;
   letter-spacing: -0.015em;
@@ -978,8 +999,8 @@ button {
 .details__body {
   display: grid;
   /* description takes the free width, facts sit in a column at the right edge */
-  grid-template-columns: minmax(0, 1fr) clamp(240px, 20vw, 420px);
-  gap: clamp(32px, 5vw, 120px);
+  grid-template-columns: minmax(0, 1fr) max(240px, 20vw);
+  gap: max(32px, 5vw);
   margin-top: 8vh;
 }
 .details__body > :only-child {
@@ -1079,7 +1100,7 @@ button {
   width: min(640px, 92vw);
   max-height: 84vh;
   overflow-y: auto;
-  padding: clamp(20px, 2vw, 40px);
+  padding: max(20px, 2vw);
   border-radius: calc(var(--radius) * 1.6);
   background: var(--panel-solid);
   border: 1px solid var(--line);
@@ -1220,7 +1241,7 @@ button {
   position: absolute;
   left: 6px;
   bottom: 6px;
-  font-size: 0.7em;
+  font-size: max(0.75em, var(--fs-min));
   padding: 0.1em 0.5em;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.7);
@@ -1297,9 +1318,9 @@ button {
 /* two panes: list of sections | the chosen section (scrolled on its own) */
 .settings {
   height: 100%;
-  padding: clamp(14px, 2vh, 30px) var(--pad-x) 0;
+  padding: max(14px, 2vh) var(--pad-x) 0;
   display: grid;
-  grid-template-columns: clamp(200px, 17vw, 320px) minmax(0, 1fr);
+  grid-template-columns: max(200px, 17vw) minmax(0, 1fr);
   gap: calc(var(--gap) * 1.5);
 }
 .settings__menu {
@@ -1339,7 +1360,7 @@ button {
   padding-bottom: 16vh;
 }
 .card {
-  padding: clamp(18px, 1.6vw, 34px);
+  padding: max(18px, 1.6vw);
   border-radius: calc(var(--radius) * 1.4);
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1569,7 +1590,7 @@ p.card__desc[data-nav]:focus {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: clamp(10px, 1.6vh, 24px);
+  padding-top: max(10px, 1.6vh);
 }
 .group__head {
   display: flex;
@@ -1579,7 +1600,7 @@ p.card__desc[data-nav]:focus {
 }
 .group__head h1 {
   margin: 0;
-  font-size: clamp(24px, 2vw, 44px);
+  font-size: max(24px, 2vw);
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -1603,7 +1624,7 @@ p.card__desc[data-nav]:focus {
   margin-inline: 0;
 }
 .section {
-  margin-bottom: clamp(20px, 3vh, 44px);
+  margin-bottom: max(20px, 3vh);
 }
 .section__title {
   margin: 0 0 14px;
@@ -1908,7 +1929,7 @@ p.card__desc[data-nav]:focus {
   border-radius: 999px;
   background: color-mix(in srgb, var(--room) 82%, transparent);
   color: var(--text);
-  font-size: 0.78em;
+  font-size: max(0.78em, var(--fs-min));
   font-weight: 600;
   line-height: 1.4;
   pointer-events: none;

@@ -49,7 +49,12 @@ export const Poster = memo(function Poster({ game, favorite, onOpen, onFocusGame
             {game.emu.discs}
           </span>
         )}
-        {!game.installed && <span className="poster__cloud" aria-label="Niezainstalowana" />}
+        {!game.installed && (
+          <span className="poster__cloud">
+            <Icon name="download" />
+            <span className="poster__cloud-txt">Niezainstalowana</span>
+          </span>
+        )}
       </div>
       <div className="poster__label">{game.name}</div>
     </button>

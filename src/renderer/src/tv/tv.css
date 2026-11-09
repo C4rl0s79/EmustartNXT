@@ -34,6 +34,14 @@
   --tv-fs-menu: 1;
   --tv-fs-hint: 1;
   --tv-fs-top: 1;
+  /* overscan-safe frame: many TVs still crop ~3–5% of each edge, so the bars and the content keep
+     clear of it (the backdrop and the art may still bleed to the edge) */
+  --tv-safe-x: 5vw;
+  --tv-safe-y: 3vh;
+  --tv-bar-h: 7vh;
+  /* the selected row's start: the accent darkened enough that white text on it keeps ≥ 4.5:1 for
+     every accent in the look editor (gold and turquoise included) */
+  --tv-sel-start: color-mix(in oklab, var(--tv-accent), black 25%);
   position: fixed;
   inset: 0;
   background: radial-gradient(120% 90% at 50% 0%, var(--tv-bg-grad) 0%, var(--tv-bg) 60%) fixed, var(--tv-bg);
@@ -43,7 +51,7 @@
   /* one size rule for every theme — grows with the screen, so 4K stays readable from the couch —
      and the same x-height whatever the typeface: the same "Wielkość czcionek" gives the same size of
      text in Segoe, Alegreya or Exo 2 */
-  font-size: calc(clamp(14px, 1.6vh, 48px) * var(--tv-fs));
+  font-size: calc(clamp(18px, 2.2vh, 64px) * var(--tv-fs));
   font-size-adjust: 0.52;
   user-select: none;
   overflow: hidden;
@@ -55,12 +63,12 @@
 /* top bar */
 .tv-top {
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 7vh;
+  inset: var(--tv-safe-y) 0 auto 0;
+  height: var(--tv-bar-h);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 3vw;
+  padding: 0 var(--tv-safe-x);
   z-index: 5;
   font-size: calc(1em * var(--tv-fs-top));
 }
@@ -103,7 +111,7 @@
 
 .tv-screen {
   position: absolute;
-  inset: 7vh 0 7vh 0;
+  inset: calc(var(--tv-safe-y) + var(--tv-bar-h)) 0;
 }
 .tv-dim {
   color: var(--tv-dim);
@@ -204,7 +212,7 @@
   grid-template-rows: minmax(0, 1fr) auto;
   row-gap: 1.5vh;
   gap: 2.5vw;
-  padding: 0 3vw;
+  padding: 0 var(--tv-safe-x);
 }
 .tv-gamelist {
   display: flex;
@@ -274,7 +282,7 @@
   font-size: 0.8em;
 }
 .tv-row.sel {
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-soft));
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
   color: #fff;
 }
 .tv-row.sel .g {
@@ -430,7 +438,8 @@
 .tv-desc {
   grid-column: 1 / -1;
   align-self: start;
-  color: var(--tv-dim);
+  /* long reading: brighter than the other secondary text */
+  color: color-mix(in srgb, var(--tv-text) 75%, var(--tv-dim));
   font-size: calc(0.95em * var(--tv-fs-desc));
   line-height: 1.45;
   overflow: hidden;
@@ -468,16 +477,18 @@
 /* button hints */
 .tv-hints {
   position: absolute;
-  inset: auto 0 0 0;
-  height: 7vh;
+  inset: auto 0 var(--tv-safe-y) 0;
+  height: var(--tv-bar-h);
   z-index: 5;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2em;
-  padding: 0 3vw;
+  /* ten hints (the game list) must still fit inside the safe frame at the default text size, in the
+     widest theme typeface too */
+  gap: min(2em, 1.2vw);
+  padding: 0 var(--tv-safe-x);
   color: var(--tv-dim);
-  font-size: calc(1em * var(--tv-fs-hint));
+  font-size: calc(0.9em * var(--tv-fs-hint));
 }
 .tv-hint {
   display: inline-flex;
@@ -498,16 +509,17 @@
   color: #fff;
 }
 .tv-btn--a {
-  background: #3f9b48;
+  background: var(--glyph-a);
 }
 .tv-btn--b {
-  background: #c8443c;
+  background: var(--glyph-b);
 }
 .tv-btn--x {
-  background: #3b6fd0;
+  background: var(--glyph-x);
 }
 .tv-btn--y {
-  background: #c99a1d;
+  background: var(--glyph-y);
+  color: var(--glyph-y-ink);
 }
 .tv-btn--sq {
   background: #3a4153;
@@ -553,7 +565,7 @@
   cursor: pointer;
 }
 .tv-menulist li.sel {
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-soft));
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
   color: #fff;
 }
 
@@ -604,9 +616,9 @@
 /* look editor (Menu → Wygląd): a side panel over the live layout — every change shows at once */
 .tv-look {
   position: absolute;
-  top: 7vh;
-  bottom: 7vh;
-  right: 1.5vw;
+  top: calc(var(--tv-safe-y) + var(--tv-bar-h));
+  bottom: calc(var(--tv-safe-y) + var(--tv-bar-h));
+  right: var(--tv-safe-x);
   width: min(44vw, 780px);
   z-index: 30;
   display: flex;
@@ -651,7 +663,7 @@
   cursor: default;
 }
 .tv-lkrow.sel {
-  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-soft));
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
   color: #fff;
 }
 .tv-lkrow .lk {
@@ -792,7 +804,7 @@
 /* theme chooser: a side panel, the whole layout stays visible behind it as the live preview */
 .tv-modal--side {
   justify-content: flex-end;
-  padding-right: 3vw;
+  padding-right: var(--tv-safe-x);
   background: none;
   backdrop-filter: none;
 }
