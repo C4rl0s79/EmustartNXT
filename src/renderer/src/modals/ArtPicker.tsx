@@ -224,7 +224,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
         </div>
       )}
       {isEmu && kind !== 'icon' && <LaunchBoxThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'launchbox' ? current.url : undefined} />}
-      {hasOwnKey && (kind === 'grid' || kind === 'hero') && <OwnKeyThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'web' ? current.url : undefined} />}
+      {hasOwnKey && kind !== 'icon' && <OwnKeyThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'web' ? current.url : undefined} />}
       {isEmu && admin && kind !== 'icon' && <ServerArt game={game} kind={kind} />}
       <div className="modal__footer">
         <button className="btn btn--primary" data-nav onClick={onClose}>
@@ -379,7 +379,8 @@ function OwnKeyThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKin
       <h3 className="saves__h">IGDB / TheGamesDB (własny klucz)</h3>
       {!res && <p className="details__loading">Wczytywanie…</p>}
       {res && !res.ok && <p className="details__muted">{res.error}</p>}
-      {res?.ok && res.options.length === 0 && <p className="details__muted">{res.error ? `Usługa nie odpowiedziała (${res.error}).` : 'Nie znaleziono grafik dla tej gry.'}</p>}
+      {res?.ok && res.error && <p className="details__muted">Część źródeł nie odpowiedziała ({res.error}). Sprawdź klucz w Ustawieniach.</p>}
+      {res?.ok && res.options.length === 0 && !res.error && <p className="details__muted">Nie znaleziono grafik dla tej gry.</p>}
       {res?.ok && res.options.length > 0 && (
         <div className={`thumbs thumbs--${kind}`} data-nav-group={`own-${kind}`}>
           {res.options.map((o) => (
@@ -389,7 +390,7 @@ function OwnKeyThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKin
               data-nav
               onClick={() => void attempt(api().art.chooseOwn(game.id, kind, o.url, layout)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))}
             >
-              <img src={o.url} alt="" loading="lazy" decoding="async" />
+              <img src={api().art.url(`web:${o.url}`, kind)} alt="" loading="lazy" decoding="async" />
               <span className="thumb__tag">{o.source}</span>
             </button>
           ))}

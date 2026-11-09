@@ -123,7 +123,7 @@ export interface LumenApi {
   }
   art: {
     /** layout 'tv': the TV layout's art (its own choices, LaunchBox first for EmuStart games) */
-    url(gameId: string, kind: ArtKind, rev?: number, layout?: ArtLayout): string
+    url(gameId: string, kind: ArtKind, rev?: number, layout?: ArtLayout, thumb?: boolean): string
     /** page: the next SteamGridDB page (0 = first, PAGE_SIZE each), animated images included */
     options(gameId: string, kind: ArtKind, page?: number): Promise<ArtOptionsResult>
     search(term: string): Promise<{ ok: true; games: SgdbGame[] } | { ok: false; error: string }>

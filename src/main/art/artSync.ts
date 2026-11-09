@@ -62,6 +62,18 @@ export function applyServer(p: Prefs, server: ServerChoices): { prefs: Prefs; ch
   return changed.size ? { prefs: { ...p, art, artTv, artStamps }, changed: [...changed] } : { prefs: p, changed: [] }
 }
 
+/** the server's default art of groups (panel of the server), only what can be shown */
+export function parseDefaults(raw: Record<string, { sha?: string; ext?: string }> | undefined): Prefs['artDefaults'] {
+  const out: Prefs['artDefaults'] = {}
+  for (const [k, v] of Object.entries(raw ?? {})) {
+    const [gameId, kind] = k.split('|')
+    if (!gameId?.startsWith('navgrp:') || (kind !== 'logo' && kind !== 'hero')) continue
+    if (!/^[0-9a-f]{64}$/.test(String(v?.sha)) || !/^(png|jpg|webp|gif)$/.test(String(v?.ext))) continue
+    out[gameId] = { ...out[gameId], [kind]: { type: 'user', sha: v.sha!, ext: v.ext! } }
+  }
+  return out
+}
+
 /** `file` choices waiting for upload: [layout, game, kind, path] */
 export function pendingFiles(p: Prefs): [ArtLayout, string, ArtKind, string][] {
   const out: [ArtLayout, string, ArtKind, string][] = []

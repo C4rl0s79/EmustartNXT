@@ -18,12 +18,14 @@ export function groupArtId(sys: TvSystem): string | undefined {
   return undefined
 }
 
-export function useGroupArt(sys: TvSystem | undefined): { id?: string; logo: boolean; hero: boolean; rev: number } {
+export function useGroupArt(sys: TvSystem | undefined): { id?: string; logo: boolean; hero: boolean; own: { logo: boolean; hero: boolean }; rev: number } {
   const id = sys ? groupArtId(sys) : undefined
   const choice = useStore((s) => (id ? s.prefs?.artTv?.[id] : undefined))
+  const server = useStore((s) => (id ? s.prefs?.artDefaults?.[id] : undefined))
   const rev = useStore((s) => (id ? (s.artRev[id] ?? 0) : 0))
   const set = (t?: string): boolean => t === 'file' || t === 'user'
-  return { id, logo: set(choice?.logo?.type), hero: set(choice?.hero?.type), rev }
+  const own = { logo: set(choice?.logo?.type), hero: set(choice?.hero?.type) }
+  return { id, logo: own.logo || !!server?.logo, hero: own.hero || !!server?.hero, own, rev }
 }
 
 export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () => void }) {
@@ -52,10 +54,10 @@ export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () =
     if (p) setPrefs(p)
   }
   const rows = [
-    { label: 'Logo z pliku…', value: art.logo ? 'zmień' : 'brak — pokazuje nazwę', act: () => void pick('logo', 'Logo grupy') },
-    { label: 'Tło z pliku…', value: art.hero ? 'zmień' : 'brak', act: () => void pick('hero', 'Tło grupy') },
-    ...(art.logo ? [{ label: 'Usuń logo', value: '', act: () => void clear('logo') }] : []),
-    ...(art.hero ? [{ label: 'Usuń tło', value: '', act: () => void clear('hero') }] : [])
+    { label: 'Logo z pliku…', value: art.own.logo ? 'zmień' : art.logo ? 'domyślne z serwera' : 'brak — pokazuje nazwę', act: () => void pick('logo', 'Logo grupy') },
+    { label: 'Tło z pliku…', value: art.own.hero ? 'zmień' : art.hero ? 'domyślne z serwera' : 'brak', act: () => void pick('hero', 'Tło grupy') },
+    ...(art.own.logo ? [{ label: 'Usuń logo', value: '', act: () => void clear('logo') }] : []),
+    ...(art.own.hero ? [{ label: 'Usuń tło', value: '', act: () => void clear('hero') }] : [])
   ]
   return (
     <Modal title={`Grafika grupy — ${sys.display}`} onClose={onClose} wide className="gopt" handlers={{ back: () => (onClose(), true) }} hints={[{ action: 'confirm', label: 'Wybierz' }, { action: 'back', label: 'Zamknij' }]}>

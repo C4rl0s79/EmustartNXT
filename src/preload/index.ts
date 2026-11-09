@@ -71,7 +71,7 @@ const api: LumenApi = {
     onChange: (cb) => subscribe(IPC.settingsChanged, cb)
   },
   art: {
-    url: (gameId, kind, rev = 0, layout) => `${ART_SCHEME}://img/${encodeURIComponent(gameId)}/${kind}?r=${rev}${layout === 'tv' ? '&tv=1' : ''}`,
+    url: (gameId, kind, rev = 0, layout, thumb) => `${ART_SCHEME}://img/${encodeURIComponent(gameId)}/${kind}?r=${rev}${layout === 'tv' ? '&tv=1' : ''}${thumb ? '&thumb=1' : ''}`,
     options: (id, kind, page) => invoke(IPC.artOptions, id, kind, page),
     search: (term) => invoke(IPC.artSearch, term),
     setMatch: (id, g) => invoke(IPC.artSetMatch, id, g),

@@ -16,6 +16,8 @@ interface Props {
   onRatio?: (ratio: number) => void;
   /** "tv": the TV layout's own art (its choices; LaunchBox first for EmuStart games) */
   layout?: ArtLayout;
+  /** small copy for lists */
+  thumb?: boolean;
 }
 
 /**
@@ -35,9 +37,10 @@ export const Art = memo(function Art({
   onState,
   onRatio,
   layout,
+  thumb,
 }: Props) {
   const rev = useStore((s) => s.artRev[gameId] ?? 0);
-  const wanted = api().art.url(gameId, kind, rev, layout);
+  const wanted = api().art.url(gameId, kind, rev, layout, thumb);
   // A new version of the same image (the player picked other art): the old one stays on screen until the
   // new one is downloaded and decoded — a large / animated file is not an empty frame for seconds.
   // Another game in this slot switches at once.

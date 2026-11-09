@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -33,7 +34,7 @@ import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { SteamFamily } from './steam/family'
-import { applyServer, localItems, pendingFiles, type ServerChoices } from './art/artSync'
+import { applyServer, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -324,12 +325,33 @@ function registerArtProtocol(): void {
   })
 }
 
+// Posters on lists come as small copies: a full file arrives in many chunks and the page re-processes the image on
+// every one — seconds of stutter on a long list, measured with a trace. Made once by the engine (Pillow), kept on disk.
+const thumbLimiter = new Limiter(3, 'art-thumb', true)
+async function artThumb(file: string): Promise<string> {
+  if (engine.state !== 'ready' || /\.(gif|webm|mp4)$/i.test(file)) return file
+  const st = await fs.stat(file).catch(() => null)
+  if (!st || st.size < 150_000) return file
+  const dst = path.join(paths.artCache, 'thumbs', `${createHash('sha1').update(`${file}|${st.mtimeMs}`).digest('hex')}.webp`)
+  if (await fs.stat(dst).catch(() => null)) return dst
+  const r = await thumbLimiter.run(() => engine.call<{ ok?: boolean }>('art_thumb', [file, dst, 540], 20_000)).catch(() => null)
+  return r?.ok ? dst : file
+}
+
+const WEB_ART = /^https:\/\/(images\.igdb\.com|cdn\.thegamesdb\.net)\//
+
 async function artResponse(req: Request): Promise<Response> {
   try {
     const u = new URL(req.url)
     const [, rawId, kind] = u.pathname.split('/')
     const gameId = decodeURIComponent(rawId ?? '')
     if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
+    // a picture from the player's own key: through this process, the image server refuses the window's own requests
+    if (gameId.startsWith('web:')) {
+      if (!WEB_ART.test(gameId.slice(4))) return new Response('bad url', { status: 400 })
+      const f = await artwork.fromUrl('web', kind as ArtKind, gameId.slice(4))
+      return f ? fileResponse(f) : new Response('none', { status: 404 })
+    }
     const usr = /^usr:([0-9a-f]{64})\.(png|jpg|webp|gif)$/.exec(gameId)
     if (usr) {
       const f = await userArtFile(usr[1], usr[2])
@@ -359,7 +381,8 @@ async function artResponse(req: Request): Promise<Response> {
       ? await artwork.resolve(gameId, undefined, kind as ArtKind, game?.name, Number(shortcutId[1]))
       : await artwork.resolve(gameId, game?.appId || steamAppIdOf(gameId), kind as ArtKind, game?.name)
     if (!file) return new Response('not found', { status: 404 })
-    const res = await net.fetch(pathToFileURL(file).toString())
+    const served = u.searchParams.get('thumb') === '1' ? await artThumb(file) : file
+    const res = await net.fetch(pathToFileURL(served).toString())
     const headers = new Headers(res.headers)
     headers.set('Cache-Control', 'max-age=31536000')
     return new Response(res.body, { status: 200, headers })
@@ -521,6 +544,15 @@ async function syncArt(): Promise<void> {
     }
     const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get())], 60_000)
     if (!r.choices) return
+    const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
+    if (d?.defaults) {
+      const artDefaults = parseDefaults(d.defaults)
+      const before = prefs.get().artDefaults
+      if (JSON.stringify(artDefaults) !== JSON.stringify(before)) {
+        await updatePrefs((p) => ({ ...p, artDefaults }))
+        for (const id of new Set([...Object.keys(before), ...Object.keys(artDefaults)])) bumpArt(id)
+      }
+    }
     const { prefs: next, changed } = applyServer(prefs.get(), r.choices)
     if (changed.length) {
       await updatePrefs(() => next)
@@ -595,7 +627,8 @@ const layoutOf = (layout: unknown): ArtLayout => (layout === 'tv' ? 'tv' : 'desk
  * desktop (Steam games, EmuStart games with neither).
  */
 async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
-  const choice = prefs.get().artTv[gameId]?.[k] ?? borrowable(prefs.get().art[gameId]?.[k])
+  const choice =
+    prefs.get().artTv[gameId]?.[k] ?? borrowable(prefs.get().art[gameId]?.[k]) ?? (k === 'logo' || k === 'hero' ? prefs.get().artDefaults[gameId]?.[k] : undefined)
   if (choice?.type === 'none') return new Response('none', { status: 404 })
   if (choice?.type === 'file' && (await fs.stat(choice.file).catch(() => null))) return fileResponse(choice.file)
   if (choice?.type === 'user') {
@@ -1105,7 +1138,7 @@ function registerIpc(): void {
       tgdb_key: settings.getSecret('tgdbApiKey') ?? ''
     }
     if (!keys.tgdb_key && !(keys.igdb_client_id && keys.igdb_client_secret)) return { ok: false, error: 'Dodaj własny klucz IGDB albo TheGamesDB w Ustawieniach.' }
-    const sk = kind === 'grid' ? 'box' : kind === 'hero' ? 'snap' : ''
+    const sk = kind === 'grid' ? 'box' : kind === 'hero' ? 'snap' : kind === 'logo' ? 'logo' : ''
     if (!sk) return { ok: true, options: [] }
     if (engine.state !== 'ready') return { ok: false, error: 'Silnik EmuStart jeszcze się uruchamia.' }
     const r = await engine
@@ -1115,7 +1148,7 @@ function registerIpc(): void {
   })
   handle(IPC.artChooseOwn, async (gameId: string, kind: ArtKind, url: string, layout?: ArtLayout) => {
     if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
-    if (!/^https:\/\/(images\.igdb\.com|cdn\.thegamesdb\.net)\//.test(String(url))) throw new Error('Nieoczekiwany adres grafiki.')
+    if (!WEB_ART.test(String(url))) throw new Error('Nieoczekiwany adres grafiki.')
     const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'web', url: String(url) }, layoutOf(layout)))
     bumpArt(gameId, kind)
     return p

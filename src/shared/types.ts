@@ -444,6 +444,8 @@ export interface Prefs {
   favorites: string[]
   art: Record<string, GameArtPrefs>
   /** when each art choice was made (<layout>|<game>|<kind> → seconds): the newest wins across devices */
+  /** default art of library groups, set by the server's administrator (a player's own choice wins) */
+  artDefaults: Record<string, { logo?: ArtChoice; hero?: ArtChoice }>
   artStamps: Record<string, number>
   /**
    * the TV layout's own art choices (cover / screenshot / logo shown differently than the desktop's
