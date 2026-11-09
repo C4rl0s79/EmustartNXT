@@ -309,6 +309,8 @@ async function artResponse(req: Request): Promise<Response> {
     const [, rawId, kind] = u.pathname.split('/')
     const gameId = decodeURIComponent(rawId ?? '')
     if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
+    // the player's own art of a library group in the TV layout (PC, Konsole, GOG, a collection…): only a file
+    if (gameId.startsWith('navgrp:')) return (await tvArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
     if (gameId.startsWith('emusys:')) {
       // platform logo / console photo from the EmuStart server (TV system carousel)
       const es = gameId.slice(7)

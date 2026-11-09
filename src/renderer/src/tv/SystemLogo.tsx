@@ -86,7 +86,8 @@ export function SystemLogo({
   pixel = 0,
   plate = false,
   className,
-  fallback
+  fallback,
+  ownSrc
 }: {
   sysKey: string
   display: string
@@ -99,12 +100,20 @@ export function SystemLogo({
   className?: string
   /** shown without a logo (or when it fails to load) */
   fallback: React.ReactNode
+  /** the player's own logo of a library group (TV: Grafika grupy) — before the Steam mark and the name */
+  ownSrc?: string
 }) {
   const [broken, setBroken] = useState(false)
-  useEffect(() => setBroken(false), [sysKey, rev])
+  useEffect(() => setBroken(false), [sysKey, rev, ownSrc])
   let logo: React.ReactNode
   const src = api().art.url(`emusys:${sysKey}`, 'logo', rev)
-  if (sysKey === STEAM) logo = <SteamLogo className={className} />
+  if (ownSrc && !broken)
+    logo = (
+      <span className={`sys-logo ${className ?? ''}`} role="img" aria-label={display}>
+        <img src={ownSrc} alt="" draggable={false} onError={() => setBroken(true)} />
+      </span>
+    )
+  else if (sysKey === STEAM) logo = <SteamLogo className={className} />
   else if (!hasLogo || broken) logo = fallback
   else
     logo = (

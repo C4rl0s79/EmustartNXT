@@ -158,3 +158,19 @@ describe('prefs v4', () => {
     expect(bad.platformOverrides).toEqual({})
   })
 })
+
+describe('duża biblioteka (40 tys. gier)', () => {
+  it('buildNav sortuje po polsku i mieści się w ułamku sekundy', () => {
+    const names = ['Żółw', 'Ćma', 'Ala', 'ąbc', 'Zebra']
+    const games: Game[] = []
+    for (let i = 0; i < 40_000; i++) games.push({ ...emu(i % 2 ? 'snes' : 'ps2', `${names[i % names.length]} ${i}`), platform: classify(emu(i % 2 ? 'snes' : 'ps2', 'x'), ctx()) })
+    const t = performance.now()
+    const nav = buildNav(games, defaultPrefs(), null)
+    const ms = performance.now() - t
+    const all = nav.find((g) => g.id === 'console')!.games.map((g) => g.name.split(' ')[0])
+    expect(all.indexOf('Ala')).toBeLessThan(all.indexOf('ąbc'))
+    expect(all.indexOf('ąbc')).toBeLessThan(all.indexOf('Ćma'))
+    expect(all.lastIndexOf('Zebra')).toBeLessThan(all.indexOf('Żółw'))
+    expect(ms).toBeLessThan(1500)                     // localeCompare z opcjami: kilka sekund
+  })
+})

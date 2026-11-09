@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Game } from '@shared/types'
+import { compareText } from '@shared/libraryNav'
 import { useStore } from '../store'
 import { useActions } from '../nav/input'
 import { focusEl, focusFirst } from '../nav/engine'
@@ -121,7 +122,7 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
     const q = norm(query.trim())
     if (q) list = list.filter((g) => norm(g.name).includes(q))
     if (more.sort !== 'title') return list
-    const byName = (a: Game, b: Game): number => a.sortName.localeCompare(b.sortName, 'pl')
+    const byName = (a: Game, b: Game): number => compareText(a.sortName, b.sortName)
     const sorted = [...list]
     if (sort === 'name') sorted.sort(byName)
     if (sort === 'recent') sorted.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || byName(a, b))

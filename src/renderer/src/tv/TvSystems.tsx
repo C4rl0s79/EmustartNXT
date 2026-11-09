@@ -5,6 +5,7 @@ import { useActions } from '../nav/input'
 import { STEAM, systemMeta, type TvSystem } from './data'
 import { SystemOptions } from '../components/SystemOptions'
 import { SystemLogo } from './SystemLogo'
+import { GroupArtOptions, groupArtId, useGroupArt } from './GroupArt'
 import { carouselGap, useLook } from './look'
 
 // System carousel (EmuStart look): the selected platform's logo in the middle, neighbours smaller
@@ -53,7 +54,14 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
 /** The platform's console photo behind the carousel (the theme's tone; bright consoles toned down by lum). */
 function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
   const [broken, setBroken] = useState(false)
-  useEffect(() => setBroken(false), [sys.key, sys.consoleRev])
+  const own = useGroupArt(sys)
+  useEffect(() => setBroken(false), [sys.key, sys.consoleRev, own.rev, own.hero])
+  if (own.id && own.hero && !broken)
+    return (
+      <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': 0.5 } as CSSProperties}>
+        <img src={api().art.url(own.id, 'hero', own.rev, 'tv')} alt="" draggable={false} onError={() => setBroken(true)} />
+      </div>
+    )
   if (!sys.console || broken) return null
   return (
     <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': sys.console.lum } as CSSProperties}>
@@ -64,6 +72,7 @@ function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
 
 function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number; plate: boolean }) {
   const ad = Math.abs(d)
+  const own = useGroupArt(sys)
   return (
     <div
       className={`tv-syscard ${ad === 0 ? 'is-current' : ''}`}
@@ -78,9 +87,10 @@ function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number
         sysKey={sys.key}
         display={sys.display}
         hasLogo={sys.logo}
-        rev={sys.logoRev}
+        rev={own.logo ? own.rev : sys.logoRev}
         pixel={sys.logoPixel}
         plate={plate}
+        ownSrc={own.id && own.logo ? api().art.url(own.id, 'logo', own.rev, 'tv') : undefined}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}
       />
@@ -144,7 +154,7 @@ export function TvSystems({
         return true
       },
       x: () => {
-        if (sys?.es) setOpts(true)
+        if (sys?.es || (sys && groupArtId(sys))) setOpts(true)
         return true
       },
       y: () => {
@@ -162,7 +172,7 @@ export function TvSystems({
         ? [
             { action: 'left', label: onBack ? 'Podgrupa' : 'Grupa' },
             { action: 'confirm', label: 'Wybierz' },
-            ...(sys?.es ? [{ action: 'x' as const, label: 'Opcje systemu' }] : []),
+            ...(sys?.es ? [{ action: 'x' as const, label: 'Opcje systemu' }] : sys && groupArtId(sys) ? [{ action: 'x' as const, label: 'Grafika grupy' }] : []),
             ...(sys && pin?.can(sys) ? [{ action: 'y' as const, label: pin.pinned(sys) ? 'Odepnij' : 'Przypnij' }] : []),
             ...(onBack ? [{ action: 'back' as const, label: 'Wstecz' }] : []),
             { action: 'menu', label: 'Menu' }
@@ -199,6 +209,7 @@ export function TvSystems({
         })}
       </div>
       {opts && sys?.es && <SystemOptions es={sys.es} onClose={() => setOpts(false)} />}
+      {opts && sys && !sys.es && <GroupArtOptions sys={sys} onClose={() => setOpts(false)} />}
       <div className="tv-sysinfo">
         {title && <p className="tv-syspath">{title}</p>}
         <h1>{sys.display}</h1>

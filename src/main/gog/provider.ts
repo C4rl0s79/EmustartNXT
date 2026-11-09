@@ -57,6 +57,8 @@ export interface GogStatusRaw {
 
 const EMPTY: GogLibraryRaw = { games: [], installs: {}, fresh: false }
 const POLL_MS = 1500
+/** the server's catalog grows while it indexes the archive / GOG Manager adds games — ask again now and then */
+const CATALOG_MS = 5 * 60_000
 
 export const gogId = (pid: string): string => `gog:${pid}`
 export const isGogId = (id: string): boolean => /^gog:\d{1,20}$/.test(id)
@@ -139,6 +141,7 @@ export class GogProvider extends EventEmitter {
   private timer: NodeJS.Timeout | undefined
   private cache: JsonFile<GogLibraryRaw>
   private lastMsgAt = 0
+  private lastCatalog = 0
 
   constructor(private readonly engine: EmustartEngine, cacheFile: string) {
     super()
@@ -187,6 +190,7 @@ export class GogProvider extends EventEmitter {
   /** server = ask the server for its catalog (else only local installs are re-read) */
   async refresh(server = false): Promise<void> {
     if (this.engine.state !== 'ready') return
+    if (server) this.lastCatalog = Date.now()
     try {
       const lib = await this.engine.call<GogLibraryRaw>('gog_library', [server], 60_000)
       // the engine keeps its own offline copy; without a server it answers from it
@@ -220,7 +224,8 @@ export class GogProvider extends EventEmitter {
             }
           }
         }
-        if (ended) void this.refresh(false)
+        if (Date.now() - this.lastCatalog > CATALOG_MS) void this.refresh(true)
+        else if (ended) void this.refresh(false)
         if (key(prev) !== key(st) || JSON.stringify(prev?.jobs) !== JSON.stringify(st.jobs)) this.apply()
         this.emit('status', st)
       } catch (e) {

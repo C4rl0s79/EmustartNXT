@@ -5,11 +5,21 @@ import { api, attempt, useStore } from '../store'
 // The library hierarchy for both layouts (desktop tabs + chips, TV carousels) — one model, built from the
 // same snapshot and prefs (src/shared/libraryNav.ts).
 
+// One hierarchy for all components (App, top bar, screens): built once per snapshot / prefs change,
+// not once per component that asks for it.
+let shared: { games: unknown; prefs: unknown; collections: unknown; nav: NavGroup[] } | undefined
+
 export function useNav(): NavGroup[] {
   const games = useStore((s) => s.snapshot?.games)
   const collections = useStore((s) => s.snapshot?.collections ?? null)
   const prefs = useStore((s) => s.prefs)
-  return useMemo(() => (games && prefs ? buildNav(games, prefs, collections) : []), [games, prefs, collections])
+  return useMemo(() => {
+    if (!games || !prefs) return []
+    if (shared && shared.games === games && shared.prefs === prefs && shared.collections === collections) return shared.nav
+    const nav = buildNav(games, prefs, collections)
+    shared = { games, prefs, collections, nav }
+    return nav
+  }, [games, prefs, collections])
 }
 
 export function usePinned(nav: NavGroup[]): { group: NavGroup; sub: NavSub }[] {
