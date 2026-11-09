@@ -1,3 +1,4 @@
+import { UserArtSection } from '../components/UserArt'
 import { useEffect, useRef, useState } from 'react'
 import type { ArtKind, ArtLayout, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, SgdbGame } from '@shared/types'
 import { api, attempt, useStore, pickPath } from '../store'
@@ -34,7 +35,8 @@ const TV_LABEL: Partial<Record<ArtKind, string>> = { grid: 'Okładka', hero: 'Zr
 const CHOICE_LABEL: Record<string, string> = {
   sgdb: 'wybrana ze SteamGridDB',
   launchbox: 'wybrana z LaunchBox',
-  file: 'plik lokalny',
+  file: 'plik lokalny (wyślę na serwer)',
+  user: 'wgrana na serwer',
   steam: 'oficjalna grafika Steam',
   none: 'brak'
 }
@@ -180,6 +182,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           </button>
         )}
       </div>
+      <UserArtSection gameId={game.id} kind={kind} layout={layout} />
       {!result && <p className="details__loading">Wczytywanie grafik ze SteamGridDB…</p>}
       {result && !result.ok && <p className="details__muted">{result.error}</p>}
       {result?.ok && result.options.length === 0 && (

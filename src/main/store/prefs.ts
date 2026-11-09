@@ -18,7 +18,7 @@ const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, versions: {}, platformOverrides: {}, pinnedGroups: [] }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, versions: {}, platformOverrides: {}, pinnedGroups: [] }
 }
 
 export function migratePrefs(raw: unknown): Prefs {
@@ -47,6 +47,7 @@ export function migratePrefs(raw: unknown): Prefs {
     favorites: Array.isArray(r.favorites) ? r.favorites.filter((x) => typeof x === 'string') : [],
     art: isRecord(r.art) ? (r.art as Record<string, GameArtPrefs>) : {},
     artTv: isRecord(r.artTv) ? (r.artTv as Record<string, GameArtPrefs>) : {},
+    artStamps: isRecord(r.artStamps) ? Object.fromEntries(Object.entries(r.artStamps).filter((e): e is [string, number] => typeof e[1] === 'number')) : {},
     versions: isRecord(r.versions)
       ? Object.fromEntries(Object.entries(r.versions).filter((e): e is [string, string] => typeof e[1] === 'string'))
       : {},
@@ -293,7 +294,7 @@ export const ops = {
     const current = { ...(p[key][gameId] ?? {}) }
     if (choice) current[kind] = choice
     else delete current[kind]
-    return { ...p, [key]: { ...p[key], [gameId]: current } }
+    return { ...p, [key]: { ...p[key], [gameId]: current }, artStamps: { ...p.artStamps, [`${layout}|${gameId}|${kind}`]: Date.now() / 1000 } }
   },
 
   setSgdbMatch(p: Prefs, gameId: string, sgdbGameId: number | undefined, name?: string): Prefs {

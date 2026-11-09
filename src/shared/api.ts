@@ -32,6 +32,7 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogVerifyResult,
   GogLaunchResult,
   GogSaveChoice,
+  UserArtItem,
   GogExtrasResult,
   SteamFamilyStatus,
   GogSavesStatus
@@ -133,6 +134,9 @@ export interface LumenApi {
     useFile(gameId: string, kind: ArtKind, file: string, layout?: ArtLayout): Promise<Prefs>
     useSteam(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
     reset(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
+    /** images uploaded to the server by its accounts (this game, this kind) */
+    userGallery(gameId: string, kind: ArtKind): Promise<UserArtItem[]>
+    chooseUser(gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout): Promise<Prefs>
     onChanged(cb: (gameId: string, rev: number) => void): () => void
   }
   launchbox: {
@@ -283,6 +287,8 @@ export const IPC = {
   artChooseLb: 'art:chooseLb',
   artUseFile: 'art:useFile',
   artUseSteam: 'art:useSteam',
+  artUserGallery: 'art:userGallery',
+  artChooseUser: 'art:chooseUser',
   artReset: 'art:reset',
   artChanged: 'art:changed',
   appFullscreen: 'app:fullscreen',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import type { Prefs } from '@shared/types'
 import { defaultPrefs, migratePrefs, ops, PREFS_VERSION, PrefsError, PrefsStore } from '../src/main/store/prefs'
 import { JsonFile } from '../src/main/store/jsonFile'
 import { redact, registerSecret } from '../src/main/logger'
@@ -185,5 +186,35 @@ describe('art choices per layout', () => {
     expect(p.art['emu:g1']?.hero?.type).toBe('steam')
     const { artTv: _drop, ...old } = defaultPrefs()
     expect(migratePrefs(old).artTv).toEqual({})
+  })
+})
+
+describe('wybory grafik między urządzeniami', () => {
+  const base = (over: Partial<Prefs> = {}): Prefs => ({ ...defaultPrefs(), ...over })
+  it('nowszy wygrywa, starszy z serwera niczego nie zmienia, usunięcie też przechodzi', async () => {
+    const { applyServer } = await import('../src/main/art/artSync')
+    const u = { type: 'user', sha: 'a'.repeat(64), ext: 'png' } as const
+    const p = base({ artTv: { 'gog:1': { grid: { type: 'none' } } }, artStamps: { 'tv|gog:1|grid': 50 } })
+    expect(applyServer(p, { 'tv|gog:1|grid': { choice: u, at: 40 } }).changed).toEqual([])
+    const r = applyServer(p, { 'tv|gog:1|grid': { choice: u, at: 60 }, 'desktop|gog:2|logo': { choice: u, at: 5 } })
+    expect(r.prefs.artTv['gog:1'].grid).toEqual(u)
+    expect(r.prefs.art['gog:2'].logo).toEqual(u)
+    expect(r.changed.sort()).toEqual(['gog:1', 'gog:2'])
+    expect(applyServer(r.prefs, { 'tv|gog:1|grid': { choice: null, at: 70 } }).prefs.artTv['gog:1'].grid).toBeUndefined()
+  })
+  it('ścieżka lokalna nie wychodzi z urządzenia; czeka na wgranie i nie jest nadpisywana', async () => {
+    const { applyServer, localItems, pendingFiles } = await import('../src/main/art/artSync')
+    const p = ops.setArt(base(), 'navgrp:grp:pc', 'logo', { type: 'file', file: 'C:/moje/logo.png' }, 'tv')
+    expect(localItems(p)).toEqual([])
+    expect(pendingFiles(p)).toEqual([['tv', 'navgrp:grp:pc', 'logo', 'C:/moje/logo.png']])
+    expect(applyServer(p, { 'tv|navgrp:grp:pc|logo': { choice: { type: 'none' }, at: 9e9 } }).changed).toEqual([])
+  })
+  it('zmiana i usunięcie wyboru dostają znacznik czasu; stare wybory jako najstarsze', async () => {
+    const { localItems } = await import('../src/main/art/artSync')
+    const old = base({ art: { 'gog:1': { hero: { type: 'none' } } } })
+    expect(localItems(old)).toEqual([{ key: 'desktop|gog:1|hero', choice: { type: 'none' }, at: 1 }])
+    const set = ops.setArt(old, 'gog:1', 'hero', undefined)
+    expect(localItems(set)[0]).toMatchObject({ key: 'desktop|gog:1|hero', choice: null })
+    expect(localItems(set)[0].at).toBeGreaterThan(1000)
   })
 })

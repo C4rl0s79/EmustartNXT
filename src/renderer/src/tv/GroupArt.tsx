@@ -4,6 +4,7 @@ import { api, attempt, pickPath, useStore } from '../store'
 import { focusFirst } from '../nav/engine'
 import { Modal } from '../components/Modal'
 import type { TvSystem } from './data'
+import { UserArtSection } from '../components/UserArt'
 
 // Own art of a library group in the TV layout (PC, Komputery, Konsole, Steam, GOG, a collection…): logo on
 // the carousel and the picture behind it, from a file the player picks. EmuStart platforms keep their logo
@@ -21,7 +22,8 @@ export function useGroupArt(sys: TvSystem | undefined): { id?: string; logo: boo
   const id = sys ? groupArtId(sys) : undefined
   const choice = useStore((s) => (id ? s.prefs?.artTv?.[id] : undefined))
   const rev = useStore((s) => (id ? (s.artRev[id] ?? 0) : 0))
-  return { id, logo: choice?.logo?.type === 'file', hero: choice?.hero?.type === 'file', rev }
+  const set = (t?: string): boolean => t === 'file' || t === 'user'
+  return { id, logo: set(choice?.logo?.type), hero: set(choice?.hero?.type), rev }
 }
 
 export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () => void }) {
@@ -65,6 +67,8 @@ export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () =
           </button>
         ))}
       </div>
+      <UserArtSection gameId={id} kind="logo" layout="tv" />
+      <UserArtSection gameId={id} kind="hero" layout="tv" />
     </Modal>
   )
 }

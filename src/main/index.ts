@@ -4,6 +4,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
+import type { UserArtItem } from '@shared/types'
 import type { ActionResult, ArtChoice, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
@@ -32,6 +33,7 @@ import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { SteamFamily } from './steam/family'
+import { applyServer, localItems, pendingFiles, type ServerChoices } from './art/artSync'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -43,7 +45,7 @@ const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
  * keep separate choices). Only real images are borrowed — "no image" / "the source's art" stay per layout.
  */
 function borrowable(c: ArtChoice | undefined): ArtChoice | undefined {
-  return c && (c.type === 'file' || c.type === 'sgdb' || c.type === 'launchbox') ? c : undefined
+  return c && (c.type === 'file' || c.type === 'user' || c.type === 'sgdb' || c.type === 'launchbox') ? c : undefined
 }
 function withBorrowed(own: GameArtPrefs | undefined, other: GameArtPrefs | undefined): GameArtPrefs | undefined {
   if (!other) return own
@@ -153,6 +155,7 @@ const artwork = new ArtworkService({
   sgdb,
   priority: () => settings.get().artPriority,
   prefsFor: (id) => withBorrowed(prefs.get().art[id], prefs.get().artTv[id]),
+  userFile: (sha, ext) => userArtFile(sha, ext),
   userGridDir: () => {
     const { installPath, activeSteamId } = library.current.steam
     const accountId = activeSteamId ? steamId64ToAccountId(activeSteamId) : undefined
@@ -327,6 +330,11 @@ async function artResponse(req: Request): Promise<Response> {
     const [, rawId, kind] = u.pathname.split('/')
     const gameId = decodeURIComponent(rawId ?? '')
     if (!ART_KINDS.includes(kind as ArtKind)) return new Response('bad kind', { status: 400 })
+    const usr = /^usr:([0-9a-f]{64})\.(png|jpg|webp|gif)$/.exec(gameId)
+    if (usr) {
+      const f = await userArtFile(usr[1], usr[2])
+      return f ? fileResponse(f) : new Response('none', { status: 404 })
+    }
     // the player's own art of a library group in the TV layout (PC, Konsole, GOG, a collection…): only a file
     if (gameId.startsWith('navgrp:')) return (await tvArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
     if (gameId.startsWith('emusys:')) {
@@ -478,6 +486,53 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
   return r?.path ? fileResponse(r.path) : null
 }
 
+async function userArtFile(sha: string, ext: string): Promise<string | null> {
+  if (engine.state !== 'ready') return null
+  const r = await engine.call<{ path?: string }>('art_user_file', [sha, ext], 90_000).catch(() => null)
+  return r?.path || null
+}
+
+// ---- art choices and own images on the server (art/artSync.ts); nothing here blocks the interface ----
+let artSyncTimer: NodeJS.Timeout | undefined
+let artSyncing = false
+
+function scheduleArtSync(ms = 2000): void {
+  clearTimeout(artSyncTimer)
+  artSyncTimer = setTimeout(() => void syncArt(), ms)
+}
+
+async function syncArt(): Promise<void> {
+  if (artSyncing || engine.state !== 'ready' || !emu.summary().server?.ok) return
+  artSyncing = true
+  try {
+    for (const [layout, gameId, kind, file] of pendingFiles(prefs.get())) {
+      const r = await engine.call<{ ok?: boolean; sha?: string; ext?: string; reason?: string }>('art_user_upload', [file, gameId, kind], 150_000)
+      if (!r.sha || !r.ext) {
+        log.warn('art', `upload ${gameId} ${kind}: ${r.reason ?? 'nieudane'}`)
+        continue
+      }
+      const sha = r.sha
+      const ext = r.ext
+      await prefs.update((p) => {
+        const map = layout === 'tv' ? 'artTv' : 'art'
+        if (p[map][gameId]?.[kind]?.type !== 'file') return p // changed meanwhile
+        return { ...p, [map]: { ...p[map], [gameId]: { ...p[map][gameId], [kind]: { type: 'user', sha, ext } } } }
+      })
+    }
+    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get())], 60_000)
+    if (!r.choices) return
+    const { prefs: next, changed } = applyServer(prefs.get(), r.choices)
+    if (changed.length) {
+      await updatePrefs(() => next)
+      changed.forEach((id) => bumpArt(id))
+    } else send(IPC.prefsChanged, prefs.get())
+  } catch (e) {
+    log.warn('art', `sync: ${(e as Error).message}`)
+  } finally {
+    artSyncing = false
+  }
+}
+
 async function fileResponse(file: string): Promise<Response> {
   const type = IMAGE_TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
   return new Response(new Uint8Array(await fs.readFile(file)), { status: 200, headers: { 'Content-Type': type, 'Cache-Control': 'max-age=86400' } })
@@ -543,6 +598,10 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
   const choice = prefs.get().artTv[gameId]?.[k] ?? borrowable(prefs.get().art[gameId]?.[k])
   if (choice?.type === 'none') return new Response('none', { status: 404 })
   if (choice?.type === 'file' && (await fs.stat(choice.file).catch(() => null))) return fileResponse(choice.file)
+  if (choice?.type === 'user') {
+    const f = await userArtFile(choice.sha, choice.ext)
+    if (f) return fileResponse(f)
+  }
   if (choice?.type === 'sgdb' || choice?.type === 'launchbox') {
     const f = await artwork.fromUrl(gameId, k, choice.url)
     if (f) return fileResponse(f)
@@ -736,7 +795,9 @@ function handle<A extends unknown[], R>(channel: string, fn: (...args: A) => Pro
 async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
   const before = prefs.get().versions
   const overrides = prefs.get().platformOverrides
+  const stamps = prefs.get().artStamps
   const p = await prefs.update(fn)
+  if (p.artStamps !== stamps) scheduleArtSync()
   send(IPC.prefsChanged, p)
   if (p.versions !== before) emu.regroup()
   if (p.platformOverrides !== overrides) unified.update()
@@ -965,6 +1026,17 @@ function registerIpc(): void {
     bumpArt(gameId, kind)
     return p
   })
+  handle(IPC.artUserGallery, async (gameId: string, kind: ArtKind) => {
+    if (engine.state !== 'ready') return []
+    const r = await engine.call<{ items?: UserArtItem[] }>('art_user_gallery', [String(gameId), kind], 30_000).catch(() => null)
+    return r?.items ?? []
+  })
+  handle(IPC.artChooseUser, async (gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout) => {
+    if (!ART_KINDS.includes(kind) || !/^[0-9a-f]{64}$/.test(String(sha)) || !/^(png|jpg|webp|gif)$/.test(String(ext))) throw new Error('Zła grafika.')
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'user', sha, ext }, layoutOf(layout)))
+    bumpArt(gameId, kind)
+    return p
+  })
   handle(IPC.artUseFile, async (gameId: string, kind: ArtKind, src: string, layout?: ArtLayout) => {
     const lay = layoutOf(layout)
     const choices = lay === 'tv' ? prefs.get().artTv : prefs.get().art
@@ -1136,7 +1208,9 @@ app.whenReady().then(async () => {
   engine.on('event', (ev: { type: string }) => {
     if (ev.type === 'quit') app.quit()
   })
+  setInterval(() => scheduleArtSync(0), 10 * 60_000)
   engine.on('state', (st) => {
+    if (st === 'ready') scheduleArtSync(8000)
     if (st !== 'ready') return
     void emustartDefaults()
     // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags

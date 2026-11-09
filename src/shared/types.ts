@@ -387,10 +387,20 @@ export type ArtKind = 'grid' | 'hero' | 'logo' | 'icon'
 export type ArtChoice =
   | { type: 'sgdb'; imageId: number; url: string; thumb?: string }
   | { type: 'file'; file: string }
+  /** image uploaded to the EmuStart server (by this account or another one) */
+  | { type: 'user'; sha: string; ext: string }
   | { type: 'steam' }
   /** image from LaunchBox Games DB (images.launchbox-app.com) */
   | { type: 'launchbox'; url: string }
   | { type: 'none' }
+
+export interface UserArtItem {
+  sha: string
+  ext: string
+  size: number
+  by: string
+  mine: boolean
+}
 
 export interface GameArtPrefs {
   sgdbGameId?: number
@@ -408,6 +418,8 @@ export interface Prefs {
   gameCategories: Record<string, string[]>
   favorites: string[]
   art: Record<string, GameArtPrefs>
+  /** when each art choice was made (<layout>|<game>|<kind> → seconds): the newest wins across devices */
+  artStamps: Record<string, number>
   /**
    * the TV layout's own art choices (cover / screenshot / logo shown differently than the desktop's
    * poster / background) — separate from `art`

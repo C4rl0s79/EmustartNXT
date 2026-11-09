@@ -36,6 +36,8 @@ export interface ArtDeps {
   sgdb: SgdbClient
   priority: () => ArtSourcePriority
   prefsFor: (gameId: string) => GameArtPrefs | undefined
+  /** local copy of an image uploaded to the EmuStart server */
+  userFile?: (sha: string, ext: string) => Promise<string | null>
   /** userdata/<accountId>/config/grid of the active Steam account */
   userGridDir?: () => string | undefined
   /** injectable for tests */
@@ -151,6 +153,7 @@ export class ArtworkService {
     if (choice) {
       if (choice.type === 'none') return null
       if (choice.type === 'file') return (await exists(choice.file)) ? choice.file : null
+      if (choice.type === 'user') return this.deps.userFile?.(choice.sha, choice.ext) ?? null
       if (choice.type === 'sgdb') return this.cachedDownload(`${gameId}|${kind}|sgdb-${choice.imageId}`, choice.url, gameId, kind)
       if (choice.type === 'launchbox') return this.fromUrl(gameId, kind, choice.url)
       if (choice.type === 'steam') return (gridId && (await this.fromUserGrid(gridId, kind))) || (appId ? this.fromSteam(gameId, appId, kind) : null)
@@ -185,6 +188,7 @@ export class ArtworkService {
     if (choice) {
       if (choice.type === 'none') return null
       if (choice.type === 'file') return (await exists(choice.file)) ? choice.file : undefined
+      if (choice.type === 'user') return (await this.deps.userFile?.(choice.sha, choice.ext)) ?? undefined
       if (choice.type === 'sgdb') return (await this.cachedDownload(`${gameId}|${kind}|sgdb-${choice.imageId}`, choice.url, gameId, kind)) ?? undefined
       if (choice.type === 'launchbox') return (await this.fromUrl(gameId, kind, choice.url)) ?? undefined
       return undefined // 'steam' here means the source's own (official) art
