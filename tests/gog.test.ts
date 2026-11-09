@@ -65,3 +65,16 @@ describe('GOG description and art from the server', () => {
     expect(p.info('steam:1')).toBeUndefined()
   })
 })
+
+describe('GOG saves: engine results in Lumen shape', () => {
+  it('conflict and status mapping', async () => {
+    const { withConflict, savesStatus } = await import('../src/main/gog/ipc')
+    const c = withConflict({ ok: false, reason: 'Konflikt', conflict: [{ kind: 'saves', template: '<winAppData>/x', server_revision: 4, server_device: 'PC', local_files: 2 }] })
+    expect(c).toMatchObject({ ok: false, error: 'Konflikt', conflict: [{ kind: 'saves', template: '<winAppData>/x', serverRevision: 4, serverDevice: 'PC', localFiles: 2 }] })
+    expect(withConflict({ ok: true, message: 'ok' })).toEqual({ ok: true, message: 'ok' })
+    const s = savesStatus({ ok: true, enabled: true, source: 'ludusavi', sets: [{ id: 's1', kind: 'config', template: 't', folder: 'C:/x', files: 3, exists: true }], needs_registry: true, registry: [{ path: 'HKCU/x', kind: 'saves', reason: 'wymaga obsługi rejestru' }], last_sync: 5, pending: 1 })
+    expect(s).toMatchObject({ ok: true, enabled: true, config: false, source: 'ludusavi', needsRegistry: true, lastSync: 5, pending: 1 })
+    expect(s.sets[0]).toMatchObject({ kind: 'config', files: 3 })
+    expect(savesStatus({ source: 'cokolwiek' }).source).toBe('none')
+  })
+})

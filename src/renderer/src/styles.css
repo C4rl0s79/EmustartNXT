@@ -2484,3 +2484,10 @@ html.no-pointer * {
 html.no-pointer body {
   pointer-events: none;
 }
+
+/* GOG: zapisy i ustawienia — nagłówek listy lokalizacji (components/GogSaves.tsx) */
+.gopt__head {
+  margin: 14px 0 4px;
+  font-size: 0.95em;
+  opacity: 0.8;
+}

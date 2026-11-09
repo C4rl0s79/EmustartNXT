@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { IPC } from '@shared/api'
-import type { ActionResult, GogInstallRequest, GogOptionsResult, GogPlayTask, GogVerifyResult, Settings } from '@shared/types'
+import type { ActionResult, GogInstallRequest, GogLaunchResult, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
 import type { EmustartEngine } from '../emustart/engine'
 import { gogPid, type GogProvider } from './provider'
 
@@ -95,13 +95,46 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     if (r.reason) return { ok: false, error: r.reason }
     return { ok: !r.bad_count, checked: r.checked, badCount: r.bad_count ?? 0, bad: r.bad }
   })
-  handle(IPC.gogLaunch, async (gameId: string, task?: number) => {
+  handle(IPC.gogLaunch, async (gameId: string, task?: number, choice?: string) => {
     const t = typeof task === 'number' && Number.isInteger(task) && task >= 0 && task < 64 ? task : -1
     if (process.env.LUMEN_DRY_RUN === '1') return fail('Tryb testowy (LUMEN_DRY_RUN=1): uruchamianie gier jest wyłączone.')
-    const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_launch', [pidOf(gameId), t])
+    // saves are synced with the EmuStart server before the game (2 min: a large set over a slow link)
+    const r = await call<RawLaunch>('gog_launch', [pidOf(gameId), t, saveChoice(choice)], 120_000)
     if (r.ok) ctx.launched(gameId)
     void gog.refresh(false)
-    return result(r)
+    return withConflict(r)
+  })
+  handle(IPC.gogSaves, async (gameId: string, refresh?: boolean): Promise<GogSavesStatus> => {
+    const r = await call<Record<string, unknown>>('gog_saves', [pidOf(gameId), !!refresh], 60_000)
+    return savesStatus(r)
+  })
+  handle(IPC.gogSavesSet, async (gameId: string, opts: unknown) => {
+    const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, unknown>
+    const clean: Record<string, unknown> = {}
+    if (typeof o.enabled === 'boolean') clean.enabled = o.enabled
+    if (typeof o.config === 'boolean') clean.config = o.config
+    if (typeof o.pick === 'string') clean.pick = o.pick.slice(0, 300)
+    if (o.rules === null) clean.rules = null
+    else if (o.rules && typeof o.rules === 'object' && Array.isArray((o.rules as { files?: unknown }).files))
+      clean.rules = {
+        files: ((o.rules as { files: unknown[] }).files)
+          .slice(0, 50)
+          .map((f) => f as { path?: unknown; tags?: unknown })
+          .filter((f) => typeof f.path === 'string')
+          .map((f) => ({ path: String(f.path).slice(0, 1000), tags: Array.isArray(f.tags) ? f.tags.filter((x) => x === 'save' || x === 'config') : ['save'] }))
+      }
+    return result(await call<{ ok: boolean; reason?: string }>('gog_saves_set', [pidOf(gameId), clean]), 'Zapisano.')
+  })
+  handle(IPC.gogSavesSync, async (gameId: string, choice?: string) =>
+    withConflict(await call<RawLaunch>('gog_saves_sync', [pidOf(gameId), saveChoice(choice)], 10 * 60_000))
+  )
+  handle(IPC.gogSavesBackups, async (gameId: string) => {
+    const r = await call<{ ok: boolean; backups?: { id: string; sets: string[] }[] }>('gog_saves_backups', [pidOf(gameId)])
+    return r.backups ?? []
+  })
+  handle(IPC.gogSavesRestore, async (gameId: string, backupId: string) => {
+    if (typeof backupId !== 'string' || !/^\d{8}-\d{6}$/.test(backupId)) return fail('Zła kopia zapasowa.')
+    return result(await call<{ ok: boolean; reason?: string; message?: string }>('gog_saves_restore', [pidOf(gameId), backupId], 5 * 60_000))
   })
   handle(IPC.gogPlayTasks, async (gameId: string): Promise<GogPlayTask[]> => {
     const r = await call<{ ok: boolean; tasks?: GogPlayTask[] }>('gog_play_tasks', [pidOf(gameId)])
@@ -127,4 +160,59 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     await gog.refresh(true)
     return { ok: true, message: gog.summary().error ? `Serwer niedostępny: ${gog.summary().error}` : 'Katalog GOG odświeżony.' } as ActionResult
   })
+}
+
+type RawLaunch = { ok: boolean; reason?: string; message?: string; conflict?: Record<string, unknown>[] }
+
+const saveChoice = (c: unknown): string => (c === 'local' || c === 'remote' || c === 'skip' ? c : '')
+
+/** engine result → ActionResult with the save conflict (if any) in Lumen's shape */
+export function withConflict(r: RawLaunch): GogLaunchResult {
+  if (r.ok) return { ok: true, message: r.message }
+  const conflict: GogSaveConflict[] | undefined = r.conflict?.map((c) => ({
+    kind: String(c.kind ?? ''),
+    template: String(c.template ?? ''),
+    serverRevision: Number(c.server_revision ?? 0),
+    serverTime: Number(c.server_time ?? 0),
+    serverDevice: String(c.server_device ?? ''),
+    localTime: Number(c.local_time ?? 0),
+    localFiles: Number(c.local_files ?? 0)
+  }))
+  return { ok: false, error: r.reason ?? 'Nie udało się.', ...(conflict ? { conflict } : {}) }
+}
+
+export function savesStatus(r: Record<string, unknown>): GogSavesStatus {
+  const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
+  return {
+    ok: !!r.ok,
+    reason: typeof r.reason === 'string' && r.reason ? r.reason : undefined,
+    enabled: !!r.enabled,
+    config: !!r.config,
+    userRules: (r.user_rules as GogSavesStatus['userRules']) ?? null,
+    pick: String(r.pick ?? ''),
+    source: (['user', 'server', 'ludusavi', 'ambiguous', 'none'].includes(String(r.source)) ? r.source : 'none') as GogSavesStatus['source'],
+    title: String(r.title ?? ''),
+    version: String(r.version ?? ''),
+    attribution: String(r.attribution ?? ''),
+    candidates: arr<string>(r.candidates).map(String),
+    offline: String(r.offline ?? ''),
+    sets: arr<Record<string, unknown>>(r.sets).map((x) => ({
+      id: String(x.id),
+      kind: x.kind === 'config' ? 'config' : 'saves',
+      template: String(x.template ?? ''),
+      folder: String(x.folder ?? ''),
+      pattern: String(x.pattern ?? ''),
+      files: Number(x.files ?? 0),
+      exists: !!x.exists,
+      error: String(x.error ?? '')
+    })),
+    skipped: arr<{ path: string; kind: string; reason: string }>(r.skipped),
+    registry: arr<{ path: string; kind: string; reason: string }>(r.registry),
+    needsRegistry: !!r.needs_registry,
+    profile: !!r.profile,
+    running: !!r.running,
+    lastSync: Number(r.last_sync ?? 0),
+    pending: Number(r.pending ?? 0),
+    last: (r.last as GogSavesStatus['last']) ?? {}
+  }
 }

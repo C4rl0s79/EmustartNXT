@@ -530,6 +530,62 @@ export interface CacheStats {
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string }
 
+// ---------- GOG: saves and settings synced through the EmuStart server (engine/emustart/gogsaves.py) ----------
+
+/** both the server and this device changed a file set since the last sync — the player decides */
+export interface GogSaveConflict {
+  kind: string
+  template: string
+  serverRevision: number
+  serverTime: number
+  serverDevice: string
+  localTime: number
+  localFiles: number
+}
+
+export interface GogSaveSet {
+  id: string
+  kind: 'saves' | 'config'
+  /** the rule (with placeholders such as <winAppData>) */
+  template: string
+  /** where it is on this computer */
+  folder: string
+  pattern: string
+  files: number
+  exists: boolean
+  error: string
+}
+
+export interface GogSavesStatus {
+  ok: boolean
+  reason?: string
+  enabled: boolean
+  config: boolean
+  userRules: { files: { path: string; tags: string[] }[] } | null
+  pick: string
+  /** user = this player's own rules, server = the EmuStart server's correction, ludusavi = ludusavi-manifest */
+  source: 'user' | 'server' | 'ludusavi' | 'ambiguous' | 'none'
+  title: string
+  version: string
+  attribution: string
+  candidates: string[]
+  offline: string
+  sets: GogSaveSet[]
+  skipped: { path: string; kind: string; reason: string }[]
+  registry: { path: string; kind: string; reason: string }[]
+  needsRegistry: boolean
+  /** this device is logged in to an EmuStart account */
+  profile: boolean
+  running: boolean
+  lastSync: number
+  pending: number
+  last: { at?: number; ok?: boolean; message?: string }
+}
+
+export type GogLaunchResult = ActionResult & { conflict?: GogSaveConflict[] }
+export type GogSaveChoice = 'local' | 'remote' | 'skip'
+
+
 // ---------- jobs (one queue for both interfaces) ----------
 
 export type JobKind = 'steamDownload' | 'emuLaunch' | 'emuDownload' | 'emuInstall' | 'saveUpload' | 'libraryRefresh' | 'gogInstall'

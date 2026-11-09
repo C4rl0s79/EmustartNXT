@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { EmuReadiness, EmustartSummary, Game } from '@shared/types'
 import { api, attempt, useStore } from '../store'
 import { formatBytes } from './format'
+import { launchGog } from '../components/GogSaves'
 
 // The one main action of a game (Graj / Zainstaluj / Pobierz i graj / Zainstaluj emulator…) for both
 // layouts — desktop details and the TV game list — so it behaves the same everywhere.
@@ -155,7 +156,8 @@ export function gogPrimary(game: Game, emu: EmustartSummary | undefined, wrap: W
     case 'installed':
       return {
         label: game.running ? 'Gra działa' : 'Graj',
-        run: game.running ? undefined : wrap(() => api().gog.launch(game.id)),
+        // saves sync before the game: a conflict asks the player first (components/GogSaves.tsx)
+        run: game.running ? undefined : wrap(async () => (await launchGog(game.id)) ?? { ok: false, error: 'Nie uruchomiono.' }),
         disabled: game.running,
         note: g.updateNote ?? `GOG · ${g.version || g.buildId || ''} · działa bez serwera`
       }

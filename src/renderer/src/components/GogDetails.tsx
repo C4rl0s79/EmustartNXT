@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type { ActionResult, Game } from '@shared/types'
 import { FAMILY_LABEL } from '@shared/libraryNav'
 import { api, askChoice, attempt, useStore } from '../store'
+import { GogSaves, launchGog } from './GogSaves'
 import { formatBytes } from '../lib/format'
 import { langName } from './GogInstall'
 
@@ -44,6 +46,7 @@ export function GogActions({ game }: { game: Game }) {
   const g = game.gog!
   const engineOk = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
   const serverOk = useStore((s) => !!s.snapshot?.emustart?.server?.ok)
+  const [saves, setSaves] = useState(false)
   if (!engineOk) return null
   const installed = g.state === 'installed' || g.state === 'needs_admin' || g.state === 'damaged'
   const moreDlc = (g.available?.dlcs ?? []).some((d) => !(g.dlcs ?? []).includes(d.id))
@@ -52,7 +55,7 @@ export function GogActions({ game }: { game: Game }) {
     const tasks = await attempt(api().gog.playTasks(game.id))
     if (!tasks?.length) return
     const i = await askChoice('Uruchom', tasks.map((t) => `${t.name}${t.default ? ' (domyślnie)' : ''}${t.category === 'launcher' ? ' — launcher' : ''}`))
-    if (i !== null) report(await attempt(api().gog.launch(game.id, tasks[i].index)))
+    if (i !== null) report(await launchGog(game.id, tasks[i].index))
   }
   const verify = async (): Promise<void> => {
     useStore.getState().toast('Sprawdzam pliki gry (MD5 z manifestu)…', 'info')
@@ -81,6 +84,12 @@ export function GogActions({ game }: { game: Game }) {
           Sprawdź pliki
         </button>
       )}
+      {installed && (
+        <button className="btn" data-nav data-key="gog-saves" title="Zapisy i ustawienia gry synchronizowane przez serwer EmuStart" onClick={() => setSaves(true)}>
+          Zapisy…
+        </button>
+      )}
+      {saves && <GogSaves game={game} onClose={() => setSaves(false)} />}
       {g.state === 'installed' && moreDlc && serverOk && (
         <button className="btn" data-nav data-key="gog-dlc" onClick={() => useStore.getState().setGogInstall({ gameId: game.id, dlcOnly: true })}>
           Dodaj DLC

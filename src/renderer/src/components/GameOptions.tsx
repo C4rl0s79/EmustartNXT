@@ -8,6 +8,7 @@ import { Modal } from './Modal'
 import { EmuSaves } from './EmuSaves'
 import { OnScreenKeyboard } from './TextField'
 import { ArtPicker } from '../modals/ArtPicker'
+import { GogSaves } from './GogSaves'
 import { Controllers } from './Controllers'
 import { CategoryPicker } from '../modals/CategoryPicker'
 
@@ -60,7 +61,7 @@ export function GameOptions({ game, onClose }: { game: Game; onClose: () => void
 
 /** Steam games and non-Steam shortcuts: the same window and rows as an EmuStart game's options. */
 function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
-  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | null>(null)
+  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | 'gogsaves' | null>(null)
   const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
   const cats = useStore((s) => s.prefs?.gameCategories[game.id]?.length ?? 0)
   const engineReady = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
@@ -90,6 +91,9 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
     { label: isFav ? '★ W ulubionych' : '☆ Do ulubionych', act: () => void attempt(api().prefs.toggleFavorite(game.id)) },
     { label: 'Kategorie', value: cats ? `${cats} ${plural(cats, 'kategoria', 'kategorie', 'kategorii')}` : 'przypisz do grup', act: () => setSub('categories') },
     { label: 'Grafiki', value: 'plakat, tło, logo · SteamGridDB', act: () => setSub('art') },
+    ...(game.gog && engineReady && ['installed', 'needs_admin', 'damaged'].includes(game.gog.state)
+      ? [{ label: 'Zapisy i ustawienia', value: 'synchronizacja przez serwer EmuStart', act: () => setSub('gogsaves') }]
+      : []),
     ...(steam && game.appId && engineReady ? [{ label: 'Kontrolery', value: 'kolejność graczy, ukryte w tej grze', act: () => setSub('pads') }] : []),
     ...(steam
       ? [
@@ -124,6 +128,7 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
         </div>
       </Modal>
       {sub === 'categories' && <CategoryPicker gameId={game.id} onClose={() => setSub(null)} />}
+      {sub === 'gogsaves' && <GogSaves game={game} onClose={() => setSub(null)} />}
       {sub === 'art' && <ArtPicker game={game} onClose={() => setSub(null)} />}
       {sub === 'pads' && game.appId && <Controllers game={{ id: game.id, name: game.name, key: `steam:${game.appId}` }} onClose={() => setSub(null)} />}
     </>

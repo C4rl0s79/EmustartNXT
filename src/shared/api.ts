@@ -29,7 +29,10 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogInstallRequest,
   GogOptionsResult,
   GogPlayTask,
-  GogVerifyResult
+  GogVerifyResult,
+  GogLaunchResult,
+  GogSaveChoice,
+  GogSavesStatus
 } from './types'
 
 /** In-app path picker (renderer: pickPath in store.ts). */
@@ -84,7 +87,13 @@ export interface LumenApi {
     cancel(gameId: string): Promise<ActionResult>
     verify(gameId: string): Promise<GogVerifyResult>
     /** installed game — works without the server; task = one of playTasks (default: the game's own) */
-    launch(gameId: string, task?: number): Promise<ActionResult>
+    launch(gameId: string, task?: number, syncChoice?: GogSaveChoice): Promise<GogLaunchResult>
+    /** saves and settings: rules (source), paths on this computer, sync state */
+    saves(gameId: string, refresh?: boolean): Promise<GogSavesStatus>
+    savesSet(gameId: string, opts: { enabled?: boolean; config?: boolean; pick?: string; rules?: { files: { path: string; tags: string[] }[] } | null }): Promise<ActionResult>
+    savesSync(gameId: string, choice?: GogSaveChoice): Promise<GogLaunchResult>
+    savesBackups(gameId: string): Promise<{ id: string; sets: string[] }[]>
+    savesRestore(gameId: string, backupId: string): Promise<ActionResult>
     playTasks(gameId: string): Promise<GogPlayTask[]>
     /** removes only the files installed by Lumen; saves and the player's files stay; the server archive is never touched */
     uninstall(gameId: string): Promise<ActionResult>
@@ -332,6 +341,11 @@ export const IPC = {
   gogCancel: 'gog:cancel',
   gogVerify: 'gog:verify',
   gogLaunch: 'gog:launch',
+  gogSaves: 'gog:saves',
+  gogSavesSet: 'gog:savesSet',
+  gogSavesSync: 'gog:savesSync',
+  gogSavesBackups: 'gog:savesBackups',
+  gogSavesRestore: 'gog:savesRestore',
   gogPlayTasks: 'gog:playTasks',
   gogUninstall: 'gog:uninstall',
   gogFinishAdmin: 'gog:finishAdmin',
