@@ -1,5 +1,27 @@
 # Testy
 
+## Hierarchia biblioteki i GOG z serwera EmuStart (gałąź `gog-library`, 9.11.2026)
+
+Automatyczne: `tests/libraryNav.test.ts` (klasyfikacja Steam/GOG/EmuStart/skrótów, Pozostałe, ręczna platforma,
+drzewo nawigacji, te same rekordy w grupach/kolekcjach/ulubionych, przypięcia, migracja prefs v4),
+`tests/gog.test.ts` (id `gog:<pid>`, „zainstalowana” tylko z rejestru silnika, zadania, komunikat o nowszym buildzie,
+gra bez serwera). Razem `npm test` — 233; `npm run test:engine` — 640.
+
+Na żywo (`LUMEN_USER_DATA=.lumen-test/userdata`, `LUMEN_DRY_RUN=1`, `LUMEN_NO_PAD=1`, serwer
+`scripts/test-server.py` z `LUMEN_TEST_GOG` = syntetyczne archiwum z `engine/tests/goghelp.py`, CDP):
+- [x] klasyfikacja prawdziwej biblioteki (62 gry Steam, 8 skrótów PC — tylko odczyt), pulpit: PC › Wszystkie /
+      Steam / GOG / Skróty Steam, okno instalacji (języki z serwera, PL główny z ustawień, DLC, folder, miejsce);
+- [x] instalacja przez interfejs (EN+PL, DLC z plikami) → „zainstalowana”, PL w `goggame-*.info`, `setIni`,
+      `supportData`, zależność; restart Lumen — stan z rejestru silnika;
+- [x] serwer wyłączony: biblioteka z kopii, gra nadal zainstalowana, „Sprawdź pliki” (17) bez serwera;
+- [x] usunięcie: zapis i plik gracza zostają, reszta usunięta, wartości HKCU gry usunięte, archiwum bez zmian;
+- [x] nowy certyfikat serwera → instalacja odrzucona z komunikatem (przypięty odcisk);
+- [x] TV (klawiatura przez CDP): PC → podgrupy (logo Steam, GOG) → lista, przypięcie GOG klawiszem Y/S;
+- [ ] pad w trybie TV, uruchomienie prawdziwej gry GOG (DRY_RUN blokuje), instalacja prawdziwej gry, UAC.
+- Uwaga: syntetyczna gra testowa ma `setRegistry` HKCU (`Software\EmuStartTest`) — po teście bez odinstalowania
+  usuń ten klucz.
+
+
 ## Lumen + EmuStart (0.2.0) — zob. też [INTEGRATION.md §8](INTEGRATION.md)
 
 Automatyczne:

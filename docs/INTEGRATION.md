@@ -524,3 +524,32 @@ tego komputera. Konto nie powstało: prośba czeka na zatwierdzenie administrato
 danych testowych, klucz `EmuStart-66fadc96a272` usunięty z TPM (sprawdzone). Zabezpieczenie: w trybie
 testowym (`LUMEN_DRY_RUN=1`) Lumen odrzuca logowanie na serwer inny niż lokalny
 (`ipc.ts: loopbackLogin`, test w `tests/emustart.test.ts`).
+
+## Biblioteka hierarchiczna i gry GOG z serwera EmuStart (gałąź `gog-library`)
+
+Szczegóły formatu, API serwera i instalatora: `engine/docs/GOG.md` (źródło: EmuStart `docs/GOG.md`).
+
+**Hierarchia (oba tryby, jeden model — `src/shared/libraryNav.ts`):** PC (Wszystkie / Steam / GOG / Skróty Steam),
+Komputery, Konsole, Arcade, Pozostałe (Wszystkie + podgrupa na platformę), Kolekcje (kategorie Lumen i kolekcje
+Steam), Ulubione, Ostatnio grane. Puste podgrupy i rodziny nie są pokazywane. Rodzina platformy pochodzi z katalogu
+systemów EmuStart (`systems.family`, `platform_catalog` — kopia w `platforms.json`); źródło gry (`Game.source`)
+zostaje osobno. Skróty Steam: platforma z oznaczeń Steam (nazwa / kod / folder systemu), skrót do emulatora bez
+oznaczenia → Pozostałe, pozostałe → PC › Skróty; w szczegółach skrótu „Platforma: …” (ręcznie, `prefs.platformOverrides`).
+
+- Pulpit: zakładki = Start, przypięte podgrupy, grupy hierarchii, Ustawienia; podgrupy jako przyciski pod tytułem
+  (↑ z pierwszego rzędu plakatów), wejście na ostatnio wybraną (pierwszy raz „Wszystkie”). „Przypnij” przy podgrupach.
+- TV: karuzela grup (przypięte podgrupy na początku) → karuzela podgrup (logo i zdjęcie konsoli platform EmuStart
+  bez zmian) → lista gier; B — poziom wyżej; Y — przypnij/odepnij; pozycje zapamiętane (wspólne z pulpitem).
+- Prefs v4: `pinnedGroups` (`'console/emu:ps2'`, `'pc/gog'`, `'col/<id>'`), `platformOverrides`. Migracja: przypięte
+  kategorie Lumen i kolekcje Steam → przypięte kolekcje (w tej kolejności). Platformy EmuStart były przypinane
+  automatycznie — są teraz w hierarchii; ich dawne flagi zostają w `categories` bez zmian. Ulubione, kategorie,
+  grafiki, wersje i identyfikatory gier — bez zmian.
+
+**GOG:** `src/main/gog/provider.ts` (ten sam proces silnika: `gog_library`, `gog_status`, kopia offline
+`gog-library.json`), `src/main/gog/ipc.ts` (tylko te operacje: opcje, instalacja, wznowienie, DLC, anulowanie,
+weryfikacja, uruchomienie, zadania uruchamiania, usunięcie, krok administratora, biblioteki systemowe, odświeżenie;
+identyfikator `gog:<pid>` musi być w bibliotece, języki/DLC walidowane, folder liczony z ustawień — renderer nie
+podaje ścieżki). Zadania GOG we wspólnej liście (`gogInstall`, anulowanie `gog:<pid>:<rodzaj>`). Akcja główna:
+`gogPrimary` (Zainstaluj → okno języków/DLC, Przerwij, Wznów / Napraw, Dokończ (UAC), Graj — bez serwera).
+Ustawienia → „Gry GOG”: wspólny folder (zmiana dotyczy przyszłych instalacji), domyślne języki. Po uruchomieniu gry
+GOG okno minimalizuje się jak dla Steam i wraca, gdy w katalogu gry nie ma już żadnego procesu.
