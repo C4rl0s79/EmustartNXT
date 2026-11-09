@@ -243,7 +243,7 @@ describe('Steam store metadata', () => {
         data: { name: 'Portal 2', metacritic: { score: 95 }, categories: [{ id: 2 }, { id: 9 }], ratings: { pegi: { rating: '12' }, esrb: { rating: 'e10' } } }
       }
     })!
-    expect(d).toMatchObject({ criticScore: 95, coop: true, esrb: 'PEGI 12', version: 3 })
+    expect(d).toMatchObject({ criticScore: 95, coop: true, esrb: 'PEGI 12', version: 4 })
     expect(parseReviewSummary({ success: 1, query_summary: { total_positive: 980, total_reviews: 1000 } })).toEqual({ playerScore: 98, playerReviews: 1000 })
     expect(parseReviewSummary({ success: 1, query_summary: { total_reviews: 0 } })).toEqual({})
     expect(parseSteamSpy({ positive: 427835, negative: 5675 })).toEqual({ playerScore: 99, playerReviews: 433510 })

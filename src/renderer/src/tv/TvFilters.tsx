@@ -21,12 +21,10 @@ const TITLES: Record<Page, string> = {
   show: 'Pokaż',
   sort: 'Sortuj'
 }
-/** Steam games carry no EmuStart metadata — these filters (and sorting by year) are EmuStart's only */
-const META = ['genre', 'decade', 'players', 'region', 'dev']
-
-/** sort options that have data in this list: year and LaunchBox for EmuStart games, critics and players for Steam games */
+/** sort options that have data in this list: LaunchBox for EmuStart games, critics and players for Steam games, year when known */
 function sortFits(v: Filter['sort'], steam: boolean, games: Game[]): boolean {
-  if (v === 'year' || v === 'launchbox') return !steam
+  if (v === 'year') return !steam || games.some((g) => g.facts?.year)
+  if (v === 'launchbox') return !steam
   if (v === 'critic' || v === 'players') return games.some((g) => !g.emu)
   return true
 }
@@ -36,6 +34,7 @@ export function TvFilters({
   games,
   steam,
   filter,
+  missing = 0,
   onChange,
   onClose
 }: {
@@ -43,6 +42,8 @@ export function TvFilters({
   games: Game[]
   steam: boolean
   filter: Filter
+  /** PC games whose data is still being fetched */
+  missing?: number
   onChange: (f: Filter) => void
   onClose: () => void
 }) {
@@ -149,9 +150,11 @@ export function TvFilters({
             act: () => open('sort')
           },
           { label: 'Pokaż gry', value: String(shown), act: onClose }
-        ].filter((r) => !(steam && META.includes(r.id ?? '')))
+        ].filter((r) => !(steam && r.id === 'region')) // PC games have no region in the name
       : page === 'players'
-        ? Object.entries(PLAYERS).map(([v, label]) => ({
+        ? Object.entries(PLAYERS)
+            .filter(([v]) => !(steam && Number(v) > 2)) // the PC stores say only "multiplayer", not how many
+            .map(([v, label]) => ({
             label,
             value: `${countWith(games, f, 'players', Number(v), fav)}${f.players === Number(v) ? '  ✓' : ''}`,
             act: () => set('players', Number(v))
@@ -212,6 +215,7 @@ export function TvFilters({
         <p className="details__muted">
           {shown} z {games.length} {plural(games.length, 'gry', 'gier', 'gier')}
           {!steam && !games.some((g) => g.emu?.genre) ? ' · brak metadanych dla tego systemu' : ''}
+          {missing > 0 ? ` · pobieram dane gier: zostało ${missing}` : ''}
         </p>
       )}
       <div className="gopt__list" ref={listRef} key={page}>

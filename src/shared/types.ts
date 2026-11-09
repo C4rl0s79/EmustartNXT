@@ -90,6 +90,8 @@ export interface Game {
   emu?: EmuGameInfo
   /** only for GOG games (source 'gog') */
   gog?: GogGameInfo
+  /** PC games: genre, developer, year, players for the filters (renderer: tv/facts.ts) */
+  facts?: GameFacts
   /** family and platform in the library hierarchy (set by the main process for every game) */
   platform?: GamePlatform
 }
@@ -306,6 +308,14 @@ export interface EmustartSummary {
   configured: boolean
 }
 
+/** what the list filters need about a PC game (Steam store, GOG, LaunchBox). players: 1, or 2 = two or more */
+export interface GameFacts {
+  genres?: string[]
+  developer?: string
+  year?: string
+  players?: number
+}
+
 export interface GameDetails {
   appId: number
   fetchedAt: number
@@ -330,6 +340,8 @@ export interface GameDetails {
   esrb?: string
   /** can be played cooperatively (LaunchBox) */
   coop?: boolean
+  /** has any multiplayer mode (Steam store categories) */
+  multiplayer?: boolean
   /** LaunchBox release type: Released, Homebrew, Unlicensed… */
   releaseType?: string
   /** critics: Metacritic score 0–100 (Steam store) */

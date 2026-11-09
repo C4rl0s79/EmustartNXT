@@ -47,10 +47,14 @@ export function showLabels(steam: boolean): Record<Filter['show'], string> {
 
 export type FilterKey = 'genre' | 'decade' | 'region' | 'dev'
 
+/** the filter uses data PC games get on demand (tv/facts.ts) */
+export const needsFacts = (f: Filter): boolean => !!(f.genre || f.decade || f.players || f.dev || f.sort === 'year')
+
 const decadeOf = (y?: string): string => (/^\d{4}/.test(y ?? '') ? y!.slice(0, 3) + '0' : '')
-const devOf = (g: Game): string => (g.emu?.developer ?? '').split(/,\s*/)[0] ?? ''
-const genresOf = (g: Game): string[] => (g.emu?.genre ?? '').split(/,\s*/).filter(Boolean)
-const playersOf = (g: Game): number => parseInt(g.emu?.players ?? '', 10) || 0
+const yearOf = (g: Game): string | undefined => g.emu?.year || g.facts?.year
+const devOf = (g: Game): string => (g.emu ? (g.emu.developer ?? '').split(/,\s*/)[0] : g.facts?.developer) ?? ''
+const genresOf = (g: Game): string[] => (g.emu ? (g.emu.genre ?? '').split(/,\s*/).filter(Boolean) : (g.facts?.genres ?? []))
+const playersOf = (g: Game): number => (g.emu ? parseInt(g.emu.players ?? '', 10) : g.facts?.players) || 0
 
 /** Regions of a No-Intro / Redump name: "(USA, Europe)" → USA, Europe */
 export function regionsOf(g: Game): string[] {
@@ -66,7 +70,7 @@ export function regionsOf(g: Game): string[] {
 export function matches(g: Game, f: Filter, fav: (id: string) => boolean, skip?: keyof Filter): boolean {
   if (skip !== 'q' && f.q && !`${g.name} ${g.emu?.tags ?? ''}`.toLowerCase().includes(f.q.toLowerCase())) return false
   if (skip !== 'genre' && f.genre && !genresOf(g).includes(f.genre)) return false
-  if (skip !== 'decade' && f.decade && decadeOf(g.emu?.year) !== f.decade) return false
+  if (skip !== 'decade' && f.decade && decadeOf(yearOf(g)) !== f.decade) return false
   if (skip !== 'players' && f.players && playersOf(g) < f.players) return false
   if (skip !== 'region' && f.region && !regionsOf(g).includes(f.region)) return false
   if (skip !== 'dev' && f.dev && devOf(g) !== f.dev) return false
@@ -86,7 +90,7 @@ export function apply(all: Game[], f: Filter, fav: (id: string) => boolean, rati
   const out = all.filter((g) => matches(g, f, fav))
   const size = (g: Game): number => g.emu?.size ?? g.sizeOnDisk ?? 0
   const by: Partial<Record<Filter['sort'], (a: Game, b: Game) => number>> = {
-    year: (a, b) => (a.emu?.year || '9999').localeCompare(b.emu?.year || '9999') || a.name.localeCompare(b.name),
+    year: (a, b) => (yearOf(a) || '9999').localeCompare(yearOf(b) || '9999') || a.name.localeCompare(b.name),
     last: (a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0),
     time: (a, b) => (b.playtimeMinutes ?? 0) - (a.playtimeMinutes ?? 0),
     size: (a, b) => size(b) - size(a)
@@ -111,7 +115,7 @@ export function valuesOf(all: Game[], f: Filter, key: FilterKey, fav: (id: strin
   const counts = new Map<string, number>()
   for (const g of all) {
     if (!matches(g, f, fav, key)) continue
-    const vals = key === 'genre' ? genresOf(g) : key === 'decade' ? [decadeOf(g.emu?.year)] : key === 'region' ? regionsOf(g) : [devOf(g)]
+    const vals = key === 'genre' ? genresOf(g) : key === 'decade' ? [decadeOf(yearOf(g))] : key === 'region' ? regionsOf(g) : [devOf(g)]
     for (const v of new Set(vals.filter(Boolean))) counts.set(v, (counts.get(v) ?? 0) + 1)
   }
   const arr = [...counts.entries()]

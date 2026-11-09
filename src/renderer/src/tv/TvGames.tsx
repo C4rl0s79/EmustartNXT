@@ -12,7 +12,8 @@ import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs
 import type { TvSystem } from './data'
 import { TvFilters } from './TvFilters'
 import { useRatings } from './ratings'
-import { activeParts, apply, loadFilter, saveFilter, type Filter } from './filters'
+import { useFacts } from './facts'
+import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter } from './filters'
 import { useLook } from './look'
 import { listTop } from './listWindow'
 import { TvCoverflow } from './TvCoverflow'
@@ -85,7 +86,8 @@ export function TvGames({
   const [infoRev, setInfoRev] = useState(0) // the details bar reads EmuStart's data again after "Opcje gry"
   const isFav = (id: string): boolean => !!favorites?.includes(id)
   const ratings = useRatings(system.games, filter.sort)
-  const games = useMemo(() => apply(system.games, filter, isFav, ratings), [system.games, filter, favorites, ratings]) // eslint-disable-line react-hooks/exhaustive-deps
+  const { games: known, missing } = useFacts(system.games, filters || needsFacts(filter))
+  const games = useMemo(() => apply(known, filter, isFav, ratings), [known, filter, favorites, ratings]) // eslint-disable-line react-hooks/exhaustive-deps
   const activeFilters = activeParts(filter, steam)
   // the game selected on the desktop, found in the list as shown (filters and order applied)
   const [idx, setIdx] = useState(() => Math.max(0, games.findIndex((g) => g.id === opened)))
@@ -250,7 +252,7 @@ export function TvGames({
         />
       )}
       {filters && (
-        <TvFilters system={system.display} games={system.games} steam={steam} filter={filter} onChange={setFilter} onClose={() => setFilters(false)} />
+        <TvFilters system={system.display} games={known} steam={steam} filter={filter} missing={missing} onChange={setFilter} onClose={() => setFilters(false)} />
       )}
     </>
   )

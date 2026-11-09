@@ -64,6 +64,17 @@ describe('TV layout: game list filters (EmuStart rules)', () => {
     expect(valuesOf(games, { ...FILTER_DEFAULT, genre: 'RPG' }, 'genre', fav)[0]).toEqual(['RPG', 2]) // own field ignored
   })
 
+  it('filters PC games by their facts', () => {
+    const pc = (id: string, facts: Game['facts']): Game => ({ id, name: id, source: 'steam', installed: true, facts }) as Game
+    const list = [pc('a', { genres: ['RPG'], developer: 'CD', year: '2015', players: 1 }), pc('b', { genres: ['Akcja'], developer: 'Id', year: '1993', players: 2 }), pc('c', undefined)]
+    expect(apply(list, { ...FILTER_DEFAULT, genre: 'RPG' }, fav).map((g) => g.id)).toEqual(['a'])
+    expect(apply(list, { ...FILTER_DEFAULT, decade: '1990' }, fav).map((g) => g.id)).toEqual(['b'])
+    expect(apply(list, { ...FILTER_DEFAULT, players: 2 }, fav).map((g) => g.id)).toEqual(['b'])
+    expect(apply(list, { ...FILTER_DEFAULT, dev: 'CD' }, fav).map((g) => g.id)).toEqual(['a'])
+    expect(apply(list, { ...FILTER_DEFAULT, sort: 'year' }, fav).map((g) => g.id)).toEqual(['b', 'a', 'c'])
+    expect(valuesOf(list, FILTER_DEFAULT, 'decade', fav)).toEqual([['1990', 1], ['2010', 1]])
+  })
+
   it('reads regions from the name and describes active filters', () => {
     expect(regionsOf(games[2])).toEqual(['USA', 'Europe'])
     expect(regionsOf(emuGame('x', 'X', { tags: '(Rev 1)' }))).toEqual([])

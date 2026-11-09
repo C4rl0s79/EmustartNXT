@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
 import type { UserArtItem } from '@shared/types'
-import type { ActionResult, ArtChoice, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtChoice, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
@@ -14,7 +14,7 @@ import { detectFlavor, Updater } from './updater'
 import { ops, PrefsError, PrefsStore } from './store/prefs'
 import { SettingsStore } from './store/settings'
 import { LibraryService } from './library/service'
-import { StoreMetadataProvider } from './steam/storeMeta'
+import { factsOf, genresPl, StoreMetadataProvider } from './steam/storeMeta'
 import { DRY_RUN, openSteam, openSteamUri, shortcutRunUri } from './steam/actions'
 import { PAGE_SIZE as SGDB_PAGE_SIZE, pickBestMatch, pickExactMatch, SgdbAuthError, SgdbClient } from './art/sgdb'
 import { LaunchBoxService } from './launchbox/service'
@@ -825,6 +825,46 @@ function registerIpc(): void {
     for (const [lb, r] of launchbox.ratingsById([...lbIds.keys()])) for (const id of lbIds.get(lb) ?? []) ratings[id] = { ...ratings[id], launchbox: r }
     if (missing.length) void meta.prefetch(missing)
     return { ratings, missing: missing.length }
+  })
+  // the list filters' data of PC games: Steam store cache, GOG descriptions from the server, LaunchBox
+  const lbFacts = new Map<string, GameFacts>()
+  const fromLaunchBox = (g: Game): GameFacts | undefined => {
+    const hit = lbFacts.get(g.id)
+    if (hit || !launchbox.ready) return hit
+    const d = launchbox.details(g.name, g.shortcut ? platformForTags(g.shortcut.tags) : 'Windows')
+    const f = d ? factsOf(d) : {}
+    lbFacts.set(g.id, f)
+    return f
+  }
+  handle(IPC.libraryFacts, async (ids: string[]) => {
+    const facts: Record<string, GameFacts> = {}
+    const missing: number[] = []
+    let n = 0
+    for (const id of Array.isArray(ids) ? ids.slice(0, 20000) : []) {
+      if (isEmuGameId(id)) continue
+      const g = findGame(id)
+      if (!g) continue
+      if (++n % 50 === 0) await new Promise((r) => setImmediate(r)) // the window stays responsive on a big library
+      let f: GameFacts | undefined
+      if (g.source === 'gog') {
+        const i = gog.info(id)
+        if (i?.tags?.length || i?.developers?.length || i?.release)
+          f = { genres: i.tags?.length ? i.tags : undefined, developer: i.developers?.[0], year: /\b(19|20)\d{2}\b/.exec(i.release ?? '')?.[0] }
+        const lb = fromLaunchBox(g)
+        if (lb) f = { ...lb, ...Object.fromEntries(Object.entries(f ?? {}).filter(([, v]) => v !== undefined)) }
+      } else {
+        const appId = g.shortcut ? undefined : steamAppIdOf(id)
+        if (appId) {
+          const c = await meta.cachedFacts(appId)
+          f = c?.facts
+          if ((!c || !c.current) && !meta.wasTried(appId)) missing.push(appId)
+        }
+        if (!f?.genres?.length) f = { ...fromLaunchBox(g), ...f }
+      }
+      if (f) facts[id] = { ...f, genres: genresPl(f.genres) }
+    }
+    if (missing.length) void meta.prefetch(missing)
+    return { facts, missing: missing.length }
   })
   handle(IPC.steamFamilyStatus, () => family.status)
   handle(IPC.steamFamilyLogin, () => family.login(win, library.current.steam.activeSteamId))

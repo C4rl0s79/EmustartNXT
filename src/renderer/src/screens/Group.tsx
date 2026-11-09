@@ -13,7 +13,8 @@ import { Icon } from '../components/Icon'
 import { EmuNotice } from '../components/EmuNotice'
 import { TvFilters } from '../tv/TvFilters'
 import { useRatings } from '../tv/ratings'
-import { activeParts, apply, loadFilter, saveFilter, type Filter as GameFilter } from '../tv/filters'
+import { useFacts } from '../tv/facts'
+import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter as GameFilter } from '../tv/filters'
 
 // One library view (a tab in the top bar, or a subgroup chosen with the chips under its title): its games
 // as a Steam-style poster grid. Groups and chips come from the shared library hierarchy (lib/nav.ts).
@@ -113,10 +114,11 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
   const noMeta = !all.some((g) => g.emu)
   const moreParts = activeParts(more, noMeta)
   const ratings = useRatings(all, more.sort)
+  const { games: known, missing } = useFacts(all, filtersOpen || needsFacts(more))
   const games = useMemo(() => {
     const isFav = (id: string): boolean => prefs.favorites.includes(id)
     // the window's order wins when set; otherwise the group's own (View)
-    let list = apply(all, more, isFav, ratings)
+    let list = apply(known, more, isFav, ratings)
     if (effectiveFilter === 'installed') list = list.filter((g) => g.installed)
     if (effectiveFilter === 'notInstalled') list = list.filter((g) => !g.installed)
     const q = norm(query.trim())
@@ -129,7 +131,7 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
     if (sort === 'added') sorted.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0) || byName(a, b))
     if (sort === 'playtime') sorted.sort((a, b) => (b.playtimeMinutes ?? -1) - (a.playtimeMinutes ?? -1) || byName(a, b))
     return sorted
-  }, [all, effectiveFilter, query, sort, more, prefs.favorites, ratings])
+  }, [known, effectiveFilter, query, sort, more, prefs.favorites, ratings])
 
   const favs = useMemo(() => new Set(prefs.favorites), [prefs.favorites])
 
@@ -294,7 +296,7 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
         </div>
       )}
       {filtersOpen && (
-        <TvFilters system={view.title} games={all} steam={noMeta} filter={more} onChange={setMore} onClose={() => setFiltersOpen(false)} />
+        <TvFilters system={view.title} games={known} steam={noMeta} filter={more} missing={missing} onChange={setMore} onClose={() => setFiltersOpen(false)} />
       )}
     </div>
   )

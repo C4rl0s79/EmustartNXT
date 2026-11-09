@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { DetailsResult, GameDetails } from '@shared/types'
+import type { DetailsResult, GameDetails, GameFacts } from '@shared/types'
 import { fetchWithTimeout, HttpError, Limiter } from '../net'
 import { log } from '../logger'
 
@@ -12,9 +12,49 @@ import { log } from '../logger'
 
 const TTL_MS = 14 * 24 * 3600 * 1000
 /** GameDetails.version of what parseAppDetails builds; older cached entries are fetched again */
-const DATA_VERSION = 3
+const DATA_VERSION = 4
 /** Steam store categories meaning co-op: Co-op, Online Co-op, Shared/Split Screen Co-op, LAN Co-op */
 const COOP_CATEGORIES = new Set([9, 38, 39, 48])
+/** Steam store categories meaning more than one player: Multi-player, PvP, Co-op, MMO, split screen, LAN, cross-platform */
+const MULTI_CATEGORIES = new Set([1, 9, 20, 24, 27, 36, 37, 38, 39, 44, 47, 48, 49])
+
+/** LaunchBox and some GOG data are in English, the Polish store is not: one name per genre on the filter list */
+const GENRE_PL: Record<string, string> = {
+  action: 'Akcja',
+  adventure: 'Przygodowe',
+  'role-playing': 'RPG',
+  rpg: 'RPG',
+  strategy: 'Strategie',
+  simulation: 'Symulacje',
+  'construction and management simulation': 'Symulacje',
+  'vehicle simulation': 'Symulacje',
+  'life simulation': 'Symulacje',
+  racing: 'Wyścigi',
+  sports: 'Sportowe',
+  indie: 'Niezależne',
+  casual: 'Rekreacyjne',
+  shooter: 'Strzelanki',
+  platform: 'Platformówki',
+  puzzle: 'Logiczne',
+  fighting: 'Bijatyki',
+  stealth: 'Skradanki',
+  music: 'Muzyczne'
+}
+export function genresPl(genres?: string[]): string[] | undefined {
+  return genres && [...new Set(genres.map((g) => GENRE_PL[g.trim().toLowerCase()] ?? g.trim()))]
+}
+
+/** the list filters' data from a game's details */
+export function factsOf(d: GameDetails): GameFacts {
+  const multi = d.multiplayer ?? (d.coop ? true : undefined)
+  const n = parseInt(d.players ?? '', 10)
+  return {
+    genres: d.genres,
+    developer: d.developers?.[0],
+    year: /\b(19|20)\d{2}\b/.exec(d.releaseDate ?? '')?.[0],
+    players: n > 0 ? n : multi === undefined ? undefined : multi ? 2 : 1
+  }
+}
 
 export function parseAppDetails(appId: number, json: unknown): GameDetails | null {
   const entry = (json as Record<string, { success?: boolean; data?: Record<string, unknown> }>)?.[String(appId)]
@@ -51,6 +91,7 @@ export function parseAppDetails(appId: number, json: unknown): GameDetails | nul
     website: d.website || undefined,
     criticScore: d.metacritic?.score || undefined,
     coop: d.categories ? d.categories.some((c) => COOP_CATEGORIES.has(Number(c.id))) : undefined,
+    multiplayer: d.categories ? d.categories.some((c) => MULTI_CATEGORIES.has(Number(c.id))) : undefined,
     esrb: ageRating(d.ratings),
     version: DATA_VERSION
   }
@@ -104,6 +145,16 @@ export class StoreMetadataProvider {
       const d = JSON.parse(await fs.readFile(this.file(appId), 'utf8')) as GameDetails
       if ((d.version ?? 1) < DATA_VERSION) return undefined
       return { critic: d.criticScore, players: d.playerScore }
+    } catch {
+      return undefined
+    }
+  }
+
+  /** filter data from the cache only; `current` false = fetched in an older format, worth fetching again */
+  async cachedFacts(appId: number): Promise<{ facts: GameFacts; current: boolean } | undefined> {
+    try {
+      const d = JSON.parse(await fs.readFile(this.file(appId), 'utf8')) as GameDetails
+      return { facts: factsOf(d), current: (d.version ?? 1) >= DATA_VERSION }
     } catch {
       return undefined
     }
