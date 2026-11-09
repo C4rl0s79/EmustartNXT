@@ -3,6 +3,7 @@ import type { ActionResult, Game } from '@shared/types'
 import { FAMILY_LABEL } from '@shared/libraryNav'
 import { api, askChoice, attempt, useStore } from '../store'
 import { GogSaves, launchGog } from './GogSaves'
+import { GogExtras } from './GogExtras'
 import { formatBytes } from '../lib/format'
 import { langName } from './GogInstall'
 
@@ -47,6 +48,7 @@ export function GogActions({ game }: { game: Game }) {
   const engineOk = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
   const serverOk = useStore((s) => !!s.snapshot?.emustart?.server?.ok)
   const [saves, setSaves] = useState(false)
+  const [extras, setExtras] = useState(false)
   if (!engineOk) return null
   const installed = g.state === 'installed' || g.state === 'needs_admin' || g.state === 'damaged'
   const moreDlc = (g.available?.dlcs ?? []).some((d) => !(g.dlcs ?? []).includes(d.id))
@@ -90,6 +92,12 @@ export function GogActions({ game }: { game: Game }) {
         </button>
       )}
       {saves && <GogSaves game={game} onClose={() => setSaves(false)} />}
+      {!!g.extras?.length && serverOk && (
+        <button className="btn" data-nav data-key="gog-extras" title="Wybierz, które dodatki pobrać z serwera" onClick={() => setExtras(true)}>
+          Dodatki ({g.extras.length})
+        </button>
+      )}
+      {extras && <GogExtras game={game} onClose={() => setExtras(false)} />}
       {g.state === 'installed' && moreDlc && serverOk && (
         <button className="btn" data-nav data-key="gog-dlc" onClick={() => useStore.getState().setGogInstall({ gameId: game.id, dlcOnly: true })}>
           Dodaj DLC

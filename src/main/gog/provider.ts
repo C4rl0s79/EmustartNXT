@@ -26,6 +26,7 @@ export interface GogInfoRaw {
   tags?: string[]
   /** art kinds the server has: grid (box art), hero (background), logo, icon */
   art?: string[]
+  extras?: { id: string; file?: string; name: string; type: string; size: number; default: boolean }[]
 }
 
 export interface GogBuildRaw {
@@ -92,6 +93,7 @@ export function gogGames(lib: GogLibraryRaw, st: GogStatusRaw | null): Game[] {
       productId: g.product_id,
       state,
       onServer: !g.local_only && !!b,
+      ...(g.info?.extras?.length ? { extras: g.info.extras.map((x) => ({ id: x.id, name: x.name, type: x.type, size: x.size, default: x.default })) } : {}),
       ...(b ? { available: { buildId: b.build_id, version: b.version, languages: b.languages, dlcs: b.dlcs.map((d) => ({ id: d.id, name: d.name, hasFiles: d.has_files })), size: b.size } } : {}),
       ...(inst
         ? {
@@ -138,7 +140,7 @@ export function gogJobs(st: GogStatusRaw | null): Job[] {
     source: 'gog',
     gameId: gogId(j.product_id),
     title: j.title,
-    phase: j.kind === 'dlc' ? `DLC — ${j.label}` : j.kind === 'repair' ? `Naprawa — ${j.label}` : j.label,
+    phase: j.kind === 'extras' ? `Dodatki — ${j.label}` : j.kind === 'dlc' ? `DLC — ${j.label}` : j.kind === 'repair' ? `Naprawa — ${j.label}` : j.label,
     state: j.active ? 'active' : 'queued',
     progress: j.total > 0 ? { done: j.done, total: j.total, speed: j.speed || undefined, eta: j.speed > 0 ? Math.max(0, j.total - j.done) / j.speed : undefined } : undefined,
     cancellable: j.cancellable

@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { IPC } from '@shared/api'
-import type { ActionResult, GogInstallRequest, GogLaunchResult, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
+import type { ActionResult, GogExtra, GogExtrasResult, GogInstallRequest, GogLaunchResult, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
 import type { EmustartEngine } from '../emustart/engine'
 import { gogPid, type GogProvider } from './provider'
 
@@ -103,6 +103,15 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     if (r.ok) ctx.launched(gameId)
     void gog.refresh(false)
     return withConflict(r)
+  })
+  handle(IPC.gogExtras, async (gameId: string): Promise<GogExtrasResult> => {
+    const r = await call<{ items?: GogExtra[]; target?: string }>('gog_extras', [pidOf(gameId), ctx.settings().gogInstallDir])
+    return { items: r.items ?? [], target: r.target ?? '' }
+  })
+  handle(IPC.gogExtrasDownload, async (gameId: string, ids: unknown) => {
+    const list = Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string' && /^[0-9a-f]{16}$/.test(x)).slice(0, 500) : []
+    if (!list.length) return fail('Nie wybrano dodatków.')
+    return result(await call<{ ok: boolean; reason?: string }>('gog_extras_download', [pidOf(gameId), list, ctx.settings().gogInstallDir]), 'Pobieranie dodatków — postęp na liście zadań.')
   })
   handle(IPC.gogSaves, async (gameId: string, refresh?: boolean): Promise<GogSavesStatus> => {
     const r = await call<Record<string, unknown>>('gog_saves', [pidOf(gameId), !!refresh], 60_000)

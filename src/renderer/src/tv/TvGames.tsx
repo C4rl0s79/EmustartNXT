@@ -552,6 +552,8 @@ function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details:
   const local = o?.local ?? 0
   const rows: [string, string | undefined][] = [
     ['Status', status],
+    ['Dodatki', game.gog?.extras?.length ? `${game.gog.extras.length} — Opcje gry (Y)` : undefined],
+    ['Źródło', game.familyShared ? 'Family Sharing' : undefined],
     ['Oznaczenia', e?.tags],
     ['System', o?.system || (e ? e.system : undefined) || d?.platform],
     ['Rozmiar', formatBytes(size)],

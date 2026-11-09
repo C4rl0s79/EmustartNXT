@@ -78,3 +78,24 @@ describe('GOG saves: engine results in Lumen shape', () => {
     expect(savesStatus({ source: 'cokolwiek' }).source).toBe('none')
   })
 })
+
+describe('dodatki GOG i Family Sharing', () => {
+  it('dodatki z katalogu serwera są w grze', () => {
+    const [g] = gogGames(lib({}, [{ product_id: '1001', title: 'T', builds: [build], info: { extras: [{ id: 'a'.repeat(16), name: 'OST', type: 'audio', size: 5, default: true }] } }] as GogLibraryRaw['games']), status())
+    expect(g.gog?.extras).toEqual([{ id: 'a'.repeat(16), name: 'OST', type: 'audio', size: 5, default: true }])
+  })
+  it('zadanie dodatków ma własną etykietę', () => {
+    const [j] = gogJobs(status({ jobs: [{ product_id: '1', kind: 'extras', title: 'T', phase: 'download', label: 'Pobieranie', done: 1, total: 4, speed: 1, active: true, cancellable: true }] }))
+    expect(j.phase).toBe('Dodatki — Pobieranie')
+    expect(j.progress?.eta).toBe(3)
+  })
+  it('biblioteka rodzinna: tylko gry do grania, nigdy zamiast własnej kopii', async () => {
+    const { parseFamilyApps } = await import('../src/main/steam/family')
+    expect(parseFamilyApps({ response: { apps: [{ appid: 10, name: 'A', exclude_reason: 0 }, { appid: 11, name: 'B', exclude_reason: 3 }, { name: 'zla' }] } })).toEqual([{ appId: 10, name: 'A' }])
+    expect(parseFamilyApps({})).toEqual([])
+    const { mergeLibrary } = await import('../src/main/library/merge')
+    const games = mergeLibrary({ manifests: [], owned: [{ appId: 1, name: 'Moja', playtimeMinutes: 0 }], family: [{ appId: 1, name: 'Moja' }, { appId: 2, name: 'Pożyczona' }], localStats: new Map(), showTools: false } as Parameters<typeof mergeLibrary>[0])
+    expect(games.find((g) => g.appId === 1)?.familyShared).toBeUndefined()
+    expect(games.find((g) => g.appId === 2)).toMatchObject({ familyShared: true, installed: false, id: 'steam:2' })
+  })
+})

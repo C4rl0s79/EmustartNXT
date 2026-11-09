@@ -84,6 +84,14 @@ export class LibraryService extends EventEmitter {
     return this.snapshot.steam.installPath
   }
 
+  private familyGames: { appId: number; name: string }[] = []
+
+  /** games of the Steam family group (src/main/steam/family.ts) */
+  setFamily(games: { appId: number; name: string }[]): void {
+    this.familyGames = games
+    void this.scan()
+  }
+
   async start(): Promise<void> {
     const cached = await this.accountCache.load()
     if (cached.fetchedAt) this.account = cached
@@ -176,6 +184,7 @@ export class LibraryService extends EventEmitter {
       : mergeLibrary({
           manifests,
           owned: useAccount ? this.account!.games : undefined,
+          family: this.familyGames,
           localStats,
           runningAppId: reg.runningAppId || undefined,
           showTools: settings.showTools

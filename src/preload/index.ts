@@ -13,6 +13,9 @@ const prefsOp = (op: string, ...args: unknown[]) => invoke<never>(IPC.prefsOp, o
 
 const api: LumenApi = {
   library: {
+    familyStatus: () => invoke(IPC.steamFamilyStatus),
+    familyLogin: () => invoke(IPC.steamFamilyLogin),
+    familyLogout: () => invoke(IPC.steamFamilyLogout),
     get: () => invoke(IPC.libraryGet),
     refresh: (includeAccount) => invoke(IPC.libraryRefresh, includeAccount),
     ratings: (ids) => invoke(IPC.libraryRatings, ids),
@@ -46,6 +49,8 @@ const api: LumenApi = {
     cancel: (id) => invoke(IPC.gogCancel, id),
     verify: (id) => invoke(IPC.gogVerify, id),
     launch: (id, task, choice) => invoke(IPC.gogLaunch, id, task, choice),
+    extras: (id) => invoke(IPC.gogExtras, id),
+    extrasDownload: (id, ids) => invoke(IPC.gogExtrasDownload, id, ids),
     saves: (id, refresh) => invoke(IPC.gogSaves, id, refresh),
     savesSet: (id, opts) => invoke(IPC.gogSavesSet, id, opts),
     savesSync: (id, choice) => invoke(IPC.gogSavesSync, id, choice),

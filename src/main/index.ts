@@ -31,6 +31,7 @@ import { emuArtField, emuDetails, isEmuGameId } from './emustart/mapping'
 import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
+import { SteamFamily } from './steam/family'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -111,6 +112,7 @@ const engineRoot = (): string => (app.isPackaged ? process.resourcesPath : app.g
 const settings = new SettingsStore(paths.settings, paths.secrets)
 const prefs = new PrefsStore(paths.prefs)
 const library = new LibraryService(settings, paths.account, path.join(userData, 'first-seen.json'))
+const family = new SteamFamily(path.join(userData, 'steam-family.json'))
 const engine = new EmustartEngine({
   command: () =>
     resolveEngineCommand({
@@ -763,7 +765,11 @@ function registerIpc(): void {
     if (missing.length) void meta.prefetch(missing)
     return { ratings, missing: missing.length }
   })
+  handle(IPC.steamFamilyStatus, () => family.status)
+  handle(IPC.steamFamilyLogin, () => family.login(win, library.current.steam.activeSteamId))
+  handle(IPC.steamFamilyLogout, () => family.logout())
   handle(IPC.libraryRefresh, async (includeAccount: boolean) => {
+    if (includeAccount) void family.refresh(library.current.steam.activeSteamId, true)
     if (includeAccount) await library.refreshAccount(true)
     await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined])
     return unified.current
@@ -1105,7 +1111,8 @@ app.whenReady().then(async () => {
   log.info('app', `data folder: ${userData}`)
   if (dataChoice.warning) log.warn('app', dataChoice.warning)
   if (migrated.length) log.info('app', `copied from ${legacyDataDir} (left unchanged): ${migrated.join(', ')}`)
-  await Promise.all([settings.init(), prefs.init(), emu.init(), gog.init()])
+  await Promise.all([settings.init(), prefs.init(), emu.init(), gog.init(), family.init()])
+  family.on('change', () => library.setFamily(family.games(library.current.steam.activeSteamId)))
   platformCatalog = await platformsFile.load()
   started = true
   registerArtProtocol()
@@ -1196,7 +1203,13 @@ app.whenReady().then(async () => {
       send(IPC.padState, state)
     }
   )
-  library.start().catch((e) => log.error('library', 'start failed', e))
+  library
+    .start()
+    .then(() => {
+      library.setFamily(family.games(library.current.steam.activeSteamId))   // the last known list at once
+      void family.refresh(library.current.steam.activeSteamId)
+    })
+    .catch((e) => log.error('library', 'start failed', e))
   // a LaunchBox database from an older Lumen has no image list (posters, backgrounds) — rebuilt once
   setTimeout(() => void launchbox.upgradeIfOutdated().catch((e) => log.warn('launchbox', `upgrade: ${(e as Error).message}`)), 30_000)
   if (settings.get().emustartEnabled) engine.start().catch((e) => log.error('engine', 'start failed', e))

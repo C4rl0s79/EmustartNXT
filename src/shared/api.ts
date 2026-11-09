@@ -32,6 +32,8 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogVerifyResult,
   GogLaunchResult,
   GogSaveChoice,
+  GogExtrasResult,
+  SteamFamilyStatus,
   GogSavesStatus
 } from './types'
 
@@ -45,6 +47,9 @@ export interface PickPathOptions extends FsListOptions {
 /** The API exposed on window.lumen by the preload script. */
 export interface LumenApi {
   library: {
+    familyStatus(): Promise<SteamFamilyStatus>
+    familyLogin(): Promise<SteamFamilyStatus>
+    familyLogout(): Promise<SteamFamilyStatus>
     get(): Promise<LibrarySnapshot>
     refresh(includeAccount: boolean): Promise<LibrarySnapshot>
     onSnapshot(cb: (s: LibrarySnapshot) => void): () => void
@@ -89,6 +94,8 @@ export interface LumenApi {
     /** installed game — works without the server; task = one of playTasks (default: the game's own) */
     launch(gameId: string, task?: number, syncChoice?: GogSaveChoice): Promise<GogLaunchResult>
     /** saves and settings: rules (source), paths on this computer, sync state */
+    extras(gameId: string): Promise<GogExtrasResult>
+    extrasDownload(gameId: string, ids: string[]): Promise<ActionResult>
     saves(gameId: string, refresh?: boolean): Promise<GogSavesStatus>
     savesSet(gameId: string, opts: { enabled?: boolean; config?: boolean; pick?: string; rules?: { files: { path: string; tags: string[] }[] } | null }): Promise<ActionResult>
     savesSync(gameId: string, choice?: GogSaveChoice): Promise<GogLaunchResult>
@@ -341,6 +348,11 @@ export const IPC = {
   gogCancel: 'gog:cancel',
   gogVerify: 'gog:verify',
   gogLaunch: 'gog:launch',
+  gogExtras: 'gog:extras',
+  gogExtrasDownload: 'gog:extrasDownload',
+  steamFamilyStatus: 'steam:familyStatus',
+  steamFamilyLogin: 'steam:familyLogin',
+  steamFamilyLogout: 'steam:familyLogout',
   gogSaves: 'gog:saves',
   gogSavesSet: 'gog:savesSet',
   gogSavesSync: 'gog:savesSync',

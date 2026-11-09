@@ -15,6 +15,8 @@ export function sortKey(name: string): string {
 export interface MergeInput {
   manifests: ScannedManifest[]
   owned?: OwnedGame[]
+  /** lent by the Steam family group */
+  family?: { appId: number; name: string }[]
   localStats: Map<number, LocalPlayStats>
   runningAppId?: number
   showTools: boolean
@@ -74,6 +76,31 @@ export function mergeLibrary(input: MergeInput): Game[] {
       installed: false,
       playtimeMinutes: o.playtimeMinutes || undefined,
       lastPlayed: o.lastPlayed
+    })
+  }
+
+  // family library: never over the account's own copy; an installed lent game gets its mark
+  for (const f of input.family ?? []) {
+    const existing = games.get(f.appId)
+    if (existing) {
+      if (!existing.provenance.includes('accountApi')) {
+        existing.familyShared = true
+        existing.provenance.push('familyShared')
+      }
+      continue
+    }
+    const name = f.name || `App ${f.appId}`
+    if (!input.showTools && isToolApp(f.appId, name)) continue
+    games.set(f.appId, {
+      id: `steam:${f.appId}`,
+      source: 'steam',
+      appId: f.appId,
+      name,
+      sortName: sortKey(name),
+      provenance: ['familyShared'],
+      familyShared: true,
+      installState: 'notInstalled',
+      installed: false
     })
   }
 

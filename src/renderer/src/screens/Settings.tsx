@@ -1,3 +1,4 @@
+import type { SteamFamilyStatus } from '@shared/types'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, SettingsPatch } from '@shared/types'
 import type { PickPathOptions } from '@shared/api'
@@ -206,6 +207,8 @@ function SteamSection() {
   const [steamId, setSteamId] = useState(settings.steamIdOverride ?? '')
   const { steam, account } = snapshot
   const statusText = { running: 'działa', notRunning: 'zainstalowany, wyłączony', notInstalled: 'nie znaleziono', unknown: 'nieznany' }[steam.status]
+  const [family, setFamily] = useState<SteamFamilyStatus | null>(null)
+  useEffect(() => void attempt(api().library.familyStatus()).then((s) => s && setFamily(s)), [snapshot])
 
   const accountText =
     account.state === 'ok'
@@ -276,6 +279,15 @@ function SteamSection() {
         </button>
         <button className="btn" data-nav onClick={() => void attempt(api().game.openInSteam('', 'downloads'))}>
           Pobieranie w Steam
+        </button>
+      </div>
+      <div className="modal__row">
+        <span className="details__muted">
+          Family Sharing: {family?.loggedIn ? `${gameCountLabel(family.count)} z biblioteki rodzinnej` : 'wymaga zalogowania do Steam (klucz Web API tu nie działa)'}
+          {family?.error ? ` · ${family.error}` : ''}
+        </span>
+        <button className="btn" data-nav onClick={() => void attempt(family?.loggedIn ? api().library.familyLogout() : api().library.familyLogin()).then((s) => s && setFamily(s))}>
+          {family?.loggedIn ? 'Wyloguj Family Sharing' : 'Zaloguj do Steam'}
         </button>
       </div>
     </Section>

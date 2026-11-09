@@ -52,7 +52,7 @@ export interface DownloadProgress {
 }
 
 /** Where we learned about this game. Local-only detection is NOT the full owned library. */
-export type Provenance = 'localManifest' | 'accountApi' | 'steamShortcut' | 'demo' | 'emustartServer' | 'emustartGog'
+export type Provenance = 'familyShared' | 'localManifest' | 'accountApi' | 'steamShortcut' | 'demo' | 'emustartServer' | 'emustartGog'
 
 export interface Game {
   id: string
@@ -61,6 +61,8 @@ export interface Game {
   name: string
   sortName: string
   provenance: Provenance[]
+  /** lent by the Steam family group (not owned by this account) */
+  familyShared?: boolean
   installState: InstallState
   installed: boolean
   installDir?: string
@@ -96,8 +98,27 @@ export interface Game {
 export type GogInstallState = 'notInstalled' | 'installing' | 'installed' | 'needs_admin' | 'failed' | 'cancelled' | 'damaged'
 
 /** GOG-specific part of a game. Game.id = gog:<productId> — never a Steam appId. */
+/** bonus content of a GOG game on the EmuStart server */
+export interface GogExtra {
+  id: string
+  name: string
+  type: string
+  size: number
+  /** pre-selected (old versions, language patches and multi-part packs are not) */
+  default: boolean
+  have?: boolean
+}
+
+export interface SteamFamilyStatus {
+  loggedIn: boolean
+  count: number
+  fetchedAt: number
+  error?: string
+}
+
 export interface GogGameInfo {
   productId: string
+  extras?: GogExtra[]
   state: GogInstallState
   /** the server has a complete build of this game now (or had, in the offline copy) */
   onServer: boolean
@@ -584,6 +605,10 @@ export interface GogSavesStatus {
 
 export type GogLaunchResult = ActionResult & { conflict?: GogSaveConflict[] }
 export type GogSaveChoice = 'local' | 'remote' | 'skip'
+export interface GogExtrasResult {
+  items: GogExtra[]
+  target: string
+}
 
 
 // ---------- jobs (one queue for both interfaces) ----------

@@ -133,6 +133,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
     ['Platforma', game.shortcut?.tags.join(', ') || undefined],
     ['Źródło', game.shortcut ? 'Skrót spoza Steam (uruchamiany przez Steam)' : undefined],
     ['W bibliotece', game.platform ? `${game.platform.label}${game.platform.manual ? ' (wybrane ręcznie)' : ''}` : undefined],
+    ['Źródło', game.familyShared ? 'Biblioteka rodzinna Steam (Family Sharing)' : undefined],
+    ['Dodatki', game.gog?.extras?.map((x) => x.name).join(', ') || undefined],
     ...gogFacts(game, emuSummary?.server?.name)
   ]
   const presentFacts = facts.filter((f): f is [string, string] => !!f[1])
