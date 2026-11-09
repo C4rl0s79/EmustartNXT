@@ -26,6 +26,7 @@ const ACCOUNT_TTL_MS = 6 * 3600 * 1000
 
 /** The Steam service knows nothing about EmuStart; the unified library fills this in (core/unifiedLibrary.ts). */
 const NO_EMUSTART: LibrarySnapshot['emustart'] = { engine: 'disabled', server: null, systems: [], fromCache: false, configured: false }
+const NO_GOG: LibrarySnapshot['gog'] = { fromCache: false, games: 0 }
 
 interface AccountCache {
   steamId?: string
@@ -47,7 +48,9 @@ export class LibraryService extends EventEmitter {
     demo: false,
     scannedAt: 0,
     warnings: [],
-    emustart: NO_EMUSTART
+    emustart: NO_EMUSTART,
+    gog: NO_GOG,
+    platforms: []
   }
   private accountCache: JsonFile<AccountCache>
   private account: AccountCache | null = null
@@ -198,7 +201,9 @@ export class LibraryService extends EventEmitter {
       demo: settings.demoMode,
       scannedAt: Date.now(),
       warnings,
-      emustart: NO_EMUSTART
+      emustart: NO_EMUSTART,
+      gog: NO_GOG,
+      platforms: []
     }
     this.watchFolders(libraryFolders, installPath && accountId ? collectionsDir(installPath, accountId) : undefined)
     this.emitIfChanged()

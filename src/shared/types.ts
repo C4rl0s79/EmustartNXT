@@ -3,9 +3,34 @@
 
 /**
  * steam = Steam app; shortcut = non-Steam game added to Steam (shortcuts.vdf); demo = fake data;
- * emustart = game on the EmuStart server, downloaded and run with an emulator by the EmuStart engine
+ * emustart = game on the EmuStart server, downloaded and run with an emulator by the EmuStart engine;
+ * gog = GOG game from the EmuStart server's depot archive, installed and run by the EmuStart engine
  */
-export type GameSource = 'steam' | 'shortcut' | 'demo' | 'emustart'
+export type GameSource = 'steam' | 'shortcut' | 'demo' | 'emustart' | 'gog'
+
+/**
+ * Platform family for navigation — independent of the source (a Steam shortcut can run an emulator,
+ * a GOG game is a PC game). other = unrecognised platform ("Pozostałe" — shown, never hidden).
+ */
+export type PlatformFamily = 'pc' | 'computer' | 'console' | 'arcade' | 'other'
+
+/** Where a game sits in the library hierarchy (computed from the source, the platform catalog and manual choices). */
+export interface GamePlatform {
+  family: PlatformFamily
+  /** subgroup: steam | gog | shortcut (PC), emu:<es> (an emulated platform), other:… */
+  id: string
+  label: string
+  /** set by the player for an ambiguous Steam shortcut */
+  manual?: boolean
+}
+
+/** A known emulated platform (EmuStart's system catalog: platform_catalog) */
+export interface PlatformInfo {
+  es: string
+  display: string
+  plat: string
+  family: PlatformFamily
+}
 
 /** Install state derived from Steam's appmanifest StateFlags (see main/steam/manifests.ts). */
 export type InstallState =
@@ -27,7 +52,7 @@ export interface DownloadProgress {
 }
 
 /** Where we learned about this game. Local-only detection is NOT the full owned library. */
-export type Provenance = 'localManifest' | 'accountApi' | 'steamShortcut' | 'demo' | 'emustartServer'
+export type Provenance = 'localManifest' | 'accountApi' | 'steamShortcut' | 'demo' | 'emustartServer' | 'emustartGog'
 
 export interface Game {
   id: string
@@ -61,6 +86,38 @@ export interface Game {
   }
   /** only for EmuStart games (source 'emustart') */
   emu?: EmuGameInfo
+  /** only for GOG games (source 'gog') */
+  gog?: GogGameInfo
+  /** family and platform in the library hierarchy (set by the main process for every game) */
+  platform?: GamePlatform
+}
+
+/** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */
+export type GogInstallState = 'notInstalled' | 'installing' | 'installed' | 'needs_admin' | 'failed' | 'cancelled' | 'damaged'
+
+/** GOG-specific part of a game. Game.id = gog:<productId> — never a Steam appId. */
+export interface GogGameInfo {
+  productId: string
+  state: GogInstallState
+  /** the server has a complete build of this game now (or had, in the offline copy) */
+  onServer: boolean
+  /** newest build on the server */
+  available?: { buildId: string; version: string; languages: string[]; dlcs: { id: string; name: string; hasFiles: boolean }[]; size: number }
+  /** installed build (registry) */
+  buildId?: string
+  version?: string
+  installDir?: string
+  languages?: string[]
+  primary?: string
+  dlcs?: string[]
+  error?: string
+  /** HKLM registry steps waiting for administrator approval */
+  adminSteps?: number
+  /** system libraries (Visual C++, DirectX) shipped as dependencies, and whether they were run */
+  runtimes?: { id: string; done: boolean }[]
+  pendingDlc?: string[]
+  /** the server has a different build than the installed one (updating is not supported yet) */
+  updateNote?: string
 }
 
 /** EmuStart-specific part of a game. `id` is the engine's local number (changes per device);
@@ -138,6 +195,17 @@ export interface LibrarySnapshot {
   warnings: string[]
   /** EmuStart engine and server (the Steam part is in `steam`) */
   emustart: EmustartSummary
+  /** GOG games from the EmuStart server: catalog state */
+  gog: GogSummary
+  /** known emulated platforms (classification of Steam shortcuts by their tags); empty until the engine ran once */
+  platforms: PlatformInfo[]
+}
+
+export interface GogSummary {
+  /** the catalog shown is the last saved copy (server unreachable or engine not running) */
+  fromCache: boolean
+  error?: string
+  games: number
 }
 
 /** One version of a game that has several (regions, revisions). */
@@ -172,6 +240,8 @@ export interface EmuSystem {
   games: number
   cached: number
   emulator: string
+  /** platform family from EmuStart's system catalog (absent from older engines → classified as other) */
+  family?: PlatformFamily
   /** the server has a logo of this platform (lumen-art: emusys:<es> / logo) */
   hasLogo?: boolean
   /** the server has a photo of the platform's console (lumen-art: emusys:<es> / hero) */
@@ -324,6 +394,10 @@ export interface Prefs {
   artTv: Record<string, GameArtPrefs>
   /** game with several versions (emugrp:…) → the version the player chose (emu:<sid>) */
   versions: Record<string, string>
+  /** Steam shortcut → platform chosen by the player: 'pc' | 'other' | 'emu:<es>' (ambiguous shortcuts) */
+  platformOverrides: Record<string, string>
+  /** library groups pinned for quick access (top bar / TV carousel), in order: nav ids like 'console/emu:ps2', 'pc/gog', 'col/<categoryId>' */
+  pinnedGroups: string[]
 }
 
 /** ratings of a game for sorting lists: LaunchBox community (0–5), critics (Metacritic 0–100), players (Steam reviews % positive) */
@@ -374,6 +448,10 @@ export interface Settings {
   /** filled in by the main process: XInput could be loaded on this PC */
   xinputAvailable?: boolean
   language: string
+  /** shared folder for GOG games installed from the EmuStart server; each game gets its own subfolder */
+  gogInstallDir: string
+  /** default languages offered when installing a GOG game (short codes: pl, en…), in order of preference */
+  gogLanguages: string[]
   /** theme of the TV layout (renderer: tv/themes.ts); an unknown id falls back to the default */
   tvTheme: string
   /**
@@ -404,6 +482,8 @@ export type SettingsPatch = Partial<
     | 'pythonPath'
     | 'tvTheme'
     | 'tvLooks'
+    | 'gogInstallDir'
+    | 'gogLanguages'
   >
 >
 
@@ -452,7 +532,7 @@ export type ActionResult = { ok: true; message?: string } | { ok: false; error: 
 
 // ---------- jobs (one queue for both interfaces) ----------
 
-export type JobKind = 'steamDownload' | 'emuLaunch' | 'emuDownload' | 'emuInstall' | 'saveUpload' | 'libraryRefresh'
+export type JobKind = 'steamDownload' | 'emuLaunch' | 'emuDownload' | 'emuInstall' | 'saveUpload' | 'libraryRefresh' | 'gogInstall'
 
 export interface JobProgress {
   done: number
@@ -470,7 +550,7 @@ export interface JobProgress {
 export interface Job {
   id: string
   kind: JobKind
-  source: 'steam' | 'emustart'
+  source: 'steam' | 'emustart' | 'gog'
   gameId?: string
   title: string
   /** human readable phase, e.g. "Pobieranie", "Rozpakowywanie", "Gra uruchomiona" */
@@ -934,5 +1014,49 @@ export interface FsListing {
   parent: string | null
   entries: FsEntry[]
   truncated: boolean
+  error?: string
+}
+
+// ---------- GOG games from the EmuStart server ----------
+
+/** What the install window offers (only what the server really has complete) */
+export interface GogInstallOptions {
+  ok: true
+  title: string
+  buildId: string
+  version: string
+  languages: string[]
+  /** settings' preferred languages available for this game (may be empty — then the player chooses) */
+  defaultLanguages: string[]
+  dlcs: { id: string; name: string; hasFiles: boolean }[]
+  dependencies: string[]
+  size: number
+  /** folder the game goes to: <shared GOG folder>/<game folder from the archive> */
+  target: string
+  free: number | null
+  installed?: { state: GogInstallState; dlcs: string[]; languages: string[] } | null
+  updateNote?: string
+}
+
+export type GogOptionsResult = GogInstallOptions | { ok: false; error: string }
+
+export interface GogInstallRequest {
+  languages: string[]
+  primary: string
+  dlcs: string[]
+}
+
+export interface GogPlayTask {
+  index: number
+  name: string
+  category: string
+  default: boolean
+}
+
+export interface GogVerifyResult {
+  ok: boolean
+  checked?: number
+  badCount?: number
+  bad?: { path: string; why: string }[]
   error?: string
 }

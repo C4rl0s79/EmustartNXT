@@ -15,10 +15,10 @@ export const SMART_CATEGORIES: Category[] = [
 ]
 const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 
-export const PREFS_VERSION = 3
+export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, versions: {} }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, versions: {}, platformOverrides: {}, pinnedGroups: [] }
 }
 
 export function migratePrefs(raw: unknown): Prefs {
@@ -49,9 +49,33 @@ export function migratePrefs(raw: unknown): Prefs {
     artTv: isRecord(r.artTv) ? (r.artTv as Record<string, GameArtPrefs>) : {},
     versions: isRecord(r.versions)
       ? Object.fromEntries(Object.entries(r.versions).filter((e): e is [string, string] => typeof e[1] === 'string'))
-      : {}
+      : {},
+    platformOverrides: isRecord(r.platformOverrides)
+      ? Object.fromEntries(Object.entries(r.platformOverrides).filter((e): e is [string, string] => typeof e[1] === 'string' && validOverride(e[1])))
+      : {},
+    pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : []
+  }
+  if ((r.version ?? 1) < 4) {
+    // v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces
+    // the flat tabs. Pinned Lumen categories and Steam collections stay quick-access pins (in their order).
+    // EmuStart platforms were pinned automatically (every new platform), not by the player — they live in the
+    // hierarchy now; their old flags stay in `categories` untouched.
+    prefs.pinnedGroups = [...categories]
+      .sort((a, b) => a.order - b.order)
+      .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
+      .map((c) => `col/${c.id}`)
   }
   return normalizeOrder(prefs)
+}
+
+/** platform override of a Steam shortcut: pc | other | emu:<es> */
+export function validOverride(v: string): boolean {
+  return v === 'pc' || v === 'other' || /^emu:[A-Za-z0-9_.-]{1,40}$/.test(v)
+}
+
+/** pin id of a library subgroup: '<family>/<subgroup>' or 'col/<category id>' */
+export function validPin(v: string): boolean {
+  return /^(pc|computer|console|arcade|other)\/[A-Za-z0-9_.:-]{1,60}$/.test(v) || /^col\/[A-Za-z0-9_.:-]{1,80}$/.test(v)
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -220,6 +244,35 @@ export const ops = {
       categories.push({ id, name: sys.display, kind: 'emustart', emuSystem: sys.es, pinned: true, order: categories.length + 1000 })
     }
     return changed ? normalizeOrder({ ...p, categories }) : p
+  },
+
+  /** Platform of an ambiguous Steam shortcut chosen by the player (undefined = automatic). */
+  setPlatformOverride(p: Prefs, gameId: string, value: string | undefined): Prefs {
+    if (!gameId.startsWith('shortcut:')) throw new PrefsError('Platformę można zmienić tylko skrótom Steam.')
+    const platformOverrides = { ...p.platformOverrides }
+    if (value) {
+      if (!validOverride(value)) throw new PrefsError('Nieznana platforma.')
+      platformOverrides[gameId] = value
+    } else delete platformOverrides[gameId]
+    return { ...p, platformOverrides }
+  },
+
+  /** Pin / unpin a library subgroup (quick access in the top bar and the TV carousel). */
+  setGroupPinned(p: Prefs, id: string, pinned: boolean): Prefs {
+    if (!validPin(id)) throw new PrefsError('Nieznana grupa.')
+    const rest = p.pinnedGroups.filter((x) => x !== id)
+    return { ...p, pinnedGroups: pinned ? [...rest, id] : rest }
+  },
+
+  moveGroupPin(p: Prefs, id: string, delta: number): Prefs {
+    const i = p.pinnedGroups.indexOf(id)
+    if (i < 0) throw new PrefsError('Ta grupa nie jest przypięta.')
+    const j = Math.max(0, Math.min(p.pinnedGroups.length - 1, i + delta))
+    if (i === j) return p
+    const list = [...p.pinnedGroups]
+    list.splice(i, 1)
+    list.splice(j, 0, id)
+    return { ...p, pinnedGroups: list }
   },
 
   /** Version of a game with several versions shown and played from now on (undefined = automatic). */

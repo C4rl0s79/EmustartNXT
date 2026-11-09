@@ -523,6 +523,11 @@ export function registerEmustartIpc(handle: Handle, ctx: Ctx): void {
       void provider.refresh()
       return r.ok ? { ok: true, message: 'Pobieranie zatrzymane.' } : fail('Nie udało się zatrzymać pobierania.')
     }
+    const g = /^gog:(\d{1,20}):(install|dlc|repair)$/.exec(jobId)
+    if (g) {
+      const r = await call<{ ok: boolean; reason?: string }>('gog_cancel', [g[1]])
+      return r.ok ? { ok: true, message: 'Przerywam — postęp zostanie zapisany.' } : fail(r.reason ?? 'Nie udało się przerwać.')
+    }
     if (jobId.startsWith('steam:')) return fail('Pobieraniem gier Steam zarządza klient Steam — użyj okna pobierania Steam.')
     return fail('Tego zadania nie można anulować.')
   })

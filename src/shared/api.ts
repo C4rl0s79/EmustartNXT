@@ -25,7 +25,11 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   SecretName,
   Settings,
   SettingsPatch,
-  SgdbGame
+  SgdbGame,
+  GogInstallRequest,
+  GogOptionsResult,
+  GogPlayTask,
+  GogVerifyResult
 } from './types'
 
 /** In-app path picker (renderer: pickPath in store.ts). */
@@ -62,7 +66,35 @@ export interface LumenApi {
     deleteCategory(id: string): Promise<Prefs>
     setPinned(id: string, pinned: boolean): Promise<Prefs>
     moveCategory(id: string, delta: number): Promise<Prefs>
+    /** platform of an ambiguous Steam shortcut ('pc' | 'other' | 'emu:<es>'; null = automatic) */
+    setPlatformOverride(gameId: string, value: string | null): Promise<Prefs>
+    /** pin a library subgroup (e.g. 'console/emu:ps2', 'pc/gog') for quick access in both layouts */
+    setGroupPinned(id: string, pinned: boolean): Promise<Prefs>
+    moveGroupPin(id: string, delta: number): Promise<Prefs>
     onChange(cb: (p: Prefs) => void): () => void
+  }
+  /** GOG games from the EmuStart server — every action runs in the EmuStart engine (engine/emustart/goglib.py) */
+  gog: {
+    /** what the install window offers: complete languages and DLC on the server, folder, free space */
+    options(gameId: string): Promise<GogOptionsResult>
+    install(gameId: string, req: GogInstallRequest): Promise<ActionResult>
+    /** continue an interrupted install, finish a DLC install, or repair damaged files */
+    resume(gameId: string): Promise<ActionResult>
+    addDlc(gameId: string, dlcs: string[]): Promise<ActionResult>
+    cancel(gameId: string): Promise<ActionResult>
+    verify(gameId: string): Promise<GogVerifyResult>
+    /** installed game — works without the server; task = one of playTasks (default: the game's own) */
+    launch(gameId: string, task?: number): Promise<ActionResult>
+    playTasks(gameId: string): Promise<GogPlayTask[]>
+    /** removes only the files installed by Lumen; saves and the player's files stay; the server archive is never touched */
+    uninstall(gameId: string): Promise<ActionResult>
+    /** HKLM registry steps of the game's installer — shows Windows' UAC prompt */
+    finishAdmin(gameId: string): Promise<ActionResult>
+    /** system libraries (Visual C++, DirectX) from the game's dependencies — each with a UAC prompt */
+    installRuntimes(gameId: string): Promise<ActionResult>
+    refresh(): Promise<ActionResult>
+    /** a GOG job ended (installed, failed, cancelled) — for a toast in either layout */
+    onMessage(cb: (m: { gameId: string; title: string; ok: boolean; message: string }) => void): () => void
   }
   settings: {
     get(): Promise<Settings>
@@ -293,6 +325,19 @@ export const IPC = {
   emuSetOptions: 'emu:setOptions',
   emuEmulatorOptions: 'emu:emulatorOptions',
   emuSetSystem: 'emu:setSystem',
+  gogOptions: 'gog:options',
+  gogInstall: 'gog:install',
+  gogResume: 'gog:resume',
+  gogAddDlc: 'gog:addDlc',
+  gogCancel: 'gog:cancel',
+  gogVerify: 'gog:verify',
+  gogLaunch: 'gog:launch',
+  gogPlayTasks: 'gog:playTasks',
+  gogUninstall: 'gog:uninstall',
+  gogFinishAdmin: 'gog:finishAdmin',
+  gogInstallRuntimes: 'gog:installRuntimes',
+  gogRefresh: 'gog:refresh',
+  gogMessage: 'gog:message',
   jobsGet: 'jobs:get',
   jobsCancel: 'jobs:cancel',
   jobsChanged: 'jobs:changed',

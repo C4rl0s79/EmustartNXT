@@ -1,4 +1,6 @@
 import { safeStorage } from 'electron'
+import { homedir } from 'node:os'
+import path from 'node:path'
 import type { SecretName, Settings, SettingsPatch } from '@shared/types'
 import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
@@ -20,8 +22,27 @@ const defaults = (): StoredSettings => ({
   emustartEnabled: true,
   language: 'polish',
   tvTheme: 'emustart',
-  tvLooks: {}
+  tvLooks: {},
+  gogInstallDir: defaultGogDir(),
+  gogLanguages: ['pl', 'en']
 })
+
+/** future GOG installs go here (a subfolder per game); changing it never moves installed games */
+export function defaultGogDir(): string {
+  return path.join(homedir(), 'Games', 'GOG')
+}
+
+/** short language codes (pl, en, zh…), unique, at most 8 — the order is the preference */
+export function cleanLangs(v: unknown): string[] {
+  if (!Array.isArray(v)) return ['pl', 'en']
+  return [...new Set(v.filter((x): x is string => typeof x === 'string').map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z]{2,3}$/.test(x)))].slice(0, 8)
+}
+
+/** absolute folder path, or undefined */
+export function cleanAbsDir(v: unknown): string | undefined {
+  const p = cleanPath(v)
+  return p && path.isAbsolute(p) && !/[<>"|?*\x00-\x1f]/.test(p.slice(2)) ? path.normalize(p) : undefined
+}
 
 /** per-theme looks: theme id → { key: number | short string } — anything else is dropped */
 function cleanLooks(v: unknown): Record<string, Record<string, number | string>> {
@@ -62,7 +83,9 @@ function migrate(raw: unknown): StoredSettings {
     emustartHome: cleanPath(r.emustartHome),
     pythonPath: cleanPath(r.pythonPath),
     tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart',
-    tvLooks: cleanLooks(r.tvLooks)
+    tvLooks: cleanLooks(r.tvLooks),
+    gogInstallDir: cleanAbsDir(r.gogInstallDir) ?? d.gogInstallDir,
+    gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages)
   }
 }
 
@@ -116,6 +139,8 @@ export class SettingsStore {
   }
 
   async patch(p: SettingsPatch): Promise<Settings> {
+    if (p.gogInstallDir !== undefined && !cleanAbsDir(p.gogInstallDir)) throw new Error('Podaj pełną ścieżkę folderu gier GOG (np. D:\\Gry\\GOG).')
+    if (p.gogLanguages !== undefined && !cleanLangs(p.gogLanguages).length) throw new Error('Wybierz co najmniej jeden język.')
     if (p.steamIdOverride !== undefined && p.steamIdOverride !== '' && !isValidSteamId64(p.steamIdOverride))
       throw new Error('SteamID64 musi mieć 17 cyfr (np. 7656119…).')
     const next = migrate({ ...this.value, ...p, steamIdOverride: p.steamIdOverride === '' ? undefined : (p.steamIdOverride ?? this.value.steamIdOverride) })

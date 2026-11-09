@@ -33,7 +33,25 @@ const api: LumenApi = {
     deleteCategory: (id) => prefsOp('deleteCategory', id),
     setPinned: (id, pinned) => prefsOp('setPinned', id, pinned),
     moveCategory: (id, delta) => prefsOp('moveCategory', id, delta),
+    setPlatformOverride: (id, value) => prefsOp('setPlatformOverride', id, value),
+    setGroupPinned: (id, pinned) => prefsOp('setGroupPinned', id, pinned),
+    moveGroupPin: (id, delta) => prefsOp('moveGroupPin', id, delta),
     onChange: (cb) => subscribe(IPC.prefsChanged, cb)
+  },
+  gog: {
+    options: (id) => invoke(IPC.gogOptions, id),
+    install: (id, req) => invoke(IPC.gogInstall, id, req),
+    resume: (id) => invoke(IPC.gogResume, id),
+    addDlc: (id, dlcs) => invoke(IPC.gogAddDlc, id, dlcs),
+    cancel: (id) => invoke(IPC.gogCancel, id),
+    verify: (id) => invoke(IPC.gogVerify, id),
+    launch: (id, task) => invoke(IPC.gogLaunch, id, task),
+    playTasks: (id) => invoke(IPC.gogPlayTasks, id),
+    uninstall: (id) => invoke(IPC.gogUninstall, id),
+    finishAdmin: (id) => invoke(IPC.gogFinishAdmin, id),
+    installRuntimes: (id) => invoke(IPC.gogInstallRuntimes, id),
+    refresh: () => invoke(IPC.gogRefresh),
+    onMessage: (cb) => subscribe(IPC.gogMessage, cb)
   },
   settings: {
     get: () => invoke(IPC.settingsGet),

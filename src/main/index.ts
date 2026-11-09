@@ -4,7 +4,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
-import type { ActionResult, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
@@ -30,6 +30,9 @@ import { EmustartProvider } from './emustart/provider'
 import { emuArtField, emuDetails, isEmuGameId } from './emustart/mapping'
 import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
+import { GogProvider } from './gog/provider'
+import { JsonFile } from './store/jsonFile'
+import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -82,7 +85,10 @@ const paths = {
   // EmuStart engine data (config, game cache, profiles) unless the user picks an existing EmuStart folder
   emustartHome: path.join(userData, 'emustart'),
   // last library read from the engine — shown (not playable) when the engine cannot start
-  emustartLibrary: path.join(userData, 'emustart-library.json')
+  emustartLibrary: path.join(userData, 'emustart-library.json'),
+  // last GOG catalog read from the engine (offline library) and EmuStart's platform catalog (shortcut tags)
+  gogLibrary: path.join(userData, 'gog-library.json'),
+  platforms: path.join(userData, 'platforms.json')
 }
 
 /** engine/ next to the app: the project root in development, resources/ when packaged */
@@ -103,7 +109,12 @@ const engine = new EmustartEngine({
   windowTitle: WINDOW_TITLE
 })
 const emu = new EmustartProvider(engine, paths.emustartLibrary, () => ({ order: settings.get().regionOrder, choices: prefs.get().versions }))
-const unified = new UnifiedLibrary(library, emu)
+const gog = new GogProvider(engine, paths.gogLibrary)
+const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
+let platformCatalog: PlatformInfo[] = []
+const unified = new UnifiedLibrary(library, emu, gog, { overrides: () => prefs.get().platformOverrides, platforms: () => platformCatalog })
+/** GOG game started from Lumen (restore the window when it ends, like Steam games) */
+let launchedGog: string | undefined
 const updater = new Updater({
   current: app.getVersion(),
   flavor: detectFlavor({ packaged: app.isPackaged, exeDir: path.dirname(process.execPath), portableFile: process.env.PORTABLE_EXECUTABLE_FILE }),
@@ -684,9 +695,11 @@ function handle<A extends unknown[], R>(channel: string, fn: (...args: A) => Pro
 
 async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
   const before = prefs.get().versions
+  const overrides = prefs.get().platformOverrides
   const p = await prefs.update(fn)
   send(IPC.prefsChanged, p)
   if (p.versions !== before) emu.regroup()
+  if (p.platformOverrides !== overrides) unified.update()
   return p
 }
 
@@ -764,6 +777,12 @@ function registerIpc(): void {
         return updatePrefs((p) => ops.setPinned(p, args[0] as string, args[1] as boolean))
       case 'moveCategory':
         return updatePrefs((p) => ops.moveCategory(p, args[0] as string, args[1] as number))
+      case 'setPlatformOverride':
+        return updatePrefs((p) => ops.setPlatformOverride(p, String(args[0]), typeof args[1] === 'string' ? args[1] : undefined))
+      case 'setGroupPinned':
+        return updatePrefs((p) => ops.setGroupPinned(p, String(args[0]), args[1] === true))
+      case 'moveGroupPin':
+        return updatePrefs((p) => ops.moveGroupPin(p, String(args[0]), Number(args[1]) || 0))
       default:
         throw new Error(`Unknown prefs op ${op}`)
     }
@@ -934,6 +953,17 @@ function registerIpc(): void {
     listDir(String(dir ?? ''), { kind: o?.kind === 'file' ? 'file' : 'folder', extensions: Array.isArray(o?.extensions) ? o.extensions : undefined }, places())
   )
 
+  registerGogIpc(handle, {
+    engine,
+    gog,
+    settings: () => settings.get(),
+    // a GOG game started: minimize like Steam games and come back when it ends
+    launched: (gameId) => {
+      launchedGog = gameId
+      if (settings.get().afterLaunch === 'minimize') setTimeout(() => win?.minimize(), 1500)
+    }
+  })
+
   registerEmustartIpc(handle, {
     engine,
     provider: emu,
@@ -1012,7 +1042,8 @@ app.whenReady().then(async () => {
   log.info('app', `data folder: ${userData}`)
   if (dataChoice.warning) log.warn('app', dataChoice.warning)
   if (migrated.length) log.info('app', `copied from ${legacyDataDir} (left unchanged): ${migrated.join(', ')}`)
-  await Promise.all([settings.init(), prefs.init(), emu.init()])
+  await Promise.all([settings.init(), prefs.init(), emu.init(), gog.init()])
+  platformCatalog = await platformsFile.load()
   started = true
   registerArtProtocol()
   registerIpc()
@@ -1038,6 +1069,28 @@ app.whenReady().then(async () => {
   engine.on('state', (st) => {
     if (st !== 'ready') return
     void emustartDefaults()
+    // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags
+    void engine
+      .call<PlatformInfo[]>('platform_catalog', [], 20_000)
+      .then(async (cat) => {
+        if (!Array.isArray(cat) || !cat.length) return
+        platformCatalog = cat
+        await platformsFile.save(cat)
+        unified.update()
+      })
+      .catch((e) => log.warn('emustart', `platform catalog: ${(e as Error).message}`))
+  })
+  gog.on('status', (st: { running: string[] }) => {
+    // the GOG game started from Lumen ended (its process tree is gone): back to Lumen, like Steam games
+    if (launchedGog && !st.running.includes(launchedGog.slice(4))) {
+      log.info('app', `GOG game ${launchedGog} ended`)
+      launchedGog = undefined
+      if (settings.get().restoreAfterGame) restoreWindow()
+    }
+  })
+  gog.on('message', (m: { gameId: string; ok: boolean; message: string }) => {
+    const g = unified.game(m.gameId)
+    send(IPC.gogMessage, { ...m, title: g?.name ?? '' })
   })
   library.on('snapshot', (s: LibrarySnapshot) => {
     // mirror Steam collections as read-only categories (skipped when they could not be read,

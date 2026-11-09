@@ -110,6 +110,7 @@ export function emuGames(lib: EmuLibrary, copying: ReadonlySet<number> = new Set
 /** A platform for the renderer: counts and which server media it has (logo, console photo). */
 export function emuSystem(s: EmuLibrary['systems'][number]): EmuSystem {
   const out: EmuSystem = { es: s.es, display: s.display, games: s.games, cached: s.cached, emulator: s.emulator, hasLogo: !!s.logo }
+  if (s.family === 'pc' || s.family === 'computer' || s.family === 'console' || s.family === 'arcade' || s.family === 'other') out.family = s.family
   if (s.console) Object.assign(out, { hasConsole: true, consoleCredit: s.console_credit ?? '', consoleLum: s.console_lum ?? 0.5 })
   if (s.logo) out.logoRev = mediaRev(s.logo)
   if (s.logo && s.logo_pixel) out.logoPixel = s.logo_pixel

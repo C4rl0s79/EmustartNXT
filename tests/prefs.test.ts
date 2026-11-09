@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { defaultPrefs, migratePrefs, ops, PrefsError, PrefsStore } from '../src/main/store/prefs'
+import { defaultPrefs, migratePrefs, ops, PREFS_VERSION, PrefsError, PrefsStore } from '../src/main/store/prefs'
 import { JsonFile } from '../src/main/store/jsonFile'
 import { redact, registerSecret } from '../src/main/logger'
 
@@ -96,7 +96,7 @@ describe('migration', () => {
       ]
     }
     const p = migratePrefs(v1)
-    expect(p.version).toBe(3) // v1 files migrate all the way to the current version
+    expect(p.version).toBe(PREFS_VERSION) // v1 files migrate all the way to the current version
     const pinned = p.categories.filter((c) => c.pinned).sort((a, b) => a.order - b.order).map((c) => c.id)
     expect(pinned).toEqual(['smart:all', 'steamcol:uc-a', 'smart:favorites']) // missing built-ins get their defaults
     // a v2 file is left as the user arranged it
@@ -114,7 +114,7 @@ describe('migration', () => {
       ]
     }
     const p = migratePrefs(v2)
-    expect(p.version).toBe(3)
+    expect(p.version).toBe(PREFS_VERSION)
     expect(p.categories.some((c) => c.id === 'smart:installed' || c.id === 'smart:notInstalled')).toBe(false)
     const pinned = p.categories.filter((c) => c.pinned).sort((a, b) => a.order - b.order).map((c) => c.name)
     expect(pinned).toEqual(['Steam', 'PS2', 'Ulubione'])
