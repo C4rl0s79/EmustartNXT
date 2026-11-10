@@ -18,6 +18,8 @@ interface Props {
   layout?: ArtLayout;
   /** small copy for lists */
   thumb?: boolean;
+  /** with thumb: an animated image as it is (it moves), not its list copy (first frame) */
+  anim?: boolean;
 }
 
 /**
@@ -38,9 +40,10 @@ export const Art = memo(function Art({
   onRatio,
   layout,
   thumb,
+  anim,
 }: Props) {
   const rev = useStore((s) => s.artRev[gameId] ?? 0);
-  const wanted = api().art.url(gameId, kind, rev, layout, thumb);
+  const wanted = api().art.url(gameId, kind, rev, layout, thumb, anim);
   // A new version of the same image (the player picked other art): the old one stays on screen until the
   // new one is downloaded and decoded — a large / animated file is not an empty frame for seconds.
   // Another game in this slot switches at once.

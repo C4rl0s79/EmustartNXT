@@ -5,7 +5,8 @@ import { open } from 'node:fs/promises'
 //   so large metadata before it (an ICC profile, XMP) does not hide it;
 // - WebP: the extended header 'VP8X' with the animation flag;
 // - GIF is not checked — a GIF is never made into a list copy anyway.
-// The Deck's tiles ask for the original of an animated poster instead of its list copy (first frame).
+// The Deck's tiles and the desktop lists ask for the original of an animated poster instead of its list copy
+// (first frame).
 
 /** reads `len` bytes at `offset` (fewer at the end of the file) */
 type Read = (offset: number, len: number) => Promise<Buffer>

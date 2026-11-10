@@ -126,7 +126,7 @@ export interface LumenApi {
   art: {
     /**
      * layout 'tv': the TV layout's art (its own choices, LaunchBox first for EmuStart games); anim: with thumb,
-     * an animated poster as it is, not its list copy (first frame) — the Deck's tiles
+     * an animated poster as it is, not its list copy (first frame) — the Deck's tiles and the desktop lists
      */
     url(gameId: string, kind: ArtKind, rev?: number, layout?: ArtLayout, thumb?: boolean, anim?: boolean): string
     /** page: the next SteamGridDB page (0 = first, PAGE_SIZE each), animated images included */

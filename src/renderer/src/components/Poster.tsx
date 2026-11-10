@@ -29,7 +29,8 @@ export const Poster = memo(function Poster({ game, favorite, onOpen, onFocusGame
         <span className="poster__name" aria-hidden="true">
           {game.name}
         </span>
-        <Art gameId={game.id} name={game.name} kind="grid" thumb />
+        {/* list copy; an animated poster moves (the player's choice of animated art) */}
+        <Art gameId={game.id} name={game.name} kind="grid" thumb anim />
         <div className="poster__badges">
           {game.running && <span className="badge badge--live">W grze</span>}
           {isBusy(game) && <span className="badge badge--busy">Pobieranie</span>}
