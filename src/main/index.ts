@@ -41,7 +41,6 @@ import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 import { DeckWindow } from './deckWindow'
 import { deckCandidates, moveDeckGroup, syncGroups, type DeckGroupOp } from '@shared/deck'
-import { importPyLinksDeck, pyDeckSettings, type DeckImportResult } from '@shared/deckImport'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -202,28 +201,6 @@ function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
   return deckCandidates(buildNav(s.games, prefs.get(), s.collections))
 }
 
-/** One-time import of PyLinksDeck's settings (%LOCALAPPDATA%\PyLinksDeck\layouts.json) — shared/deckImport.ts. */
-async function importDeck(): Promise<DeckImportResult> {
-  // EmuStart platforms must be in the library first — imported before, their tabs would be lost for good
-  const snap = unified.current
-  if (settings.get().emustartEnabled && (snap.emustart.engine !== 'ready' || snap.emustart.fromCache || !platformCatalog.length))
-    return { ok: false, error: 'Biblioteka EmuStart jeszcze się wczytuje — spróbuj za chwilę.' }
-  const file = path.join(process.env.LOCALAPPDATA ?? path.join(app.getPath('home'), 'AppData', 'Local'), 'PyLinksDeck', 'layouts.json')
-  let raw: unknown
-  try {
-    raw = JSON.parse(await fs.readFile(file, 'utf8'))
-  } catch (e) {
-    const missing = (e as NodeJS.ErrnoException).code === 'ENOENT'
-    return { ok: false, error: missing ? `Nie znaleziono ustawień PyLinksDeck (${file}).` : `Nie udało się odczytać ${file}: ${(e as Error).message}` }
-  }
-  const py = pyDeckSettings(raw)
-  if ('error' in py) return { ok: false, error: py.error as string }
-  const r = importPyLinksDeck(py, settings.get().deck, currentDeckCandidates(), platformCatalog)
-  await patchSettings({ deck: r.deck })
-  log.info('deck', `imported from PyLinksDeck: ${r.mapped.length} tabs, skipped: ${r.skipped.join(', ') || 'none'}`)
-  return { ok: true, mapped: r.mapped, skipped: r.skipped }
-}
-
 // New library subgroups become Deck tabs in the main process — the one writer of the settings, so a tab
 // change made in another window is never overwritten by a stale copy. Throttled: snapshots come often.
 let deckSyncTimer: NodeJS.Timeout | undefined
@@ -281,8 +258,8 @@ function createWindow(): void {
   Menu.setApplicationMenu(null)
   win.on('page-title-updated', (e) => e.preventDefault())
   // with Deck on, closing the window hides it: Lumen keeps running on the desktop (Deck menu → Zamknij Lumen)
-  // Windows ending the session closes the window without before-quit: never hold it up
-  win.on('query-session-end', () => (sessionEnding = true))
+  // Windows ending the session closes the window without before-quit: never hold it up (session-end only —
+  // query-session-end comes also for a shutdown the player then cancels)
   win.on('session-end', () => (sessionEnding = true))
   win.on('close', (e) => {
     if (shutDown || sessionEnding || !settings.get().deck.enabled || !deck?.window) return
@@ -1443,7 +1420,6 @@ function registerIpc(): void {
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
   ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
-  handle(IPC.deckImport, () => importDeck())
   // a tab changed in Settings — applied here, to the stored tabs (one writer), never a renderer's copy
   handle(IPC.deckGroup, async (op: DeckGroupOp) => {
     const cur = settings.get().deck

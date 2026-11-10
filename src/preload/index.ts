@@ -156,7 +156,6 @@ const api: LumenApi = {
   },
   deck: {
     menu: () => ipcRenderer.send(IPC.deckMenu),
-    importPyLinks: () => invoke(IPC.deckImport),
     group: (op) => invoke(IPC.deckGroup, op)
   },
   ui: {

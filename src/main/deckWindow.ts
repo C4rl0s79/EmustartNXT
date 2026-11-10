@@ -71,7 +71,11 @@ export class DeckWindow {
     this.dock = w
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     w.webContents.on('will-navigate', (e) => e.preventDefault())
-    w.webContents.on('render-process-gone', (_e, d) => log.error('deck', `renderer gone: ${d.reason}`))
+    // a crashed page would leave a dead dock — with the main window hidden, the only way back to Lumen
+    w.webContents.on('render-process-gone', (_e, d) => {
+      log.error('deck', `renderer gone: ${d.reason} — reloading`)
+      if (!w.isDestroyed()) this.host.load(w)
+    })
     w.once('ready-to-show', () => {
       if (w.isDestroyed()) return
       this.place()
@@ -79,8 +83,9 @@ export class DeckWindow {
       this.pin()
       log.info('deck', 'shown')
     })
+    // closed some other way than close() (Windows, Explorer): stop what watches for it too
     w.on('closed', () => {
-      if (this.dock === w) this.dock = null
+      if (this.dock === w) this.close()
     })
     try {
       // Explorer restarted (or crashed): Progman is created again, the window must be inserted again

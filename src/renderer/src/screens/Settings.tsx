@@ -940,12 +940,10 @@ async function chooseEmuFolder(
   if (s) done(s)
 }
 
-/** Deck — the optional desktop interface: on/off, its tabs (library subgroups) and the import from PyLinksDeck. */
+/** Deck — the optional desktop interface: on/off and its tabs (library subgroups of Lumen). */
 function DeckSection() {
   const settings = useStore((s) => s.settings)
   const nav = useNav()
-  const [report, setReport] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
   const candidates = useMemo(() => deckCandidates(nav), [nav])
   if (!settings) return null
   const deck = settings.deck
@@ -956,22 +954,6 @@ function DeckSection() {
   // one change at a time, applied by the main process to the stored tabs (never this copy of them)
   const op = (o: DeckGroupOp): void => void attempt(api().deck.group(o))
   const shown = groups.filter((g) => !g.hidden && (info.get(g.id)?.count ?? 0) > 0).length
-
-  const runImport = async (): Promise<void> => {
-    setBusy(true)
-    const r = await attempt(api().deck.importPyLinks())
-    setBusy(false)
-    if (!r) return
-    if (!r.ok) {
-      setReport(r.error)
-      return
-    }
-    setReport(
-      `Zaimportowano ${r.mapped.length} zakładek PyLinksDeck: ${r.mapped.map((m) => `${m.from} → ${m.to.map((t) => t.label).join(', ')}`).join('; ')}.` +
-        (r.skipped.length ? ` Bez odpowiednika w bibliotece Lumen (pominięte): ${r.skipped.join(', ')}.` : '') +
-        ' Pozostałe podgrupy biblioteki są ukryte.'
-    )
-  }
 
   return (
     <Section
@@ -985,12 +967,6 @@ function DeckSection() {
         value={deck.showLogos}
         onChange={(v) => patch({ showLogos: v })}
       />
-      <div className="modal__row">
-        <button className="btn" data-nav disabled={busy} onClick={() => void runImport()}>
-          {busy ? 'Importowanie…' : 'Importuj ustawienia z PyLinksDeck'}
-        </button>
-      </div>
-      {report && <p className="card__desc">{report}</p>}
       <h3 className="cats__heading">
         Zakładki ({shown} widocznych z {groups.length})
       </h3>

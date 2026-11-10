@@ -89,8 +89,8 @@ export function clampCols(v: unknown): number {
 const fmtScale = (s: number): string => String(Math.round(s * 100) / 100)
 
 /**
- * Key and readable label of ONE screen — its size (logical px) and scale. The same keys as PyLinksDeck
- * ("2048x1280@1.25"), so its per-screen dimensions can be imported.
+ * Key and readable label of ONE screen — its size (logical px) and scale, never the monitor's name
+ * (Windows renames monitors when screens are switched; PyLinksDeck 0.6.2 learned that): "2048x1280@1.25".
  */
 export function screenKey(w: number, h: number, scale: number): { key: string; label: string } {
   // whole logical pixels, or the key would never pass validation on load (2560 / 1.5 = 1706.67)
@@ -168,8 +168,10 @@ const newGroup = (id: string): DeckGroup => ({ id, cols: DECK_DEFAULT_COLS, aspe
  */
 export function syncGroups(groups: DeckGroup[], candidates: DeckCandidate[]): DeckGroup[] {
   const known = new Set(groups.map((g) => g.id))
+  // only what cleanDeckSettings keeps — anything else would come back as "new" on every sync
   const fresh = candidates
-    .filter((c) => !known.has(c.id) && c.count > 0)
+    .filter((c) => !known.has(c.id) && c.count > 0 && NAV_ID.test(c.id))
+    .slice(0, Math.max(0, MAX_GROUPS - groups.length))
     .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'collection' ? -1 : 1) || b.count - a.count || a.label.localeCompare(b.label))
   return fresh.length ? [...groups, ...fresh.map((c) => newGroup(c.id))] : groups
 }
@@ -252,7 +254,9 @@ export function cleanDeckSettings(raw: unknown): DeckSettings {
   return {
     enabled: r.enabled === true,
     groups,
-    activeGroup: typeof r.activeGroup === 'string' && seen.has(r.activeGroup) ? r.activeGroup : '',
+    // a tab not stored yet may already be chosen (shown before the main process stores it); activeGroup()
+    // falls back to the first shown tab for an id that is not shown
+    activeGroup: typeof r.activeGroup === 'string' && NAV_ID.test(r.activeGroup) ? r.activeGroup : '',
     showLabels: r.showLabels !== false,
     showLogos: r.showLogos !== false,
     scrollSpeed: num(r.scrollSpeed, 0.1, 3, d.scrollSpeed),

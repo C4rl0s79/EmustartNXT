@@ -43,7 +43,7 @@ describe('clampCols', () => {
 })
 
 describe('screenKey', () => {
-  it('matches PyLinksDeck keys and labels', () => {
+  it('builds the key from size and scale only, with a readable label', () => {
     expect(screenKey(2048, 1280, 1.25)).toEqual({ key: '2048x1280@1.25', label: '2048×1280 ×1.25' })
     expect(screenKey(1920, 1080, 1)).toEqual({ key: '1920x1080@1', label: '1920×1080' })
     expect(screenKey(1707, 1067, 1.5)).toEqual({ key: '1707x1067@1.5', label: '1707×1067 ×1.5' })
@@ -104,6 +104,18 @@ describe('syncGroups (deck_app._sync_groups)', () => {
     expect(out).toEqual([...mine, g('console/emu:ps1')])
   })
 
+  it('never adds what the stored settings would drop (no endless re-sync)', () => {
+    const many = Array.from({ length: 310 }, (_, i) => c(`console/emu:p${i}`, 1))
+    const out = syncGroups([], [...many, c('bez-ukośnika', 5)])
+    expect(out).toHaveLength(300)
+    expect(syncGroups(out, many)).toBe(out)
+    expect(cleanDeckSettings({ groups: out }).groups).toHaveLength(300)
+  })
+
+  it('keeps a chosen tab that is not stored yet', () => {
+    expect(cleanDeckSettings({ groups: [], activeGroup: 'col/cat:new' }).activeGroup).toBe('col/cat:new')
+  })
+
   it('does not add an empty subgroup, and returns the same array when nothing is new', () => {
     const mine = [g('pc/steam')]
     expect(syncGroups(mine, [c('pc/steam', 3), c('pc/gog', 0)])).toBe(mine)
@@ -146,11 +158,11 @@ describe('cleanDeckSettings', () => {
     expect(cleanDeckSettings(JSON.parse(JSON.stringify(s)))).toEqual(s)
   })
 
-  it('drops invalid and duplicate tabs, clamps values, and resets an unknown active tab', () => {
+  it('drops invalid and duplicate tabs, clamps values, and resets an invalid active tab', () => {
     const out = cleanDeckSettings({
       enabled: 'yes',
       groups: [{ id: 'console/emu:ps2', cols: 99, aspect: 'wide' }, { id: 'console/emu:ps2' }, { id: 'bez-ukośnika' }, { id: 5 }, null],
-      activeGroup: 'console/emu:gone',
+      activeGroup: 'bez-ukośnika',
       opacity: 0,
       scrollSpeed: 'fast',
       screens: { '1920x1080@1': { dockWidth: 5, panelHeight: -1, dockHeight: 3 }, 'monitor 1': {} }
