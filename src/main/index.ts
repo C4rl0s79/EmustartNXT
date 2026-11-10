@@ -180,6 +180,23 @@ let win: BrowserWindow | null = null
 /** the optional desktop interface (Deck) — a second window, only while Deck is on */
 let deck: DeckWindow | null = null
 let sessionEnding = false
+/**
+ * A game started from the Deck (G4: the main window does not come back after it): which game, when, and
+ * whether the main window was hidden then (an EmuStart game end brings it to the front — hidden again).
+ */
+let deckLaunch: { gameId: string; at: number; mainHidden: boolean; seenActive: boolean } | null = null
+/** a Deck launch that did not get going within this time is forgotten (a later launch of the game is not one) */
+const DECK_LAUNCH_MS = 120_000
+/** Was this launch asked for from the Deck? Read once — Steam and GOG consume it when their game starts. */
+function takeDeckLaunch(gameId: string): boolean {
+  const d = deckLaunch
+  const yes = !!d && d.gameId === gameId && Date.now() - d.at < DECK_LAUNCH_MS
+  if (yes) deckLaunch = null
+  return yes
+}
+/** the Steam / GOG game now running was started from the Deck: no minimize, no restore after it */
+let steamViaDeck = false
+let gogViaDeck = false
 let modes: UiModeManager | null = null
 let launchedAppId: number | undefined
 /** Steam game whose controller profile hid devices (disabled in Windows until the game ends) */
@@ -207,6 +224,39 @@ function applyDeck(): void {
 function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
   const s = unified.current
   return deckCandidates(buildNav(s.games, prefs.get(), s.collections))
+}
+
+/**
+ * An EmuStart game started from the Deck: the engine brings Lumen's window to the front when the game ends
+ * (and for its questions) — a window hidden before the launch is hidden again after the game (G4); a save
+ * conflict waiting for the player shows it (and then it stays).
+ */
+function followDeckLaunch(j: JobsSnapshot): void {
+  const d = deckLaunch
+  if (!d) return
+  const job = j.jobs.find((x) => x.kind === 'emuLaunch' && x.gameId === d.gameId)
+  const ended = !!job && (job.state === 'done' || job.state === 'error' || job.state === 'cancelled')
+  // only this launch counts: a game seen going (not the previous run's finished state); never got going → forgotten
+  if (job && !ended) d.seenActive = true
+  if (!d.seenActive) {
+    if (Date.now() - d.at > DECK_LAUNCH_MS) deckLaunch = null
+    return
+  }
+  if (!job) return
+  if (job.state === 'waiting') {
+    // shown once, when the question comes — not again with every progress update
+    if (d.mainHidden) {
+      d.mainHidden = false
+      restoreWindow()
+    }
+  } else if (ended) {
+    deckLaunch = null
+    // an error is left on screen (the engine showed the window with it); a finished game hides it again
+    if (job.state === 'done' && d.mainHidden)
+      setTimeout(() => {
+        if (win && !win.isDestroyed() && win.isVisible() && settings.get().deck.enabled) win.hide()
+      }, 400)
+  }
 }
 
 // New library subgroups become Deck tabs in the main process — the one writer of the settings, so a tab
@@ -937,8 +987,9 @@ async function playSteam(gameId: string): Promise<ActionResult> {
     throw e
   }
   launchedAppId = game.appId
+  steamViaDeck = takeDeckLaunch(gameId)
   const steamRunning = library.current.steam.status === 'running'
-  if (settings.get().afterLaunch === 'minimize') setTimeout(() => win?.minimize(), steamRunning ? 1500 : 4000)
+  if (settings.get().afterLaunch === 'minimize' && !steamViaDeck) setTimeout(() => win?.minimize(), steamRunning ? 1500 : 4000)
   return { ok: true, message: (steamRunning ? 'Uruchamianie przez Steam…' : 'Uruchamianie Steam i gry…') + (hide ? ` ${hide}` : '') }
 }
 
@@ -1445,7 +1496,8 @@ function registerIpc(): void {
     // a GOG game started: minimize like Steam games and come back when it ends
     launched: (gameId) => {
       launchedGog = gameId
-      if (settings.get().afterLaunch === 'minimize') setTimeout(() => win?.minimize(), 1500)
+      gogViaDeck = takeDeckLaunch(gameId)
+      if (settings.get().afterLaunch === 'minimize' && !gogViaDeck) setTimeout(() => win?.minimize(), 1500)
     }
   })
 
@@ -1495,6 +1547,18 @@ function registerIpc(): void {
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
   ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
+  // a Deck tile double-clicked: the main window runs the game's main action (lib/deckPlay.ts)
+  ipcMain.on(IPC.deckPlay, (_e, gameId: unknown) => {
+    if (typeof gameId !== 'string' || !win || win.isDestroyed()) return
+    deckLaunch = { gameId, at: Date.now(), mainHidden: !win.isVisible(), seenActive: false }
+    log.info('deck', `play ${gameId}`)
+    win.webContents.send(IPC.deckPlayRequest, gameId)
+  })
+  // the player has to answer something (the game cannot start, a save conflict…): the window, and it stays
+  ipcMain.on(IPC.deckReveal, () => {
+    if (deckLaunch) deckLaunch.mainHidden = false
+    restoreWindow()
+  })
   ipcMain.on(IPC.deckExpand, (_e, content: unknown) => deck?.expand(typeof content === 'number' ? content : null))
   handle(IPC.deckGetGeometry, () => deck?.geometry ?? null)
   // Deck's dimensions are kept per screen: the screen it is on now (the primary one)
@@ -1562,7 +1626,10 @@ app.whenReady().then(async () => {
       updatePrefs((p) => ops.syncEmustartSystems(p, systems)).catch((e) => log.error('prefs', 'platform sync failed', e))
     }
   })
-  unified.on('jobs', (j: JobsSnapshot) => send(IPC.jobsChanged, j))
+  unified.on('jobs', (j: JobsSnapshot) => {
+    send(IPC.jobsChanged, j)
+    followDeckLaunch(j)
+  })
   updater.on('state', (s) => send(IPC.updateChanged, s))
   // like EmuStart: look for a new version shortly after start and once a day
   const autoCheck = (): void => void updater.check()
@@ -1593,7 +1660,8 @@ app.whenReady().then(async () => {
     if (launchedGog && !st.running.includes(launchedGog.slice(4))) {
       log.info('app', `GOG game ${launchedGog} ended`)
       launchedGog = undefined
-      if (settings.get().restoreAfterGame) restoreWindow()
+      if (settings.get().restoreAfterGame && !gogViaDeck) restoreWindow()
+      gogViaDeck = false
     }
   })
   gog.on('message', (m: { gameId: string; ok: boolean; message: string }) => {
@@ -1610,7 +1678,8 @@ app.whenReady().then(async () => {
   library.on('gameStarted', (appId: number) => log.info('app', `game ${appId} started (per Steam registry)`))
   library.on('gameExited', (appId: number) => {
     log.info('app', `game ${appId} exited (per Steam registry)`)
-    if (launchedAppId === appId && settings.get().restoreAfterGame) restoreWindow()
+    if (launchedAppId === appId && settings.get().restoreAfterGame && !steamViaDeck) restoreWindow()
+    if (launchedAppId === appId) steamViaDeck = false
     launchedAppId = undefined
     if (hiddenForAppId === appId) void showControllers()
   })

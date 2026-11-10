@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playFromDeck } from './lib/deckPlay'
 import { api, useStore, type Tab } from './store'
 import { installGamepad, installKeyboard, installXInputGamepad, useActions } from './nav/input'
 import { focusFirst } from './nav/engine'
@@ -66,6 +67,8 @@ export function App() {
         if (st.snapshot?.games.some((g) => g.id === selection)) st.openDetails(selection)
       }),
       a.prefs.onChange(s.setPrefs),
+      // a game double-clicked on the Deck: run here, as "Graj" does
+      a.deck.onPlayRequest((id) => void playFromDeck(id)),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),
       // GOG jobs run in the engine — their result (installed / failed / interrupted) as a toast in either layout

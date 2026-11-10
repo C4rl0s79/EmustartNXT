@@ -270,6 +270,12 @@ export interface LumenApi {
     /** Deck page: where the dock and the panel are in its window */
     onGeometry(cb: (g: DeckGeometry) => void): () => void
     getGeometry(): Promise<DeckGeometry | null>
+    /** Deck page: start this game (the main window runs its main action — lib/deckPlay.ts) */
+    play(gameId: string): void
+    /** main window: a game to start from the Deck */
+    onPlayRequest(cb: (gameId: string) => void): () => void
+    /** main window: the player has to see it now (the game cannot start, a question during the start) */
+    reveal(): void
   }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
@@ -343,6 +349,9 @@ export const IPC = {
   deckExpand: 'deck:expand',
   deckGeometry: 'deck:geometry',
   deckGetGeometry: 'deck:getGeometry',
+  deckPlay: 'deck:play',
+  deckPlayRequest: 'deck:playRequest',
+  deckReveal: 'deck:reveal',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',

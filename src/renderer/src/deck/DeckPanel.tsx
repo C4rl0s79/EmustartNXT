@@ -40,7 +40,8 @@ export function DeckPanel({
   showLabels,
   width,
   height,
-  onCols
+  onCols,
+  onLaunch
 }: {
   games: Game[]
   cols: number
@@ -49,6 +50,8 @@ export function DeckPanel({
   width: number
   height: number
   onCols: (cols: number) => void
+  /** a tile double-clicked: the game starts (main window, as "Graj") */
+  onLaunch: (game: Game) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   // the tiles fill the space inside the panel — without its scroll bar (a long list), or the last column is cut
@@ -91,7 +94,7 @@ export function DeckPanel({
           {v.getVirtualItems().map((row) => (
             <div key={row.index} className="deck-row" style={{ top: row.start, height: m.rowH - DECK_TILE_GAP, gap: DECK_TILE_GAP }}>
               {games.slice(row.index * cols, row.index * cols + cols).map((g) => (
-                <div key={g.id} className="deck-tile" style={{ width: m.tileW }} title={g.name}>
+                <div key={g.id} className="deck-tile" style={{ width: m.tileW }} title={g.name} onDoubleClick={() => onLaunch(g)}>
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     {/* list copy, but an animated poster moves (anim=1: its original — shown as chosen) */}
                     <img src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />

@@ -12,6 +12,8 @@ export interface PrimaryAction {
   run?: () => Promise<void>
   disabled?: boolean
   note?: string
+  /** the action starts the game (Graj / Pobierz i graj) — the only one a Deck double click may run */
+  play?: boolean
 }
 
 export function usePrimaryAction(game: Game | undefined): { primary: PrimaryAction | null; busy: boolean; ready: EmuReadiness | null } {
@@ -37,45 +39,10 @@ export function usePrimaryAction(game: Game | undefined): { primary: PrimaryActi
     }
   }, [isEmu, gameId, emuSummary?.engine, installing])
 
-  const primary = useMemo<PrimaryAction | null>(() => {
-    if (!game) return null
-    const wrap = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) => async () => {
-      setBusy(true)
-      const r = await attempt(fn())
-      setBusy(false)
-      if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : (r.error ?? 'Błąd'), r.ok ? 'info' : 'error')
-    }
-    if (game.source === 'demo') return { label: 'Gra demonstracyjna', disabled: true, note: 'Dane demonstracyjne — akcje są wyłączone.' }
-    if (game.emu) return emuPrimary(game, emuSummary, ready, installing, setBusy)
-    if (game.gog) return gogPrimary(game, emuSummary, wrap)
-    if (steamStatus === 'notInstalled') return { label: 'Steam niedostępny', disabled: true, note: 'Nie znaleziono klienta Steam na tym komputerze.' }
-    const play = wrap(() => api().game.play(game.id))
-    const downloads = wrap(() => api().game.openInSteam(game.id, 'downloads'))
-    const steamNote = steamStatus === 'notRunning' ? 'Steam jest wyłączony — zostanie uruchomiony automatycznie.' : undefined
-    switch (game.installState) {
-      case 'installed':
-        return { label: game.running ? 'Gra działa' : 'Graj', run: play, note: game.running ? 'Steam zgłasza, że gra jest uruchomiona.' : steamNote }
-      case 'updateRequired':
-        return { label: 'Graj', run: play, note: 'Steam zainstaluje aktualizację przed uruchomieniem.' }
-      case 'notInstalled':
-        return { label: 'Zainstaluj', run: wrap(() => api().game.install(game.id)), note: steamNote ?? 'Instalację przeprowadzi klient Steam.' }
-      case 'installing':
-      case 'updating':
-        return { label: 'Pokaż pobieranie w Steam', run: downloads }
-      case 'updatePaused':
-        return { label: 'Wznów w Steam', run: downloads, note: 'Pobieranie jest wstrzymane w kliencie Steam.' }
-      case 'uninstalling':
-        return { label: 'Odinstalowywanie…', disabled: true }
-      case 'broken':
-        if (game.shortcut)
-          return { label: 'Brak programu', disabled: true, note: `Nie znaleziono pliku: ${game.shortcut.exe}` }
-        return {
-          label: 'Otwórz w Steam',
-          run: wrap(() => api().game.openInSteam(game.id, 'details')),
-          note: 'Pliki gry wymagają weryfikacji lub naprawy w kliencie Steam.'
-        }
-    }
-  }, [game, steamStatus, emuSummary, ready, installing])
+  const primary = useMemo<PrimaryAction | null>(
+    () => (game ? primaryFor(game, { steamStatus, emuSummary, ready, installing, setBusy }) : null),
+    [game, steamStatus, emuSummary, ready, installing]
+  )
 
   return { primary, busy, ready }
 }
@@ -131,10 +98,11 @@ export function emuPrimary(
       if (r.profileLocked) useStore.getState().setProfiles('normal')
     } else if (r.message) useStore.getState().toast(r.message, 'info')
   }
-  if (g.cached) return { label: 'Graj', run, note: `${g.system}${ready?.ok && ready.emulator ? ` · ${ready.emulator}` : ''}` }
+  if (g.cached) return { label: 'Graj', run, play: true, note: `${g.system}${ready?.ok && ready.emulator ? ` · ${ready.emulator}` : ''}` }
   return {
     label: 'Pobierz i graj',
     run,
+    play: true,
     note: `Gra pobierze się z serwera EmuStart (${formatBytes(g.size) ?? '?'}) i uruchomi. Zapisy synchronizuje EmuStart przed i po grze.`
   }
 }
@@ -159,6 +127,7 @@ export function gogPrimary(game: Game, emu: EmustartSummary | undefined, wrap: W
         // saves sync before the game: a conflict asks the player first (components/GogSaves.tsx)
         run: game.running ? undefined : wrap(async () => (await launchGog(game.id)) ?? { ok: false, error: 'Nie uruchomiono.' }),
         disabled: game.running,
+        play: !game.running,
         note: g.updateNote ?? `GOG · ${g.version || g.buildId || ''} · działa bez serwera`
       }
     case 'installing':
@@ -185,6 +154,56 @@ export function gogPrimary(game: Game, emu: EmustartSummary | undefined, wrap: W
         label: 'Zainstaluj',
         run: async () => useStore.getState().setGogInstall({ gameId: game.id, dlcOnly: false }),
         note: `Z archiwum serwera EmuStart (${formatBytes(g.available?.size ?? 0) ?? '?'}) — bez GOG Galaxy i bez internetu.`
+      }
+  }
+}
+
+/** what primaryFor needs to know about the library — from the store (the hook) or read once (the Deck) */
+export interface PrimaryContext {
+  steamStatus: string | undefined
+  emuSummary: EmustartSummary | undefined
+  ready: EmuReadiness | null
+  installing: boolean
+  setBusy: (b: boolean) => void
+}
+
+/** The game's one main action — the same for the desktop details, the TV list and a Deck tile. */
+export function primaryFor(game: Game, ctx: PrimaryContext): PrimaryAction {
+  const { steamStatus, emuSummary, ready, installing, setBusy } = ctx
+  const wrap = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) => async () => {
+    setBusy(true)
+    const r = await attempt(fn())
+    setBusy(false)
+    if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : (r.error ?? 'Błąd'), r.ok ? 'info' : 'error')
+  }
+  if (game.source === 'demo') return { label: 'Gra demonstracyjna', disabled: true, note: 'Dane demonstracyjne — akcje są wyłączone.' }
+  if (game.emu) return emuPrimary(game, emuSummary, ready, installing, setBusy)
+  if (game.gog) return gogPrimary(game, emuSummary, wrap)
+  if (steamStatus === 'notInstalled') return { label: 'Steam niedostępny', disabled: true, note: 'Nie znaleziono klienta Steam na tym komputerze.' }
+  const play = wrap(() => api().game.play(game.id))
+  const downloads = wrap(() => api().game.openInSteam(game.id, 'downloads'))
+  const steamNote = steamStatus === 'notRunning' ? 'Steam jest wyłączony — zostanie uruchomiony automatycznie.' : undefined
+  switch (game.installState) {
+    case 'installed':
+      return { label: game.running ? 'Gra działa' : 'Graj', run: play, play: !game.running, note: game.running ? 'Steam zgłasza, że gra jest uruchomiona.' : steamNote }
+    case 'updateRequired':
+      return { label: 'Graj', run: play, play: true, note: 'Steam zainstaluje aktualizację przed uruchomieniem.' }
+    case 'notInstalled':
+      return { label: 'Zainstaluj', run: wrap(() => api().game.install(game.id)), note: steamNote ?? 'Instalację przeprowadzi klient Steam.' }
+    case 'installing':
+    case 'updating':
+      return { label: 'Pokaż pobieranie w Steam', run: downloads }
+    case 'updatePaused':
+      return { label: 'Wznów w Steam', run: downloads, note: 'Pobieranie jest wstrzymane w kliencie Steam.' }
+    case 'uninstalling':
+      return { label: 'Odinstalowywanie…', disabled: true }
+    case 'broken':
+      if (game.shortcut)
+        return { label: 'Brak programu', disabled: true, note: `Nie znaleziono pliku: ${game.shortcut.exe}` }
+      return {
+        label: 'Otwórz w Steam',
+        run: wrap(() => api().game.openInSteam(game.id, 'details')),
+        note: 'Pliki gry wymagają weryfikacji lub naprawy w kliencie Steam.'
       }
   }
 }

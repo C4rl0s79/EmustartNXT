@@ -157,7 +157,19 @@ export function DeckApp() {
       </div>
       {geo?.expanded && group && deck && (
         <div style={{ position: 'absolute', left: geo.panel.x, top: geo.panel.y }}>
-          <DeckPanel games={games} cols={cols} aspect={group.aspect} showLabels={deck.showLabels} width={geo.panel.width} height={geo.panel.height} onCols={changeCols} />
+          <DeckPanel
+            games={games}
+            cols={cols}
+            aspect={group.aspect}
+            showLabels={deck.showLabels}
+            width={geo.panel.width}
+            height={geo.panel.height}
+            onCols={changeCols}
+            onLaunch={(g) => {
+              api().deck.play(g.id)
+              setOpen(false) // the panel folds away behind the starting game (deck_app._on_launched)
+            }}
+          />
         </div>
       )}
     </div>
