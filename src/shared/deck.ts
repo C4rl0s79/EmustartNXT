@@ -1,0 +1,229 @@
+import type { NavGroup } from './libraryNav'
+
+// Deck — optional desktop interface of Lumen (dock of platform tabs over the wallpaper, below app windows;
+// hovering opens a panel of tiles). Its settings model, ported from PyLinksDeck/deck/profiles.py:
+// - tabs are library subgroups of Lumen's navigation (buildNav ids: 'console/emu:ps2', 'pc/steam',
+//   'col/<category id>') — Deck has no library or collections of its own;
+// - a tile size is a NUMBER OF COLUMNS, not pixels (200 px is 18 % of a 1080p screen and 8 % of 1440p);
+// - only the dock and panel dimensions depend on the screen, stored as fractions of the primary
+//   screen's work area, one entry per screen (size + scale — never the monitor name).
+
+export const DECK_MIN_COLS = 1
+export const DECK_MAX_COLS = 24
+export const DECK_DEFAULT_COLS = 8
+/** gap between tiles in logical px (PyLinksDeck: constant, tiles stretch to fill the row) */
+export const DECK_TILE_GAP = 8
+const MAX_GROUPS = 300
+const MAX_SCREENS = 50
+
+export type DeckAspect = 'portrait' | 'square'
+
+/** One dock tab. Order in DeckSettings.groups = tab order. */
+export interface DeckGroup {
+  /** NavSub id of Lumen's library navigation */
+  id: string
+  /** tiles per row */
+  cols: number
+  /** portrait = 2:3 cover, square = square tile */
+  aspect: DeckAspect
+  /** hidden by the player (a tab without games is not shown either, but keeps its setting) */
+  hidden: boolean
+}
+
+/** Dock and panel dimensions on one screen — the only thing allowed to differ between screens. */
+export interface DeckScreenLayout {
+  label: string
+  /** fraction of the work area's width */
+  dockWidth: number
+  /** logical px (scale with DPI) */
+  dockHeight: number
+  dockOffset: number
+  panelWidth: number
+  /** fraction of the work area's height: the panel's maximum (it is only as tall as its tiles need) */
+  panelHeight: number
+}
+
+export interface DeckSettings {
+  /** Deck on/off — off: no Deck window exists, Lumen works exactly as without it */
+  enabled: boolean
+  groups: DeckGroup[]
+  activeGroup: string
+  showLabels: boolean
+  showLogos: boolean
+  scrollSpeed: number
+  animations: boolean
+  autoHide: boolean
+  opacity: number
+  /** screen key (screenKey) → dimensions */
+  screens: Record<string, DeckScreenLayout>
+}
+
+export const defaultDeckLayout = (label = ''): DeckScreenLayout => ({
+  label,
+  dockWidth: 0.86,
+  dockHeight: 46,
+  dockOffset: 0,
+  panelWidth: 0.94,
+  panelHeight: 0.8
+})
+
+export const defaultDeckSettings = (): DeckSettings => ({
+  enabled: false,
+  groups: [],
+  activeGroup: '',
+  showLabels: true,
+  showLogos: true,
+  scrollSpeed: 0.7,
+  animations: true,
+  autoHide: true,
+  opacity: 0.96,
+  screens: {}
+})
+
+export function clampCols(v: unknown): number {
+  const n = typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : DECK_DEFAULT_COLS
+  return Math.max(DECK_MIN_COLS, Math.min(DECK_MAX_COLS, n))
+}
+
+/** Python's `{x:g}` for a scale factor: 1 → "1", 1.25 → "1.25" (rounded to 2 decimals like profiles.py). */
+const fmtScale = (s: number): string => String(Math.round(s * 100) / 100)
+
+/**
+ * Key and readable label of ONE screen — its size (logical px) and scale. The same keys as PyLinksDeck
+ * ("2048x1280@1.25"), so its per-screen dimensions can be imported.
+ */
+export function screenKey(w: number, h: number, scale: number): { key: string; label: string } {
+  // whole logical pixels, or the key would never pass validation on load (2560 / 1.5 = 1706.67)
+  const width = Math.round(w)
+  const height = Math.round(h)
+  const s = Math.round(scale * 100) / 100
+  return {
+    key: `${width}x${height}@${fmtScale(s)}`,
+    label: `${width}×${height}` + (Math.abs(s - 1) > 0.01 ? ` ×${fmtScale(s)}` : '')
+  }
+}
+
+/** Dimensions for a screen: the stored ones or defaults (does not change the settings). */
+export function layoutFor(s: DeckSettings, key: string, label = ''): DeckScreenLayout {
+  return s.screens[key] ?? defaultDeckLayout(label)
+}
+
+// ---------- tabs ----------
+
+/** A library subgroup that can be a Deck tab, with its number of games. */
+export interface DeckCandidate {
+  id: string
+  label: string
+  kind: 'platform' | 'collection'
+  count: number
+  /** EmuStart platform (logo) */
+  es?: string
+}
+
+/**
+ * Subgroups of the library that can be tabs: every platform subgroup (PC: Steam / GOG / Skróty Steam,
+ * every emulated platform, unknown platforms) and every collection. "Wszystkie", Ulubione and Ostatnio
+ * grane are left out — PyLinksDeck had platforms and collections only.
+ */
+export function deckCandidates(nav: NavGroup[]): DeckCandidate[] {
+  const out: DeckCandidate[] = []
+  for (const g of nav) {
+    if (g.id === 'fav' || g.id === 'recent') continue
+    for (const sub of g.subs) {
+      if (g.id !== 'col' && sub.id === `${g.id}/all`) continue // the synthetic "Wszystkie", not a collection with id 'all'
+      out.push({ id: sub.id, label: sub.label, kind: g.id === 'col' ? 'collection' : 'platform', count: sub.games.length, ...(sub.es ? { es: sub.es } : {}) })
+    }
+  }
+  return out
+}
+
+const newGroup = (id: string): DeckGroup => ({ id, cols: DECK_DEFAULT_COLS, aspect: 'portrait', hidden: false })
+
+/**
+ * Tabs matched to the library without touching the player's settings (deck_app._sync_groups): subgroups
+ * not known yet are appended — collections first, then platforms, each by number of games (most first),
+ * then name. Existing tabs keep their order, visibility and look, also when their subgroup is gone now.
+ * Unlike PyLinksDeck, an empty tab is not marked hidden for good (visibleGroups leaves it out instead),
+ * so it comes back when its games do.
+ */
+export function syncGroups(groups: DeckGroup[], candidates: DeckCandidate[]): DeckGroup[] {
+  const known = new Set(groups.map((g) => g.id))
+  const fresh = candidates
+    .filter((c) => !known.has(c.id) && c.count > 0)
+    .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'collection' ? -1 : 1) || b.count - a.count || a.label.localeCompare(b.label))
+  return fresh.length ? [...groups, ...fresh.map((c) => newGroup(c.id))] : groups
+}
+
+/** Tabs shown on the dock: not hidden by the player and with at least one game now. */
+export function visibleGroups(s: DeckSettings, candidates: DeckCandidate[]): DeckGroup[] {
+  const counts = new Map(candidates.map((c) => [c.id, c.count]))
+  return s.groups.filter((g) => !g.hidden && (counts.get(g.id) ?? 0) > 0)
+}
+
+/** The active tab: the stored one when shown, otherwise the first shown tab. */
+export function activeGroup(s: DeckSettings, visible: DeckGroup[]): DeckGroup | undefined {
+  return visible.find((g) => g.id === s.activeGroup) ?? visible[0]
+}
+
+// ---------- persistence ----------
+
+const num = (v: unknown, min: number, max: number, dflt: number): number =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : dflt
+
+// a Steam collection id can carry a tag name with spaces and non-Latin letters ('from-tag-Gry PS2')
+const NAV_ID = /^[a-z]+\/[^\x00-\x1f]{1,200}$/
+const SCREEN_KEY = /^\d{2,5}x\d{2,5}@\d+(\.\d+)?$/
+
+function cleanLayout(v: unknown): DeckScreenLayout {
+  const d = defaultDeckLayout()
+  const r = (v && typeof v === 'object' ? v : {}) as Partial<DeckScreenLayout>
+  return {
+    label: typeof r.label === 'string' ? r.label.slice(0, 40) : '',
+    dockWidth: num(r.dockWidth, 0.1, 1, d.dockWidth),
+    dockHeight: Math.round(num(r.dockHeight, 24, 160, d.dockHeight)),
+    dockOffset: Math.round(num(r.dockOffset, -4000, 4000, d.dockOffset)),
+    panelWidth: num(r.panelWidth, 0.1, 1, d.panelWidth),
+    panelHeight: num(r.panelHeight, 0.1, 1, d.panelHeight)
+  }
+}
+
+/**
+ * A Deck patch changes only the fields it names — a patch from one window ({ enabled }) or from the Deck
+ * window ({ screens }) must not wipe the tabs or the other screens' dimensions.
+ */
+export function mergeDeck(cur: DeckSettings, p: Partial<DeckSettings> | undefined): DeckSettings {
+  return p ? cleanDeckSettings({ ...cur, ...p }) : cur
+}
+
+/** Stored Deck settings → valid ones (anything unknown or out of range falls back to the default). */
+export function cleanDeckSettings(raw: unknown): DeckSettings {
+  const d = defaultDeckSettings()
+  if (!raw || typeof raw !== 'object') return d
+  const r = raw as Partial<Record<keyof DeckSettings, unknown>>
+  const seen = new Set<string>()
+  const groups: DeckGroup[] = []
+  for (const g of Array.isArray(r.groups) ? r.groups : []) {
+    if (groups.length >= MAX_GROUPS) break
+    const x = (g && typeof g === 'object' ? g : {}) as Partial<DeckGroup>
+    if (typeof x.id !== 'string' || !NAV_ID.test(x.id) || seen.has(x.id)) continue
+    seen.add(x.id)
+    groups.push({ id: x.id, cols: clampCols(x.cols), aspect: x.aspect === 'square' ? 'square' : 'portrait', hidden: x.hidden === true })
+  }
+  const screens: Record<string, DeckScreenLayout> = {}
+  if (r.screens && typeof r.screens === 'object')
+    // the newest entries are kept (a new screen is added last) — a long-used laptop must not lock out a new monitor
+    for (const [k, v] of Object.entries(r.screens as Record<string, unknown>).filter(([k]) => SCREEN_KEY.test(k)).slice(-MAX_SCREENS))
+      screens[k] = cleanLayout(v)
+  return {
+    enabled: r.enabled === true,
+    groups,
+    activeGroup: typeof r.activeGroup === 'string' && seen.has(r.activeGroup) ? r.activeGroup : '',
+    showLabels: r.showLabels !== false,
+    showLogos: r.showLogos !== false,
+    scrollSpeed: num(r.scrollSpeed, 0.1, 3, d.scrollSpeed),
+    animations: r.animations !== false,
+    autoHide: r.autoHide !== false,
+    opacity: num(r.opacity, 0.3, 1, d.opacity),
+    screens
+  }
+}

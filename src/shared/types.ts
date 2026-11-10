@@ -1,6 +1,8 @@
 // Types shared between the main process, preload bridge and renderer.
 // Game identity is always the stable `id` ("steam:<appid>"), never the title.
 
+import type { DeckSettings } from './deck'
+
 /**
  * steam = Steam app; shortcut = non-Steam game added to Steam (shortcuts.vdf); demo = fake data;
  * emustart = game on the EmuStart server, downloaded and run with an emulator by the EmuStart engine;
@@ -533,6 +535,8 @@ export interface Settings {
    * theme keeps its look in EmuStart's shared config; here only Lumen's own keys (typefaces).
    */
   tvLooks: Record<string, Record<string, number | string>>
+  /** the optional desktop interface (shared/deck.ts); off by default */
+  deck: DeckSettings
   hasSgdbKey: boolean
   hasSteamWebKey: boolean
   hasIgdbId: boolean
@@ -563,7 +567,10 @@ export type SettingsPatch = Partial<
     | 'gogInstallDir'
     | 'gogLanguages'
   >
->
+> & {
+  /** only the fields given change (the main window and the Deck window both edit the Deck settings) */
+  deck?: Partial<DeckSettings>
+}
 
 export type SecretName = 'sgdbApiKey' | 'steamWebApiKey' | 'igdbClientId' | 'igdbClientSecret' | 'tgdbApiKey'
 

@@ -2,6 +2,7 @@ import { safeStorage } from 'electron'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import type { ArtDataSource, SecretName, Settings, SettingsPatch } from '@shared/types'
+import { cleanDeckSettings, defaultDeckSettings, mergeDeck } from '@shared/deck'
 import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
 import { isValidSteamId64 } from '../steam/local'
@@ -25,7 +26,8 @@ const defaults = (): StoredSettings => ({
   tvTheme: 'emustart',
   tvLooks: {},
   gogInstallDir: defaultGogDir(),
-  gogLanguages: ['pl', 'en']
+  gogLanguages: ['pl', 'en'],
+  deck: defaultDeckSettings()
 })
 
 /** future GOG installs go here (a subfolder per game); changing it never moves installed games */
@@ -93,7 +95,8 @@ function migrate(raw: unknown): StoredSettings {
     tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart',
     tvLooks: cleanLooks(r.tvLooks),
     gogInstallDir: cleanAbsDir(r.gogInstallDir) ?? d.gogInstallDir,
-    gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages)
+    gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages),
+    deck: cleanDeckSettings(r.deck)
   }
 }
 
@@ -155,7 +158,7 @@ export class SettingsStore {
     if (p.gogLanguages !== undefined && !cleanLangs(p.gogLanguages).length) throw new Error('Wybierz co najmniej jeden język.')
     if (p.steamIdOverride !== undefined && p.steamIdOverride !== '' && !isValidSteamId64(p.steamIdOverride))
       throw new Error('SteamID64 musi mieć 17 cyfr (np. 7656119…).')
-    const next = migrate({ ...this.value, ...p, steamIdOverride: p.steamIdOverride === '' ? undefined : (p.steamIdOverride ?? this.value.steamIdOverride) })
+    const next = migrate({ ...this.value, ...p, deck: mergeDeck(this.value.deck, p.deck), steamIdOverride: p.steamIdOverride === '' ? undefined : (p.steamIdOverride ?? this.value.steamIdOverride) })
     this.value = next
     await this.file.save(next)
     return this.get()
