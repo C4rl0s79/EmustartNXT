@@ -15,6 +15,8 @@ export interface DeckHost {
   deck(): DeckSettings
   /** "Otwórz Lumen" */
   openMain(): void
+  /** the window is gone (closed from outside, its page keeps crashing) — Deck is still on in the settings */
+  lost(): void
   /** "Wyłącz Decka" */
   disable(): void
   /** "Zamknij Lumen" */
@@ -24,12 +26,19 @@ export interface DeckHost {
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
 export function deckScreen(): { key: string; label: string } {
   const d = screen.getPrimaryDisplay()
-  return screenKey(d.size.width, d.size.height, d.scaleFactor)
+  // the label shows the screen's real resolution (device pixels), the key stays in logical ones
+  // (dipToScreenRect: Windows and Linux only — Lumen is built for Windows)
+  const px =
+    process.platform === 'darwin'
+      ? { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) }
+      : screen.dipToScreenRect(null, d.bounds)
+  return screenKey(d.size.width, d.size.height, d.scaleFactor, px)
 }
 
 /** a screen change may come without an event, or before Windows reports the new size — checked every 3 s too */
 const SCREEN_CHECK_MS = 3000
 const SCREEN_SETTLE_MS = 400
+const MAX_RELOADS = 3
 
 export class DeckWindow {
   private dock: BrowserWindow | null = null
@@ -77,10 +86,15 @@ export class DeckWindow {
     this.dock = w
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     w.webContents.on('will-navigate', (e) => e.preventDefault())
-    // a crashed page would leave a dead dock — with the main window hidden, the only way back to Lumen
+    // a crashed page would leave a dead dock — with the main window hidden, the only way back to Lumen;
+    // reloaded a few times, then given up (a page that crashes on load would reload forever)
+    let crashes = 0
     w.webContents.on('render-process-gone', (_e, d) => {
-      log.error('deck', `renderer gone: ${d.reason} — reloading`)
-      if (!w.isDestroyed()) this.host.load(w)
+      crashes++
+      log.error('deck', `renderer gone: ${d.reason}${crashes <= MAX_RELOADS ? ' — reloading' : ' — giving up'}`)
+      if (w.isDestroyed()) return
+      if (crashes <= MAX_RELOADS) this.host.load(w)
+      else this.host.lost()
     })
     w.once('ready-to-show', () => {
       if (w.isDestroyed()) return
@@ -91,7 +105,9 @@ export class DeckWindow {
     })
     // closed some other way than close() (Windows, Explorer): stop what watches for it too
     w.on('closed', () => {
-      if (this.dock === w) this.close()
+      if (this.dock !== w) return
+      this.close()
+      this.host.lost()
     })
     try {
       // Explorer restarted (or crashed): Progman is created again, the window must be inserted again

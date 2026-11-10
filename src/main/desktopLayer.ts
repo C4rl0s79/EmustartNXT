@@ -147,9 +147,13 @@ export function zOrder(): WinInfo[] {
   return out
 }
 
-/** Uchwyt okna Electrona jako liczba (getNativeWindowHandle: bufor 8 bajtów w 64-bit). */
+/**
+ * Uchwyt okna Electrona jako liczba (getNativeWindowHandle: bufor 8 bajtów w 64-bit) — ze znakiem, tak jak
+ * koffi zwraca HWND jako 'intptr' z GetWindow: uchwyt z ustawionym bitem 31 bywa rozszerzony znakiem, a bez
+ * zgodnych znaków zOrder() nie odnalazłby własnego okna.
+ */
 export function handleOf(buf: Buffer): bigint {
-  return buf.length >= 8 ? buf.readBigUInt64LE(0) : BigInt(buf.readUInt32LE(0))
+  return buf.length >= 8 ? buf.readBigInt64LE(0) : BigInt(buf.readInt32LE(0))
 }
 
 export function exStyle(hwnd: bigint): number {

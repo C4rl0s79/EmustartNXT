@@ -66,7 +66,8 @@ export function DeckApp() {
   }
 
   const onWheel = (e: React.WheelEvent): void => {
-    if (!visible.length || e.timeStamp - lastStep.current < WHEEL_STEP_MS) return
+    // deltaY 0: a sideways touchpad swipe or shift+wheel — not a tab change
+    if (!visible.length || !e.deltaY || e.timeStamp - lastStep.current < WHEEL_STEP_MS) return
     lastStep.current = e.timeStamp
     const i = Math.max(0, visible.findIndex((g) => g.id === active?.id))
     choose(visible[(i + (e.deltaY > 0 ? 1 : visible.length - 1)) % visible.length].id, SAVE_MS)

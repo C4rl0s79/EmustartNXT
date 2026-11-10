@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DesktopLayerGuard, desktopLayer, isBelowDesktop, pinPlan, type WinInfo } from '../src/main/desktopLayer'
+import { DesktopLayerGuard, desktopLayer, handleOf, isBelowDesktop, pinPlan, type WinInfo } from '../src/main/desktopLayer'
 
 const w = (hwnd: number, cls: string, visible = true): WinInfo => ({ hwnd: BigInt(hwnd), cls, visible })
 const OWN = 99n
@@ -88,5 +88,15 @@ describe('DesktopLayerGuard', () => {
 
   it('does nothing without visible windows', () => {
     expect(new DesktopLayerGuard(() => []).check()).toBe(0)
+  })
+})
+
+describe('handleOf', () => {
+  it('reads the HWND signed, as koffi returns it from GetWindow (a sign-extended handle matches)', () => {
+    const b = Buffer.alloc(8)
+    b.writeBigInt64LE(-2147483632n) // 0xFFFFFFFF80000010
+    expect(handleOf(b)).toBe(-2147483632n)
+    b.writeBigInt64LE(0x2024en)
+    expect(handleOf(b)).toBe(0x2024en)
   })
 })

@@ -46,17 +46,20 @@ describe('clampCols', () => {
 
 describe('screenKey', () => {
   it('builds the key from size and scale only, with a readable label', () => {
-    expect(screenKey(2048, 1280, 1.25)).toEqual({ key: '2048x1280@1.25', label: '2048×1280 ×1.25' })
-    expect(screenKey(1920, 1080, 1)).toEqual({ key: '1920x1080@1', label: '1920×1080' })
-    expect(screenKey(1707, 1067, 1.5)).toEqual({ key: '1707x1067@1.5', label: '1707×1067 ×1.5' })
+    // the label: the real resolution and the scaling (a 4K monitor at 150 % is 2560×1440 logical px)
+    expect(screenKey(2560, 1440, 1.5, { width: 3840, height: 2160 })).toEqual({ key: '2560x1440@1.5', label: '3840×2160, skalowanie 150%' })
+    expect(screenKey(1920, 1080, 1, { width: 1920, height: 1080 })).toEqual({ key: '1920x1080@1', label: '1920×1080' })
+    expect(screenKey(2048, 1280, 1.25, { width: 2560, height: 1600 })).toEqual({ key: '2048x1280@1.25', label: '2560×1600, skalowanie 125%' })
+    // Windows rounds the logical size (2560×1600 at 150 % → 1707×1067): the device size from Windows wins
+    expect(screenKey(1707, 1067, 1.5, { width: 2560, height: 1600 }).label).toBe('2560×1600, skalowanie 150%')
   })
 
   it('rounds the scale to 2 decimals (no float noise in the key)', () => {
-    expect(screenKey(2560, 1440, 1.2500000001).key).toBe('2560x1440@1.25')
+    expect(screenKey(2560, 1440, 1.2500000001, { width: 3200, height: 1800 }).key).toBe('2560x1440@1.25')
   })
 
   it('rounds a fractional logical size, so the key survives validation on load', () => {
-    const { key } = screenKey(2560 / 1.5, 1600 / 1.5, 1.5)
+    const { key } = screenKey(2560 / 1.5, 1600 / 1.5, 1.5, { width: 2560, height: 1600 })
     expect(key).toBe('1707x1067@1.5')
     expect(Object.keys(cleanDeckSettings({ screens: { [key]: {} } }).screens)).toEqual([key])
   })

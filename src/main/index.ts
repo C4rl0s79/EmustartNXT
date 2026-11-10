@@ -414,7 +414,10 @@ async function artResponse(req: Request): Promise<Response> {
     // the player's own art of a library group in the TV layout (PC, Konsole, GOG, a collection…): only a file
     if (gameId.startsWith('navgrp:')) return (await tvArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
     if (gameId.startsWith('emusys:')) {
-      // platform logo / console photo from the EmuStart server (TV system carousel)
+      // platform logo / console photo from the EmuStart server (TV system carousel, Deck tabs). The windows
+      // show the library from the cache before the engine is up: such a request waits for it instead of
+      // failing — a failed logo stayed a name for the whole session
+      if (!(await engineUp(30_000))) return new Response('engine not ready', { status: 503 })
       const es = gameId.slice(7)
       const logo = kind === 'logo' ? emu.systemLogo(es) : kind === 'hero' ? emu.systemConsole(es) : undefined
       if (!logo || !engine.baseUrl) return new Response('not found', { status: 404 })
@@ -785,6 +788,25 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
  * A file from the engine's media (offline copy of the server's media), kept in memory. The engine
  * keeps it on disk and fetches a missing one from the server itself. null: not there / engine error.
  */
+/** true once the engine is ready (at once when it is); false when it is off or not ready within `ms` */
+function engineUp(ms: number): Promise<boolean> {
+  if (engine.baseUrl) return Promise.resolve(true)
+  if (engine.state === 'disabled' || engine.state === 'missing') return Promise.resolve(false)
+  return new Promise((resolve) => {
+    const done = (ok: boolean): void => {
+      clearTimeout(timer)
+      engine.off('state', onState)
+      resolve(ok)
+    }
+    const onState = (): void => {
+      if (engine.baseUrl) done(true)
+      else if (engine.state === 'disabled' || engine.state === 'missing') done(false)
+    }
+    const timer = setTimeout(() => done(false), ms)
+    engine.on('state', onState)
+  })
+}
+
 async function engineMedia(url: string): Promise<Response | null> {
   if (!engine.baseUrl) return null
   const full = new URL(url, engine.baseUrl).toString()
@@ -983,7 +1005,8 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
   }
   if (before.deck.enabled !== after.deck.enabled || JSON.stringify(before.deck.screens) !== JSON.stringify(after.deck.screens) || before.deck.opacity !== after.deck.opacity)
     applyDeck()
-  send(IPC.settingsChanged, after)
+  // the settings as they are now — a slower patch finishing after a newer one must not send older ones
+  send(IPC.settingsChanged, settings.get())
   return after
 }
 
@@ -1542,6 +1565,11 @@ app.whenReady().then(async () => {
     load: loadDeckPage,
     deck: () => settings.get().deck,
     openMain: () => restoreWindow(),
+    // the Deck window is gone without the player switching it off — with the main window hidden nothing
+    // would be left on screen
+    lost: () => {
+      if (win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
+    },
     disable: () => void patchSettings({ deck: { enabled: false } }).catch((e) => log.error('deck', 'switching off failed', e)),
     quit: () => app.quit()
   })

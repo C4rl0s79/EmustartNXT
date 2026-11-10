@@ -89,17 +89,21 @@ export function clampCols(v: unknown): number {
 const fmtScale = (s: number): string => String(Math.round(s * 100) / 100)
 
 /**
- * Key and readable label of ONE screen — its size (logical px) and scale, never the monitor's name
- * (Windows renames monitors when screens are switched; PyLinksDeck 0.6.2 learned that): "2048x1280@1.25".
+ * Key and readable label of ONE screen. The key is its size in logical px (after Windows display scaling)
+ * and the scale, never the monitor's name (Windows renames monitors when screens are switched; PyLinksDeck
+ * 0.6.2 learned that): "2560x1440@1.5". The label shows what the player knows — the screen's resolution
+ * and the scaling: "3840×2160, skalowanie 150%" (`physical`: the size in device pixels, from Windows).
  */
-export function screenKey(w: number, h: number, scale: number): { key: string; label: string } {
+export function screenKey(w: number, h: number, scale: number, physical: { width: number; height: number }): { key: string; label: string } {
   // whole logical pixels, or the key would never pass validation on load (2560 / 1.5 = 1706.67)
   const width = Math.round(w)
   const height = Math.round(h)
   const s = Math.round(scale * 100) / 100
   return {
     key: `${width}x${height}@${fmtScale(s)}`,
-    label: `${width}×${height}` + (Math.abs(s - 1) > 0.01 ? ` ×${fmtScale(s)}` : '')
+    label:
+      `${Math.round(physical.width)}×${Math.round(physical.height)}` +
+      (Math.abs(s - 1) > 0.01 ? `, skalowanie ${Math.round(s * 100)}%` : '')
   }
 }
 
@@ -171,8 +175,8 @@ export function syncGroups(groups: DeckGroup[], candidates: DeckCandidate[]): De
   // only what cleanDeckSettings keeps — anything else would come back as "new" on every sync
   const fresh = candidates
     .filter((c) => !known.has(c.id) && c.count > 0 && NAV_ID.test(c.id))
-    .slice(0, Math.max(0, MAX_GROUPS - groups.length))
     .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'collection' ? -1 : 1) || b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, Math.max(0, MAX_GROUPS - groups.length))
   return fresh.length ? [...groups, ...fresh.map((c) => newGroup(c.id))] : groups
 }
 
