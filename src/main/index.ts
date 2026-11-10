@@ -414,13 +414,11 @@ async function artResponse(req: Request): Promise<Response> {
     // the player's own art of a library group in the TV layout (PC, Konsole, GOG, a collection…): only a file
     if (gameId.startsWith('navgrp:')) return (await tvArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
     if (gameId.startsWith('emusys:')) {
-      // platform logo / console photo from the EmuStart server (TV system carousel, Deck tabs). The windows
-      // show the library from the cache before the engine is up: such a request waits for it instead of
-      // failing — a failed logo stayed a name for the whole session
-      if (!(await engineUp(30_000))) return new Response('engine not ready', { status: 503 })
+      // platform logo / console photo from the EmuStart server (TV system carousel, Deck tabs); engineMedia
+      // waits for the engine when it is still starting
       const es = gameId.slice(7)
       const logo = kind === 'logo' ? emu.systemLogo(es) : kind === 'hero' ? emu.systemConsole(es) : undefined
-      if (!logo || !engine.baseUrl) return new Response('not found', { status: 404 })
+      if (!logo) return new Response('not found', { status: 404 })
       return (await engineMedia(logo)) ?? new Response('not found', { status: 404 })
     }
     if (u.searchParams.get('tv') === '1') {
@@ -623,7 +621,7 @@ const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'imag
 async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response | null> {
   const chosen = (tv ? prefs.get().artTv[gameId]?.[k] : undefined) ?? withBorrowed(prefs.get().art[gameId], prefs.get().artTv[gameId])?.[k]
   const pid = gogPid(gameId)
-  if (chosen || !pid || engine.state !== 'ready') return null
+  if (chosen || !pid || !(await engineReady())) return null
   const info = gog.info(gameId)
   if (info?.art && !info.art.includes(k)) return null
   const r = await engine.call<{ path?: string }>('gog_art', [pid, k], 70_000).catch(() => null)
@@ -631,7 +629,8 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
 }
 
 async function userArtFile(sha: string, ext: string): Promise<string | null> {
-  if (engine.state !== 'ready') return null
+  // asked before the engine is up (e.g. a group logo on the Deck): waits for it (engineReady)
+  if (!(await engineReady())) return null
   const r = await engine.call<{ path?: string }>('art_user_file', [sha, ext], 90_000).catch(() => null)
   return r?.path || null
 }
@@ -784,31 +783,44 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
   return null
 }
 
+/** how long an image from the engine waits for it at start (windows show the library from the cache first) */
+const ENGINE_WAIT_MS = 30_000
+let engineWait: Promise<boolean> | null = null
+
+/**
+ * true once the engine is ready — at once when it is. Images from the engine (platform logos, the server's
+ * art, art uploaded to the server) are asked for before it is up: they wait for it instead of failing, or
+ * a failed image stayed missing for the whole session. Whether the engine will come is the setting's call
+ * (until start() gets going it still reports 'disabled'); 'missing' / 'error' end the wait at once. One
+ * shared wait (and one listener) for every request.
+ */
+function engineReady(): Promise<boolean> {
+  if (engine.state === 'ready') return Promise.resolve(true)
+  if (!settings.get().emustartEnabled || engine.state === 'missing' || engine.state === 'error') return Promise.resolve(false)
+  if (!engineWait)
+    engineWait = new Promise((resolve) => {
+      const done = (ok: boolean): void => {
+        clearTimeout(timer)
+        engine.off('state', onState)
+        engineWait = null
+        resolve(ok)
+      }
+      const onState = (st: string): void => {
+        if (st === 'ready') done(true)
+        else if (st === 'missing' || st === 'error') done(false)
+      }
+      const timer = setTimeout(() => done(false), ENGINE_WAIT_MS)
+      engine.on('state', onState)
+    })
+  return engineWait
+}
+
 /**
  * A file from the engine's media (offline copy of the server's media), kept in memory. The engine
  * keeps it on disk and fetches a missing one from the server itself. null: not there / engine error.
  */
-/** true once the engine is ready (at once when it is); false when it is off or not ready within `ms` */
-function engineUp(ms: number): Promise<boolean> {
-  if (engine.baseUrl) return Promise.resolve(true)
-  if (engine.state === 'disabled' || engine.state === 'missing') return Promise.resolve(false)
-  return new Promise((resolve) => {
-    const done = (ok: boolean): void => {
-      clearTimeout(timer)
-      engine.off('state', onState)
-      resolve(ok)
-    }
-    const onState = (): void => {
-      if (engine.baseUrl) done(true)
-      else if (engine.state === 'disabled' || engine.state === 'missing') done(false)
-    }
-    const timer = setTimeout(() => done(false), ms)
-    engine.on('state', onState)
-  })
-}
-
 async function engineMedia(url: string): Promise<Response | null> {
-  if (!engine.baseUrl) return null
+  if (!(await engineReady())) return null
   const full = new URL(url, engine.baseUrl).toString()
   let hit = emuArtGet(full)
   if (!hit) {
