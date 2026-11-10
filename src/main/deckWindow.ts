@@ -25,6 +25,10 @@ export interface DeckHost {
   geometry(w: BrowserWindow, g: DeckGeometry): void
   /** Lumen's icon for the tray */
   icon(): Promise<NativeImage>
+  /** Lumen starts with Windows (just the Deck, the main window hidden) — G5, an option in the menu */
+  autostart(): boolean
+  /** false when Windows refused it */
+  setAutostart(on: boolean): boolean
 }
 
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
@@ -224,8 +228,21 @@ export class DeckWindow {
       { label: 'Otwórz Lumen', click: () => this.host.openMain() },
       { label: 'Wyłącz Decka', click: () => this.host.disable() },
       { type: 'separator' },
+      {
+        label: 'Uruchamiaj z Windows',
+        type: 'checkbox',
+        checked: this.host.autostart(),
+        // the host refreshes the tray's copy of the menu (also when it is changed from Settings)
+        click: (item) => void this.host.setAutostart(item.checked)
+      },
+      { type: 'separator' },
       { label: 'Zamknij Lumen', click: () => this.host.quit() }
     ]
+  }
+
+  /** Build the tray icon's menu again — its checkbox shows the current state (changed from anywhere). */
+  refreshMenu(): void {
+    this.tray?.setContextMenu(Menu.buildFromTemplate(this.menu()))
   }
 
   /** The dock's own menu (right click). */

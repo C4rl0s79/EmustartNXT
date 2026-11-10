@@ -23,3 +23,11 @@
   ; removes the folder only when nothing is left (no LumenData)
   RMDir $INSTDIR
 !macroend
+
+; "Uruchamiaj z Windows" (Deck): the login item Lumen writes (value "Lumen" in the user's Run key) goes with
+; an uninstall — not with an update (the old version's uninstaller runs then too; the setting stays)
+!macro customUnInstall
+  ${ifNot} ${isUpdated}
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Lumen"
+  ${endIf}
+!macroend

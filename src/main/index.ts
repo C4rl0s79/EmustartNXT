@@ -180,6 +180,51 @@ let win: BrowserWindow | null = null
 /** the optional desktop interface (Deck) — a second window, only while Deck is on */
 let deck: DeckWindow | null = null
 let sessionEnding = false
+/** started with Windows for the Deck (G5): the main window stays hidden at start while Deck is on */
+const DECK_ARG = '--deck'
+const startedForDeck = process.argv.includes(DECK_ARG)
+/** the login item: Lumen.exe --deck (from sources: electron.exe <app> --deck) — written in the user's registry, no admin */
+// (one fixed value name, "Lumen": the uninstaller removes it — resources/installer.nsh — and a moved folder
+// rewrites the same entry instead of adding another)
+const LOGIN_NAME = 'Lumen'
+const loginItem = (): { path: string; args: string[]; name: string } => ({
+  path: process.execPath,
+  args: app.isPackaged ? [DECK_ARG] : [app.getAppPath(), DECK_ARG],
+  name: LOGIN_NAME
+})
+function getAutostart(): boolean {
+  try {
+    return app.getLoginItemSettings(loginItem()).openAtLogin
+  } catch {
+    return false
+  }
+}
+/** writes the login item; false when Windows refused it (a locked registry, a security program) */
+function setAutostart(on: boolean): boolean {
+  try {
+    app.setLoginItemSettings({ openAtLogin: on, ...loginItem() })
+    log.info('deck', `start with Windows: ${on ? 'on' : 'off'}`)
+    return true
+  } catch (e) {
+    log.error('deck', 'start with Windows: could not write the login item', e)
+    return false
+  } finally {
+    deck?.refreshMenu() // the tray icon's menu shows the state, whoever changed it
+  }
+}
+/** Lumen's folder moved (the zip version): the login item still names the old Lumen.exe — written again here */
+function refreshAutostartPath(): void {
+  try {
+    const items = (app.getLoginItemSettings(loginItem()) as { launchItems?: { name: string; path: string; enabled: boolean }[] }).launchItems ?? []
+    const mine = items.find((i) => i.name === LOGIN_NAME)
+    if (mine?.enabled && path.resolve(mine.path).toLowerCase() !== path.resolve(process.execPath).toLowerCase()) {
+      log.info('deck', `start with Windows: Lumen moved (${mine.path}) — the login item follows`)
+      setAutostart(true)
+    }
+  } catch (e) {
+    log.warn('deck', `start with Windows: ${(e as Error).message}`)
+  }
+}
 /**
  * A game started from the Deck (G4: the main window does not come back after it): which game, when, and
  * whether the main window was hidden then (an EmuStart game end brings it to the front — hidden again).
@@ -304,7 +349,8 @@ function createWindow(): void {
     backgroundColor: '#0a0c11',
     title: WINDOW_TITLE,
     autoHideMenuBar: true,
-    fullscreen: s.startFullscreen,
+    // started with Windows for the Deck the window stays hidden — going fullscreen would show it
+    fullscreen: s.startFullscreen && !(startedForDeck && s.deck.enabled),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -326,8 +372,11 @@ function createWindow(): void {
     log.info('window', 'hidden (Deck is on)')
   })
   win.once('ready-to-show', () => {
-    if (win) activateWindow(win)
-    if (settings.get().startMode === 'fullscreen') modes?.setMode('fullscreen')
+    // started with Windows for the Deck: the window is there (it runs the games), shown from the tray / the dock
+    const hidden = startedForDeck && settings.get().deck.enabled
+    if (win && !hidden) activateWindow(win)
+    if (hidden) log.info('window', 'started with Windows for the Deck — hidden')
+    else if (settings.get().startMode === 'fullscreen') modes?.setMode('fullscreen')
   })
   win.on('focus', () => {
     send(IPC.appFocus, true)
@@ -1561,6 +1610,10 @@ function registerIpc(): void {
   })
   ipcMain.on(IPC.deckExpand, (_e, content: unknown) => deck?.expand(typeof content === 'number' ? content : null))
   handle(IPC.deckGetGeometry, () => deck?.geometry ?? null)
+  handle(IPC.deckAutostart, () => getAutostart())
+  handle(IPC.deckSetAutostart, (on: unknown) => {
+    if (!setAutostart(on === true)) throw new Error('Windows nie pozwolił zapisać autostartu (zasady systemu albo program zabezpieczający).')
+  })
   // Deck's dimensions are kept per screen: the screen it is on now (the primary one)
   handle(IPC.deckScreen, () => deckScreen())
   handle(IPC.deckLayout, async (step: DeckLayoutStep) => {
@@ -1697,11 +1750,14 @@ app.whenReady().then(async () => {
     disable: () => void patchSettings({ deck: { enabled: false } }).catch((e) => log.error('deck', 'switching off failed', e)),
     quit: () => app.quit(),
     geometry: (w, g) => w.webContents.send(IPC.deckGeometry, g),
+    autostart: getAutostart,
+    setAutostart,
     // the built program's own icon (Lumen.exe); from sources the icon file the build uses
     // ('normal' = 32 px: the tray scales it down — a 16 px one is blurry with display scaling)
     icon: () => (app.isPackaged ? app.getFileIcon(process.execPath, { size: 'normal' }) : Promise.resolve(nativeImage.createFromPath(path.join(app.getAppPath(), 'resources', 'icon.png'))))
   })
   deck.sync()
+  if (app.isPackaged) refreshAutostartPath()
   // controller: passive XInput polling, only while Lumen has focus (never while a game runs)
   settings.setRuntimeInfo({ xinputAvailable: pads.available })
   // pads that are not XInput devices (PlayStation, Nintendo, Bluetooth HID): passive Raw Input on the same window

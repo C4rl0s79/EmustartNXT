@@ -946,6 +946,9 @@ function DeckSection() {
   const nav = useNav()
   const candidates = useMemo(() => deckCandidates(nav), [nav])
   const [scr, setScr] = useState<{ key: string; label: string } | null>(null)
+  // read from Windows (the login item) — also changed from the dock's / tray icon's menu, so asked on each visit
+  const [autostart, setAutostartState] = useState<boolean | null>(null)
+  useEffect(() => void api().deck.autostart().then(setAutostartState).catch(() => setAutostartState(null)), [])
   // the screen Deck is on — asked again when the Deck settings change (Deck itself follows a new screen)
   const deckState = settings?.deck
   useEffect(() => void api().deck.screen().then(setScr).catch(() => setScr(null)), [deckState])
@@ -965,6 +968,15 @@ function DeckSection() {
       desc="Belka platform na pulpicie — nad tapetą, pod oknami programów. Zakładki to podgrupy biblioteki Lumen (platformy i kolekcje); Deck pokazuje gry, które są na tym komputerze (zainstalowane albo pobrane). Zamknięcie okna Lumen przy włączonym Decku tylko je ukrywa — Lumen działa dalej; otworzysz albo zamkniesz go z ikony Lumen w zasobniku systemowym albo z menu Decka (prawy klik)."
     >
       <Toggle label="Deck na pulpicie" value={deck.enabled} onChange={(v) => patch({ enabled: v })} />
+      {autostart !== null && (
+        <Toggle
+          label="Uruchamiaj z Windows"
+          desc="Po zalogowaniu Lumen startuje z samym Deckiem — okno Lumen otworzysz z ikony w zasobniku albo z menu Decka. Przy wyłączonym Decku Lumen startuje zwyczajnie, z oknem."
+          value={autostart}
+          // the state as Windows has it after the change (refused → unchanged)
+          onChange={(v) => void attempt(api().deck.setAutostart(v)).then(() => api().deck.autostart().then(setAutostartState))}
+        />
+      )}
       <Toggle
         label="Logotypy platform zamiast nazw"
         desc="Logo, które w wąskiej zakładce byłoby nieczytelne, zostaje zastąpione nazwą."

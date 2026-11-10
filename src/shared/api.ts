@@ -276,6 +276,9 @@ export interface LumenApi {
     onPlayRequest(cb: (gameId: string) => void): () => void
     /** main window: the player has to see it now (the game cannot start, a question during the start) */
     reveal(): void
+    /** Lumen starts with Windows, just the Deck (G5) — also in the dock's and the tray icon's menu */
+    autostart(): Promise<boolean>
+    setAutostart(on: boolean): Promise<void>
   }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
@@ -352,6 +355,8 @@ export const IPC = {
   deckPlay: 'deck:play',
   deckPlayRequest: 'deck:playRequest',
   deckReveal: 'deck:reveal',
+  deckAutostart: 'deck:autostart',
+  deckSetAutostart: 'deck:setAutostart',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',
