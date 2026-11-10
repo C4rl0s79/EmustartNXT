@@ -90,13 +90,25 @@ function setHints(list, el = $("hintbar")) { el.innerHTML = list.map(([b, t]) =>
 /* ───────────── wejście: pad + klawiatura ───────────── */
 const PAD = { 0: "a", 1: "b", 2: "x", 3: "y", 4: "lb", 5: "rb", 6: "lt", 7: "rt", 8: "select", 9: "start", 12: "up", 13: "down", 14: "left", 15: "right" };
 const REPEATABLE = new Set(["up", "down", "left", "right", "lb", "rb", "lt", "rt"]);
-const held = {};     // akcja → {since, next}
+const held = {};     // akcja → {since, next, ctx}
+// Miejsce, do którego należy naciśnięcie: ekran + okno. Powtórki trzymanego przycisku
+// i przytrzymanie A działają tylko tam, gdzie przycisk wciśnięto.
+const inputCtx = () => `${S.screen}|${S.modal || ""}`;
+let padAway = true;  // okno bez prawa do pada — po powrocie trzymane przyciski czekają na puszczenie
 
 function pollPads(now) {
   // Gamepad API tylko w trybie „przeglądarka”. W trybie python (domyślnym) nie
   // wywołujemy go wcale — WebView2 otwiera wtedy pady przez Windows.Gaming.Input,
   // a podejrzewamy, że to psuje sterownik odbiornika Xbox po zamknięciu programu.
   if (S.padBackend !== "browser") return;
+  // okno w tle albo trwa gra (menu w grze to S.modal "ingame"): pad należy do gry,
+  // nie do interfejsu — jak w uipad._tick po stronie Pythona. Telefon: aplikacja w tle to
+  // document.hidden; hasFocus() w WebView Androida nie sprawdzamy (nieprzetestowane tam).
+  const unfocused = S.platform !== "android" && !document.hasFocus();
+  if (document.hidden || unfocused || (S.modal === "launch" && lastLaunch.phase === "running")) {
+    if (!padAway) { padAway = true; for (const k of Object.keys(held)) delete held[k]; cancelHold(); }
+    return requestAnimationFrame(pollPads);
+  }
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const active = new Set();
   for (const p of pads) {
@@ -110,12 +122,17 @@ function pollPads(now) {
     if (x < -0.55) active.add("left");
     if (x > 0.55) active.add("right");
   }
+  if (padAway) {
+    // powrót: wciśnięte teraz przyciski uznajemy za trzymane, nie za nowe naciśnięcie
+    padAway = false;
+    for (const a of active) held[a] = { since: now, next: Infinity, ctx: null };
+  }
   for (const a of active) {
     const h = held[a];
     if (!h) {
-      held[a] = { since: now, next: now + 380 };
+      held[a] = { since: now, next: now + 380, ctx: inputCtx() };
       press(a, true);
-    } else if (REPEATABLE.has(a) && now >= h.next) {
+    } else if (REPEATABLE.has(a) && now >= h.next && h.ctx === inputCtx()) {
       const fast = now - h.since > 1600;
       h.next = now + (fast ? 35 : 75);
       press(a, true);
@@ -225,12 +242,22 @@ function press(a, fromPad) {
 // Przytrzymanie A na grze: krótko = graj, ≥ 0,6 s = opcje gry.
 const LONG_PRESS = 600;
 let aHold = null;
+// Przytrzymanie A należy do ekranu i okna, w których A wciśnięto: długie wywołuje `onLong`
+// tylko wtedy, gdy nic się w międzyczasie nie zmieniło (krótkie — patrz release).
+function holdA(onLong, extra = {}) {
+  const ctx = inputCtx();
+  aHold = { fired: false, ctx, ...extra,
+    timer: setTimeout(() => { if (aHold && aHold.ctx === ctx && inputCtx() === ctx) { aHold.fired = true; onLong(); } }, LONG_PRESS) };
+}
+function cancelHold() { if (aHold) { clearTimeout(aHold.timer); aHold = null; } }
+window.addEventListener("blur", cancelHold);   // puszczenie A poza oknem do nas nie dotrze
 function release(a) {
   if (a === "a" && aHold) {
     clearTimeout(aHold.timer);
-    const fired = aHold.fired, gopt = aHold.gopt;
+    const fired = aHold.fired, gopt = aHold.gopt, same = aHold.ctx === inputCtx();
     aHold = null;
-    if (!fired && S.modal === "gopt" && gopt) return gopt.act();      // krótkie A w opcjach gry (edycja: przytrzymane)
+    if (fired || !same) return;     // A wciśnięte gdzie indziej — puszczenie tu niczego nie wybiera
+    if (S.modal === "gopt" && gopt) return gopt.act();      // krótkie A w opcjach gry (edycja: przytrzymane)
     if (!fired && S.screen === "games" && !S.modal) launch();
     if (!fired && S.screen === "systems" && !S.modal) openSystem();
   }
@@ -320,7 +347,7 @@ function systemsInput(a) {
   else if (a === "right" && n) { S.sysIdx = (S.sysIdx + 1) % n; renderSystems(); }
   else if (a === "a" && n) {
     // krótko = wejdź do systemu, przytrzymane = opcje systemu (logo, nazwa, emulator…)
-    aHold = { fired: false, timer: setTimeout(() => { if (aHold) { aHold.fired = true; openSystemOptions(); } }, LONG_PRESS) };
+    holdA(openSystemOptions);
   }
   else if (a === "start") openMenu();
 }
@@ -435,7 +462,7 @@ function gamesInput(a) {
   else if (a === "lt" && n) jumpLetter(-1);
   else if (a === "rt" && n) jumpLetter(1);
   else if (a === "a" && n) {
-    aHold = { fired: false, timer: setTimeout(() => { if (aHold) { aHold.fired = true; openGameOptions(); } }, LONG_PRESS) };
+    holdA(openGameOptions);
     return;
   }
   else if (a === "y" && n) return togglePin();
@@ -1356,13 +1383,15 @@ function tick() {
 
 // zdarzenia padów XInput z Pythona (patrz emustart/uipad.py)
 let pyPadBusy = false;
+const pyHeld = {};   // akcja → miejsce (inputCtx), w którym przycisk wciśnięto
 async function pollPyPad() {
   if (pyPadBusy) return;
   pyPadBusy = true;
   try {
     for (const ev of await api().ui_pad_poll()) {
-      if (ev.up) release(ev.a);
-      else press(ev.a, true);
+      if (ev.up) { delete pyHeld[ev.a]; release(ev.a); }
+      else if (ev.rep) { if (pyHeld[ev.a] === inputCtx()) press(ev.a, true); }   // powtórka: tylko tam, gdzie wciśnięto
+      else { pyHeld[ev.a] = inputCtx(); press(ev.a, true); }
     }
   } catch (e) { /* most chwilowo niedostępny */ }
   finally { pyPadBusy = false; }

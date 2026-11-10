@@ -455,7 +455,7 @@ function goptInput(a) {
   else if (a === "a" && GO.items[GO.idx]?.hold) {
     // krótko = jak dotąd (graj od stanu), ≥ LONG_PRESS = edycja — jak przytrzymanie A na liście gier
     const it = GO.items[GO.idx];
-    aHold = { fired: false, gopt: it, timer: setTimeout(() => { if (aHold) { aHold.fired = true; it.hold(); } }, LONG_PRESS) };
+    holdA(() => it.hold(), { gopt: it });
     return;
   }
   else if (a === "a") return GO.items[GO.idx]?.act();

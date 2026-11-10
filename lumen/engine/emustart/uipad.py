@@ -79,10 +79,13 @@ class UiPad:
             self._q.clear()
         return out
 
-    def _emit(self, a: str, up: bool = False) -> None:
+    def _emit(self, a: str, up: bool = False, rep: bool = False) -> None:
         self.last_event = time.monotonic()
+        ev = {"a": a, "up": up}
+        if rep:
+            ev["rep"] = True           # powtórka trzymanego przycisku (UI: tylko tam, gdzie go wciśnięto)
         with self._lock:
-            self._q.append({"a": a, "up": up})
+            self._q.append(ev)
 
     def _loop(self) -> None:
         while True:
@@ -96,6 +99,11 @@ class UiPad:
 
     def _tick(self, now: float) -> bool:
         if not self._active():
+            if not getattr(self, "_resync", False):
+                # okno straciło prawo do pada (gra, inny program): zdarzenia czekające
+                # na odbiór należały do poprzedniego stanu — UI ich już nie dostaje
+                with self._lock:
+                    self._q.clear()
             self._resync = True
             return False
         if getattr(self, "_resync", True):
@@ -112,7 +120,7 @@ class UiPad:
                 self._emit(a)
             elif a in _REPEATABLE and now >= h[1]:
                 h[1] = now + (REPEAT_FAST if now - h[0] > FAST_AFTER else REPEAT_SLOW)
-                self._emit(a)
+                self._emit(a, rep=True)
         for a in list(self._held):
             if a not in active:
                 del self._held[a]
