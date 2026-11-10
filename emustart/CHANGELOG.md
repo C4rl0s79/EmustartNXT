@@ -44,6 +44,24 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.2] — 2026-11-10
+
+Zakres: klient Windows (`uipad.py`, `web/app.js`, `web/options.js`) i interfejs APK (ten sam `app.js`; pad z
+Androida przechodzi przez tę samą regułę powtórek), ta sama zmiana w kopii silnika Lumena (`lumen/engine/`).
+Serwer, kod Kotlin APK i emulatory bez zmian.
+
+### Poprawione
+- **Pad steruje tylko tym, co jest na wierzchu:** naciśnięcie należy do ekranu i okna, w których je zaczęto.
+  - Tryb pada „przeglądarka”: Gamepad API nie steruje interfejsem, gdy okno jest ukryte albo trwa gra (bez menu
+    w grze); po powrocie trzymane przyciski czekają na puszczenie — jak w trybie python.
+  - Tryb python: gdy okno traci prawo do pada, czekające naciśnięcia są usuwane, a nie oddawane po powrocie
+    (puszczenia zostają; przycisk puszczony w tym czasie dostaje puszczenie po powrocie).
+  - Powtórki trzymanego kierunku (Python, Gamepad API, APK) działają tylko tam, gdzie przycisk wciśnięto — w nowo
+    otwartym oknie albo na innej stronie opcji gry trzeba nacisnąć jeszcze raz.
+  - A puszczone w innym oknie niż wciśnięte nie uruchamia gry ani pozycji pod spodem; długie przytrzymanie nie
+    otwiera opcji, jeśli w międzyczasie zmienił się ekran.
+- Bez zmian: przypisanie przycisków, czasy powtórek i przytrzymania, menu w grze, wygląd.
+
 ## [0.63.1] — 2026-11-10
 
 Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
