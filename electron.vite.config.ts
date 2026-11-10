@@ -12,6 +12,12 @@ export default defineConfig({
   },
   renderer: {
     resolve: { alias: { ...shared, '@renderer': resolve(__dirname, 'src/renderer/src') } },
-    plugins: [react()]
+    plugins: [react()],
+    // two pages: the main window and the Deck window (optional desktop interface)
+    build: {
+      rollupOptions: {
+        input: { index: resolve(__dirname, 'src/renderer/index.html'), deck: resolve(__dirname, 'src/renderer/deck.html') }
+      }
+    }
   }
 })

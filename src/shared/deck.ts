@@ -108,6 +108,26 @@ export function layoutFor(s: DeckSettings, key: string, label = ''): DeckScreenL
   return s.screens[key] ?? defaultDeckLayout(label)
 }
 
+export interface DeckRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * The dock on the primary screen's work area (deck_app._layout_windows): centred, at the top, the
+ * layout's fraction of the width (at least 240 px), its height (at least 28 px), moved down by the offset.
+ * Always inside the work area: a layout stored for a taller screen must not put the dock off-screen,
+ * where its menu (the way back to a hidden Lumen) cannot be reached.
+ */
+export function dockRect(area: DeckRect, lay: DeckScreenLayout): DeckRect {
+  const width = Math.min(area.width, Math.max(240, Math.floor(area.width * lay.dockWidth)))
+  const height = Math.min(area.height, Math.max(28, Math.floor(lay.dockHeight)))
+  const offset = Math.min(Math.max(0, lay.dockOffset), area.height - height)
+  return { x: area.x + Math.floor((area.width - width) / 2), y: area.y + offset, width, height }
+}
+
 // ---------- tabs ----------
 
 /** A library subgroup that can be a Deck tab, with its number of games. */

@@ -7,7 +7,7 @@ import { ART_SCHEME, IPC } from '@shared/api'
 import { isModeCombo } from '@shared/pad'
 import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
-import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
@@ -39,6 +39,9 @@ import { applyServer, localItems, pendingFiles, type ServerChoices, parseDefault
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
+import { DeckWindow } from './deckWindow'
+import { deckCandidates, syncGroups } from '@shared/deck'
+import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
 
@@ -166,6 +169,9 @@ const artwork = new ArtworkService({
 })
 
 let win: BrowserWindow | null = null
+/** the optional desktop interface (Deck) — a second window, only while Deck is on */
+let deck: DeckWindow | null = null
+let sessionEnding = false
 let modes: UiModeManager | null = null
 let launchedAppId: number | undefined
 /** Steam game whose controller profile hid devices (disabled in Windows until the game ends) */
@@ -173,8 +179,40 @@ let hiddenForAppId: number | undefined
 let hiddenWatchdog: NodeJS.Timeout | undefined
 const artRev = new Map<string, number>()
 
+/** what the Deck window listens to — the library, prefs, settings and art; never pad state, focus or modes */
+const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
+
 function send(channel: string, ...args: unknown[]): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
+  const d = deck?.window
+  if (d && DECK_CHANNELS.has(channel)) d.webContents.send(channel, ...args)
+}
+
+/** Deck switched on or off: its window follows; with Deck off a hidden main window comes back (nothing else is on screen). */
+function applyDeck(): void {
+  deck?.sync()
+  scheduleDeckSync()
+  if (!settings.get().deck.enabled && win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
+}
+
+// New library subgroups become Deck tabs in the main process — the one writer of the settings, so a tab
+// change made in another window is never overwritten by a stale copy. Throttled: snapshots come often.
+let deckSyncTimer: NodeJS.Timeout | undefined
+function scheduleDeckSync(): void {
+  if (deckSyncTimer || !settings.get().deck.enabled) return
+  deckSyncTimer = setTimeout(() => {
+    deckSyncTimer = undefined
+    const cur = settings.get().deck
+    if (!cur.enabled) return
+    const s = unified.current
+    const groups = syncGroups(cur.groups, deckCandidates(buildNav(s.games, prefs.get(), s.collections)))
+    if (groups !== cur.groups) void patchSettings({ deck: { groups } }).catch((e) => log.error('deck', 'tabs sync failed', e))
+  }, 1500)
+}
+
+function loadDeckPage(w: BrowserWindow): void {
+  if (process.env.ELECTRON_RENDERER_URL) void w.loadURL(`${process.env.ELECTRON_RENDERER_URL}/deck.html`)
+  else void w.loadFile(path.join(__dirname, '../renderer/deck.html'))
 }
 
 function findGame(gameId: string): Game | undefined {
@@ -214,6 +252,16 @@ function createWindow(): void {
   })
   Menu.setApplicationMenu(null)
   win.on('page-title-updated', (e) => e.preventDefault())
+  // with Deck on, closing the window hides it: Lumen keeps running on the desktop (Deck menu → Zamknij Lumen)
+  // Windows ending the session closes the window without before-quit: never hold it up
+  win.on('query-session-end', () => (sessionEnding = true))
+  win.on('session-end', () => (sessionEnding = true))
+  win.on('close', (e) => {
+    if (shutDown || sessionEnding || !settings.get().deck.enabled || !deck?.window) return
+    e.preventDefault()
+    win?.hide()
+    log.info('window', 'hidden (Deck is on)')
+  })
   win.once('ready-to-show', () => {
     if (win) activateWindow(win)
     if (settings.get().startMode === 'fullscreen') modes?.setMode('fullscreen')
@@ -901,9 +949,37 @@ async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
   const p = await prefs.update(fn)
   if (p.artStamps !== stamps) scheduleArtSync()
   send(IPC.prefsChanged, p)
+  scheduleDeckSync()
   if (p.versions !== before) emu.regroup()
   if (p.platformOverrides !== overrides) unified.update()
   return p
+}
+
+/** One way to change the settings (IPC and the Deck menu): save, then react to what changed and tell both windows. */
+async function patchSettings(patch: SettingsPatch): Promise<Settings> {
+  const before = settings.get()
+  const after = await settings.patch(patch)
+  // the order of art sources changed: Steam, GOG and EmuStart games ask again
+  if (before.artPriority !== after.artPriority || before.sgdbFirstOff.join() !== after.sgdbFirstOff.join())
+    for (const g of unified.current.games) bumpArt(g.id)
+  if (before.demoMode !== after.demoMode || before.showTools !== after.showTools || before.steamIdOverride !== after.steamIdOverride) {
+    await library.scan()
+    if (before.steamIdOverride !== after.steamIdOverride) void library.refreshAccount(true)
+  }
+  if (before.regionOrder !== after.regionOrder) emu.regroup()
+  if (before.gamepadBackend !== after.gamepadBackend) {
+    // the Gamepad API backend registers the same Raw Input devices for Chromium
+    if (after.gamepadBackend === 'xinput' && win && process.env.LUMEN_NO_PAD !== '1') hidPads.attach(win)
+    else hidPads.detach()
+  }
+  if (before.emustartEnabled !== after.emustartEnabled || before.emustartHome !== after.emustartHome || before.pythonPath !== after.pythonPath) {
+    if (after.emustartEnabled) void engine.restart()
+    else void engine.stop()
+  }
+  if (before.deck.enabled !== after.deck.enabled || JSON.stringify(before.deck.screens) !== JSON.stringify(after.deck.screens) || before.deck.opacity !== after.deck.opacity)
+    applyDeck()
+  send(IPC.settingsChanged, after)
+  return after
 }
 
 function registerIpc(): void {
@@ -1078,29 +1154,7 @@ function registerIpc(): void {
   })
 
   handle(IPC.settingsGet, () => settings.get())
-  handle(IPC.settingsPatch, async (patch: SettingsPatch) => {
-    const before = settings.get()
-    const after = await settings.patch(patch)
-    // the order of art sources changed: Steam, GOG and EmuStart games ask again
-    if (before.artPriority !== after.artPriority || before.sgdbFirstOff.join() !== after.sgdbFirstOff.join())
-      for (const g of unified.current.games) bumpArt(g.id)
-    if (before.demoMode !== after.demoMode || before.showTools !== after.showTools || before.steamIdOverride !== after.steamIdOverride) {
-      await library.scan()
-      if (before.steamIdOverride !== after.steamIdOverride) void library.refreshAccount(true)
-    }
-    if (before.regionOrder !== after.regionOrder) emu.regroup()
-    if (before.gamepadBackend !== after.gamepadBackend) {
-      // the Gamepad API backend registers the same Raw Input devices for Chromium
-      if (after.gamepadBackend === 'xinput' && win && process.env.LUMEN_NO_PAD !== '1') hidPads.attach(win)
-      else hidPads.detach()
-    }
-    if (before.emustartEnabled !== after.emustartEnabled || before.emustartHome !== after.emustartHome || before.pythonPath !== after.pythonPath) {
-      if (after.emustartEnabled) void engine.restart()
-      else void engine.stop()
-    }
-    send(IPC.settingsChanged, after)
-    return after
-  })
+  handle(IPC.settingsPatch, (patch: SettingsPatch) => patchSettings(patch))
   handle(IPC.settingsSecret, async (name: SecretName, value: string | null) => {
     if (!['sgdbApiKey', 'steamWebApiKey', 'igdbClientId', 'igdbClientSecret', 'tgdbApiKey'].includes(name)) throw new Error('Unknown secret')
     await settings.setSecret(name, value)
@@ -1360,6 +1414,7 @@ function registerIpc(): void {
 
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
+  ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
   ipcMain.on(IPC.uiSelect, (_e, gameId: unknown) => modes?.select(typeof gameId === 'string' ? gameId : null))
 }
 
@@ -1403,6 +1458,7 @@ app.whenReady().then(async () => {
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {
     send(IPC.librarySnapshot, s)
+    scheduleDeckSync()
     // EmuStart platforms as group tabs — only from a live engine library, never from an empty one
     const systems = s.emustart.systems
     if (s.emustart.engine === 'ready' && !s.emustart.fromCache && systems.length && ops.syncEmustartSystems(prefs.get(), systems) !== prefs.get()) {
@@ -1461,6 +1517,15 @@ app.whenReady().then(async () => {
     if (hiddenForAppId === appId) void showControllers()
   })
   createWindow()
+  deck = new DeckWindow({
+    preload: path.join(__dirname, '../preload/index.js'),
+    load: loadDeckPage,
+    deck: () => settings.get().deck,
+    openMain: () => restoreWindow(),
+    disable: () => void patchSettings({ deck: { enabled: false } }).catch((e) => log.error('deck', 'switching off failed', e)),
+    quit: () => app.quit()
+  })
+  deck.sync()
   // controller: passive XInput polling, only while Lumen has focus (never while a game runs)
   settings.setRuntimeInfo({ xinputAvailable: pads.available })
   // pads that are not XInput devices (PlayStation, Nintendo, Bluetooth HID): passive Raw Input on the same window

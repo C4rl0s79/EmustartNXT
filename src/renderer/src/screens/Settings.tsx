@@ -970,6 +970,12 @@ function BehaviourSection() {
       />
       <Toggle label="Uruchamiaj na pełnym ekranie" value={settings.startFullscreen} onChange={(v) => void patch({ startFullscreen: v })} />
       <Toggle
+        label="Deck na pulpicie"
+        desc="Belka platform nad tapetą, pod oknami programów. Zamknięcie okna Lumen go ukrywa — Lumen działa dalej (prawy klik na Decku → Zamknij Lumen)."
+        value={settings.deck.enabled}
+        onChange={(v) => void patch({ deck: { enabled: v } })}
+      />
+      <Toggle
         label="Pełny ekran teraz (F11)"
         value={fs}
         onChange={() => void api().app.toggleFullscreen().then(setFs)}

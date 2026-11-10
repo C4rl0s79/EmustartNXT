@@ -154,6 +154,9 @@ const api: LumenApi = {
     apply: () => invoke(IPC.updateApply),
     onChange: (cb) => subscribe(IPC.updateChanged, cb)
   },
+  deck: {
+    menu: () => ipcRenderer.send(IPC.deckMenu)
+  },
   ui: {
     getMode: () => invoke(IPC.uiGetMode),
     setMode: (mode) => invoke(IPC.uiSetMode, mode),

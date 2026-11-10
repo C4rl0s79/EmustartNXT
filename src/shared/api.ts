@@ -251,6 +251,11 @@ export interface LumenApi {
     apply(): Promise<UpdateState>
     onChange(cb: (s: UpdateState) => void): () => void
   }
+  /** the Deck window (optional desktop interface) */
+  deck: {
+    /** the dock's menu at the mouse: open Lumen, switch Deck off, quit */
+    menu(): void
+  }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
     getMode(): Promise<UiMode>
@@ -316,6 +321,7 @@ export const IPC = {
   appOpenLogs: 'app:openLogs',
   appOpenExternal: 'app:openExternal',
   appQuit: 'app:quit',
+  deckMenu: 'deck:menu',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',

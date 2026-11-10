@@ -6,6 +6,7 @@ import {
   clampCols,
   cleanDeckSettings,
   deckCandidates,
+  dockRect,
   defaultDeckLayout,
   defaultDeckSettings,
   layoutFor,
@@ -183,5 +184,23 @@ describe('mergeDeck', () => {
     const screens = { ...cur.screens, '2560x1440@1': defaultDeckLayout() }
     expect(mergeDeck(cur, { screens })).toEqual({ ...cur, screens })
     expect(mergeDeck(cur, undefined)).toBe(cur)
+  })
+})
+
+describe('dockRect (deck_app._layout_windows)', () => {
+  const area = { x: 0, y: 0, width: 1920, height: 1040 }
+  it('centres the dock at the top of the work area', () => {
+    expect(dockRect(area, defaultDeckLayout())).toEqual({ x: 134, y: 0, width: 1651, height: 46 })
+  })
+  it('follows the work area (taskbar at the top, second screen left of the primary)', () => {
+    expect(dockRect({ x: -2560, y: 40, width: 2560, height: 1400 }, { ...defaultDeckLayout(), dockWidth: 1, dockOffset: 12 })).toEqual({ x: -2560, y: 52, width: 2560, height: 46 })
+  })
+  it('keeps at least 240 × 28 px, never wider than the screen, and ignores a negative offset', () => {
+    expect(dockRect({ x: 0, y: 0, width: 200, height: 600 }, { ...defaultDeckLayout(), dockWidth: 0.1, dockHeight: 10, dockOffset: -50 })).toEqual({ x: 0, y: 0, width: 200, height: 28 })
+    expect(dockRect(area, { ...defaultDeckLayout(), dockWidth: 0.1 }).width).toBe(240)
+  })
+  it('stays inside the work area: a layout from a taller screen never puts the dock off-screen', () => {
+    expect(dockRect(area, { ...defaultDeckLayout(), dockOffset: 1200 })).toEqual({ x: 134, y: 994, width: 1651, height: 46 })
+    expect(dockRect({ x: 0, y: 0, width: 800, height: 100 }, { ...defaultDeckLayout(), dockHeight: 160 }).height).toBe(100)
   })
 })
