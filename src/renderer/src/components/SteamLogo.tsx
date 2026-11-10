@@ -1,3 +1,5 @@
+import './SteamLogo.css'
+
 // Steam's mark and wordmark, drawn locally: the EmuStart server has no Steam platform (by design),
 // so there is no server logo for it. Sized by font-size; white like the platform logos it sits among.
 

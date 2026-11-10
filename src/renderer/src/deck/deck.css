@@ -18,17 +18,57 @@ body,
   overflow: hidden;
 }
 
+/* every tab the same width: the dock's width / number of tabs (PyLinksDeck dock.py) */
 .deck-tab {
   flex: 1 1 0;
   min-width: 0;
-  display: grid;
-  place-items: center;
-  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: default;
+  container-type: size;
+}
+
+.deck-tab-name {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  cursor: default;
+}
+
+/* platform logos (tv/SystemLogo.tsx), fitted in both dimensions of the tab */
+.deck-tab .sys-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.deck-tab .sys-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.deck-tab .sys-pixel {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.deck-tab .sys-pixel img {
+  position: absolute; /* placed by PixelLogo on a whole device pixel */
+  image-rendering: pixelated;
+  object-fit: fill;
+}
+
+/* Steam (components/SteamLogo.tsx + SteamLogo.css), sized by font-size from the tab — the same formula as
+   logoFit.ts steamFontSize */
+.deck-steam {
+  font-size: min(48cqh, 15cqw);
 }
 
 .deck-tab:last-child {

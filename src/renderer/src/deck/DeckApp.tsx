@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { activeGroup, deckCandidates, syncGroups, visibleGroups } from '@shared/deck'
 import { api, useStore } from '../store'
-import { useNav } from '../lib/nav'
+import { findSub, useNav } from '../lib/nav'
+import { subItem } from '../tv/data'
+import { DeckTab } from './DeckTab'
 
-// The dock: one tab per Deck group (a library subgroup of Lumen). Etap 2 — the window, its data and
-// its menu; platform logos come in etap 3, the panel with tiles in etap 4. New subgroups are added to
-// the stored tabs by the main process (index.ts, scheduleDeckSync) — this page only shows them.
+// The dock: one tab per Deck group (a library subgroup of Lumen), with the platform's logo (DeckTab).
+// The panel with tiles comes in etap 4. New subgroups are added to the stored tabs by the main process
+// (index.ts, scheduleDeckSync) — this page only shows them.
 
 /** one wheel notch → one tab; a touchpad's burst of wheel events is not a dozen notches */
 const WHEEL_STEP_MS = 120
@@ -27,7 +29,7 @@ export function DeckApp() {
     void a.library.get().then(s.setSnapshot)
     void a.prefs.get().then(s.setPrefs)
     void a.settings.get().then(s.setSettings)
-    const offs = [a.library.onSnapshot(s.setSnapshot), a.prefs.onChange(s.setPrefs), a.settings.onChange(s.setSettings)]
+    const offs = [a.library.onSnapshot(s.setSnapshot), a.prefs.onChange(s.setPrefs), a.settings.onChange(s.setSettings), a.art.onChanged(s.bumpArt)]
     return () => {
       offs.forEach((off) => off())
       clearTimeout(saveTimer.current)
@@ -43,7 +45,17 @@ export function DeckApp() {
   const groups = useMemo(() => (deck ? syncGroups(deck.groups, candidates) : []), [deck, candidates])
   const visible = useMemo(() => (deck ? visibleGroups({ ...deck, groups }, candidates) : []), [deck, groups, candidates])
   const active = deck ? activeGroup({ ...deck, activeGroup: localActive ?? deck.activeGroup }, visible) : undefined
-  const labels = useMemo(() => new Map(candidates.map((c) => [c.id, c.label])), [candidates])
+  // each tab as the TV carousel describes its subgroup: logo of the platform (server), Steam, own group logo
+  // (keyed on the shown ids: a settings change such as the active tab does not rebuild them)
+  const systems = useStore((s) => s.snapshot?.emustart.systems)
+  const shownIds = JSON.stringify(visible.map((g) => g.id))
+  const tabs = useMemo(() => {
+    const labels = new Map(candidates.map((c) => [c.id, c.label]))
+    return (JSON.parse(shownIds) as string[]).map((id) => {
+      const f = findSub(nav, id)
+      return { id, label: labels.get(id) ?? id, sys: f ? subItem(f.group, f.sub, systems ?? []) : undefined }
+    })
+  }, [shownIds, nav, systems, candidates])
 
   const choose = (id: string, delay = 0): void => {
     setLocalActive(id)
@@ -69,12 +81,8 @@ export function DeckApp() {
         api().deck.menu()
       }}
     >
-      {visible.length ? (
-        visible.map((g) => (
-          <div key={g.id} className={'deck-tab' + (g.id === active?.id ? ' active' : '')} onClick={() => choose(g.id)} title={labels.get(g.id)}>
-            {labels.get(g.id) ?? g.id}
-          </div>
-        ))
+      {tabs.length && deck ? (
+        tabs.map((t) => <DeckTab key={t.id} sys={t.sys} label={t.label} active={t.id === active?.id} showLogos={deck.showLogos} onClick={() => choose(t.id)} />)
       ) : (
         <div className="deck-empty">{loaded ? 'Brak zakładek — wszystkie ukryte albo bez gier (prawy klik: menu)' : 'Biblioteka się wczytuje…'}</div>
       )}
