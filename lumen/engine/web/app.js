@@ -93,20 +93,37 @@ const REPEATABLE = new Set(["up", "down", "left", "right", "lb", "rb", "lt", "rt
 const held = {};     // akcja → {since, next, ctx}
 // Miejsce, do którego należy naciśnięcie: ekran + okno. Powtórki trzymanego przycisku
 // i przytrzymanie A działają tylko tam, gdzie przycisk wciśnięto.
-const inputCtx = () => `${S.screen}|${S.modal || ""}`;
+// Strony opcji gry (GO.page, options.js) też są osobnym miejscem.
+const inputCtx = () => `${S.screen}|${S.modal || ""}|${S.modal === "gopt" && typeof GO !== "undefined" ? GO.page : ""}`;
 let padAway = true;  // okno bez prawa do pada — po powrocie trzymane przyciski czekają na puszczenie
+// Źródła, które same przysyłają powtórki (uipad w Pythonie, APK): naciśnięcie bez puszczenia
+// to powtórka i działa tylko tam, gdzie przycisk wciśnięto.
+const pushHeld = {};   // "źródło:akcja" → inputCtx naciśnięcia
+function padEvent(src, a, up, rep) {
+  const k = `${src}:${a}`;
+  if (up) { delete pushHeld[k]; return release(a); }
+  if (rep || k in pushHeld) { if (pushHeld[k] === inputCtx()) press(a, true); return; }
+  pushHeld[k] = inputCtx();
+  press(a, true);
+}
+function clearHeld() {
+  for (const k of Object.keys(held)) delete held[k];
+  for (const k of Object.keys(pushHeld)) delete pushHeld[k];
+}
+// aplikacja / karta w tle: puszczenia do nas nie dotrą
+document.addEventListener("visibilitychange", () => { if (document.hidden) clearHeld(); });
 
 function pollPads(now) {
   // Gamepad API tylko w trybie „przeglądarka”. W trybie python (domyślnym) nie
   // wywołujemy go wcale — WebView2 otwiera wtedy pady przez Windows.Gaming.Input,
   // a podejrzewamy, że to psuje sterownik odbiornika Xbox po zamknięciu programu.
   if (S.padBackend !== "browser") return;
-  // okno w tle albo trwa gra (menu w grze to S.modal "ingame"): pad należy do gry,
-  // nie do interfejsu — jak w uipad._tick po stronie Pythona. Telefon: aplikacja w tle to
-  // document.hidden; hasFocus() w WebView Androida nie sprawdzamy (nieprzetestowane tam).
-  const unfocused = S.platform !== "android" && !document.hasFocus();
-  if (document.hidden || unfocused || (S.modal === "launch" && lastLaunch.phase === "running")) {
-    if (!padAway) { padAway = true; for (const k of Object.keys(held)) delete held[k]; cancelHold(); }
+  // okno ukryte albo trwa gra (menu w grze to S.modal "ingame"): pad należy do gry,
+  // nie do interfejsu — jak w uipad._tick po stronie Pythona. Fokusu okna (hasFocus) nie
+  // sprawdzamy: przy nawigacji padem WebView2 potrafi go zgubić, a w tym trybie nic go nie
+  // przywraca — pad bez myszy przestałby działać.
+  if (document.hidden || (S.modal === "launch" && lastLaunch.phase === "running")) {
+    if (!padAway) { padAway = true; clearHeld(); cancelHold(); }
     return requestAnimationFrame(pollPads);
   }
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -245,12 +262,12 @@ let aHold = null;
 // Przytrzymanie A należy do ekranu i okna, w których A wciśnięto: długie wywołuje `onLong`
 // tylko wtedy, gdy nic się w międzyczasie nie zmieniło (krótkie — patrz release).
 function holdA(onLong, extra = {}) {
+  cancelHold();                     // poprzednie przytrzymanie bez puszczenia — jego timer nie może zadziałać tu
   const ctx = inputCtx();
   aHold = { fired: false, ctx, ...extra,
     timer: setTimeout(() => { if (aHold && aHold.ctx === ctx && inputCtx() === ctx) { aHold.fired = true; onLong(); } }, LONG_PRESS) };
 }
 function cancelHold() { if (aHold) { clearTimeout(aHold.timer); aHold = null; } }
-window.addEventListener("blur", cancelHold);   // puszczenie A poza oknem do nas nie dotrze
 function release(a) {
   if (a === "a" && aHold) {
     clearTimeout(aHold.timer);
@@ -769,7 +786,7 @@ window.ingameOpen = (info) => {
   IG.armed = false;
   IG.quietSince = 0;
   IG.openedAt = performance.now();
-  for (const k of Object.keys(held)) delete held[k];   // stan sprzed zminimalizowania
+  clearHeld();   // stan sprzed zminimalizowania
   if (S.modal !== "ingame") IG.prevModal = S.modal;
   S.modal = "ingame";
   $("igTitle").textContent = info.title || "";
@@ -1383,15 +1400,12 @@ function tick() {
 
 // zdarzenia padów XInput z Pythona (patrz emustart/uipad.py)
 let pyPadBusy = false;
-const pyHeld = {};   // akcja → miejsce (inputCtx), w którym przycisk wciśnięto
 async function pollPyPad() {
   if (pyPadBusy) return;
   pyPadBusy = true;
   try {
     for (const ev of await api().ui_pad_poll()) {
-      if (ev.up) { delete pyHeld[ev.a]; release(ev.a); }
-      else if (ev.rep) { if (pyHeld[ev.a] === inputCtx()) press(ev.a, true); }   // powtórka: tylko tam, gdzie wciśnięto
-      else { pyHeld[ev.a] = inputCtx(); press(ev.a, true); }
+      padEvent("py", ev.a, ev.up, ev.rep);
     }
   } catch (e) { /* most chwilowo niedostępny */ }
   finally { pyPadBusy = false; }
@@ -1469,7 +1483,7 @@ if (new URLSearchParams(location.search).has("android") && window.EmuAndroid) {
     }),
   };
   // pad (GameSir itp.) obsługuje aktywność Androida: wciśnięcie / puszczenie
-  window.__emuPad = (a, up) => (up ? release(a) : press(a, true));
+  window.__emuPad = (a, up) => padEvent("apk", a, up, false);   // APK powtarza bez puszczenia
   // powrót z emulatora do EmuStart
   window.__emuResumed = () => { if (S.modal === "launch") updateLaunch(); };
   uiReady();

@@ -191,21 +191,22 @@ def test_uipad_events_repeat_and_release(monkeypatch):
 def test_uipad_drops_pending_events_when_window_loses_pad(monkeypatch):
     """Zdarzenia zebrane przed grą / utratą fokusu nie trafiają do UI po powrocie."""
     from emustart import uipad
-    seq = [set(), {"down"}, {"a"}, {"a"}, set()]
+    seq = [set(), {"down", "x"}, {"x"}, {"a"}, {"a"}, set()]
     monkeypatch.setattr(uipad, "_actions", lambda: seq.pop(0))
     monkeypatch.setattr(uipad.xinput, "available", lambda: False)
     monkeypatch.setattr(uipad.hidpad, "available", lambda: False)
     on = [True]
     p = uipad.UiPad(lambda: on[0])
     p._tick(0.0)                      # synchronizacja
-    p._tick(0.1)                      # ↓ czeka w kolejce, UI jeszcze nie odczytało
+    p._tick(0.1)                      # ↓ i X czekają w kolejce, UI jeszcze nie odczytało
+    p._tick(0.15)                     # ↓ puszczone
     on[0] = False
-    p._tick(0.2)                      # okno straciło pad (start gry)
-    assert p.poll() == []
+    p._tick(0.2)                      # okno straciło pad (start gry): naciśnięcia usunięte, puszczenie zostaje
+    assert p.poll() == [{"a": "down", "up": True}]
     on[0] = True
-    p._tick(0.3)                      # powrót z trzymanym A: synchronizacja, bez naciśnięcia
+    p._tick(0.3)                      # powrót z trzymanym A: bez naciśnięcia; X puszczone w tle — puszczenie
     p._tick(0.4)
-    assert p.poll() == []
+    assert p.poll() == [{"a": "x", "up": True}]
     p._tick(0.5)                      # A puszczone
     assert p.poll() == [{"a": "a", "up": True}]
 
