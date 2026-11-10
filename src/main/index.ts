@@ -40,6 +40,7 @@ import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
+import { LocalMedia } from './localMedia'
 import { deckCandidates, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
@@ -117,6 +118,12 @@ const paths = {
 const engineRoot = (): string => (app.isPackaged ? process.resourcesPath : app.getAppPath())
 
 const settings = new SettingsStore(paths.settings, paths.secrets)
+// EmuStart's pictures on this PC, read by Lumen itself — the engine only fetches a missing one from the server
+const localMedia = new LocalMedia({
+  home: () => settings.get().emustartHome || paths.emustartHome,
+  assets: () =>
+    app.isPackaged ? path.join(process.resourcesPath, 'engine', 'EmuStartEngine', '_internal', 'assets') : path.join(engineRoot(), 'engine', 'assets')
+})
 const prefs = new PrefsStore(paths.prefs)
 const library = new LibraryService(settings, paths.account, path.join(userData, 'first-seen.json'))
 const family = new SteamFamily(path.join(userData, 'steam-family.json'))
@@ -368,11 +375,27 @@ function restoreWindow(): void {
 
 // ---------------- image protocol ----------------
 
+/** pictures that come through the EmuStart engine: platform logos / console photos, group art, uploaded art */
+const FROM_ENGINE = /^\/(navgrp|emusys|usr)%3A/i
+/** right after it starts, the engine does not always serve its files yet (seen: a platform logo 404 ~0.1 s after 'ready') */
+const ENGINE_SETTLE_MS = 15_000
+const ENGINE_RETRY_MS = 1500
+let engineReadyAt = 0
+
 function registerArtProtocol(): void {
   protocol.handle(ART_SCHEME, async (req) => {
     const t0 = Date.now()
-    const res = await artResponse(req)
-    if (Date.now() - t0 > 1500) log.info('art', `slow ${Date.now() - t0} ms: ${new URL(req.url).pathname}`)
+    const where = new URL(req.url).pathname
+    let res = await artResponse(req)
+    // asked again a couple of times while the engine settles — a missing picture stayed a name for the session
+    for (let i = 0; i < 2 && res.status !== 200 && FROM_ENGINE.test(where) && engineReadyAt && Date.now() - engineReadyAt < ENGINE_SETTLE_MS; i++) {
+      await new Promise((r) => setTimeout(r, ENGINE_RETRY_MS))
+      res = await artResponse(req)
+    }
+    if (Date.now() - t0 > 1500) log.info('art', `slow ${Date.now() - t0} ms: ${where}`)
+    // a group's or a platform's picture that does not come is shown as a name for the whole session — say why
+    if (res.status !== 200 && FROM_ENGINE.test(where))
+      log.info('art', `no picture ${decodeURIComponent(where)}: HTTP ${res.status} after ${Date.now() - t0} ms (engine ${engine.state})`)
     const headers = new Headers(res.headers)
     headers.set('Access-Control-Allow-Origin', '*')
     return new Response(res.body, { status: res.status, headers })
@@ -629,9 +652,15 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
 }
 
 async function userArtFile(sha: string, ext: string): Promise<string | null> {
-  // asked before the engine is up (e.g. a group logo on the Deck): waits for it (engineReady)
-  if (!(await engineReady())) return null
-  const r = await engine.call<{ path?: string }>('art_user_file', [sha, ext], 90_000).catch(() => null)
+  // on this PC already (downloaded once): read from the disk — the engine only for a missing one
+  const local = localMedia.userArt(sha, ext)
+  if (local) return local
+  if (!(await engineReady())) {
+    log.info('art', `uploaded picture ${sha.slice(0, 12)}: engine not ready (${engine.state})`)
+    return null
+  }
+  const r = await engine.call<{ path?: string; reason?: string }>('art_user_file', [sha, ext], 90_000).catch((e: Error) => ({ path: '', reason: e.message }))
+  if (!r?.path) log.info('art', `uploaded picture ${sha.slice(0, 12)}: no file${r?.reason ? ` (${r.reason})` : ''}`)
   return r?.path || null
 }
 
@@ -783,7 +812,7 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
   return null
 }
 
-/** how long an image from the engine waits for it at start (windows show the library from the cache first) */
+/** how long a picture missing on this PC waits for the engine to fetch it, at start */
 const ENGINE_WAIT_MS = 30_000
 let engineWait: Promise<boolean> | null = null
 
@@ -820,6 +849,10 @@ function engineReady(): Promise<boolean> {
  * keeps it on disk and fetches a missing one from the server itself. null: not there / engine error.
  */
 async function engineMedia(url: string): Promise<Response | null> {
+  // on this PC: read from the disk, no engine involved (shown at once, also before the engine is up)
+  const local = localMedia.read(url)
+  if (local) return new Response(new Uint8Array(local.body), { status: 200, headers: { 'Content-Type': local.type, 'Cache-Control': 'max-age=86400' } })
+  // not here yet: the engine fetches it from the server (into the same store), then serves it
   if (!(await engineReady())) return null
   const full = new URL(url, engine.baseUrl).toString()
   let hit = emuArtGet(full)
@@ -1531,6 +1564,7 @@ app.whenReady().then(async () => {
   })
   setInterval(() => scheduleArtSync(0), 10 * 60_000)
   engine.on('state', (st) => {
+    engineReadyAt = st === 'ready' ? Date.now() : 0
     if (st === 'ready') scheduleArtSync(8000)
     if (st !== 'ready') return
     void emustartDefaults()
@@ -1638,6 +1672,7 @@ app.on('before-quit', (e) => {
 })
 
 async function shutdown(): Promise<void> {
+  localMedia.close()
   await showControllers() // never leave a wheel disabled after Lumen exits
   library.stop()
   emu.stop()

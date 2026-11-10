@@ -88,6 +88,11 @@ EmuStart Server (osobny program, API /v1 bez zmian)
 - **Usługi współdzielone**: pobieranie, emulatory, BIOS-y, uruchamianie emulatorów, synchronizacja zapisów
   i cache gier EmuStart są **w silniku** (jedna implementacja); grafiki/metadane Steam, ustawienia, logi —
   w Lumen.
+- **Pliki lokalne czyta Lumen, nie silnik** (2026-11-10): grafiki gier EmuStart (`data/media/<system>.media`),
+  logotypy platform (`_systems.media`, wbudowane `assets/systems`), grafiki wgrane na serwer
+  (`data/userart-cache`) — `src/main/localMedia.ts`. Silnik służy do wymiany danych z serwerem: Lumen pyta go
+  tylko o plik, którego na tym komputerze jeszcze nie ma (silnik pobiera go w to samo miejsce). Kierunek:
+  klient EmuStart wchłonięty przez Lumena, silnik — tylko komunikacja z serwerem.
 - **Prezentacja**: jeden interfejs (React), dwa układy — każda funkcja napisana raz (np. „Graj”:
   `lib/primary.ts` → `emustart.launch` → silnik `launch`; opcje gry, zapisy, konto, profile, menu w grze —
   te same komponenty w obu układach). Od Lumen 1.0.0 nie ma już osobnego widoku z interfejsem EmuStart.
