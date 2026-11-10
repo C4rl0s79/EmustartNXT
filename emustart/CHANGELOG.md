@@ -6,14 +6,20 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
-### Plan — jedno repozytorium (EmustartNXT)
-- EmuStart (serwer, klient PC, Android) i Lumen w jednym repozytorium `C4rl0s79/EmustartNXT`: wydania EmuStart
-  z tagiem `emustart-v…`, Lumena `lumen-v…`. Aktualizator EmuStart (PC, serwer), rozsyłanie klientów przez
-  serwer i aplikacja Android wybierają najnowsze wydanie swojego programu po przedrostku tagu (kolejne strony
-  listy wydań, najwyżej 5; dopóki tu nie ma wydania programu — dotychczasowe repozytorium). Serwer pobiera
-  listę wydań raz na odświeżenie. CI w `.github/workflows/` (tag `emustart-v*`).
-- Pierwsze wydanie stąd trafia też do `C4rl0s79/EmuStart` jako `v…` (wydanie pomostowe), żeby zainstalowane
-  kopie je dostały. Nie dotyka: formatu plików wydania, podpisów (ten sam klucz), API serwera `/v1`.
+## [0.63.0] — 2026-11-10
+
+### Zmienione
+- **Jedno repozytorium:** EmuStart (serwer, klient PC, Android) i Lumen są w `C4rl0s79/EmustartNXT`. Wydania
+  EmuStart mają tag `emustart-v…`, Lumena `lumen-v…`. Aktualizator EmuStart (PC, serwer), rozsyłanie klientów
+  przez serwer i aplikacja Android wybierają najnowsze wydanie swojego programu po przedrostku tagu (kolejne
+  strony listy wydań, najwyżej 5); dopóki w nowym repozytorium nie ma wydania programu — dotychczasowe
+  repozytorium. Serwer bierze najnowsze wydanie, które **ma** plik danego programu (APK bywa wydawane rzadziej)
+  i pobiera listę wydań raz na odświeżenie. CI w `.github/workflows/` (tag `emustart-v*`).
+- To wydanie trafia też do `C4rl0s79/EmuStart` jako `v0.63.0` (wydanie pomostowe), żeby zainstalowane kopie je
+  dostały i od niego pytały już nowe repozytorium. Bez zmian: format plików wydania, podpisy (ten sam klucz),
+  API serwera `/v1`.
+- **Android:** bez nowego APK w tym wydaniu (podpis APK w nowym repozytorium jeszcze nieustawiony); serwer
+  rozsyła dalej APK 0.62.0.
 
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do

@@ -313,3 +313,16 @@ def test_find_release_pages_past_other_programs_then_falls_back_to_the_old_repos
                                             else [{"tag_name": "lumen-v1.0.54"}])[1])
     assert rel["tag_name"] == "v0.62.0"
     assert asked[-1].endswith("C4rl0s79/EmuStart/releases/latest")
+
+
+def test_find_release_with_a_needed_file_takes_an_earlier_release_or_the_old_repository():
+    from emustart import updater
+    apk = lambda r: any(a["name"].endswith(".apk") for a in r.get("assets") or [])
+    nxt = [{"tag_name": "emustart-v0.64.0", "assets": [{"name": "EmuStart-0.64.0-win64.zip"}]},
+           {"tag_name": "emustart-v0.63.0", "assets": [{"name": "EmuStart-0.63.0-android.apk"}]}]
+    assert updater.find_release(lambda url: nxt, has=apk)["tag_name"] == "emustart-v0.63.0"
+    # no APK in EmustartNXT yet: the old repository's newest release that has one (its list, tags v…)
+    old = [{"tag_name": "v0.63.0", "assets": [{"name": "EmuStart-0.63.0-win64.zip"}]},
+           {"tag_name": "v0.62.0", "assets": [{"name": "EmuStart-0.62.0-android.apk"}]}]
+    got = updater.find_release(lambda url: old if "C4rl0s79/EmuStart/" in url else nxt[:1], has=apk)
+    assert got["tag_name"] == "v0.62.0"

@@ -76,26 +76,33 @@ def tag_version(tag: str, prefix: str = TAG_PREFIX) -> str:
     return (tag[len(prefix):] if tag.startswith(prefix) else tag).lstrip("v")
 
 
-def find_release(get_json, repo: str = REPO, prefix: str = TAG_PREFIX, legacy: str = LEGACY_REPO) -> dict:
+def find_release(get_json, repo: str = REPO, prefix: str = TAG_PREFIX, legacy: str = LEGACY_REPO,
+                 has=None) -> dict:
     """Najnowsze wydanie programu (tag `prefix`) w repozytorium z wydaniami kilku programów: kolejne strony
-    listy, aż się znajdzie (najwyżej MAX_PAGES); brak — najnowsze wydanie dawnego repozytorium `legacy`.
-    `get_json(url)` → odpowiedź API (zamieniana w testach)."""
+    listy, aż się znajdzie (najwyżej MAX_PAGES); brak — dawne repozytorium `legacy` (tagi v…). `has(release)`:
+    tylko wydania z potrzebnym plikiem (APK bywa wydawane rzadziej niż program na PC — wtedy wcześniejsze
+    wydanie, które je ma). `get_json(url)` → odpowiedź API (zamieniana w testach)."""
+    rel: dict = {}
     for page in range(1, MAX_PAGES + 1):
         data = get_json(f"https://api.github.com/repos/{repo}/releases?per_page=30&page={page}")
-        rel = pick_release(data, prefix)
+        rel = pick_release(data, prefix, has)
         if rel or not isinstance(data, list) or len(data) < 30:
             break
     if not rel and legacy:
-        rel = pick_release(get_json(f"https://api.github.com/repos/{legacy}/releases/latest"), prefix)
+        if has is None:
+            rel = pick_release(get_json(f"https://api.github.com/repos/{legacy}/releases/latest"), prefix)
+        else:
+            rel = pick_release(get_json(f"https://api.github.com/repos/{legacy}/releases?per_page=30"), "v", has)
     return rel
 
 
-def pick_release(data, prefix: str = TAG_PREFIX) -> dict:
-    """Najnowsze opublikowane wydanie programu (tag z przedrostkiem) z listy wydań; pojedyncze wydanie — jak jest."""
+def pick_release(data, prefix: str = TAG_PREFIX, has=None) -> dict:
+    """Najnowsze opublikowane wydanie programu (tag z przedrostkiem; `has` — z potrzebnym plikiem) z listy wydań;
+    pojedyncze wydanie — jak jest."""
     if not isinstance(data, list):
-        return data if isinstance(data, dict) else {}
+        return data if isinstance(data, dict) and (has is None or has(data)) else {}
     mine = [r for r in data if isinstance(r, dict) and not r.get("draft") and not r.get("prerelease")
-            and (r.get("tag_name") or "").startswith(prefix)]
+            and (r.get("tag_name") or "").startswith(prefix) and (has is None or has(r))]
     return max(mine, key=lambda r: vtuple(tag_version(r.get("tag_name") or "", prefix)), default={})
 
 

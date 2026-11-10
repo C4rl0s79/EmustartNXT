@@ -84,7 +84,9 @@ def _latest(app: str, pages: dict | None = None) -> dict:
             with _get(url, 20) as r:
                 cache[url] = json.loads(r.read())
         return cache[url]
-    rel = updater.find_release(get_json, spec["repo"], spec["tag"], spec.get("legacy", ""))
+    # the newest release that has this program's file (an APK may come out less often than the PC programs)
+    rel = updater.find_release(get_json, spec["repo"], spec["tag"], spec.get("legacy", ""),
+                               has=lambda r: any(spec["asset"].fullmatch(x.get("name") or "") for x in r.get("assets") or []))
     if not rel:
         raise ValueError("brak wydania tego programu na GitHubie")
     assets = rel.get("assets") or []
