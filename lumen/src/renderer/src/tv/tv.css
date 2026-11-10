@@ -1,0 +1,1141 @@
+/* TV layout — EmuStart's look (engine/web/app.css), scoped to .tv so it never touches the desktop layout */
+
+.tv {
+  --tv-bg: #0b0d12;
+  --tv-line: rgba(255, 255, 255, 0.08);
+  --tv-panel: rgba(20, 24, 36, 0.94);
+  --tv-text: #e9edf5;
+  --tv-dim: #8d97ab;
+  --tv-accent: #4f8cff;
+  --tv-accent2: color-mix(in srgb, var(--tv-accent), white 35%);
+  --tv-accent-soft: color-mix(in srgb, var(--tv-accent) 35%, transparent);
+  --tv-ok: #3fbf7f;
+  --tv-warn: #e6b450;
+  --tv-err: #ef5f5f;
+  --tv-bg-grad: #1b2236;
+  /* the look editor (Menu → Wygląd, look.ts) overrides these on the .tv element; defaults = EmuStart's */
+  --tv-row: max(28px, 4.6vh);
+  --tv-setrow: max(28px, 4.6vh);
+  --tv-media-h: 44vh;
+  --tv-list-w: 42%;
+  --tv-car-h: 34%;
+  --tv-car-w: 26vw;
+  --tv-listlogo-h: 6.5vh;
+  --tv-tlogo-h: 0.92;
+  --tv-tlogo-w: 75%;
+  --tv-desc-lines: 14;
+  --tv-fs: 1;
+  --tv-fs-list: 1;
+  --tv-fs-title: 1;
+  --tv-fs-meta: 1;
+  --tv-fs-desc: 1;
+  --tv-fs-sys: 1;
+  --tv-fs-sysdesc: 1;
+  --tv-fs-menu: 1;
+  --tv-fs-hint: 1;
+  --tv-fs-top: 1;
+  /* overscan-safe frame: many TVs still crop ~3–5% of each edge, so the bars and the content keep
+     clear of it (the backdrop and the art may still bleed to the edge) */
+  --tv-safe-x: 5vw;
+  --tv-safe-y: 3vh;
+  --tv-bar-h: 7vh;
+  /* the selected row's start: the accent darkened enough that white text on it keeps ≥ 4.5:1 for
+     every accent in the look editor (gold and turquoise included) */
+  --tv-sel-start: color-mix(in oklab, var(--tv-accent), black 25%);
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 0%, var(--tv-bg-grad) 0%, var(--tv-bg) 60%) fixed, var(--tv-bg);
+  color: var(--tv-text);
+  /* typefaces: the look of the theme in use (look.ts FONTS, "Czcionka tekstu" / "Czcionka nagłówków") */
+  font-family: var(--tv-font, 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif);
+  /* one size rule for every theme — grows with the screen, so 4K stays readable from the couch —
+     and the same x-height whatever the typeface: the same "Wielkość czcionek" gives the same size of
+     text in Segoe, Alegreya or Exo 2 */
+  font-size: calc(clamp(18px, 2.2vh, 64px) * var(--tv-fs));
+  font-size-adjust: 0.52;
+  user-select: none;
+  overflow: hidden;
+}
+.tv img {
+  display: block;
+}
+
+/* top bar */
+.tv-top {
+  position: absolute;
+  inset: var(--tv-safe-y) 0 auto 0;
+  height: var(--tv-bar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--tv-safe-x);
+  z-index: 5;
+  font-size: calc(1em * var(--tv-fs-top));
+}
+.tv-brand {
+  font-size: 1.5em;
+  letter-spacing: 0.04em;
+  color: var(--tv-dim);
+}
+.tv-brand b {
+  color: var(--tv-text);
+  font-weight: 600;
+}
+.tv-status {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  color: var(--tv-dim);
+}
+.tv-pill {
+  padding: 0.25em 0.8em;
+  border-radius: 99px;
+  background: var(--tv-line);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.tv-pill.ok {
+  color: var(--tv-ok);
+}
+.tv-pill.warn {
+  color: var(--tv-warn);
+}
+.tv-pill.err {
+  color: var(--tv-err);
+}
+.tv-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1em;
+  color: var(--tv-text);
+}
+
+.tv-screen {
+  position: absolute;
+  inset: calc(var(--tv-safe-y) + var(--tv-bar-h)) 0;
+}
+.tv-dim {
+  color: var(--tv-dim);
+}
+.tv-empty {
+  position: absolute;
+  inset: 30% 20% auto;
+  text-align: center;
+  color: var(--tv-dim);
+}
+.tv-empty h2 {
+  color: var(--tv-text);
+}
+
+/* system carousel */
+.tv-carousel {
+  /* at most 46% of the screen: the carousel ends above the system's name and description (top 60%) */
+  --tv-car-hh: min(46%, var(--tv-car-h));
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(35% - var(--tv-car-hh) / 2);
+  height: var(--tv-car-hh);
+  overflow: hidden;
+}
+.tv-syscard {
+  container-type: size;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tv-car-w);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.28s,
+    filter 0.28s;
+  will-change: transform;
+  cursor: pointer;
+}
+.tv-syscard img {
+  max-width: 92%;
+  max-height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
+}
+.tv-syscard .txt {
+  font-size: calc(3.4vw * var(--tv-fs-sys));
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.tv-sysinfo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 60%;
+  bottom: 0;
+  overflow: hidden;
+  text-align: center;
+  /* big fonts from the look editor: the text fades out above the hints instead of being cut */
+  mask-image: linear-gradient(#000 calc(100% - 2.4em), transparent);
+}
+.tv-sysinfo h1 {
+  font-size: calc(2.6em * var(--tv-fs-sys));
+  margin: 0 0 0.2em;
+  font-weight: 600;
+}
+.tv-sysinfo p {
+  color: var(--tv-dim);
+  margin: 0;
+  font-size: calc(1.15em * var(--tv-fs-sysdesc));
+}
+.tv-sysabout {
+  margin: 1.4em auto 0;
+  max-width: 70vw;
+}
+.tv-sysfacts b {
+  color: var(--tv-text);
+}
+.tv-sysinfo .tv-sysdesc {
+  margin-top: 0.4em;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* game list */
+.tv-games {
+  display: grid;
+  /* the list keeps its width whatever the preview holds (a wide screenshot, a long title) */
+  grid-template-columns: max(300px, var(--tv-list-w)) minmax(0, 1fr);
+  /* list | preview; below both, the logo and details bar */
+  grid-template-rows: minmax(0, 1fr) auto;
+  row-gap: 1.5vh;
+  gap: 2.5vw;
+  padding: 0 var(--tv-safe-x);
+}
+.tv-gamelist {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tv-listhead {
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  height: calc(var(--tv-listlogo-h) + 2.5vh);
+  flex: 0 0 auto;
+}
+.tv-listhead img {
+  height: var(--tv-listlogo-h);
+  max-width: 22vw;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+}
+.tv-listhead h2 {
+  margin: 0;
+  font-size: 1.6em;
+}
+.tv-lhtext {
+  margin-left: auto;
+  text-align: right;
+  color: var(--tv-dim);
+}
+.tv-lhtext p {
+  margin: 0;
+}
+.tv-rows {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+.tv-row {
+  height: var(--tv-row);
+  font-size: calc(1em * var(--tv-fs-list));
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0 1em;
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.tv-row .t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-row .g {
+  color: var(--tv-dim);
+  font-size: 0.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 3;
+}
+.tv-row .ic {
+  margin-left: auto;
+  display: flex;
+  gap: 0.4em;
+  flex-shrink: 0;
+  font-size: 0.8em;
+}
+.tv-row.sel {
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
+  color: #fff;
+}
+.tv-row.sel .g {
+  color: rgba(255, 255, 255, 0.8);
+}
+.tv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.05em 0.5em;
+  border-radius: 5px;
+  background: var(--tv-line);
+  color: var(--tv-dim);
+}
+.tv-tag.c {
+  color: var(--tv-ok);
+}
+.tv-tag.p,
+.tv-tag.f {
+  color: var(--tv-warn);
+}
+.tv-tag.d {
+  color: var(--tv-accent2);
+}
+.tv-row.sel .tv-tag {
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+}
+
+/* preview: cover | details | screenshot, description below */
+.tv-preview {
+  position: relative;
+  display: grid;
+  /* cover | screenshot at one height (--tv-media-fit from TvPreview lowers both when they do not fit
+     side by side); the description below them (the logo and details: the bar under list and preview) */
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: var(--tv-media-fit, var(--tv-media-h)) minmax(0, 1fr);
+  gap: 2.5vh 1.6vw;
+  padding-top: 1.25vh;
+  overflow: hidden;
+  min-height: 0;
+}
+.tv-box,
+.tv-snap {
+  height: var(--tv-media-fit, var(--tv-media-h));
+  position: relative;
+  align-self: start;
+}
+/* the cover is shown whole here: no blurred copy around it (that is for the desktop's 2:3 frames) */
+.tv-box .art-fit__bg {
+  display: none;
+}
+.tv-box .tv-boxart {
+  height: var(--tv-media-fit, var(--tv-media-h));
+  width: auto;
+  max-width: 30vw;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  background: none;
+}
+.tv-noart {
+  height: var(--tv-media-fit, var(--tv-media-h));
+  width: calc(var(--tv-media-fit, var(--tv-media-h)) * 0.75);
+  border: 2px dashed var(--tv-line);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tv-dim);
+  font-size: 0.85em;
+}
+/* --ar: the image's own shape (TvPreview); small native screenshots (256x224) are scaled up to the
+   full height like the cover */
+.tv-snap .tv-snapart {
+  /* always the cover's height: the image's own shape up to 16:9; wider art (Steam's 3:1 heroes) is
+     cropped to 16:9 instead of shrinking to a strip lower than the cover */
+  height: var(--tv-media-fit, var(--tv-media-h));
+  width: calc(var(--tv-media-fit, var(--tv-media-h)) * min(var(--ar, 1.3333), 1.7778));
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: #000;
+}
+.tv-snap {
+  justify-self: end;
+}
+/* the bar at the bottom of the screen, across the whole width (list and preview): the game's logo on
+   the left, the details next to it in a few lines */
+.tv-info {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 2vw;
+  min-width: 0;
+  padding: 1.2vh 1.6vw;
+  background: var(--tv-panel);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+}
+.tv-info__logo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  max-width: 28vw;
+  min-width: 0;
+}
+.tv-info__body {
+  flex: 1;
+  min-width: 0;
+}
+.tv-info h1 {
+  margin: -0.15em 0 0;
+  font-size: calc(1.45em * var(--tv-fs-title));
+  line-height: 1.15;
+  font-weight: 600;
+}
+/* the details as one flowing block of "label value" pairs (2-3 lines) */
+.tv-info dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em 1.8em;
+  margin: 0;
+  font-size: calc(0.92em * var(--tv-fs-meta));
+}
+.tv-dlrow {
+  display: flex;
+  gap: 0.5em;
+  min-width: 0;
+  max-width: 100%;
+}
+.tv-info dt {
+  color: var(--tv-dim);
+}
+.tv-info dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-info .st-c {
+  color: var(--tv-ok);
+}
+.tv-info .st-n {
+  color: var(--tv-accent2);
+}
+.tv-note {
+  margin: 0.4em 0 0;
+  color: var(--tv-dim);
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+.tv-desc {
+  grid-column: 1 / -1;
+  align-self: start;
+  /* long reading: brighter than the other secondary text */
+  color: color-mix(in srgb, var(--tv-text) 75%, var(--tv-dim));
+  font-size: calc(0.95em * var(--tv-fs-desc));
+  line-height: 1.45;
+  overflow: hidden;
+  min-height: 0;
+  max-height: calc(var(--tv-desc-lines) * 1.45em);
+}
+.tv-desc p {
+  margin: 0 0 0.6em;
+}
+/* longer than the room it has: fade the last line out instead of cutting it in half, and after a
+   pause on the game scroll slowly to the end and back (TvGames: useDescScroll) */
+.tv-desc.is-cut {
+  mask-image: linear-gradient(#000 calc(100% - 2.6em), transparent);
+}
+.tv-desc.is-cut .tv-desc__in {
+  animation: tv-desc-scroll var(--tv-desc-t, 20s) linear 3s infinite alternate both;
+}
+@keyframes tv-desc-scroll {
+  0%,
+  10% {
+    translate: 0 0;
+  }
+  90%,
+  100% {
+    /* + the faded band, so the last line ends up clear of it */
+    translate: 0 calc(-1 * var(--tv-desc-d, 0px) - 2.6em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-desc.is-cut .tv-desc__in {
+    animation: none !important;
+  }
+}
+
+/* button hints */
+.tv-hints {
+  position: absolute;
+  inset: auto 0 var(--tv-safe-y) 0;
+  height: var(--tv-bar-h);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* ten hints (the game list) must still fit inside the safe frame at the default text size, in the
+     widest theme typeface too; the gap follows "Wielkość podpowiedzi". One line only: a second one
+     would run into the details bar above and below the safe frame */
+  gap: min(2em, calc(1.2vw * var(--tv-fs-hint)));
+  padding: 0 var(--tv-safe-x);
+  color: var(--tv-dim);
+  font-size: calc(0.9em * var(--tv-fs-hint));
+}
+.tv-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  white-space: nowrap;
+}
+.tv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7em;
+  height: 1.7em;
+  padding: 0 0.35em;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: 0.85em;
+  color: #fff;
+}
+.tv-btn--a {
+  background: var(--glyph-a);
+}
+.tv-btn--b {
+  background: var(--glyph-b);
+}
+.tv-btn--x {
+  background: var(--glyph-x);
+}
+.tv-btn--y {
+  background: var(--glyph-y);
+  color: var(--glyph-y-ink);
+}
+.tv-btn--sq {
+  background: #3a4153;
+  border-radius: 6px;
+  padding: 0 0.5em;
+}
+
+/* menu */
+.tv-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 12, 0.6);
+  backdrop-filter: blur(6px);
+}
+.tv-panel {
+  min-width: 34vw;
+  background: var(--tv-panel);
+  border: 1px solid var(--tv-line);
+  border-radius: 16px;
+  padding: 2.5vh 2vw;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+  font-size: calc(1em * var(--tv-fs-menu));
+}
+.tv-panel h2 {
+  margin: 0 0 1.2vh;
+  font-weight: 600;
+}
+.tv-menulist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tv-menulist li {
+  min-height: var(--tv-setrow);
+  display: flex;
+  align-items: center;
+  padding: 0.2em 1em;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tv-menulist li.sel {
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
+  color: #fff;
+}
+
+/* Lumen's settings inside the TV frame */
+.tv-settings {
+  overflow: auto;
+  padding: 0 6vw;
+  font-size: calc(1em * var(--tv-fs-menu));
+}
+
+
+.tv-filters-on {
+  color: var(--tv-accent2);
+  font-size: 0.85em;
+  max-width: 30vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* "Tytuły gier jako logo": the logo replaces the title once loaded (rows and the preview header) */
+.tv-logo {
+  display: flex;
+  min-width: 0;
+}
+.tv-logo.is-wait {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+.tv-logo .tv-logo__img {
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+  background: none;
+}
+.tv-row .tv-logo .tv-logo__img {
+  height: calc(var(--tv-row) * var(--tv-tlogo-h));
+  max-width: var(--tv-tlogo-w);
+}
+.tv-info .tv-logo .tv-logo__img {
+  height: 8vh;
+  max-width: 28vw;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+}
+
+/* look editor (Menu → Wygląd): a side panel over the live layout — every change shows at once */
+.tv-look {
+  position: absolute;
+  top: calc(var(--tv-safe-y) + var(--tv-bar-h));
+  bottom: calc(var(--tv-safe-y) + var(--tv-bar-h));
+  right: var(--tv-safe-x);
+  width: min(44vw, 780px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  /* opaque: the live layout beside it is the preview, nothing should show through the settings */
+  background: linear-gradient(var(--tv-panel), var(--tv-panel)), var(--tv-bg);
+  border: 1px solid var(--tv-line);
+  border-radius: 16px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+  font-size: calc(1em * var(--tv-fs-menu));
+}
+.tv-look.left {
+  right: auto;
+  left: var(--tv-safe-x);
+}
+.tv-look h2 {
+  margin: 0;
+  padding: 2vh 1.5vw 1vh;
+  font-weight: 600;
+}
+.tv-look__list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 1vw 1.5vh;
+}
+.tv-lkrow {
+  min-height: var(--tv-setrow);
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.2em 0.8em;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tv-lkrow.head {
+  min-height: 0;
+  padding: 1.2em 0.8em 0.3em;
+  color: var(--tv-dim);
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: default;
+}
+.tv-lkrow.sel {
+  background: linear-gradient(90deg, var(--tv-sel-start), var(--tv-accent-soft));
+  color: #fff;
+}
+.tv-lkrow .lk {
+  flex: 1;
+  min-width: 0;
+}
+.tv-lkrow.chg .lk::after {
+  content: ' •';
+  color: var(--tv-accent2);
+}
+.tv-lkrow.sel.chg .lk::after {
+  color: #fff;
+}
+.tv-lkrow .lv {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex-shrink: 0;
+}
+.tv-lkrow .lv b {
+  min-width: 6.5em;
+  text-align: right;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tv-lkrow .ch {
+  width: 1.6em;
+  text-align: center;
+  opacity: 0.7;
+}
+.tv-lkrow .track {
+  position: relative;
+  width: 5em;
+  height: 0.35em;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.tv-lkrow .track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--tv-accent2);
+}
+.tv-lkrow.sel .track i {
+  background: #fff;
+}
+.tv-lkrow .sw {
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+/* sized from the card like the server's logos (look editor: "Logo systemu w karuzeli") */
+.tv-syslogo-steam {
+  font-size: min(12.5cqw, 30cqh);
+  filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.6));
+}
+.tv-listlogo-steam {
+  font-size: calc(var(--tv-listlogo-h) * 0.6);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+}
+.tv-pill .icon {
+  margin-right: 0.15em;
+}
+
+/* ---------- themes (themes.ts): shared pieces every theme can use ---------- */
+
+/* moving background layer (the theme's stylesheet draws it); under the screens, over the page */
+.tv-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* the platform's console photo behind the system carousel (themes.ts consoleBackdrop): the theme sets
+   its tone (--tv-con-filter, --tv-con-op); bright consoles are toned down and dark ones lifted by the
+   photo's mean brightness (--con-lum from the server, 0–1): 0.15 → ×1.2, 0.8 → ×0.68 */
+.tv-console {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  filter: brightness(calc(1.32 - 0.8 * var(--con-lum, 0.5)));
+  animation: tv-backdrop-in 0.7s ease both;
+}
+.tv-console img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* wide sets fill the width, tall consoles (towers, handhelds standing up) stay inside the height */
+  width: min(78vw, 140vh);
+  height: 78vh;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  opacity: var(--tv-con-op, 0.3);
+  filter: var(--tv-con-filter, none);
+}
+.tv-console::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 70% at 50% 45%, transparent 30%, var(--tv-bg) 88%);
+}
+.tv-concredit {
+  position: absolute;
+  right: 2.5vw;
+  bottom: 0;
+  margin: 0;
+  font-size: 0.75em;
+  color: var(--tv-dim);
+  opacity: 0.75;
+}
+
+/* theme chooser: a side panel, the whole layout stays visible behind it as the live preview */
+.tv-modal--side {
+  justify-content: flex-end;
+  padding-right: var(--tv-safe-x);
+  background: none;
+  backdrop-filter: none;
+}
+.tv-themes {
+  width: 30vw;
+  min-width: 0;
+}
+.tv-themes li {
+  gap: 1em;
+}
+.tv-themes__now {
+  margin-left: auto;
+  font-size: 0.78em;
+  opacity: 0.75;
+}
+.tv-themes__desc {
+  margin: 1.6vh 0 0;
+  min-height: 4.4em;
+  color: var(--tv-dim);
+  line-height: 1.45;
+}
+
+/* ---------- cover ribbon (games.layout = "coverflow") ---------- */
+.tv-games--flow {
+  --tv-flow-max: 45vh;
+  grid-template-columns: minmax(0, 1fr);
+  /* head | ribbon (with its reflection) | title + description and the details, side by side; the panels
+     a little lower than half, so the reflections under the covers show */
+  grid-template-rows: auto minmax(0, 0.96fr) minmax(0, 1fr);
+  row-gap: 1.2vh;
+}
+/* the ribbon also takes the head's row: the platform logo stays in the top left corner, the selected
+   cover rises past its lower edge (the side covers stay below it), so the covers can be taller */
+.tv-games--flow > .tv-listhead {
+  grid-area: 1 / 1;
+}
+.tv-games--flow > .tv-flow {
+  grid-area: 1 / 1 / 3;
+}
+.tv-games--flow > .tv-flow__panel {
+  grid-area: 3 / 1;
+}
+/* no games: the message stays below the head, where it was */
+.tv-games--flow > .tv-flow > .tv-dim {
+  margin-top: calc(var(--tv-listlogo-h) + 3.7vh);
+}
+.tv-flow__panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1.4vw;
+  min-height: 0;
+}
+.tv-flow__main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  min-height: 0;
+  /* the game's logo stands above the panel (.tv-flow__title): the text starts at the top */
+  padding: 1.6vh 1.8vw;
+  background: var(--tv-panel);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+}
+.tv-flow {
+  position: relative;
+  min-height: 0;
+  container-type: size;
+  /* the horizon (the covers' feet): a fixed room below it for the reflections */
+  --tv-flow-floor: 6vh;
+  --tv-flow-horizon: calc(100% - var(--tv-flow-floor));
+}
+.tv-flow__stage {
+  /* a cover is 2:3, at most --tv-flow-max high. The selected one (scale 1.08 around a point 0.3 H above
+     its feet: top at 1.056 H above the horizon, HUD corners 1.6vh above it) ends at the top bar */
+  --tv-flow-h: min(var(--tv-flow-max, 40vh), calc((100cqh - var(--tv-flow-floor) - 1.6vh) / 1.056));
+  --tv-flow-w: calc(var(--tv-flow-h) * 2 / 3);
+  position: absolute;
+  inset: 0;
+}
+.tv-flow__item {
+  position: absolute;
+  left: 50%;
+  /* each cover its own shape (TvCoverflow coverBox: --w, --h in ribbon heights), all standing on the
+     horizon line */
+  top: calc(var(--tv-flow-horizon) - var(--h, 1) * var(--tv-flow-h));
+  width: calc(var(--w, 0.6667) * var(--tv-flow-h));
+  height: calc(var(--h, 1) * var(--tv-flow-h));
+  /* covers shrink away from the middle (flowScale) around a point low on the cover: their tops fall
+     more than their feet rise, as in perspective */
+  transform-origin: 50% calc(100% - 0.3 * var(--tv-flow-h));
+  transform-style: preserve-3d;
+  transition:
+    transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s,
+    filter 0.3s;
+  filter: brightness(0.6) saturate(0.85);
+  cursor: pointer;
+}
+.tv-flow__item.sel {
+  filter: none;
+}
+.tv-flow__cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+}
+.tv-flow__cover .art-placeholder {
+  font-size: 1.1em;
+}
+.tv-flow__name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 10%;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tv-dim);
+  overflow-wrap: anywhere;
+}
+.tv-flow__cover .art,
+.tv-flow__cover .art-placeholder {
+  position: relative;
+}
+
+/* platform logos as their makers drew them (SystemLogo.tsx) */
+.sys-logo {
+  position: relative;
+  display: inline-flex;
+}
+.tv-syscard .sys-logo img {
+  max-width: 92cqw;
+  max-height: 80cqh;
+}
+/* the theme's plate under the logo (themes.ts logoPlate): its stylesheet gives the image (--tv-plate), its
+   proportions (--tv-plate-ar) and the area the logo may fill, in % of the plate (--tv-plate-lw/-lh) */
+.sys-plate {
+  display: grid;
+  place-items: center;
+  aspect-ratio: var(--tv-plate-ar);
+  background: var(--tv-plate) center / 100% 100% no-repeat;
+  container-type: size;
+  transition: filter 0.28s;
+}
+.sys-plate img {
+  width: auto;
+  height: auto;
+  max-width: calc(var(--tv-plate-lw) * 1cqw);
+  max-height: calc(var(--tv-plate-lh) * 1cqh);
+  object-fit: contain;
+}
+/* pixel-art logo (SystemLogo.tsx PixelLogo): the span is the area the logo may fill; the image inside gets the
+   largest whole-number zoom that fits (set from script), drawn with sharp pixels */
+.sys-pixel {
+  position: relative;
+  display: block;
+}
+.sys-pixel img {
+  position: absolute; /* placed by script on a whole device pixel */
+  image-rendering: pixelated;
+  object-fit: fill; /* the box is an exact whole-number multiple of the art pixels */
+}
+.tv-syscard .sys-pixel {
+  width: 92cqw;
+  height: 80cqh;
+}
+.tv-listhead .sys-pixel {
+  width: 22vw;
+  height: var(--tv-listlogo-h);
+  text-align: left; /* the list header's logo sits on the left (PixelLogo reads it) */
+}
+.sys-plate .sys-pixel {
+  width: calc(var(--tv-plate-lw) * 1cqw);
+  height: calc(var(--tv-plate-lh) * 1cqh);
+  text-align: center;
+}
+.sys-plate .steam-logo {
+  font-size: min(calc(var(--tv-plate-lw) * 0.16cqw), calc(var(--tv-plate-lh) * 0.42cqh));
+}
+.sys-plate :is(.txt, h2) {
+  max-width: calc(var(--tv-plate-lw) * 1cqw);
+  font-size: min(calc(var(--tv-plate-lw) * 0.1cqw), calc(var(--tv-plate-lh) * 0.4cqh));
+  text-align: center;
+  margin: 0;
+}
+.tv-syscard .sys-plate {
+  width: min(100cqw, calc(80cqh * var(--tv-plate-ar)));
+}
+.tv-listhead .sys-plate {
+  height: calc(var(--tv-listlogo-h) + 2.5vh);
+}
+/* the mirror image under each cover, fading out towards the floor */
+.tv-flow--mirror .tv-flow__cover {
+  -webkit-box-reflect: below 0.8vh linear-gradient(transparent 60%, rgba(255, 255, 255, 0.3));
+}
+/* the selected cover: a ring in the theme's accent (part of the pad contract — always visible) */
+.tv-flow__item.sel .tv-flow__cover {
+  box-shadow:
+    0 0 0 3px var(--tv-accent),
+    0 0 46px color-mix(in srgb, var(--tv-accent) 45%, transparent),
+    0 26px 60px rgba(0, 0, 0, 0.6);
+}
+/* the game's logo (or name) just above the panel, out of it: the description gets its row */
+.tv-flow__title {
+  position: absolute;
+  bottom: calc(100% + 1vh);
+  left: 1.4vw;
+  max-width: calc(100% - 2.8vw);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.tv-flow__title h1 {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+.tv-flow__title h1 {
+  margin: 0;
+  font-size: calc(2.1em * var(--tv-fs-title));
+  font-weight: 600;
+  line-height: 1.1;
+}
+.tv-flow__title .tv-logo .tv-logo__img {
+  height: 11vh;
+  max-width: 30vw;
+  object-position: left bottom;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+}
+/* the description fills the panel: full text colour, roomy lines; longer ones scroll (useDescScroll) */
+.tv-desc.tv-flow__desc {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  color: var(--tv-text);
+  font-size: calc(1.05em * var(--tv-fs-desc));
+  line-height: 1.55;
+}
+/* the details as a column of label / value rows, not one long line — beside the description */
+.tv-games--flow .tv-info {
+  grid-column: auto;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  min-height: 0;
+}
+/* two pairs of label / value columns, filled row by row (Status | Rozmiar, Ostatnio | Czas gry…) */
+.tv-games--flow .tv-info dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 0.5em 1em;
+  font-size: calc(1em * var(--tv-fs-meta));
+}
+.tv-games--flow .tv-dlrow {
+  display: contents;
+}
+/* half the width: a long value goes to a second line instead of being cut */
+.tv-games--flow .tv-info dd {
+  white-space: normal;
+}
+
+/* the selected game's art behind everything, fading into the page at the bottom */
+.tv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.45;
+  animation: tv-backdrop-in 0.7s ease both;
+}
+.tv-backdrop .art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  animation: tv-backdrop-drift 40s ease-in-out infinite alternate;
+}
+.tv-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tv-bg) 55%, transparent) 0%, transparent 30%, color-mix(in srgb, var(--tv-bg) 80%, transparent) 62%, var(--tv-bg) 88%),
+    radial-gradient(120% 90% at 50% 40%, transparent 40%, var(--tv-bg) 100%);
+}
+@keyframes tv-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tv-backdrop-drift {
+  to {
+    transform: scale(1.08) translate(-1.5%, -1%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-backdrop .art,
+  .tv-ambient,
+  .tv-ambient::before,
+  .tv-ambient::after {
+    animation: none !important;
+  }
+}
+
+/* headings and names in the theme's display typeface, at their own proportions (not x-height matched:
+   engraved capitals or squared display faces keep their character) */
+.tv :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-look h2) {
+  font-family: var(--tv-font-head, inherit);
+  font-size-adjust: none;
+}
+
+/* the frame already has the picture's shape: no blurred copy around it, fill it exactly */
+.tv-flow__cover .art-fit__bg {
+  display: none;
+}
+.tv-flow__cover .art--fit {
+  object-fit: cover;
+}
+
+/* group whose subgroups the carousel shows (Konsole › …) */
+.tv-syspath {
+  margin: 0 0 0.2em;
+  font-size: calc(1.05em * var(--tv-fs-sys, 1));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* zadania (pobieranie, instalacja) na każdym ekranie trybu TV */
+.tv-jobs {
+  flex: 0 1 38vw;
+  min-width: 0;
+  margin: 0 2vw;
+  font-size: 0.9em;
+  color: var(--tv-dim);
+}
+.tv-jobs__text {
+  display: flex;
+  gap: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tv-jobs__text b {
+  color: var(--tv-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-jobs .download__bar {
+  margin-top: 0.25em;
+}

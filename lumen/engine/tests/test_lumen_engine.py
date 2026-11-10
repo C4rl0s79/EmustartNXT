@@ -1,0 +1,276 @@
+"""EmuStart jako silnik Lumen (engine_main.py, emustart/lumen.py) — dane wyłącznie testowe."""
+
+from __future__ import annotations
+
+import json
+import threading
+import urllib.error
+import urllib.request
+
+from emustart import lumen, paths, savesync, server
+
+
+def test_data_home_from_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("EMUSTART_HOME", str(tmp_path))
+    assert paths.data_home() == tmp_path.resolve()
+    monkeypatch.delenv("EMUSTART_HOME")
+    assert paths.data_home() == paths.app_dir()
+
+
+class _Api:
+    def ping(self):
+        return {"pong": True}
+
+
+def _post(url: str, headers: dict) -> int:
+    req = urllib.request.Request(url, data=b"[]", method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status
+    except urllib.error.HTTPError as ex:
+        return ex.code
+
+
+def test_api_needs_session_token(monkeypatch):
+    monkeypatch.setattr(server, "ENGINE_TOKEN", "sekret-testowy")
+    base = server.start(0, dev_api=_Api())
+    assert _post(base + "/api/ping", {"X-EmuStart": "1"}) == 403
+    assert _post(base + "/api/ping", {"X-EmuStart": "1", "X-Lumen-Token": "zly"}) == 403
+    assert _post(base + "/api/ping", {"X-EmuStart": "1", "X-Lumen-Token": "sekret-testowy"}) == 200
+
+
+def test_without_engine_token_api_works_as_before(monkeypatch):
+    monkeypatch.setattr(server, "ENGINE_TOKEN", "")
+    base = server.start(0, dev_api=_Api())
+    assert _post(base + "/api/ping", {"X-EmuStart": "1"}) == 200
+
+
+def _bare_api() -> lumen.LumenApi:
+    api = object.__new__(lumen.LumenApi)
+    api._cfg = {"emu_root": "D:/emu"}
+    api._profile = 1
+    api._conflicts = []
+    api._conflicts_lock = threading.Lock()
+    api._lib_version = 3
+    return api
+
+
+def test_library_has_stable_ids_and_no_secrets(monkeypatch):
+    api = _bare_api()
+    monkeypatch.setattr(lumen.LumenApi, "list_systems", lambda self: [{"es": "snes", "display": "Super Nintendo"}])
+    monkeypatch.setattr(lumen.LumenApi, "_server_state", lambda self: {"ok": True})
+    monkeypatch.setattr(lumen.catalog, "list_games", lambda cfg, es, prof: [
+        {"id": 12, "name": "Test Quest (Europe)", "title": "Test Quest", "tags": "(Europe)", "size": 10,
+         "cached": 1, "pinned": 0, "last": 0, "seconds": 0, "favorite": 0, "box": "/media/x"}])
+    monkeypatch.setattr(lumen.profiles, "get", lambda pid: {"id": 1, "name": "Gracz", "pin_hash": "h", "pin_token": "t"})
+    lib = api.lumen_library()
+    g = lib["games"][0]
+    assert g["sid"] == savesync.game_id("snes", "Test Quest (Europe)")
+    assert g["cached"] is True and g["es"] == "snes" and g["box"] == "/media/x"
+    assert lib["profile"] == {"id": 1, "name": "Gracz"}
+    assert "pin_hash" not in json.dumps(lib) and "pin_token" not in json.dumps(lib)
+
+
+def test_library_of_some_systems_only(monkeypatch):
+    """Po grze / pobraniu Lumen pyta tylko o systemy tych gier: te same wiersze, lista systemów cała."""
+    api = _bare_api()
+    asked = []
+    monkeypatch.setattr(lumen.LumenApi, "list_systems", lambda self: [{"es": "snes", "display": "SNES"},
+                                                                      {"es": "nes", "display": "NES"}])
+    monkeypatch.setattr(lumen.LumenApi, "_server_state", lambda self: {"ok": True})
+
+    def games(cfg, es, prof):
+        asked.append(es)
+        return [{"id": 1 if es == "snes" else 2, "name": f"Gra {es}", "title": "Gra", "tags": "", "size": 1,
+                 "cached": 0, "pinned": 0, "last": 0, "seconds": 0, "favorite": 0}]
+    monkeypatch.setattr(lumen.catalog, "list_games", games)
+    monkeypatch.setattr(lumen.profiles, "get", lambda pid: {"id": 1, "name": "Gracz"})
+    full = api.lumen_library()
+    part = api.lumen_library(["snes"])
+    assert asked == ["snes", "nes", "snes"]
+    assert [g["es"] for g in part["games"]] == ["snes"] and part["games"][0] == full["games"][0]
+    assert [s["es"] for s in part["systems"]] == ["snes", "nes"] and part["only"] == ["snes"]
+    assert "only" not in full
+
+
+def test_conflicts_reach_both_interfaces():
+    api = _bare_api()
+    api._keep_conflicts([{"profile": "Gracz", "file": "a.srm"}])
+    api._keep_conflicts([])
+    assert [c["file"] for c in api._conflicts] == ["a.srm"]
+    api.lumen_conflicts_clear()
+    assert api._conflicts == []
+
+
+def test_quit_is_left_to_lumen(capsys):
+    _bare_api().quit()
+    out = capsys.readouterr().out.strip()
+    assert json.loads(out) == {"lumen_event": {"type": "quit"}}
+
+
+def test_disc_counts(tmp_path, monkeypatch):
+    """Liczba płyt gry wielopłytowej (ikona w obu interfejsach) — z plików gry w bazie."""
+    import json as _json
+    from emustart import library
+    monkeypatch.setattr(paths, "DATA", tmp_path / "data")
+    monkeypatch.setattr(paths, "DB_PATH", tmp_path / "data" / "lib.sqlite")
+    library._local.con = None
+    con = library.db()
+    def add(gid, rel, files, multidisc):
+        con.execute("INSERT INTO games(id, es, rel, name, title, tags, files, size, multidisc) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (gid, "psx", rel, rel, rel, "", _json.dumps([[f, 1, 1.0] for f in files]), 1, multidisc))
+    add(1, "Diner (Disc A).chd", ["Diner (Disc A).chd", "Diner (Disc B).chd", "Diner (Disc C).chd"], 1)
+    add(2, "FF7 (USA).m3u", ["FF7 (USA).m3u", "FF7 (USA) (Disc 1).cue", "FF7 (USA) (Disc 1).bin", "FF7 (USA) (Disc 2).cue",
+                              "FF7 (USA) (Disc 2).bin"], 0)
+    add(3, "Single (USA).chd", ["Single (USA).chd"], 0)
+    con.commit()
+    assert lumen.disc_counts() == {1: 3, 2: 2}
+    assert lumen.disc_counts("snes") == {}
+    library._local.con = None
+
+
+def test_launchbox_ids(tmp_path, monkeypatch):
+    """Id LaunchBox z metadanych serwera — Lumen łączy po nim wydania jednej gry."""
+    import json as _json
+    from emustart import library
+    monkeypatch.setattr(paths, "DATA", tmp_path / "data")
+    monkeypatch.setattr(paths, "DB_PATH", tmp_path / "data" / "lib.sqlite")
+    library._local.con = None
+    con = library.db()
+    for gid, data in ((1, {"lb_id": 4879}), (2, {"lb_id": 4879}), (3, {}), (4, {"lb_id": "x"})):
+        con.execute("INSERT INTO game_meta(game_id, data, edits, online, updated) VALUES(?,?,?,?,?)",
+                    (gid, _json.dumps(data), "{}", 1, 0))
+    con.execute("INSERT INTO game_meta(game_id, data, edits, online, updated) VALUES(5, 'zepsute', '{}', 1, 0)")
+    con.commit()
+    assert lumen.launchbox_ids() == {1: 4879, 2: 4879}
+    library._local.con = None
+
+
+def test_lumen_is_its_own_device(monkeypatch):
+    """Inny skrót sprzętu niż samodzielny EmuStart na tym komputerze — serwer nie unieważnia
+    rejestracji EmuStart przy logowaniu Lumena (i odwrotnie); stały między uruchomieniami."""
+    import types
+    sent = []
+    fake = types.SimpleNamespace(hw_id=lambda: "a" * 32, _post=lambda url, path, body=None, **k: sent.append((path, body)))
+    lumen.install_device_identity(fake)
+    hw = fake.hw_id()
+    assert hw != "a" * 32 and len(hw) == 32 and all(c in "0123456789abcdef" for c in hw)
+    assert fake.hw_id() == hw
+    lumen.install_device_identity(fake)              # drugi raz bez podwójnego mieszania
+    assert fake.hw_id() == hw
+    fake._post("u", "/v1/enroll/request", {"app": "EmuStart", "name": "PC"}, timeout=8)
+    fake._post("u", "/v1/other", {"app": "EmuStart"})
+    assert sent == [("/v1/enroll/request", {"app": "Lumen", "name": "PC"}), ("/v1/other", {"app": "EmuStart"})]
+    empty = types.SimpleNamespace(hw_id=lambda: "", _post=lambda *a, **k: None)
+    lumen.install_device_identity(empty)
+    assert empty.hw_id() == ""
+
+
+def test_lumen_device_name():
+    """Blokada profilu, logowanie i kopie zapasowe widzą „<komputer> (Lumen)”, nie samodzielny EmuStart."""
+    import socket
+    import types
+    mod = types.SimpleNamespace(socket=socket)
+    lumen.install_device_name(mod)
+    lumen.install_device_name(mod)                     # bez podwójnego dopisku
+    assert mod.socket.gethostname() == f"{socket.gethostname()} (Lumen)"
+    assert mod.socket.AF_INET == socket.AF_INET         # reszta modułu bez zmian
+
+
+def test_play_id_follows_the_chosen_variant(monkeypatch):
+    """Uruchamia się wersja wybrana w profilu (tłumaczenie), jak playId w interfejsie EmuStart."""
+    api = lumen.LumenApi.__new__(lumen.LumenApi)
+    games = {7: {"id": 7, "es": "snes", "rel": "a.sfc"}}
+    monkeypatch.setattr(lumen.library, "game", lambda gid: games.get(int(gid)))
+    monkeypatch.setattr(lumen.LumenApi, "_variant_choice", lambda self, g, variants=None: None)
+    assert api.lumen_play_id(7) == 7
+    monkeypatch.setattr(lumen.LumenApi, "_variant_choice", lambda self, g, variants=None: {"id": 42, "rel": "pl.sfc"})
+    assert api.lumen_play_id(7) == 42
+    assert api.lumen_play_id(99) == 99                  # nieznana gra — bez zmian
+
+
+def test_game_options_do_not_sync_saves(monkeypatch, tmp_path):
+    """„Opcje gry” w Lumenie (także pasek trybu TV przy przeglądaniu) liczą stany na tym komputerze —
+    bez czekania na wysyłkę po grze i bez synchronizacji paczek z serwerem (stany PS2 to setki MB)."""
+    from emustart import emulators, ingame, launcher, savebundles, syncclient, systems
+    api = _bare_api()
+    g = {"id": 7, "es": "ps2", "title": "God of War II", "name": "God of War II (USA)", "rel": "gow2.chd"}
+    monkeypatch.setattr(lumen.library, "game", lambda gid: g if int(gid) == 7 else None)
+    monkeypatch.setattr(lumen.library, "get_resume", lambda pid, gid: None)
+    monkeypatch.setattr(lumen.LumenApi, "game_detail", lambda self, gid: {"id": 7, "variant": 0})
+    monkeypatch.setattr(lumen.LumenApi, "_effective_emu", lambda self, gg: {"exe": "pcsx2-qt.exe", "args": "", "label": "PCSX2"})
+    monkeypatch.setattr(lumen.LumenApi, "_sync_status", lambda self, gg: {"state": "synced"})
+    monkeypatch.setattr(lumen.LumenApi, "_is_admin", lambda self: False)
+    monkeypatch.setattr(emulators, "options_for", lambda info, root: [])
+    monkeypatch.setattr(systems, "info", lambda es: {"display": "PlayStation 2", "kind": "console"})
+    monkeypatch.setattr(ingame, "adapter_for", lambda exe: type("Ad", (), {"family": "pcsx2"})())
+    monkeypatch.setattr(lumen.profiles, "bind", lambda ad, pid: None)
+    monkeypatch.setattr(launcher, "content_guess", lambda cfg, gg, exe: tmp_path / "gow2.chd")
+    monkeypatch.setattr(launcher, "ps2_info", lambda cfg, gg: gg)
+
+    class States:
+        kind = "states"
+        files = [(tmp_path / "SCUS-97481 (2F123FD8).00.p2s", "SCUS-97481 (2F123FD8).00.p2s"),
+                 (tmp_path / "SCUS-97481 (2F123FD8).01.p2s", "SCUS-97481 (2F123FD8).01.p2s"),
+                 (tmp_path / "shot.png", "shot.png")]
+
+        def collect(self):
+            return self
+
+    monkeypatch.setattr(savebundles, "for_game", lambda *a, **k: [States()])
+    monkeypatch.setattr(savebundles, "core_id", lambda args: "")
+
+    def no_network(*_a, **_k):
+        raise AssertionError("opcje gry nie mogą synchronizować zapisów ani czekać na wysyłkę")
+
+    monkeypatch.setattr(syncclient, "before", no_network)
+    monkeypatch.setattr(launcher, "wait_post", no_network)
+    monkeypatch.setattr(launcher, "resume_from_nas", no_network)
+    out = api.lumen_game_options(7)
+    assert out["ok"] and out["states"] == 2                       # bez miniatury .png
+    assert out["options"]["system"] == "PlayStation 2" and out["options"]["emulator"]["label"] == "PCSX2"
+    assert "states" not in out["options"]
+
+
+def test_game_options_list_save_slots_from_this_pc(monkeypatch, tmp_path):
+    """Sloty zapisów (EmuStart 0.50) w „Opcjach gry” Lumen: z plików na tym komputerze (aktywny w
+    folderach emulatora, pozostałe w folderze profilu), bez synchronizacji z serwerem."""
+    from emustart import emulators, ingame, launcher, library, profiles, savebundles, saveslots, syncclient, systems
+    monkeypatch.setattr(paths, "DB_PATH", tmp_path / "lib.sqlite")
+    library._local.con = None
+    monkeypatch.setattr(profiles, "LOCAL", tmp_path / "profiles")
+    api = _bare_api()
+    g = {"id": 7, "es": "snes", "title": "Chrono Trigger", "name": "Chrono Trigger (USA)", "rel": "ct.sfc"}
+    monkeypatch.setattr(lumen.library, "game", lambda gid: g if int(gid) == 7 else None)
+    monkeypatch.setattr(lumen.library, "get_resume", lambda pid, gid: None)
+    monkeypatch.setattr(lumen.LumenApi, "game_detail", lambda self, gid: {"id": 7, "variant": 0})
+    monkeypatch.setattr(lumen.LumenApi, "_effective_emu", lambda self, gg: {"exe": "retroarch.exe", "args": "", "label": "RA"})
+    monkeypatch.setattr(lumen.LumenApi, "_sync_status", lambda self, gg: {"state": "synced"})
+    monkeypatch.setattr(lumen.LumenApi, "_is_admin", lambda self: False)
+    monkeypatch.setattr(emulators, "options_for", lambda info, root: [])
+    monkeypatch.setattr(systems, "info", lambda es: {"display": "SNES", "kind": "console"})
+    monkeypatch.setattr(ingame, "adapter_for", lambda exe: type("Ad", (), {"family": "retroarch"})())
+    monkeypatch.setattr(lumen.profiles, "bind", lambda ad, pid: None)
+    monkeypatch.setattr(launcher, "content_guess", lambda cfg, gg, exe: tmp_path / "ct.sfc")
+    monkeypatch.setattr(launcher, "ps2_info", lambda cfg, gg: gg)
+    states = tmp_path / "states"
+    states.mkdir()
+    (states / "Chrono Trigger (USA).state1").write_bytes(b"S1")
+    bundles = [savebundles.Bundle("retroarch", "snes9x", "states", states, "Chrono Trigger (USA)", ["Chrono Trigger (USA)"])]
+    monkeypatch.setattr(savebundles, "for_game", lambda *a, **k: bundles)
+    monkeypatch.setattr(savebundles, "core_id", lambda args: "snes9x")
+    s3 = saveslots.store_bundle(1, *syncclient.game_ids(g), 3, bundles[0])
+    s3.folder.mkdir(parents=True)
+    (s3.folder / "game.state2").write_bytes(b"S3")
+
+    def no_network(*_a, **_k):
+        raise AssertionError("opcje gry nie mogą synchronizować zapisów")
+    monkeypatch.setattr(syncclient, "before", no_network)
+    monkeypatch.setattr(launcher, "wait_post", no_network)
+    try:
+        out = api.lumen_game_options(7)
+    finally:
+        library._local.con = None
+    slots = {s["slot"]: s for s in out["options"]["slots"]}
+    assert out["states"] == 1 and slots[1]["active"] and slots[1]["states"] == 1
+    assert slots[3]["states"] == 1 and not slots[3]["active"] and slots[2]["states"] == 0

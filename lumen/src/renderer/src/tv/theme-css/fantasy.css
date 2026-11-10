@@ -1,0 +1,253 @@
+/* Theme "Kronika" (fantasy) — themes.ts id "fantasy". The EmuStart layout kept as it is; what
+   changes is the material: dark oiled wood, gilded rules, an engraved display face (Cinzel) over a
+   sturdy book face (Alegreya) that stays readable from the couch. The one bold thing is the gilded
+   banner of the selected row; everything around it stays quiet. Colours: themes.ts palette. */
+
+.tv[data-theme='fantasy'] {
+  --tv-line: rgba(216, 164, 65, 0.18);
+  --tv-accent2: #e9c27a;
+  --tv-ok: #9fcf7f;
+  --tv-warn: #e9b450;
+  --tv-gild: linear-gradient(90deg, rgba(216, 164, 65, 0) 0%, #d8a441 18%, #f3d68e 50%, #d8a441 82%, rgba(216, 164, 65, 0) 100%);
+  font-weight: 450;
+  background:
+    radial-gradient(90% 60% at 50% -10%, rgba(120, 62, 28, 0.55) 0%, transparent 60%),
+    radial-gradient(70% 50% at 50% 115%, rgba(94, 26, 28, 0.45) 0%, transparent 70%),
+    radial-gradient(140% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.65) 100%),
+    var(--tv-bg);
+}
+
+/* display face (the look's "Czcionka nagłówków", Cinzel by default): names and titles only */
+.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.tv[data-theme='fantasy'] .tv-brand {
+  color: var(--tv-accent);
+}
+.tv[data-theme='fantasy'] .tv-brand b {
+  color: var(--tv-text);
+}
+.tv[data-theme='fantasy'] .tv-sysinfo h1 {
+  color: var(--tv-accent2);
+  text-shadow: 0 2px 18px rgba(216, 164, 65, 0.25);
+}
+
+/* the selected row: a gilded banner — oxblood field, gold rules above and below, gold edge */
+.tv[data-theme='fantasy'] .tv-row {
+  border-radius: 3px;
+}
+.tv[data-theme='fantasy'] .tv-row.sel {
+  position: relative;
+  color: var(--tv-sel-text);
+  background:
+    linear-gradient(90deg, var(--tv-sel-bg) 0%, rgba(94, 26, 28, 0.82) 55%, rgba(94, 26, 28, 0.35) 100%);
+  box-shadow:
+    inset 4px 0 0 var(--tv-accent),
+    inset 0 1px 0 rgba(243, 214, 142, 0.55),
+    inset 0 -1px 0 rgba(243, 214, 142, 0.55),
+    0 6px 24px rgba(0, 0, 0, 0.45);
+}
+.tv[data-theme='fantasy'] .tv-row.sel .g {
+  color: rgba(255, 246, 224, 0.82);
+}
+.tv[data-theme='fantasy'] .tv-tag {
+  border-radius: 3px;
+  background: rgba(216, 164, 65, 0.1);
+}
+.tv[data-theme='fantasy'] .tv-row.sel .tv-tag {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--tv-sel-text);
+}
+
+/* cover and screenshot in gilded frames: a fine gold line, a dark mat, a second faint line */
+.tv[data-theme='fantasy'] :is(.tv-box .tv-boxart, .tv-snap .tv-snapart) {
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgba(243, 214, 142, 0.85),
+    0 0 0 6px rgba(19, 14, 11, 0.92),
+    0 0 0 7px rgba(216, 164, 65, 0.4),
+    0 22px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* panels: leather with a gold rule along the top */
+.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel) {
+  position: relative;
+  border-radius: 4px;
+  border: 1px solid rgba(216, 164, 65, 0.3);
+  background:
+    linear-gradient(180deg, rgba(58, 36, 22, 0.55), transparent 60%),
+    var(--tv-panel);
+}
+.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel)::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: -1px;
+  height: 2px;
+  background: var(--tv-gild);
+}
+.tv[data-theme='fantasy'] .tv-menulist li {
+  border-radius: 3px;
+}
+.tv[data-theme='fantasy'] .tv-menulist li.sel {
+  color: var(--tv-sel-text);
+  background: linear-gradient(90deg, var(--tv-sel-bg), rgba(94, 26, 28, 0.45));
+  box-shadow: inset 4px 0 0 var(--tv-accent);
+}
+.tv[data-theme='fantasy'] .tv-pill {
+  background: rgba(216, 164, 65, 0.12);
+}
+.tv[data-theme='fantasy'] .tv-btn--sq {
+  background: rgba(216, 164, 65, 0.22);
+  color: var(--tv-text);
+}
+
+/* the system carousel: the plates warmed with candlelight; the platform in focus catches more of it */
+.tv[data-theme='fantasy'] .tv-syscard .sys-plate {
+  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 18px rgba(216, 120, 40, 0.18));
+}
+.tv[data-theme='fantasy'] .tv-syscard.is-current .sys-plate {
+  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 30px rgba(240, 170, 70, 0.4));
+}
+
+/* embers rising from the bottom of the screen: two layers of small glowing dots at two speeds */
+.tv-ambient--embers::before,
+.tv-ambient--embers::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+}
+.tv-ambient--embers::before {
+  background-image:
+    radial-gradient(3px 3px at 12% 78%, rgba(255, 176, 80, 0.95), transparent 70%),
+    radial-gradient(2px 2px at 33% 42%, rgba(255, 140, 60, 0.85), transparent 70%),
+    radial-gradient(3.5px 3.5px at 58% 66%, rgba(255, 196, 110, 0.9), transparent 70%),
+    radial-gradient(2px 2px at 81% 24%, rgba(255, 150, 70, 0.8), transparent 70%),
+    radial-gradient(3px 3px at 91% 88%, rgba(255, 186, 96, 0.85), transparent 70%);
+  background-size: 520px 520px;
+  opacity: 0.75;
+  animation: tv-embers-a 38s linear infinite;
+}
+.tv-ambient--embers::after {
+  background-image:
+    radial-gradient(1px 1px at 22% 18%, rgba(255, 200, 120, 0.9), transparent 70%),
+    radial-gradient(1.5px 1.5px at 47% 83%, rgba(255, 160, 80, 0.8), transparent 70%),
+    radial-gradient(1px 1px at 69% 51%, rgba(255, 210, 140, 0.85), transparent 70%),
+    radial-gradient(1px 1px at 8% 60%, rgba(255, 170, 90, 0.7), transparent 70%);
+  background-size: 360px 360px;
+  opacity: 0.4;
+  animation: tv-embers-b 62s linear infinite;
+}
+/* upwards by exactly two tiles of each layer, so the loop has no seam */
+@keyframes tv-embers-a {
+  to {
+    background-position: 0 -1040px;
+  }
+}
+@keyframes tv-embers-b {
+  to {
+    background-position: 0 -720px;
+  }
+}
+
+/* ---- beyond the palette: scale, platform logos on carved plates, the description on parchment, gothic windows ---- */
+
+.tv[data-theme='fantasy'] {
+  /* platform logos on a carved walnut cartouche with gilding and a dark leather field (SystemLogo.tsx) */
+  --tv-plate: url('./assets/kronika-plate.webp');
+  --tv-plate-ar: 1200 / 440;
+  --tv-plate-lw: 74;
+  --tv-plate-lh: 54;
+  /* the platform's console behind the carousel as an old sepia print by candlelight */
+  --tv-con-filter: sepia(0.6) saturate(0.7) brightness(0.62) contrast(1.05);
+  --tv-con-op: 0.3;
+  --tv-parchment: #ead9b0;
+  --tv-ink: #3a2513;
+}
+
+/* the description as a scroll of parchment: warm paper with darker, burnt edges, iron-gall ink, an
+   illuminated first letter, wooden rods at both ends */
+.tv[data-theme='fantasy'] .tv-desc {
+  position: relative;
+  padding: 1.8vh 1.8vw;
+  color: var(--tv-ink);
+  font-size: calc(1em * var(--tv-fs-desc));
+  font-weight: 500;
+  line-height: 1.5;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(255, 252, 235, 0.55), transparent 45%),
+    radial-gradient(ellipse at 85% 90%, rgba(150, 100, 40, 0.28), transparent 55%),
+    repeating-linear-gradient(2deg, rgba(120, 85, 35, 0.05) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #f1e3bf, var(--tv-parchment) 50%, #dcc590);
+  box-shadow:
+    inset 0 0 2.4vh rgba(120, 72, 20, 0.55),
+    inset 0 0 0.4vh rgba(90, 50, 10, 0.6),
+    0 14px 40px rgba(0, 0, 0, 0.55);
+  border-top: 1.1vh solid transparent;
+  border-bottom: 1.1vh solid transparent;
+  border-image: linear-gradient(180deg, #5a3618, #8a5a2b 50%, #3d230e) 1;
+  /* the paper fades into itself at the bottom, not into the page (overrides the default mask) */
+  mask-image: none;
+}
+.tv[data-theme='fantasy'] .tv-desc.is-cut::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.6em;
+  pointer-events: none;
+  background: linear-gradient(transparent, #dcc590 85%);
+}
+.tv[data-theme='fantasy'] .tv-desc p {
+  color: var(--tv-ink);
+}
+.tv[data-theme='fantasy'] .tv-desc__in > p:first-child::first-letter {
+  float: left;
+  margin: 0.06em 0.1em 0 0;
+  font-family: var(--tv-font-head);
+  font-size: 2.9em;
+  font-weight: 700;
+  line-height: 0.85;
+  color: #7a1f1f;
+}
+
+/* gothic windows: cover and screenshot under pointed arches, in a gold frame with an inner line of
+   tracery; the frame is the box (gold) and the picture inside it, both cut to the same arch */
+.tv[data-theme='fantasy'] :is(.tv-box, .tv-snap) {
+  --tv-arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V36C0 15 30 4 50 0C70 4 100 15 100 36V100Z'/%3E%3C/svg%3E");
+  --tv-arch-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V36C0 15 30 4 50 0C70 4 100 15 100 36V100' fill='none' stroke='%23f3d68e' stroke-width='1.6' vector-effect='non-scaling-stroke' opacity='.85'/%3E%3C/svg%3E");
+  box-sizing: border-box;
+  padding: 0.8vh 0.8vh 1.6vh;
+  background: linear-gradient(180deg, #f3d68e, #b9832f 45%, #7d5420 70%, #d8a441);
+  -webkit-mask: var(--tv-arch) center / 100% 100% no-repeat;
+  mask: var(--tv-arch) center / 100% 100% no-repeat;
+}
+.tv[data-theme='fantasy'] .tv-snap {
+  /* a wider, lower arch over the landscape picture */
+  --tv-arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V26C0 10 30 3 50 0C70 3 100 10 100 26V100Z'/%3E%3C/svg%3E");
+  --tv-arch-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V26C0 10 30 3 50 0C70 3 100 10 100 26V100' fill='none' stroke='%23f3d68e' stroke-width='1.6' vector-effect='non-scaling-stroke' opacity='.85'/%3E%3C/svg%3E");
+}
+.tv[data-theme='fantasy'] :is(.tv-box .tv-boxart, .tv-snap .tv-snapart) {
+  display: block;
+  height: calc(var(--tv-media-fit, var(--tv-media-h)) - 2.4vh);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-mask: var(--tv-arch) center / 100% 100% no-repeat;
+  mask: var(--tv-arch) center / 100% 100% no-repeat;
+}
+.tv[data-theme='fantasy'] .tv-snap .tv-snapart {
+  width: calc((var(--tv-media-fit, var(--tv-media-h)) - 2.4vh) * min(var(--ar, 1.3333), 1.7778));
+}
+/* tracery: a fine gold arch drawn inside the picture */
+.tv[data-theme='fantasy'] :is(.tv-box, .tv-snap)::after {
+  content: '';
+  position: absolute;
+  inset: 2vh 1.6vh 2.8vh;
+  pointer-events: none;
+  background: var(--tv-arch-line) center / 100% 100% no-repeat;
+}

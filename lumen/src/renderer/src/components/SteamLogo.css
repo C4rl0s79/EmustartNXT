@@ -1,0 +1,21 @@
+/* shared by both windows (main: TV layout, Deck: dock tabs); sizes come from where the logo sits */
+/* Steam: drawn locally (the EmuStart server has no Steam platform, so no server logo) */
+.steam-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32em;
+  color: #fff;
+  line-height: 1;
+  white-space: nowrap;
+}
+.steam-logo svg {
+  width: 1.18em;
+  height: 1.18em;
+  flex: 0 0 auto;
+}
+.steam-logo__word {
+  /* the wordmark keeps its own face whatever the theme sets for text */
+  font-family: 'Manrope Variable', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
