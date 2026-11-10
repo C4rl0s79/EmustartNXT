@@ -40,7 +40,8 @@ import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 import { DeckWindow } from './deckWindow'
-import { deckCandidates, syncGroups } from '@shared/deck'
+import { deckCandidates, moveDeckGroup, syncGroups, type DeckGroupOp } from '@shared/deck'
+import { importPyLinksDeck, pyDeckSettings, type DeckImportResult } from '@shared/deckImport'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -195,6 +196,34 @@ function applyDeck(): void {
   if (!settings.get().deck.enabled && win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
 }
 
+/** library subgroups that can be Deck tabs, from the library as it is now */
+function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
+  const s = unified.current
+  return deckCandidates(buildNav(s.games, prefs.get(), s.collections))
+}
+
+/** One-time import of PyLinksDeck's settings (%LOCALAPPDATA%\PyLinksDeck\layouts.json) — shared/deckImport.ts. */
+async function importDeck(): Promise<DeckImportResult> {
+  // EmuStart platforms must be in the library first — imported before, their tabs would be lost for good
+  const snap = unified.current
+  if (settings.get().emustartEnabled && (snap.emustart.engine !== 'ready' || snap.emustart.fromCache || !platformCatalog.length))
+    return { ok: false, error: 'Biblioteka EmuStart jeszcze się wczytuje — spróbuj za chwilę.' }
+  const file = path.join(process.env.LOCALAPPDATA ?? path.join(app.getPath('home'), 'AppData', 'Local'), 'PyLinksDeck', 'layouts.json')
+  let raw: unknown
+  try {
+    raw = JSON.parse(await fs.readFile(file, 'utf8'))
+  } catch (e) {
+    const missing = (e as NodeJS.ErrnoException).code === 'ENOENT'
+    return { ok: false, error: missing ? `Nie znaleziono ustawień PyLinksDeck (${file}).` : `Nie udało się odczytać ${file}: ${(e as Error).message}` }
+  }
+  const py = pyDeckSettings(raw)
+  if ('error' in py) return { ok: false, error: py.error as string }
+  const r = importPyLinksDeck(py, settings.get().deck, currentDeckCandidates(), platformCatalog)
+  await patchSettings({ deck: r.deck })
+  log.info('deck', `imported from PyLinksDeck: ${r.mapped.length} tabs, skipped: ${r.skipped.join(', ') || 'none'}`)
+  return { ok: true, mapped: r.mapped, skipped: r.skipped }
+}
+
 // New library subgroups become Deck tabs in the main process — the one writer of the settings, so a tab
 // change made in another window is never overwritten by a stale copy. Throttled: snapshots come often.
 let deckSyncTimer: NodeJS.Timeout | undefined
@@ -204,8 +233,7 @@ function scheduleDeckSync(): void {
     deckSyncTimer = undefined
     const cur = settings.get().deck
     if (!cur.enabled) return
-    const s = unified.current
-    const groups = syncGroups(cur.groups, deckCandidates(buildNav(s.games, prefs.get(), s.collections)))
+    const groups = syncGroups(cur.groups, currentDeckCandidates())
     if (groups !== cur.groups) void patchSettings({ deck: { groups } }).catch((e) => log.error('deck', 'tabs sync failed', e))
   }, 1500)
 }
@@ -1415,6 +1443,13 @@ function registerIpc(): void {
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
   ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
+  handle(IPC.deckImport, () => importDeck())
+  // a tab changed in Settings — applied here, to the stored tabs (one writer), never a renderer's copy
+  handle(IPC.deckGroup, async (op: DeckGroupOp) => {
+    const cur = settings.get().deck
+    const groups = moveDeckGroup(syncGroups(cur.groups, currentDeckCandidates()), op)
+    if (groups !== cur.groups) await patchSettings({ deck: { groups } })
+  })
   ipcMain.on(IPC.uiSelect, (_e, gameId: unknown) => modes?.select(typeof gameId === 'string' ? gameId : null))
 }
 

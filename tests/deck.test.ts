@@ -11,6 +11,7 @@ import {
   defaultDeckSettings,
   layoutFor,
   mergeDeck,
+  moveDeckGroup,
   screenKey,
   syncGroups,
   visibleGroups,
@@ -202,5 +203,19 @@ describe('dockRect (deck_app._layout_windows)', () => {
   it('stays inside the work area: a layout from a taller screen never puts the dock off-screen', () => {
     expect(dockRect(area, { ...defaultDeckLayout(), dockOffset: 1200 })).toEqual({ x: 134, y: 994, width: 1651, height: 46 })
     expect(dockRect({ x: 0, y: 0, width: 800, height: 100 }, { ...defaultDeckLayout(), dockHeight: 160 }).height).toBe(100)
+  })
+})
+
+describe('moveDeckGroup', () => {
+  const gs = [g('a/1'), g('a/2'), g('a/3')]
+  it('hides / shows one tab and moves it by one place', () => {
+    expect(moveDeckGroup(gs, { id: 'a/2', hidden: true })[1].hidden).toBe(true)
+    expect(moveDeckGroup(gs, { id: 'a/3', move: -1 }).map((x) => x.id)).toEqual(['a/1', 'a/3', 'a/2'])
+  })
+  it('returns the same array when nothing changes', () => {
+    expect(moveDeckGroup(gs, { id: 'a/1', move: -1 })).toBe(gs)
+    expect(moveDeckGroup(gs, { id: 'a/3', move: 1 })).toBe(gs)
+    expect(moveDeckGroup(gs, { id: 'x/9', hidden: true })).toBe(gs)
+    expect(moveDeckGroup(gs, { id: 'a/1', hidden: false })).toBe(gs)
   })
 })

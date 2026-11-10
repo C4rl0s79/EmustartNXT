@@ -155,7 +155,9 @@ const api: LumenApi = {
     onChange: (cb) => subscribe(IPC.updateChanged, cb)
   },
   deck: {
-    menu: () => ipcRenderer.send(IPC.deckMenu)
+    menu: () => ipcRenderer.send(IPC.deckMenu),
+    importPyLinks: () => invoke(IPC.deckImport),
+    group: (op) => invoke(IPC.deckGroup, op)
   },
   ui: {
     getMode: () => invoke(IPC.uiGetMode),

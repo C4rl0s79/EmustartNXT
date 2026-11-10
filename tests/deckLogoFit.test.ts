@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MIN_LOGO_H, fittedLogoHeight, logoReadable, steamFontSize } from '../src/renderer/src/deck/logoFit'
+import { MIN_LOGO_H, fittedLogoHeight, logoReadable, steamFit, steamFontSize } from '../src/renderer/src/deck/logoFit'
 
 describe('fittedLogoHeight', () => {
   it('fits a wide logo in both dimensions of the tab', () => {
@@ -33,10 +33,16 @@ describe('fittedLogoHeight', () => {
   })
 })
 
-describe('steamFontSize', () => {
-  it('follows deck.css .deck-steam: min(48 % of the height, 15 % of the width)', () => {
+describe('Steam in a tab', () => {
+  it('the full mark fills the tab width (icon + wordmark ≈ 5.1 em, 92 %), judged by the icon height like other logos', () => {
     expect(steamFontSize({ w: 400, h: 36 })).toBeCloseTo(17.28)
-    expect(steamFontSize({ w: 60, h: 36 })).toBe(9)
-    expect(logoReadable(steamFontSize({ w: 60, h: 36 }))).toBe(false)
+    expect(steamFit({ w: 400, h: 36 })).toBe('full')
+    // 60 px tab: 10.8 px font → 12.7 px icon — readable, as a 3:1 logo (20 px) is
+    expect(steamFit({ w: 60, h: 36 })).toBe('full')
+  })
+
+  it('a tab too narrow for the wordmark draws the icon alone; only a tiny tab gets the name', () => {
+    expect(steamFit({ w: 45, h: 36 })).toBe('icon')
+    expect(steamFit({ w: 12, h: 36 })).toBe('none')
   })
 })

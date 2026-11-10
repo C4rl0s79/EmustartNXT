@@ -3,7 +3,7 @@ import { api } from '../store'
 import { SystemLogo } from '../tv/SystemLogo'
 import { useGroupArt } from '../tv/GroupArt'
 import { STEAM, type TvSystem } from '../tv/data'
-import { fittedLogoHeight, logoReadable, steamFontSize, type Size } from './logoFit'
+import { fittedLogoHeight, logoReadable, steamFit, type Size } from './logoFit'
 
 // One dock tab: the platform's logo — the same as the TV carousel shows (the server's logo, pixel art at
 // whole zoom, Steam drawn locally, the group's own logo from Grafika grupy) — or its name, when the logo
@@ -44,11 +44,8 @@ export function DeckTab({ sys, label, active, showLogos, onClick }: { sys?: TvSy
   }, [src])
 
   const pixel = ownSrc ? 0 : (sys?.logoPixel ?? 0)
-  const fits = !size
-    ? false
-    : steam
-      ? logoReadable(steamFontSize(size))
-      : !!natural && logoReadable(fittedLogoHeight(natural, size, pixel, window.devicePixelRatio || 1))
+  const steamMark = steam && size ? steamFit(size) : 'none'
+  const fits = !size ? false : steam ? steamMark !== 'none' : !!natural && logoReadable(fittedLogoHeight(natural, size, pixel, window.devicePixelRatio || 1))
 
   return (
     <div ref={box} className={'deck-tab' + (active ? ' active' : '')} onClick={onClick} title={sys?.display ?? label}>
@@ -60,7 +57,7 @@ export function DeckTab({ sys, label, active, showLogos, onClick }: { sys?: TvSy
           rev={own.logo ? own.rev : sys.logoRev}
           pixel={sys.logoPixel}
           ownSrc={ownSrc}
-          className={steam ? 'deck-steam' : undefined}
+          className={steam ? (steamMark === 'icon' ? 'deck-steam deck-steam--icon' : 'deck-steam') : undefined}
           fallback={name}
         />
       ) : (

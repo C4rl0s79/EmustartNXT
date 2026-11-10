@@ -1,5 +1,6 @@
 import type { SteamFamilyStatus } from '@shared/types'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { deckCandidates, syncGroups, type DeckGroupOp, type DeckSettings } from '@shared/deck'
 import type { ArtDataSource, CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Settings as AppSettings, SettingsPatch } from '@shared/types'
 import type { PickPathOptions } from '@shared/api'
 import { loginFlow, logoutFlow } from '../lib/account'
@@ -20,6 +21,7 @@ import { EmuLibraryOptions } from '../components/EmuOptions'
 // Moving along the list shows the section; right / A goes into it, B (or left at its edge) back to the list.
 const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
   { id: 'interface', label: 'Interfejs', render: () => <InterfaceSection /> },
+  { id: 'deck', label: 'Deck', render: () => <DeckSection /> },
   { id: 'steam', label: 'Steam', render: () => <SteamSection /> },
   { id: 'emustart', label: 'EmuStart', render: () => <EmustartSection /> },
   { id: 'gog', label: 'Gry GOG', render: () => <GogSection /> },
@@ -938,6 +940,86 @@ async function chooseEmuFolder(
   if (s) done(s)
 }
 
+/** Deck — the optional desktop interface: on/off, its tabs (library subgroups) and the import from PyLinksDeck. */
+function DeckSection() {
+  const settings = useStore((s) => s.settings)
+  const nav = useNav()
+  const [report, setReport] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const candidates = useMemo(() => deckCandidates(nav), [nav])
+  if (!settings) return null
+  const deck = settings.deck
+  const patch = (d: Partial<DeckSettings>): void => void attempt(api().settings.patch({ deck: d }))
+  // the stored tabs plus subgroups not stored yet (the main process adds them shortly after the library changes)
+  const groups = syncGroups(deck.groups, candidates)
+  const info = new Map(candidates.map((c) => [c.id, c]))
+  // one change at a time, applied by the main process to the stored tabs (never this copy of them)
+  const op = (o: DeckGroupOp): void => void attempt(api().deck.group(o))
+  const shown = groups.filter((g) => !g.hidden && (info.get(g.id)?.count ?? 0) > 0).length
+
+  const runImport = async (): Promise<void> => {
+    setBusy(true)
+    const r = await attempt(api().deck.importPyLinks())
+    setBusy(false)
+    if (!r) return
+    if (!r.ok) {
+      setReport(r.error)
+      return
+    }
+    setReport(
+      `Zaimportowano ${r.mapped.length} zakładek PyLinksDeck: ${r.mapped.map((m) => `${m.from} → ${m.to.map((t) => t.label).join(', ')}`).join('; ')}.` +
+        (r.skipped.length ? ` Bez odpowiednika w bibliotece Lumen (pominięte): ${r.skipped.join(', ')}.` : '') +
+        ' Pozostałe podgrupy biblioteki są ukryte.'
+    )
+  }
+
+  return (
+    <Section
+      title="Deck"
+      desc="Belka platform na pulpicie — nad tapetą, pod oknami programów. Zakładki to podgrupy biblioteki Lumen (platformy i kolekcje). Zamknięcie okna Lumen przy włączonym Decku tylko je ukrywa — Lumen działa dalej (prawy klik na Decku → Zamknij Lumen)."
+    >
+      <Toggle label="Deck na pulpicie" value={deck.enabled} onChange={(v) => patch({ enabled: v })} />
+      <Toggle
+        label="Logotypy platform zamiast nazw"
+        desc="Logo, które w wąskiej zakładce byłoby nieczytelne, zostaje zastąpione nazwą."
+        value={deck.showLogos}
+        onChange={(v) => patch({ showLogos: v })}
+      />
+      <div className="modal__row">
+        <button className="btn" data-nav disabled={busy} onClick={() => void runImport()}>
+          {busy ? 'Importowanie…' : 'Importuj ustawienia z PyLinksDeck'}
+        </button>
+      </div>
+      {report && <p className="card__desc">{report}</p>}
+      <h3 className="cats__heading">
+        Zakładki ({shown} widocznych z {groups.length})
+      </h3>
+      <div className="cats" data-nav-group="deck-tabs">
+        {groups.map((g, i) => {
+          const c = info.get(g.id)
+          return (
+            <div key={g.id} className={`cats__row ${g.hidden ? '' : 'is-pinned'}`}>
+              <span className="cats__name">
+                {c?.label ?? g.id}
+                <small>{c ? `${c.kind === 'collection' ? 'kolekcja' : 'platforma'} · ${gameCountLabel(c.count)}` : 'nie ma jej teraz w bibliotece'}</small>
+              </span>
+              <button className="btn btn--sm" data-nav aria-label="W górę" disabled={i === 0} onClick={() => op({ id: g.id, move: -1 })}>
+                ↑
+              </button>
+              <button className="btn btn--sm" data-nav aria-label="W dół" disabled={i === groups.length - 1} onClick={() => op({ id: g.id, move: 1 })}>
+                ↓
+              </button>
+              <button className={`btn btn--sm ${g.hidden ? '' : 'btn--on'}`} data-nav onClick={() => op({ id: g.id, hidden: !g.hidden })}>
+                {g.hidden ? 'Pokaż' : 'Ukryj'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </Section>
+  )
+}
+
 function BehaviourSection() {
   const settings = useStore((s) => s.settings)!
   const [fs, setFs] = useState(false)
@@ -969,12 +1051,6 @@ function BehaviourSection() {
         onChange={(v) => void patch({ restoreAfterGame: v })}
       />
       <Toggle label="Uruchamiaj na pełnym ekranie" value={settings.startFullscreen} onChange={(v) => void patch({ startFullscreen: v })} />
-      <Toggle
-        label="Deck na pulpicie"
-        desc="Belka platform nad tapetą, pod oknami programów. Zamknięcie okna Lumen go ukrywa — Lumen działa dalej (prawy klik na Decku → Zamknij Lumen)."
-        value={settings.deck.enabled}
-        onChange={(v) => void patch({ deck: { enabled: v } })}
-      />
       <Toggle
         label="Pełny ekran teraz (F11)"
         value={fs}

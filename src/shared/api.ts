@@ -1,4 +1,6 @@
 import type { GameFacts, OwnArtResult, UserArtGallery } from './types'
+import type { DeckImportResult } from './deckImport'
+import type { DeckGroupOp } from './deck'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ArtKind, ArtLayout,
@@ -255,6 +257,10 @@ export interface LumenApi {
   deck: {
     /** the dock's menu at the mouse: open Lumen, switch Deck off, quit */
     menu(): void
+    /** take PyLinksDeck's tabs, their look and the dock sizes (shared/deckImport.ts) */
+    importPyLinks(): Promise<DeckImportResult>
+    /** show / hide / move one tab (applied by the main process to the stored tabs) */
+    group(op: DeckGroupOp): Promise<void>
   }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
@@ -322,6 +328,8 @@ export const IPC = {
   appOpenExternal: 'app:openExternal',
   appQuit: 'app:quit',
   deckMenu: 'deck:menu',
+  deckImport: 'deck:import',
+  deckGroup: 'deck:group',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',

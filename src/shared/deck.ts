@@ -174,6 +174,21 @@ export function syncGroups(groups: DeckGroup[], candidates: DeckCandidate[]): De
   return fresh.length ? [...groups, ...fresh.map((c) => newGroup(c.id))] : groups
 }
 
+/** One change of the tab list from Settings — applied by the main process to the stored tabs. */
+export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 }
+
+/** The tabs after one change; the same array when nothing changes (unknown tab, edge of the list). */
+export function moveDeckGroup(groups: DeckGroup[], op: DeckGroupOp): DeckGroup[] {
+  const i = groups.findIndex((g) => g.id === op.id)
+  if (i < 0) return groups
+  if ('hidden' in op) return groups[i].hidden === op.hidden ? groups : groups.map((g, k) => (k === i ? { ...g, hidden: op.hidden } : g))
+  const j = i + op.move
+  if (j < 0 || j >= groups.length) return groups
+  const next = [...groups]
+  ;[next[i], next[j]] = [next[j], next[i]]
+  return next
+}
+
 /** Tabs shown on the dock: not hidden by the player and with at least one game now. */
 export function visibleGroups(s: DeckSettings, candidates: DeckCandidate[]): DeckGroup[] {
   const counts = new Map(candidates.map((c) => [c.id, c.count]))

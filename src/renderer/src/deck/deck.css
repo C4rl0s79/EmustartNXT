@@ -65,10 +65,16 @@ body,
   object-fit: fill;
 }
 
-/* Steam (components/SteamLogo.tsx + SteamLogo.css), sized by font-size from the tab — the same formula as
-   logoFit.ts steamFontSize */
+/* Steam (components/SteamLogo.tsx + SteamLogo.css), sized by font-size from the tab — the same factors as
+   logoFit.ts steamFontSize / steamIconFontSize; a narrow tab draws the icon alone */
 .deck-steam {
-  font-size: min(48cqh, 15cqw);
+  font-size: min(48cqh, 18cqw);
+}
+.deck-steam--icon {
+  font-size: calc(min(60cqh, 70cqw) / 1.18);
+}
+.deck-steam--icon .steam-logo__word {
+  display: none;
 }
 
 .deck-tab:last-child {
