@@ -38,7 +38,12 @@ publikowany (panel pokazuje powód).
 **Konfiguracja:** panel serwera → Konfiguracja → **„Archiwum depotów GOG (opcjonalnie)”** — folder `_depots`
 GOG Managera (konto SYSTEM nie widzi dysków sieciowych z literą — ścieżka UNC). Przycisk **„Odśwież indeks”**
 (albo ponowny zapis ścieżki) odczytuje archiwum od nowa (np. po migracji kolejnych gier w GOG Managerze). Indeks
-(`emustart/gogarchive.py`) jest w pamięci, odtwarzany przy starcie serwera; archiwum nie jest zmieniane. Zmiana
+(`emustart/gogarchive.py`) jest w pamięci, odtwarzany przy starcie serwera; archiwum nie jest zmieniane. Build
+niezmieniony od poprzedniego indeksu (czasy i rozmiary plików rekordu i meta) jest brany z pamięci podręcznej
+`<dane serwera>/gog/index-cache.json` — bez czytania manifestów, liczenia hasha i sprawdzania chunków (GOG Manager
+zatwierdza `complete` po pełnej weryfikacji, a każdy wysyłany chunk serwer i tak sprawdza MD5); pełne sprawdzenie
+przechodzą buildy nowe i zmienione, a `deep` — wszystkie. Brak chunka w takim buildzie wychodzi dopiero przy
+instalacji (błąd pobrania). Zmiana
 albo wyczyszczenie ścieżki w trakcie indeksowania nie przepada: bieżący wynik jest odrzucany i indeks buduje się
 dla ostatniej ścieżki (pusta ścieżka = od razu nic nie jest udostępniane). Ponowny zapis rekordu przez GOG Managera
 (np. ponowna weryfikacja — zmienia tylko daty) nie przerywa instalacji: serwer porównuje hash zawartości.

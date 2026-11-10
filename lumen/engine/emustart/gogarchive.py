@@ -13,7 +13,8 @@ EmuStart go nie zapisuje, nie przepakowuje i nie uzupełnia (żadnych zapytań d
 Indeks (`build_index`) jest odtwarzalną warstwą nad tymi plikami: dla każdego rekordu sprawdza stan „complete”,
 obecność manifestów i KAŻDEGO chunka (z rozmiarem) i liczy hash zawartości buildu (`content_hash`) — klient
 instaluje build przypięty do tego hasha, serwer wydaje chunki tylko z przypiętego, nadal zgodnego buildu.
-Niekompletny rekord nie jest publikowany (panel pokazuje powód).
+Niekompletny rekord nie jest publikowany (panel pokazuje powód). Build niezmieniony od poprzedniego indeksu
+jest brany z pamięci podręcznej indeksu (dane serwera), bez ponownego sprawdzania — patrz `build_index`.
 """
 
 from __future__ import annotations
@@ -360,6 +361,90 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
             "created": str(rec.get("created") or ""), "verified": str(rec.get("verified") or "")}
 
 
+# ── pamięć podręczna indeksu (dane serwera, nie archiwum) ──────────────────────
+#
+# Niezmieniony build (te same czasy i rozmiary plików rekordu i meta) nie jest indeksowany od nowa: GOG Manager
+# zapisuje `complete` dopiero po pełnej weryfikacji wszystkich chunków, jego sprzątanie nie usuwa chunków
+# istniejącego rekordu, a manifesty mają niezmienne identyfikatory. Każdy wysyłany chunk serwer i tak sprawdza MD5,
+# a manifest buildu — hashem zawartości z dysku. `deep` nie korzysta z pamięci podręcznej.
+
+CACHE_VERSION = 1
+
+
+def _cache_path() -> Path:
+    from emustart import paths
+    return paths.DATA / "gog" / "index-cache.json"
+
+
+def _root_key(root: str) -> str:
+    try:
+        return str(Path(root).resolve())
+    except OSError:
+        return str(root)
+
+
+def _stamps(arc: "Archive", pid: str, build: str) -> list | None:
+    """[mtime_ns, rozmiar] rekordu i meta — albo None, gdy któregoś pliku nie ma."""
+    out = []
+    try:
+        for suf in (".json", ".meta.json"):
+            st = arc.record_path(pid, build, suf).stat()
+            out += [st.st_mtime_ns, st.st_size]
+    except (OSError, ArchiveError):
+        return None
+    return out
+
+
+def _load_cache(root: str) -> dict:
+    try:
+        raw = json.loads(_cache_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(raw, dict) or raw.get("version") != CACHE_VERSION or raw.get("root") != _root_key(root):
+        return {}
+    b = raw.get("builds")
+    return b if isinstance(b, dict) else {}
+
+
+def _save_cache(root: str, builds: dict) -> None:
+    p = _cache_path()
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.name + f".tmp{os.getpid()}")
+        tmp.write_text(json.dumps({"version": CACHE_VERSION, "root": _root_key(root), "builds": builds},
+                                  ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, p)
+    except OSError as ex:
+        log.warning("GOG: nie zapisałem pamięci podręcznej indeksu: %s", ex)
+
+
+def _cacheable(e: dict) -> dict:
+    return {k: v for k, v in e.items() if k not in ("chunks", "ok")}
+
+
+def _from_cache(arc: "Archive", pid: str, build: str, c: dict) -> dict:
+    e = {**c["entry"], "ok": True, "chunks": None}          # lista chunków — przy pierwszym zapytaniu o build
+    try:
+        st = arc.record_path(pid, build).stat()
+        e["mtime"], e["size_rec"] = st.st_mtime, st.st_size
+    except (OSError, ArchiveError):
+        pass
+    return e
+
+
+def build_chunks(arc: "Archive", pid: str, build: str) -> dict:
+    """{compressedMd5: compressedSize} wszystkich chunków buildu (z manifestów rekordu)."""
+    rec = arc.read_json(arc.record_path(pid, build))
+    out: dict = {}
+    for kind, key in (("depot", "depots"), ("dep", "dependencies")):
+        for d in rec.get(key) or []:
+            for c in manifest_chunks(arc.manifest(kind, d["manifest"])):
+                m = str(c.get("compressedMd5") or "").lower()
+                if HEX32.match(m):
+                    out[m] = int(c.get("compressedSize") or 0)
+    return out
+
+
 # ── indeks serwera (w pamięci, odbudowywany z archiwum) ─────────────────────────
 
 _lock = threading.Lock()
@@ -375,7 +460,9 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
        ścieżki, manifesty, hash — taki build jest udostępniany od razu (`publish(e, True)`);
     2. chunki: każdy istnieje i ma rozmiar z manifestu (listowanie folderów); build, który nie przejdzie,
        jest wycofywany (`publish(e, False)`) i trafia do pominiętych z powodem.
-    Chunk wysyłany klientowi jest i tak sprawdzany MD5 (`chunk_bytes`) — brak = błąd instalacji, nie zły plik."""
+    Chunk wysyłany klientowi jest i tak sprawdzany MD5 (`chunk_bytes`) — brak = błąd instalacji, nie zły plik.
+    Build niezmieniony od poprzedniego indeksu (czasy i rozmiary rekordu i meta) jest brany z pamięci podręcznej
+    (`_cache_path`) bez obu etapów; `deep` zawsze sprawdza wszystko."""
     res = {"root": root, "builds": {}, "rejected": [], "error": "", "built": time.time()}
     if not root:
         res["error"] = "nie ustawiono folderu archiwum"
@@ -394,19 +481,34 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     from emustart import gogmeta
     gogmeta.load(str(Path(root).parent))          # opisy i grafiki z folderów gier GOG Managera
     INDEX.update(total=len(recs), done=0, phase="records")
+    cache = {} if deep else _load_cache(root)
+    new_cache: dict = {}
     quick = []
+    reused = 0
     for pid, build in recs:
+        key = f"{pid}/{build}"
+        stamp = _stamps(arc, pid, build)          # przed odczytem: zmiana w trakcie = inny stempel następnym razem
+        c = cache.get(key)
+        if stamp is not None and isinstance(c, dict) and c.get("stamp") == stamp and isinstance(c.get("entry"), dict):
+            e = _from_cache(arc, pid, build, c)
+            res["builds"][(pid, build)] = e
+            new_cache[key] = c
+            reused += 1
+            INDEX["done"] += 1
+            if publish:
+                publish(e, True)
+            continue
         e = index_record(arc, pid, build, deep, check_chunks=False)
         INDEX["done"] += 1
         if e["ok"]:
-            quick.append(e)
+            quick.append((key, stamp, e))
             if publish:
                 publish(e, True)
         else:
             reject(e)
     INDEX.update(total=len(quick), done=0, phase="chunks")
     sizes = ChunkSizes(arc)
-    for e in quick:
+    for key, stamp, e in quick:
         why = chunk_problem(arc, e["chunks"], deep, sizes)
         INDEX["done"] += 1
         if why:
@@ -415,7 +517,11 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
                 publish(e, False)
         else:
             res["builds"][(e["product_id"], e["build_id"])] = e
-    log.info("GOG: indeks %s — buildów: %d, pominiętych: %d", root, len(res["builds"]), len(res["rejected"]))
+            if stamp is not None:
+                new_cache[key] = {"stamp": stamp, "entry": _cacheable(e)}
+    _save_cache(root, new_cache)
+    log.info("GOG: indeks %s — buildów: %d (z pamięci podręcznej: %d), pominiętych: %d",
+             root, len(res["builds"]), reused, len(res["rejected"]))
     return res
 
 
@@ -557,6 +663,15 @@ def build_manifest(pid: str, build: str) -> dict:
     h, rec, meta, mans = _on_disk(arc, pid, build)
     if h != e["hash"]:
         raise Changed("zawartość buildu zmieniła się na serwerze — odśwież indeks GOG w panelu serwera")
+    if e.get("chunks") is None:                   # build z pamięci podręcznej indeksu — lista z manifestów z dysku
+        flat = {}
+        for kind in ("depot", "dep"):
+            for man in mans[kind].values():
+                for c in manifest_chunks(man):
+                    m = str(c.get("compressedMd5") or "").lower()
+                    if HEX32.match(m):
+                        flat[m] = int(c.get("compressedSize") or 0)
+        e["chunks"] = flat
     pub_rec = strip_secrets({k: v for k, v in rec.items() if k not in ("migration",)})
     return {"format": 1, "product_id": str(pid), "build_id": str(build), "hash": e["hash"],
             "title": e["title"], "version": e["version"], "install_directory": e["install_directory"],
@@ -568,6 +683,13 @@ def chunk_bytes(pid: str, build: str, want_hash: str, md5: str) -> bytes:
     """Skompresowany chunk przypiętego buildu — tylko taki, do którego build się odwołuje, sprawdzony MD5."""
     e = pinned(pid, build, want_hash)
     m = str(md5 or "").lower()
+    if e.get("chunks") is None:                   # build z pamięci podręcznej indeksu
+        with _pin_lock:
+            if e.get("chunks") is None:
+                try:
+                    e["chunks"] = build_chunks(Archive(Path(INDEX["root"])), pid, build)
+                except (ArchiveError, OSError, KeyError, TypeError) as ex:
+                    raise Changed(f"nie odczytałem manifestów buildu: {ex}")
     if m not in e["chunks"]:
         raise ArchiveError("ten chunk nie należy do buildu")
     data = Archive(Path(INDEX["root"])).chunk_path(m).read_bytes()

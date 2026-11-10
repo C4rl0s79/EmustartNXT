@@ -245,3 +245,81 @@ def test_build_with_missing_chunk_is_withdrawn_after_chunk_pass(arc):
     res = ga.build_index(str(root), publish=lambda e, add: events.append((e["build_id"], add)))
     assert events == [(BUILD, True), (BUILD, False)]            # najpierw udostępniony, po sprawdzeniu wycofany
     assert not res["builds"] and "brakujące chunki: 1" in res["rejected"][0]["reason"]
+
+
+# ── pamięć podręczna indeksu (niezmieniony build nie jest sprawdzany od nowa) ──
+
+def _count(monkeypatch, name):
+    calls = []
+    real = getattr(ga, name)
+
+    def wrap(*a, **k):
+        calls.append(a[1:3])
+        return real(*a, **k)
+    monkeypatch.setattr(ga, name, wrap)
+    return calls
+
+
+def test_unchanged_build_comes_from_cache(arc, monkeypatch):
+    root, _ = arc
+    _index(root)
+    h = ga.INDEX["builds"][(PID, BUILD)]["hash"]
+    assert ga._cache_path().is_file()
+    recs, chunks = _count(monkeypatch, "index_record"), _count(monkeypatch, "chunk_problem")
+    st = _index(root)                                            # restart serwera / „Odśwież indeks”
+    assert (recs, chunks) == ([], [])
+    assert st["builds"] == 1 and not st["rejected"]
+    e = ga.INDEX["builds"][(PID, BUILD)]
+    assert e["hash"] == h and e["chunks"] is None                # lista chunków dopiero przy zapytaniu o build
+    assert ga.game(PID)["builds"][0]["languages"] == ["en", "pl"]
+
+
+def test_cached_build_serves_only_its_chunks(arc):
+    root, _ = arc
+    _index(root)
+    _index(root)
+    h = ga.INDEX["builds"][(PID, BUILD)]["hash"]
+    f = all_chunk_files(root)[0]
+    assert ga.chunk_bytes(PID, BUILD, h, f.name) == f.read_bytes()
+    with pytest.raises(ga.ArchiveError):
+        ga.chunk_bytes(PID, BUILD, h, "0" * 32)                  # nie należy do buildu
+    ga.INDEX["builds"][(PID, BUILD)]["chunks"] = None
+    assert ga.build_manifest(PID, BUILD)["hash"] == h            # manifest buildu też uzupełnia listę
+    assert f.name in ga.INDEX["builds"][(PID, BUILD)]["chunks"]
+
+
+def test_changed_record_is_indexed_again(arc, monkeypatch):
+    root, _ = arc
+    _index(root)
+    rp = root / "products" / PID / f"{BUILD}.json"
+    os.utime(rp, (5, 5))                                         # GOG Manager zapisał rekord ponownie
+    recs = _count(monkeypatch, "index_record")
+    _index(root)
+    assert recs == [(PID, BUILD)]
+
+
+def test_cache_of_other_root_or_deep_index_is_ignored(arc, tmp_path, monkeypatch):
+    root, _ = arc
+    _index(root)
+    other = tmp_path / "_depots2"
+    build_archive(other)
+    recs = _count(monkeypatch, "index_record")
+    _index(other)                                                # inna ścieżka archiwum
+    assert recs == [(PID, BUILD)]
+    recs.clear()
+    ga.refresh(str(other), deep=True, wait=True)                 # „dokładnie”: zawsze pełne sprawdzenie
+    assert recs == [(PID, BUILD)]
+
+
+def test_missing_chunk_after_caching_fails_the_install_not_the_index(arc):
+    root, _ = arc
+    _index(root)
+    f = all_chunk_files(root)[0]
+    f.unlink()
+    st = _index(root)
+    assert st["builds"] == 1                                     # ufamy weryfikacji GOG Managera…
+    h = ga.INDEX["builds"][(PID, BUILD)]["hash"]
+    with pytest.raises(FileNotFoundError):                       # …brak wychodzi przy wysyłce (HTTP 404/błąd)
+        ga.chunk_bytes(PID, BUILD, h, f.name)
+    ga.refresh(str(root), deep=True, wait=True)
+    assert ga.status()["builds"] == 0                            # „dokładnie” wycofuje build

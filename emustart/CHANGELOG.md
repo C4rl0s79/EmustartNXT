@@ -44,6 +44,31 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.1] — 2026-11-10
+
+Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
+Windows, instalator gier GOG w Lumenie, APK i emulatory bez zmian.
+
+### Poprawione
+- **Szybki start serwera i „Odśwież indeks” przy archiwum GOG:** indeks zapamiętuje wyniki na dysku serwera
+  (`<dane serwera>/gog/index-cache.json`). Build niezmieniony od poprzedniego indeksu (te same czasy i rozmiary
+  plików rekordu i meta) jest udostępniany od razu — bez czytania manifestów, liczenia hasha i sprawdzania chunków.
+  Pełną drogę przechodzą tylko buildy nowe albo zmienione. Uzasadnienie: GOG Manager zapisuje `complete` dopiero
+  po pełnej weryfikacji wszystkich chunków, jego sprzątanie nie usuwa chunków istniejącego rekordu, a serwer i tak
+  sprawdza MD5 każdego wysyłanego chunka i hash manifestu buildu z dysku.
+- Lista chunków buildu z pamięci podręcznej powstaje przy pierwszym zapytaniu o build (manifest / chunk).
+- Indeks „dokładny” (`deep`) i zmiana ścieżki archiwum nie korzystają z pamięci podręcznej.
+
+**Uwaga.** Chunk usunięty z archiwum już po zapamiętaniu buildu wychodzi dopiero przy instalacji (błąd pobrania);
+pełne sprawdzenie (`deep`) wycofuje taki build.
+
+**Czego NIE dotyka.** Format archiwum (serwer nadal tylko czyta), API `/v1/gog`, przypięcie buildu po hashu,
+instalator w kliencie Windows i Lumenie, APK, emulatory, panel (te same komunikaty).
+
+**Sprawdzone:** 679 testów (5 nowych: build z pamięci podręcznej bez ponownego sprawdzania, wysyłka tylko chunków
+buildu, ponowne indeksowanie zmienionego rekordu, inna ścieżka i `deep` bez pamięci podręcznej, brak chunka
+wykrywany przy instalacji i przez `deep`). **Niesprawdzone:** start serwera na prawdziwym archiwum (314 buildów).
+
 ## [0.63.0] — 2026-11-10
 
 ### Zmienione
