@@ -1,5 +1,5 @@
 import { BrowserWindow, Menu, screen } from 'electron'
-import { dockRect, layoutFor, screenKey, type DeckSettings } from '@shared/deck'
+import { deckGeometry, layoutFor, screenKey, type DeckGeometry, type DeckSettings } from '@shared/deck'
 import { DesktopLayerGuard, handleOf, makeUnobtrusive, pinAboveDesktop, taskbarCreatedMessage } from './desktopLayer'
 import { log } from './logger'
 
@@ -21,6 +21,8 @@ export interface DeckHost {
   disable(): void
   /** "Zamknij Lumen" */
   quit(): void
+  /** where the dock and the games panel are inside the window (sent to the Deck page) */
+  geometry(w: BrowserWindow, g: DeckGeometry): void
 }
 
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
@@ -46,6 +48,14 @@ export class DeckWindow {
   private screenTimer: NodeJS.Timeout | undefined
   private settleTimer: NodeJS.Timeout | undefined
   private screenState = ''
+  /** the games panel is open: the height its tiles need (px); null — just the dock */
+  private content: number | null = null
+  /** the last geometry sent — asked for by the page when it (re)loads */
+  private last: DeckGeometry | null = null
+
+  get geometry(): DeckGeometry | null {
+    return this.window ? this.last : null
+  }
   private readonly onScreen = (): void => {
     clearTimeout(this.settleTimer)
     this.settleTimer = setTimeout(() => this.place(), SCREEN_SETTLE_MS)
@@ -147,6 +157,8 @@ export class DeckWindow {
     const w = this.window
     this.dock = null
     this.screenState = ''
+    this.content = null
+    this.last = null
     if (w) {
       w.destroy()
       log.info('deck', 'off')
@@ -167,9 +179,20 @@ export class DeckWindow {
     const s = this.host.deck()
     const { key, label } = deckScreen()
     this.screenState = this.state()
-    w.setBounds(dockRect(d.workArea, layoutFor(s, key, label)))
+    const g = deckGeometry(d.workArea, layoutFor(s, key, label), this.content)
+    w.setBounds(g.window)
     w.setOpacity(s.opacity)
+    this.last = g
+    this.host.geometry(w, g)
     this.pin()
+  }
+
+  /** Open the games panel (the height its tiles need) or close it (null) — from the Deck page. */
+  expand(content: number | null): void {
+    const c = content === null || !Number.isFinite(content) ? null : Math.max(0, Math.min(20_000, content))
+    if (c === this.content) return
+    this.content = c
+    this.place()
   }
 
   private pin(): void {

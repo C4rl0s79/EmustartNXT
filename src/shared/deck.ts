@@ -132,6 +132,47 @@ export function dockRect(area: DeckRect, lay: DeckScreenLayout): DeckRect {
   return { x: area.x + Math.floor((area.width - width) / 2), y: area.y + offset, width, height }
 }
 
+/** gap between the dock and the panel, and the panel's margin from the bottom of the work area (px) */
+const PANEL_GAP = 8
+const PANEL_MIN_W = 320
+const PANEL_MIN_H = 160
+/** less room than this under the dock (a dock moved to the bottom, a short screen): the panel does not open */
+const PANEL_MIN_ROOM = 60
+
+/**
+ * Where the dock and the games panel are. One window holds both: collapsed it is just the dock; expanded it
+ * spans the dock and the panel below it (deck_app._panel_rect): the panel is the layout's fraction of the
+ * width (at least 320 px), centred, 8 px under the dock, as tall as its tiles need (`content`) but at most
+ * the layout's fraction of the height and never past the work area (at least 160 px when it fits; with no
+ * room under the dock it does not open). The window's left edge and width are the same open and closed —
+ * only its height changes — so the dock never moves inside it while the window is resized. Positions of the
+ * dock and the panel are relative to the window; `panel` is known also closed (its width sizes the tiles).
+ */
+export interface DeckGeometry {
+  window: DeckRect
+  dock: DeckRect
+  panel: DeckRect
+  expanded: boolean
+}
+
+export function deckGeometry(area: DeckRect, lay: DeckScreenLayout, content: number | null): DeckGeometry {
+  const dock = dockRect(area, lay)
+  const width = Math.min(area.width, Math.max(PANEL_MIN_W, Math.floor(area.width * lay.panelWidth)))
+  const top = dock.y + dock.height + PANEL_GAP
+  const maxHeight = Math.max(0, Math.min(Math.floor(area.height * lay.panelHeight), area.y + area.height - top - PANEL_GAP))
+  const panelX = area.x + Math.floor((area.width - width) / 2)
+  const x = Math.min(dock.x, panelX)
+  const span = Math.max(dock.x + dock.width, panelX + width) - x
+  const open = content !== null && maxHeight >= PANEL_MIN_ROOM
+  const height = open ? Math.min(maxHeight, Math.max(PANEL_MIN_H, Math.ceil(content))) : 0
+  return {
+    window: { x, y: dock.y, width: span, height: open ? top + height - dock.y : dock.height },
+    dock: { ...dock, x: dock.x - x, y: 0 },
+    panel: { x: panelX - x, y: top - dock.y, width, height },
+    expanded: open
+  }
+}
+
 // ---------- tabs ----------
 
 /** A library subgroup that can be a Deck tab, with its number of games. */
@@ -208,14 +249,18 @@ export function setDeckLayout(s: DeckSettings, step: DeckLayoutStep): Record<str
   return { ...rest, [step.key]: { ...cur, [step.field]: v, label: step.label } }
 }
 
-/** One change of the tab list from Settings — applied by the main process to the stored tabs. */
-export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 }
+/** One change of the tab list (Settings: show / hide / order; the panel: columns) — applied by the main process. */
+export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 } | { id: string; cols: number }
 
 /** The tabs after one change; the same array when nothing changes (unknown tab, edge of the list). */
 export function moveDeckGroup(groups: DeckGroup[], op: DeckGroupOp): DeckGroup[] {
   const i = groups.findIndex((g) => g.id === op.id)
   if (i < 0) return groups
   if ('hidden' in op) return groups[i].hidden === op.hidden ? groups : groups.map((g, k) => (k === i ? { ...g, hidden: op.hidden } : g))
+  if ('cols' in op) {
+    const cols = clampCols(op.cols)
+    return groups[i].cols === cols ? groups : groups.map((g, k) => (k === i ? { ...g, cols } : g))
+  }
   const j = i + op.move
   if (j < 0 || j >= groups.length) return groups
   const next = [...groups]

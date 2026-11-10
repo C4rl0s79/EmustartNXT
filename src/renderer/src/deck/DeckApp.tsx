@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { activeGroup, deckCandidates, syncGroups, visibleGroups } from '@shared/deck'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { DECK_DEFAULT_COLS, activeGroup, clampCols, deckCandidates, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
 import { api, useStore } from '../store'
 import { findSub, useNav } from '../lib/nav'
 import { subItem } from '../tv/data'
 import { DeckTab } from './DeckTab'
+import { DeckPanel, tileMetrics } from './DeckPanel'
 
-// The dock: one tab per Deck group (a library subgroup of Lumen), with the platform's logo (DeckTab).
-// The panel with tiles comes in etap 4. New subgroups are added to the stored tabs by the main process
-// (index.ts, scheduleDeckSync) — this page only shows them.
+// The dock: one tab per Deck group (a library subgroup of Lumen), with the platform's logo (DeckTab); the
+// mouse over it opens the games panel below (DeckPanel), leaving both closes it after a moment (auto hide).
+// New subgroups are added to the stored tabs by the main process (index.ts, scheduleDeckSync) — this page
+// only shows them. One window holds the dock and the panel; the main process sizes and places it
+// (deckGeometry), this page draws them where it says.
+
+/** the panel closes this long after the mouse left the dock and the panel (deck_app._hide_timer) */
+const HIDE_MS = 450
 
 /** one wheel notch → one tab; a touchpad's burst of wheel events is not a dozen notches */
 const WHEEL_STEP_MS = 120
@@ -22,6 +28,11 @@ export function DeckApp() {
   const [localActive, setLocalActive] = useState<string | null>(null)
   const lastStep = useRef(0)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [geo, setGeo] = useState<DeckGeometry | null>(null)
+  const [open, setOpen] = useState(false)
+  /** columns changed with Ctrl + wheel, shown before the stored value comes back */
+  const [localCols, setLocalCols] = useState<{ id: string; cols: number } | null>(null)
 
   useEffect(() => {
     const s = useStore.getState()
@@ -29,10 +40,18 @@ export function DeckApp() {
     void a.library.get().then(s.setSnapshot)
     void a.prefs.get().then(s.setPrefs)
     void a.settings.get().then(s.setSettings)
-    const offs = [a.library.onSnapshot(s.setSnapshot), a.prefs.onChange(s.setPrefs), a.settings.onChange(s.setSettings), a.art.onChanged(s.bumpArt)]
+    void a.deck.getGeometry().then((g) => g && setGeo(g))
+    const offs = [
+      a.library.onSnapshot(s.setSnapshot),
+      a.prefs.onChange(s.setPrefs),
+      a.settings.onChange(s.setSettings),
+      a.art.onChanged(s.bumpArt),
+      a.deck.onGeometry(setGeo)
+    ]
     return () => {
       offs.forEach((off) => off())
       clearTimeout(saveTimer.current)
+      clearTimeout(hideTimer.current)
     }
   }, [])
 
@@ -65,6 +84,40 @@ export function DeckApp() {
     }, delay)
   }
 
+  // the active tab's games and their tiles; the panel asks the main process for the height they need
+  const group = active
+  const games = useMemo(() => (group ? (findSub(nav, group.id)?.sub.games ?? []) : []), [nav, group])
+  const cols = group ? (localCols?.id === group.id ? localCols.cols : group.cols) : DECK_DEFAULT_COLS
+  // the local columns give way only to the stored value that matches them (an older save arriving later
+  // must not undo a newer notch) — or to another tab
+  const storedCols = group?.cols
+  useEffect(() => {
+    setLocalCols((l) => (l && (l.id !== group?.id || l.cols === storedCols) ? null : l))
+  }, [storedCols, group?.id])
+  const content = geo && group && deck ? tileMetrics(geo.panel.width, cols, group.aspect, deck.showLabels, games.length).content : null
+  useEffect(() => {
+    api().deck.expand(open && content !== null ? content : null)
+  }, [open, content])
+
+  const show = (): void => {
+    clearTimeout(hideTimer.current)
+    setOpen(true)
+  }
+  const hideSoon = (): void => {
+    clearTimeout(hideTimer.current)
+    if (deck?.autoHide === false) return
+    hideTimer.current = setTimeout(() => setOpen(false), HIDE_MS)
+  }
+  const changeCols = useCallback(
+    (n: number) => {
+      if (!group) return
+      const c = clampCols(n)
+      setLocalCols({ id: group.id, cols: c })
+      void api().deck.group({ id: group.id, cols: c })
+    },
+    [group]
+  )
+
   const onWheel = (e: React.WheelEvent): void => {
     // deltaY 0: a sideways touchpad swipe or shift+wheel — not a tab change
     if (!visible.length || !e.deltaY || e.timeStamp - lastStep.current < WHEEL_STEP_MS) return
@@ -73,19 +126,39 @@ export function DeckApp() {
     choose(visible[(i + (e.deltaY > 0 ? 1 : visible.length - 1)) % visible.length].id, SAVE_MS)
   }
 
+  const dock = geo?.dock
   return (
-    <div
-      className="deck-dock"
-      onWheel={onWheel}
-      onContextMenu={(e) => {
-        e.preventDefault()
-        api().deck.menu()
-      }}
-    >
-      {tabs.length && deck ? (
-        tabs.map((t) => <DeckTab key={t.id} sys={t.sys} label={t.label} active={t.id === active?.id} showLogos={deck.showLogos} onClick={() => choose(t.id)} />)
-      ) : (
-        <div className="deck-empty">{loaded ? 'Brak zakładek — wszystkie ukryte albo bez gier (prawy klik: menu)' : 'Biblioteka się wczytuje…'}</div>
+    <div className="deck-root" onMouseEnter={() => open && clearTimeout(hideTimer.current)} onMouseLeave={hideSoon}>
+      <div
+        className="deck-dock"
+        style={dock ? { left: dock.x, top: dock.y, width: dock.width, height: dock.height } : undefined}
+        onMouseEnter={show}
+        onWheel={onWheel}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          api().deck.menu()
+        }}
+      >
+        {tabs.length && deck ? (
+          tabs.map((t) => (
+            <DeckTab
+              key={t.id}
+              sys={t.sys}
+              label={t.label}
+              active={t.id === active?.id}
+              showLogos={deck.showLogos}
+              // the open tab clicked again closes the panel (the only way when auto hide is off)
+              onClick={() => (t.id === active?.id && open ? setOpen(false) : (choose(t.id), show()))}
+            />
+          ))
+        ) : (
+          <div className="deck-empty">{loaded ? 'Brak zakładek — wszystkie ukryte albo bez gier (prawy klik: menu)' : 'Biblioteka się wczytuje…'}</div>
+        )}
+      </div>
+      {geo?.expanded && group && deck && (
+        <div style={{ position: 'absolute', left: geo.panel.x, top: geo.panel.y }}>
+          <DeckPanel games={games} cols={cols} aspect={group.aspect} showLabels={deck.showLabels} width={geo.panel.width} height={geo.panel.height} onCols={changeCols} />
+        </div>
       )}
     </div>
   )

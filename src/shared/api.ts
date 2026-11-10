@@ -1,5 +1,5 @@
 import type { GameFacts, OwnArtResult, UserArtGallery } from './types'
-import type { DeckGroupOp, DeckLayoutStep } from './deck'
+import type { DeckGeometry, DeckGroupOp, DeckLayoutStep } from './deck'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ArtKind, ArtLayout,
@@ -262,6 +262,11 @@ export interface LumenApi {
     screen(): Promise<{ key: string; label: string }>
     /** one step of the dock / games panel width on one screen (the one shown in Settings) */
     setLayout(step: DeckLayoutStep): Promise<void>
+    /** Deck page: open the games panel with this height of tiles, or close it (null) */
+    expand(content: number | null): void
+    /** Deck page: where the dock and the panel are in its window */
+    onGeometry(cb: (g: DeckGeometry) => void): () => void
+    getGeometry(): Promise<DeckGeometry | null>
   }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
@@ -332,6 +337,9 @@ export const IPC = {
   deckGroup: 'deck:group',
   deckScreen: 'deck:screen',
   deckLayout: 'deck:layout',
+  deckExpand: 'deck:expand',
+  deckGeometry: 'deck:geometry',
+  deckGetGeometry: 'deck:getGeometry',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',

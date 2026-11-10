@@ -158,7 +158,10 @@ const api: LumenApi = {
     menu: () => ipcRenderer.send(IPC.deckMenu),
     group: (op) => invoke(IPC.deckGroup, op),
     screen: () => invoke(IPC.deckScreen),
-    setLayout: (step) => invoke(IPC.deckLayout, step)
+    setLayout: (step) => invoke(IPC.deckLayout, step),
+    expand: (content) => ipcRenderer.send(IPC.deckExpand, content),
+    onGeometry: (cb) => subscribe(IPC.deckGeometry, cb),
+    getGeometry: () => invoke(IPC.deckGetGeometry)
   },
   ui: {
     getMode: () => invoke(IPC.uiGetMode),

@@ -1013,7 +1013,6 @@ function DeckWidths({ deck, scr }: { deck: DeckSettings; scr: { key: string; lab
       <h3 className="cats__heading">Wymiary na tym ekranie ({scr.label})</h3>
       <Stepper label="Szerokość Decka" value={pct(lay.dockWidth)} {...common} onChange={step('dockWidth')} />
       <Stepper label="Szerokość panelu z grami" value={pct(lay.panelWidth)} {...common} onChange={step('panelWidth')} />
-      <p className="card__desc">Szerokość panelu z grami zadziała razem z panelem kafli (następny etap).</p>
     </>
   )
 }

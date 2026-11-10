@@ -1488,6 +1488,8 @@ function registerIpc(): void {
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
   ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
+  ipcMain.on(IPC.deckExpand, (_e, content: unknown) => deck?.expand(typeof content === 'number' ? content : null))
+  handle(IPC.deckGetGeometry, () => deck?.geometry ?? null)
   // Deck's dimensions are kept per screen: the screen it is on now (the primary one)
   handle(IPC.deckScreen, () => deckScreen())
   handle(IPC.deckLayout, async (step: DeckLayoutStep) => {
@@ -1617,7 +1619,8 @@ app.whenReady().then(async () => {
       if (win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
     },
     disable: () => void patchSettings({ deck: { enabled: false } }).catch((e) => log.error('deck', 'switching off failed', e)),
-    quit: () => app.quit()
+    quit: () => app.quit(),
+    geometry: (w, g) => w.webContents.send(IPC.deckGeometry, g)
   })
   deck.sync()
   // controller: passive XInput polling, only while Lumen has focus (never while a game runs)

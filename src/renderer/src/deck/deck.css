@@ -10,7 +10,18 @@ body,
   color: #e8eaf0;
 }
 
+/* one window holds the dock and the games panel — both placed by the main process (deckGeometry) */
+.deck-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .deck-dock {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
   display: flex;
   height: 100%;
   background: rgba(16, 19, 26, 0.94);
@@ -93,5 +104,81 @@ body,
   flex: 1;
   display: grid;
   place-items: center;
+  opacity: 0.7;
+}
+
+/* the games panel (DeckPanel.tsx): tiles in rows, the number of columns from the tab */
+.deck-panel {
+  box-sizing: border-box;
+  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(16, 19, 26, 0.94);
+  border-radius: 10px;
+  scrollbar-width: thin;
+}
+
+.deck-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+}
+
+.deck-tile {
+  flex: 0 0 auto;
+  min-width: 0;
+  cursor: default;
+}
+
+.deck-tile-art {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.deck-tile-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* under the picture: seen only while it loads or when the game has none */
+.deck-tile-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
+  overflow: hidden;
+}
+
+.deck-tile:hover .deck-tile-art {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: -2px;
+}
+
+.deck-tile-name {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* the games panel of a tab without games */
+.deck-panel-empty {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
   opacity: 0.7;
 }
