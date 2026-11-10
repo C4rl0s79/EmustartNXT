@@ -41,6 +41,7 @@ import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
+import { isAnimated } from './art/animated'
 import { deckCandidates, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
@@ -472,7 +473,12 @@ async function artResponse(req: Request): Promise<Response> {
       : await artwork.resolve(gameId, game?.appId || steamAppIdOf(gameId), kind as ArtKind, game?.name)
     if (!file && gogSgdbFirst) return (await gogOwn()) ?? new Response('not found', { status: 404 })
     if (!file) return new Response('not found', { status: 404 })
-    const served = u.searchParams.get('thumb') === '1' ? await artThumb(file) : file
+    // anim=1 (the Deck's tiles): an animated poster as it is, not its list copy (first frame)
+    // (looked at only where a list copy would be made: big enough, not a GIF / video)
+    const thumb = u.searchParams.get('thumb') === '1'
+    const keepMoving =
+      thumb && u.searchParams.get('anim') === '1' && !/\.(gif|webm|mp4)$/i.test(file) && ((await fs.stat(file).catch(() => null))?.size ?? 0) >= 150_000 && (await isAnimated(file))
+    const served = thumb && !keepMoving ? await artThumb(file) : file
     const res = await net.fetch(pathToFileURL(served).toString())
     const headers = new Headers(res.headers)
     headers.set('Cache-Control', 'max-age=31536000')
