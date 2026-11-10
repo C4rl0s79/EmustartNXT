@@ -1,4 +1,5 @@
 import type { NavGroup } from './libraryNav'
+import type { Game } from './types'
 
 // Deck — optional desktop interface of Lumen (dock of platform tabs over the wallpaper, below app windows;
 // hovering opens a panel of tiles). Its settings model, ported from PyLinksDeck/deck/profiles.py:
@@ -175,7 +176,14 @@ export function deckGeometry(area: DeckRect, lay: DeckScreenLayout, content: num
 
 // ---------- tabs ----------
 
-/** A library subgroup that can be a Deck tab, with its number of games. */
+/**
+ * A game Deck shows: one on this PC — installed (Steam, GOG, a Steam shortcut with its program) or downloaded
+ * (EmuStart's game cache). PyLinksDeck showed the games there were shortcuts for, i.e. those on the PC; the
+ * same rule as the TV list's "ready" count (tv/data.ts readyCount).
+ */
+export const onThisPc = (g: Game): boolean => (g.emu ? !!g.emu.cached : g.installed)
+
+/** A library subgroup that can be a Deck tab, with its number of games on this PC. */
 export interface DeckCandidate {
   id: string
   label: string
@@ -196,7 +204,7 @@ export function deckCandidates(nav: NavGroup[]): DeckCandidate[] {
     if (g.id === 'fav' || g.id === 'recent') continue
     for (const sub of g.subs) {
       if (g.id !== 'col' && sub.id === `${g.id}/all`) continue // the synthetic "Wszystkie", not a collection with id 'all'
-      out.push({ id: sub.id, label: sub.label, kind: g.id === 'col' ? 'collection' : 'platform', count: sub.games.length, ...(sub.es ? { es: sub.es } : {}) })
+      out.push({ id: sub.id, label: sub.label, kind: g.id === 'col' ? 'collection' : 'platform', count: sub.games.filter(onThisPc).length, ...(sub.es ? { es: sub.es } : {}) })
     }
   }
   return out

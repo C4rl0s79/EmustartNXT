@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, screen } from 'electron'
+import { BrowserWindow, Menu, Tray, screen, type MenuItemConstructorOptions, type NativeImage } from 'electron'
 import { deckGeometry, layoutFor, screenKey, type DeckGeometry, type DeckSettings } from '@shared/deck'
 import { DesktopLayerGuard, handleOf, makeUnobtrusive, pinAboveDesktop, taskbarCreatedMessage } from './desktopLayer'
 import { log } from './logger'
@@ -23,6 +23,8 @@ export interface DeckHost {
   quit(): void
   /** where the dock and the games panel are inside the window (sent to the Deck page) */
   geometry(w: BrowserWindow, g: DeckGeometry): void
+  /** Lumen's icon for the tray */
+  icon(): Promise<NativeImage>
 }
 
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
@@ -44,6 +46,12 @@ const MAX_RELOADS = 3
 
 export class DeckWindow {
   private dock: BrowserWindow | null = null
+  /**
+   * Lumen's icon in the tray while Deck is on: with the main window hidden (closing it only hides it) it is
+   * the way back that does not depend on the Deck window — a dock gone or broken left Lumen running with
+   * nothing on screen (PyLinksDeck had one too)
+   */
+  private tray: Tray | null = null
   private guard: DesktopLayerGuard | null = null
   private screenTimer: NodeJS.Timeout | undefined
   private settleTimer: NodeJS.Timeout | undefined
@@ -135,6 +143,7 @@ export class DeckWindow {
       (e) => log.warn('deck', `desktop layer: ${e.message}`)
     )
     this.guard.start()
+    void this.showTray()
     screen.on('display-added', this.onScreen)
     screen.on('display-removed', this.onScreen)
     screen.on('display-metrics-changed', this.onScreen)
@@ -149,6 +158,8 @@ export class DeckWindow {
   close(): void {
     this.guard?.stop()
     this.guard = null
+    this.tray?.destroy()
+    this.tray = null
     clearInterval(this.screenTimer)
     clearTimeout(this.settleTimer)
     screen.removeListener('display-added', this.onScreen)
@@ -207,15 +218,36 @@ export class DeckWindow {
     }
   }
 
-  /** The dock's own menu (right click). */
-  popupMenu(): void {
-    const w = this.window
-    if (!w) return
-    Menu.buildFromTemplate([
+  /** the menu of the dock (right click) and of the tray icon */
+  private menu(): MenuItemConstructorOptions[] {
+    return [
       { label: 'Otwórz Lumen', click: () => this.host.openMain() },
       { label: 'Wyłącz Decka', click: () => this.host.disable() },
       { type: 'separator' },
       { label: 'Zamknij Lumen', click: () => this.host.quit() }
-    ]).popup({ window: w })
+    ]
+  }
+
+  /** The dock's own menu (right click). */
+  popupMenu(): void {
+    const w = this.window
+    if (!w) return
+    Menu.buildFromTemplate(this.menu()).popup({ window: w })
+  }
+
+  private async showTray(): Promise<void> {
+    if (this.tray) return
+    try {
+      const img = await this.host.icon()
+      if (!this.window || this.tray) return // switched off while the icon loaded
+      if (img.isEmpty()) log.warn('deck', 'tray icon: no image for Lumen — the icon is blank')
+      const t = new Tray(img.isEmpty() ? img : img.resize({ width: 16, height: 16 }))
+      t.setToolTip('Lumen')
+      t.setContextMenu(Menu.buildFromTemplate(this.menu()))
+      t.on('click', () => this.host.openMain())
+      this.tray = t
+    } catch (e) {
+      log.warn('deck', `tray icon: ${(e as Error).message}`)
+    }
   }
 }

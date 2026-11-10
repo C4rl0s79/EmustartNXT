@@ -962,7 +962,7 @@ function DeckSection() {
   return (
     <Section
       title="Deck"
-      desc="Belka platform na pulpicie — nad tapetą, pod oknami programów. Zakładki to podgrupy biblioteki Lumen (platformy i kolekcje). Zamknięcie okna Lumen przy włączonym Decku tylko je ukrywa — Lumen działa dalej (prawy klik na Decku → Zamknij Lumen)."
+      desc="Belka platform na pulpicie — nad tapetą, pod oknami programów. Zakładki to podgrupy biblioteki Lumen (platformy i kolekcje); Deck pokazuje gry, które są na tym komputerze (zainstalowane albo pobrane). Zamknięcie okna Lumen przy włączonym Decku tylko je ukrywa — Lumen działa dalej; otworzysz albo zamkniesz go z ikony Lumen w zasobniku systemowym albo z menu Decka (prawy klik)."
     >
       <Toggle label="Deck na pulpicie" value={deck.enabled} onChange={(v) => patch({ enabled: v })} />
       <Toggle
@@ -982,7 +982,7 @@ function DeckSection() {
             <div key={g.id} className={`cats__row ${g.hidden ? '' : 'is-pinned'}`}>
               <span className="cats__name">
                 {c?.label ?? g.id}
-                <small>{c ? `${c.kind === 'collection' ? 'kolekcja' : 'platforma'} · ${gameCountLabel(c.count)}` : 'nie ma jej teraz w bibliotece'}</small>
+                <small>{c ? `${c.kind === 'collection' ? 'kolekcja' : 'platforma'} · ${gameCountLabel(c.count)} na tym komputerze` : 'nie ma jej teraz w bibliotece'}</small>
               </span>
               <button className="btn btn--sm" data-nav aria-label="W górę" disabled={i === 0} onClick={() => op({ id: g.id, move: -1 })}>
                 ↑

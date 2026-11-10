@@ -11,6 +11,7 @@ import {
   defaultDeckSettings,
   layoutFor,
   mergeDeck,
+  onThisPc,
   setDeckLayout,
   moveDeckGroup,
   screenKey,
@@ -21,7 +22,7 @@ import {
   type DeckSettings
 } from '@shared/deck'
 
-const games = (n: number): Game[] => Array.from({ length: n }, (_, i) => ({ id: `g${i}` }) as Game)
+const games = (n: number): Game[] => Array.from({ length: n }, (_, i) => ({ id: `g${i}`, installed: true }) as Game)
 const g = (id: string, extra: Partial<DeckGroup> = {}): DeckGroup => ({ id, cols: 8, aspect: 'portrait', hidden: false, ...extra })
 const c = (id: string, count: number, kind: DeckCandidate['kind'] = 'platform', label = id): DeckCandidate => ({ id, label, kind, count })
 
@@ -93,6 +94,25 @@ describe('deckCandidates', () => {
       { id: 'console/emu:ps2', label: 'PlayStation 2', kind: 'platform', count: 4, es: 'ps2' },
       { id: 'col/cat:1', label: 'Tekken', kind: 'collection', count: 2 }
     ])
+  })
+})
+
+describe('onThisPc — Deck shows the games on this PC', () => {
+  it('installed Steam / GOG / shortcut games and downloaded EmuStart games count; the rest does not', () => {
+    expect(onThisPc({ installed: true } as Game)).toBe(true)
+    expect(onThisPc({ installed: false } as Game)).toBe(false)
+    expect(onThisPc({ installed: false, emu: { cached: true } } as Game)).toBe(true)
+    expect(onThisPc({ installed: true, emu: { cached: false } } as Game)).toBe(false)
+  })
+
+  it('a tab counts only the games on this PC (a platform with none has no tab)', () => {
+    const nav: NavGroup[] = [{ id: 'console', label: 'Konsole', games: [], subs: [{ id: 'console/emu:ps2', label: 'PS2', es: 'ps2', games: [{ id: 'a', installed: false, emu: { cached: true } } as Game, { id: 'b', installed: false, emu: { cached: false } } as Game] }] }]
+    expect(deckCandidates(nav)[0].count).toBe(1)
+    // a platform with only games not on this PC: no new tab, and a stored one is not shown
+    const none = deckCandidates([{ ...nav[0], subs: [{ ...nav[0].subs[0], games: [{ id: 'c', installed: false, emu: { cached: false } } as Game] }] }])
+    expect(none[0].count).toBe(0)
+    expect(syncGroups([], none)).toEqual([])
+    expect(visibleGroups({ ...defaultDeckSettings(), groups: [g('console/emu:ps2')] }, none)).toEqual([])
   })
 })
 

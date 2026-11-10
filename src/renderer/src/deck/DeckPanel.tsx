@@ -94,7 +94,6 @@ export function DeckPanel({
                 <div key={g.id} className="deck-tile" style={{ width: m.tileW }} title={g.name}>
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     <img src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true)} alt="" draggable={false} loading="lazy" />
-                    <span className="deck-tile-fallback">{g.name}</span>
                   </div>
                   {showLabels && <div className="deck-tile-name">{g.name}</div>}
                 </div>

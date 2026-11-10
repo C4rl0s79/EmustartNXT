@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -1620,7 +1620,10 @@ app.whenReady().then(async () => {
     },
     disable: () => void patchSettings({ deck: { enabled: false } }).catch((e) => log.error('deck', 'switching off failed', e)),
     quit: () => app.quit(),
-    geometry: (w, g) => w.webContents.send(IPC.deckGeometry, g)
+    geometry: (w, g) => w.webContents.send(IPC.deckGeometry, g),
+    // the built program's own icon (Lumen.exe); from sources the icon file the build uses
+    // ('normal' = 32 px: the tray scales it down — a 16 px one is blurry with display scaling)
+    icon: () => (app.isPackaged ? app.getFileIcon(process.execPath, { size: 'normal' }) : Promise.resolve(nativeImage.createFromPath(path.join(app.getAppPath(), 'resources', 'icon.png'))))
   })
   deck.sync()
   // controller: passive XInput polling, only while Lumen has focus (never while a game runs)
@@ -1675,6 +1678,8 @@ app.on('before-quit', (e) => {
 })
 
 async function shutdown(): Promise<void> {
+  // the Deck and its tray icon go first: their menu must not reopen the window halfway through quitting
+  deck?.close()
   localMedia.close()
   await showControllers() // never leave a wheel disabled after Lumen exits
   library.stop()

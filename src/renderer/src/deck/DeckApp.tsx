@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DECK_DEFAULT_COLS, activeGroup, clampCols, deckCandidates, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
+import { DECK_DEFAULT_COLS, activeGroup, clampCols, deckCandidates, onThisPc, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
 import { api, useStore } from '../store'
 import { findSub, useNav } from '../lib/nav'
 import { subItem } from '../tv/data'
@@ -86,7 +86,7 @@ export function DeckApp() {
 
   // the active tab's games and their tiles; the panel asks the main process for the height they need
   const group = active
-  const games = useMemo(() => (group ? (findSub(nav, group.id)?.sub.games ?? []) : []), [nav, group])
+  const games = useMemo(() => (group ? (findSub(nav, group.id)?.sub.games ?? []).filter(onThisPc) : []), [nav, group])
   const cols = group ? (localCols?.id === group.id ? localCols.cols : group.cols) : DECK_DEFAULT_COLS
   // the local columns give way only to the stored value that matches them (an older save arriving later
   // must not undo a newer notch) — or to another tab

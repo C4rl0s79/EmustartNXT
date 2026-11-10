@@ -146,19 +146,6 @@ body,
   object-fit: cover;
 }
 
-/* under the picture: seen only while it loads or when the game has none */
-.deck-tile-fallback {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 6px;
-  text-align: center;
-  font-size: 12px;
-  opacity: 0.6;
-  overflow: hidden;
-}
-
 .deck-tile:hover .deck-tile-art {
   outline: 2px solid rgba(255, 255, 255, 0.8);
   outline-offset: -2px;

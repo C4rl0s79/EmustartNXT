@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { EmuSystem, Game } from '@shared/types'
 import type { NavGroup, NavSub } from '@shared/libraryNav'
+import { onThisPc } from '@shared/deck'
 import { useStore } from '../store'
 import { plural } from '../lib/format'
 import { pinLabel, useNav, usePinned } from '../lib/nav'
@@ -65,7 +66,7 @@ const ABOUT: Record<string, string> = {
 }
 
 function readyCount(games: Game[]): number {
-  return games.filter((g) => (g.emu ? g.emu.cached : g.installed)).length
+  return games.filter(onThisPc).length
 }
 
 /** One subgroup as a carousel item — an EmuStart platform keeps its logo, console photo and options. */
