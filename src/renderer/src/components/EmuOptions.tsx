@@ -30,7 +30,7 @@ function Switch({
   )
 }
 
-function Stepper({
+export function Stepper({
   label,
   value,
   step,

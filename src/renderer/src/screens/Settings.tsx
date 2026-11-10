@@ -1,6 +1,6 @@
 import type { SteamFamilyStatus } from '@shared/types'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { deckCandidates, syncGroups, type DeckGroupOp, type DeckSettings } from '@shared/deck'
+import { DECK_WIDTH_MAX, DECK_WIDTH_MIN, deckCandidates, layoutFor, syncGroups, type DeckGroupOp, type DeckSettings } from '@shared/deck'
 import type { ArtDataSource, CacheStats, Category, EmuSettings, LaunchBoxStatus, SecretName, Settings as AppSettings, SettingsPatch } from '@shared/types'
 import type { PickPathOptions } from '@shared/api'
 import { loginFlow, logoutFlow } from '../lib/account'
@@ -15,7 +15,7 @@ import { TextField } from '../components/TextField'
 import { Modal } from '../components/Modal'
 import { formatBytes, gameCountLabel } from '../lib/format'
 import { UpdateSection } from '../components/Update'
-import { EmuLibraryOptions } from '../components/EmuOptions'
+import { EmuLibraryOptions, Stepper } from '../components/EmuOptions'
 
 // Two panes: the list of sections on the left, the chosen section on the right (scrolled on its own).
 // Moving along the list shows the section; right / A goes into it, B (or left at its edge) back to the list.
@@ -945,6 +945,10 @@ function DeckSection() {
   const settings = useStore((s) => s.settings)
   const nav = useNav()
   const candidates = useMemo(() => deckCandidates(nav), [nav])
+  const [scr, setScr] = useState<{ key: string; label: string } | null>(null)
+  // the screen Deck is on — asked again when the Deck settings change (Deck itself follows a new screen)
+  const deckState = settings?.deck
+  useEffect(() => void api().deck.screen().then(setScr).catch(() => setScr(null)), [deckState])
   if (!settings) return null
   const deck = settings.deck
   const patch = (d: Partial<DeckSettings>): void => void attempt(api().settings.patch({ deck: d }))
@@ -967,6 +971,7 @@ function DeckSection() {
         value={deck.showLogos}
         onChange={(v) => patch({ showLogos: v })}
       />
+      {scr && <DeckWidths deck={deck} scr={scr} />}
       <h3 className="cats__heading">
         Zakładki ({shown} widocznych z {groups.length})
       </h3>
@@ -993,6 +998,23 @@ function DeckSection() {
         })}
       </div>
     </Section>
+  )
+}
+
+/** Dock and games panel width on the screen Deck is on — kept per screen, changed by steps (DeckLayoutStep). */
+function DeckWidths({ deck, scr }: { deck: DeckSettings; scr: { key: string; label: string } }) {
+  const lay = layoutFor(deck, scr.key, scr.label)
+  const pct = (f: number): number => Math.round(f * 100)
+  const step = (field: 'dockWidth' | 'panelWidth') => (v: number) =>
+    void attempt(api().deck.setLayout({ key: scr.key, label: scr.label, field, delta: (v - pct(lay[field])) / 100 }))
+  const common = { step: 1, min: pct(DECK_WIDTH_MIN), max: pct(DECK_WIDTH_MAX), format: (v: number) => `${v}% ekranu` }
+  return (
+    <>
+      <h3 className="cats__heading">Wymiary na tym ekranie ({scr.label})</h3>
+      <Stepper label="Szerokość Decka" value={pct(lay.dockWidth)} {...common} onChange={step('dockWidth')} />
+      <Stepper label="Szerokość panelu z grami" value={pct(lay.panelWidth)} {...common} onChange={step('panelWidth')} />
+      <p className="card__desc">Szerokość panelu z grami zadziała razem z panelem kafli (następny etap).</p>
+    </>
   )
 }
 

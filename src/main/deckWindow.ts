@@ -21,6 +21,12 @@ export interface DeckHost {
   quit(): void
 }
 
+/** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
+export function deckScreen(): { key: string; label: string } {
+  const d = screen.getPrimaryDisplay()
+  return screenKey(d.size.width, d.size.height, d.scaleFactor)
+}
+
 /** a screen change may come without an event, or before Windows reports the new size — checked every 3 s too */
 const SCREEN_CHECK_MS = 3000
 const SCREEN_SETTLE_MS = 400
@@ -143,7 +149,7 @@ export class DeckWindow {
     if (!w) return
     const d = screen.getPrimaryDisplay()
     const s = this.host.deck()
-    const { key, label } = screenKey(d.size.width, d.size.height, d.scaleFactor)
+    const { key, label } = deckScreen()
     this.screenState = this.state()
     w.setBounds(dockRect(d.workArea, layoutFor(s, key, label)))
     w.setOpacity(s.opacity)

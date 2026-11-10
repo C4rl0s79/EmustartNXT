@@ -60,7 +60,7 @@ export interface DeckSettings {
 
 export const defaultDeckLayout = (label = ''): DeckScreenLayout => ({
   label,
-  dockWidth: 0.86,
+  dockWidth: 0.95,
   dockHeight: 46,
   dockOffset: 0,
   panelWidth: 0.94,
@@ -176,6 +176,34 @@ export function syncGroups(groups: DeckGroup[], candidates: DeckCandidate[]): De
   return fresh.length ? [...groups, ...fresh.map((c) => newGroup(c.id))] : groups
 }
 
+/** the range of the dock / games panel width the player can set (fraction of the screen's width) */
+export const DECK_WIDTH_MIN = 0.3
+export const DECK_WIDTH_MAX = 1
+
+/**
+ * One step of a width the player sets in Settings → Deck, for one screen. A step, not a value: presses
+ * quicker than the settings round trip add up instead of resending the same stale value.
+ */
+export interface DeckLayoutStep {
+  key: string
+  label: string
+  field: 'dockWidth' | 'panelWidth'
+  /** change in fractions of the screen's width (+0.01 = one per cent more) */
+  delta: number
+}
+
+/**
+ * The screens map after one step on one screen (stored or default dimensions as the base). The edited
+ * screen moves to the end — the newest entries are the ones kept (cleanDeckSettings).
+ */
+export function setDeckLayout(s: DeckSettings, step: DeckLayoutStep): Record<string, DeckScreenLayout> {
+  const cur = layoutFor(s, step.key, step.label)
+  const v = Math.round(Math.max(DECK_WIDTH_MIN, Math.min(DECK_WIDTH_MAX, cur[step.field] + step.delta)) * 100) / 100
+  const rest = { ...s.screens }
+  delete rest[step.key]
+  return { ...rest, [step.key]: { ...cur, [step.field]: v, label: step.label } }
+}
+
 /** One change of the tab list from Settings — applied by the main process to the stored tabs. */
 export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 }
 
@@ -216,10 +244,10 @@ function cleanLayout(v: unknown): DeckScreenLayout {
   const r = (v && typeof v === 'object' ? v : {}) as Partial<DeckScreenLayout>
   return {
     label: typeof r.label === 'string' ? r.label.slice(0, 40) : '',
-    dockWidth: num(r.dockWidth, 0.1, 1, d.dockWidth),
+    dockWidth: num(r.dockWidth, DECK_WIDTH_MIN, DECK_WIDTH_MAX, d.dockWidth),
     dockHeight: Math.round(num(r.dockHeight, 24, 160, d.dockHeight)),
     dockOffset: Math.round(num(r.dockOffset, -4000, 4000, d.dockOffset)),
-    panelWidth: num(r.panelWidth, 0.1, 1, d.panelWidth),
+    panelWidth: num(r.panelWidth, DECK_WIDTH_MIN, DECK_WIDTH_MAX, d.panelWidth),
     panelHeight: num(r.panelHeight, 0.1, 1, d.panelHeight)
   }
 }

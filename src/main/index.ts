@@ -39,8 +39,8 @@ import { applyServer, localItems, pendingFiles, type ServerChoices, parseDefault
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
-import { DeckWindow } from './deckWindow'
-import { deckCandidates, moveDeckGroup, syncGroups, type DeckGroupOp } from '@shared/deck'
+import { DeckWindow, deckScreen } from './deckWindow'
+import { deckCandidates, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -1420,6 +1420,15 @@ function registerIpc(): void {
   handle(IPC.uiGetMode, () => modes?.mode ?? 'desktop')
   handle(IPC.uiSetMode, (mode: UiMode) => modes?.setMode(mode === 'fullscreen' ? 'fullscreen' : 'desktop'))
   ipcMain.on(IPC.deckMenu, () => deck?.popupMenu())
+  // Deck's dimensions are kept per screen: the screen it is on now (the primary one)
+  handle(IPC.deckScreen, () => deckScreen())
+  handle(IPC.deckLayout, async (step: DeckLayoutStep) => {
+    // only the two widths, by a small step, on a screen key the settings accept
+    const field = step?.field === 'panelWidth' ? 'panelWidth' : step?.field === 'dockWidth' ? 'dockWidth' : null
+    const delta = typeof step?.delta === 'number' && Number.isFinite(step.delta) ? Math.max(-0.1, Math.min(0.1, step.delta)) : 0
+    if (!field || !delta || typeof step.key !== 'string' || typeof step.label !== 'string') return
+    await patchSettings({ deck: { screens: setDeckLayout(settings.get().deck, { key: step.key, label: step.label.slice(0, 40), field, delta }) } })
+  })
   // a tab changed in Settings — applied here, to the stored tabs (one writer), never a renderer's copy
   handle(IPC.deckGroup, async (op: DeckGroupOp) => {
     const cur = settings.get().deck

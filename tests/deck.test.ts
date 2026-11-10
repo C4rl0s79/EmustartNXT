@@ -11,12 +11,14 @@ import {
   defaultDeckSettings,
   layoutFor,
   mergeDeck,
+  setDeckLayout,
   moveDeckGroup,
   screenKey,
   syncGroups,
   visibleGroups,
   type DeckCandidate,
-  type DeckGroup
+  type DeckGroup,
+  type DeckSettings
 } from '@shared/deck'
 
 const games = (n: number): Game[] => Array.from({ length: n }, (_, i) => ({ id: `g${i}` }) as Game)
@@ -24,11 +26,11 @@ const g = (id: string, extra: Partial<DeckGroup> = {}): DeckGroup => ({ id, cols
 const c = (id: string, count: number, kind: DeckCandidate['kind'] = 'platform', label = id): DeckCandidate => ({ id, label, kind, count })
 
 describe('defaults (PyLinksDeck profiles.py)', () => {
-  it('starts switched off, with the dimensions PyLinksDeck used', () => {
+  it('starts switched off; the dock spans 95 % of the screen, the games panel 94 %', () => {
     const s = defaultDeckSettings()
     expect(s.enabled).toBe(false)
     expect(s).toMatchObject({ showLabels: true, showLogos: true, scrollSpeed: 0.7, animations: true, autoHide: true, opacity: 0.96 })
-    expect(defaultDeckLayout()).toEqual({ label: '', dockWidth: 0.86, dockHeight: 46, dockOffset: 0, panelWidth: 0.94, panelHeight: 0.8 })
+    expect(defaultDeckLayout()).toEqual({ label: '', dockWidth: 0.95, dockHeight: 46, dockOffset: 0, panelWidth: 0.94, panelHeight: 0.8 })
   })
 })
 
@@ -203,7 +205,7 @@ describe('mergeDeck', () => {
 describe('dockRect (deck_app._layout_windows)', () => {
   const area = { x: 0, y: 0, width: 1920, height: 1040 }
   it('centres the dock at the top of the work area', () => {
-    expect(dockRect(area, defaultDeckLayout())).toEqual({ x: 134, y: 0, width: 1651, height: 46 })
+    expect(dockRect(area, defaultDeckLayout())).toEqual({ x: 48, y: 0, width: 1824, height: 46 })
   })
   it('follows the work area (taskbar at the top, second screen left of the primary)', () => {
     expect(dockRect({ x: -2560, y: 40, width: 2560, height: 1400 }, { ...defaultDeckLayout(), dockWidth: 1, dockOffset: 12 })).toEqual({ x: -2560, y: 52, width: 2560, height: 46 })
@@ -213,7 +215,7 @@ describe('dockRect (deck_app._layout_windows)', () => {
     expect(dockRect(area, { ...defaultDeckLayout(), dockWidth: 0.1 }).width).toBe(240)
   })
   it('stays inside the work area: a layout from a taller screen never puts the dock off-screen', () => {
-    expect(dockRect(area, { ...defaultDeckLayout(), dockOffset: 1200 })).toEqual({ x: 134, y: 994, width: 1651, height: 46 })
+    expect(dockRect(area, { ...defaultDeckLayout(), dockOffset: 1200 })).toEqual({ x: 48, y: 994, width: 1824, height: 46 })
     expect(dockRect({ x: 0, y: 0, width: 800, height: 100 }, { ...defaultDeckLayout(), dockHeight: 160 }).height).toBe(100)
   })
 })
@@ -229,5 +231,24 @@ describe('moveDeckGroup', () => {
     expect(moveDeckGroup(gs, { id: 'a/3', move: 1 })).toBe(gs)
     expect(moveDeckGroup(gs, { id: 'x/9', hidden: true })).toBe(gs)
     expect(moveDeckGroup(gs, { id: 'a/1', hidden: false })).toBe(gs)
+  })
+})
+
+describe('setDeckLayout', () => {
+  const base = { ...defaultDeckSettings(), screens: { '1920x1080@1': { ...defaultDeckLayout('1920×1080'), dockWidth: 0.8 }, '1280x720@1': defaultDeckLayout('1280×720') } }
+  it('steps one width of one screen, from its stored or default values', () => {
+    const out = setDeckLayout(base, { key: '2560x1440@1', label: '2560×1440', field: 'panelWidth', delta: -0.01 })
+    expect(out['1920x1080@1']).toBe(base.screens['1920x1080@1'])
+    expect(out['2560x1440@1']).toEqual({ ...defaultDeckLayout('2560×1440'), panelWidth: 0.93 })
+  })
+  it('steps add up (no stale value) and stay in the allowed range', () => {
+    let s: DeckSettings = base
+    for (let i = 0; i < 3; i++) s = { ...s, screens: setDeckLayout(s, { key: '1920x1080@1', label: '1920×1080', field: 'dockWidth', delta: 0.01 }) }
+    expect(s.screens['1920x1080@1'].dockWidth).toBe(0.83)
+    expect(setDeckLayout(base, { key: '1920x1080@1', label: '1920×1080', field: 'dockWidth', delta: 0.5 })['1920x1080@1'].dockWidth).toBe(1)
+    expect(setDeckLayout(base, { key: '1920x1080@1', label: '1920×1080', field: 'dockWidth', delta: -0.9 })['1920x1080@1'].dockWidth).toBe(0.3)
+  })
+  it('moves the edited screen to the end (the newest are kept)', () => {
+    expect(Object.keys(setDeckLayout(base, { key: '1920x1080@1', label: '1920×1080', field: 'dockWidth', delta: 0.01 }))).toEqual(['1280x720@1', '1920x1080@1'])
   })
 })

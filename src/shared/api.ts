@@ -1,5 +1,5 @@
 import type { GameFacts, OwnArtResult, UserArtGallery } from './types'
-import type { DeckGroupOp } from './deck'
+import type { DeckGroupOp, DeckLayoutStep } from './deck'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ArtKind, ArtLayout,
@@ -258,6 +258,10 @@ export interface LumenApi {
     menu(): void
     /** show / hide / move one tab (applied by the main process to the stored tabs) */
     group(op: DeckGroupOp): Promise<void>
+    /** key and label of the screen Deck is on (its dimensions are stored per screen) */
+    screen(): Promise<{ key: string; label: string }>
+    /** one step of the dock / games panel width on one screen (the one shown in Settings) */
+    setLayout(step: DeckLayoutStep): Promise<void>
   }
   /** desktop (Lumen look) ⇄ fullscreen (EmuStart look); both use the same core */
   ui: {
@@ -326,6 +330,8 @@ export const IPC = {
   appQuit: 'app:quit',
   deckMenu: 'deck:menu',
   deckGroup: 'deck:group',
+  deckScreen: 'deck:screen',
+  deckLayout: 'deck:layout',
   appListDir: 'app:listDir',
   appFocus: 'app:focus',
   launchboxStatus: 'launchbox:status',
