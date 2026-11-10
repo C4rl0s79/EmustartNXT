@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { crc32 } from 'node:zlib'
 import { describe, expect, it, vi } from 'vitest'
-import { applyScript, detectFlavor, extractZip, isNewer, readRelease, Updater } from '../src/main/updater'
+import { applyScript, detectFlavor, extractZip, findRelease, isNewer, pickRelease, readRelease, tagVersion, Updater } from '../src/main/updater'
 import { releaseMessage, verifyRelease } from '../src/main/releaseSigning'
 
 /** Minimal ZIP (stored entries) for the tests. */
@@ -146,5 +146,44 @@ describe('updater', () => {
     expect(s.phase).toBe('error')
     expect(s.error).toContain('GitHub nie odpowiada')
     fetchMock.mockRestore()
+  })
+})
+
+describe('one repository for EmuStart and Lumen (EmustartNXT)', () => {
+  const rel = (tag: string, extra: Record<string, unknown> = {}) => ({ tag_name: tag, assets: [], ...extra })
+
+  it('takes the newest published Lumen release, not whichever program came out last', () => {
+    const list = [rel('emustart-v0.63.0'), rel('lumen-v1.0.55', { draft: true }), rel('lumen-v1.0.56-rc', { prerelease: true }), rel('lumen-v1.0.54'), rel('lumen-v1.0.9')]
+    expect(pickRelease(list).tag_name).toBe('lumen-v1.0.54')
+  })
+
+  it('no Lumen release in the list → none; a single release (an old feed) is taken as it is', () => {
+    expect(pickRelease([rel('emustart-v0.63.0')])).toEqual({})
+    expect(pickRelease(rel('v1.0.53')).tag_name).toBe('v1.0.53')
+  })
+
+  it('reads the version of both tag forms', () => {
+    expect(tagVersion('lumen-v1.0.54')).toBe('1.0.54')
+    expect(tagVersion('v1.0.53')).toBe('1.0.53')
+    expect(readRelease(rel('lumen-v1.0.54'), 'zip', '1.0.53').version).toBe('1.0.54')
+    expect(readRelease(rel('lumen-v1.0.54'), 'zip', '1.0.53').newer).toBe(true)
+  })
+})
+
+describe('findRelease: page by page, then the old repository', () => {
+  const rel = (tag: string) => ({ tag_name: tag, assets: [] })
+  it('goes past pages full of EmuStart releases to the newest Lumen one', async () => {
+    const asked: string[] = []
+    const page1 = Array.from({ length: 30 }, (_, i) => rel(`emustart-v0.${90 - i}.0`))
+    const got = await findRelease(async (url) => (asked.push(url), url.includes('page=1') ? page1 : [rel('lumen-v1.0.60'), rel('emustart-v0.1.0')]))
+    expect(got.tag_name).toBe('lumen-v1.0.60')
+    expect(asked).toHaveLength(2)
+  })
+
+  it('no Lumen release in EmustartNXT yet: the old repository\'s latest (v…)', async () => {
+    const asked: string[] = []
+    const got = await findRelease(async (url) => (asked.push(url), url.includes('C4rl0s79/Launcher') ? rel('v1.0.53') : [rel('emustart-v0.63.0')]))
+    expect(got.tag_name).toBe('v1.0.53')
+    expect(asked.at(-1)).toContain('C4rl0s79/Launcher/releases/latest')
   })
 })

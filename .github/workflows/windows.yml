@@ -8,34 +8,39 @@ name: Windows
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["emustart-v*"]
     paths:
-      - "emustart/**"
-      - "web/**"
-      - "assets/**"
-      - "main.py"
-      - "server_main.py"
-      - "emustart.spec"
-      - "build.ps1"
-      - "requirements.txt"
-      - "tests/**"
-      - "tools/release_sign.py"
+      - "emustart/emustart/**"
+      - "emustart/web/**"
+      - "emustart/assets/**"
+      - "emustart/main.py"
+      - "emustart/server_main.py"
+      - "emustart/emustart.spec"
+      - "emustart/build.ps1"
+      - "emustart/requirements.txt"
+      - "emustart/tests/**"
+      - "emustart/tools/release_sign.py"
       - ".github/workflows/windows.yml"
   pull_request:                  # sprawdzenie budowy przed scaleniem (artefakt do pobrania)
     paths:
-      - "emustart/**"
-      - "web/**"
-      - "main.py"
-      - "server_main.py"
-      - "emustart.spec"
-      - "build.ps1"
-      - "requirements.txt"
-      - "tests/**"
+      - "emustart/emustart/**"
+      - "emustart/web/**"
+      - "emustart/main.py"
+      - "emustart/server_main.py"
+      - "emustart/emustart.spec"
+      - "emustart/build.ps1"
+      - "emustart/requirements.txt"
+      - "emustart/tests/**"
       - ".github/workflows/windows.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+# EmustartNXT: EmuStart lives in emustart/ (Lumen in lumen/)
+defaults:
+  run:
+    working-directory: emustart
 
 jobs:
   exe:
@@ -47,6 +52,7 @@ jobs:
         with:
           python-version: "3.14"     # compression.zstd (kompresja zapisów) jest od 3.14
           cache: pip
+          cache-dependency-path: emustart/requirements.txt
 
       - name: Zależności
         run: |
@@ -69,15 +75,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.zip.outputs.file }}
-          path: dist/${{ steps.zip.outputs.file }}
+          path: emustart/dist/${{ steps.zip.outputs.file }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.zip.outputs.server }}
-          path: dist/${{ steps.zip.outputs.server }}
+          path: emustart/dist/${{ steps.zip.outputs.server }}
 
       - name: Podpis wydania (emustart/signing.py)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/emustart-v')
         shell: pwsh
         env:
           EMUSTART_SIGNING_KEY: ${{ secrets.EMUSTART_SIGNING_KEY }}
@@ -88,7 +94,7 @@ jobs:
           }
 
       - name: Dołączenie do wydania
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/emustart-v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -99,7 +105,7 @@ jobs:
               $0 ~ "^## \\[" v "\\]" {on=1; next}
               on && /^## \[/ {exit}
               on {print}' CHANGELOG.md > notes.md
-            gh release create "$GITHUB_REF_NAME" --title "EmuStart $GITHUB_REF_NAME" --notes-file notes.md \
+            gh release create "$GITHUB_REF_NAME" --title "EmuStart ${{ steps.zip.outputs.ver }}" --notes-file notes.md \
               || gh release view "$GITHUB_REF_NAME" >/dev/null   # równolegle założył je ktoś inny
           fi
           gh release upload "$GITHUB_REF_NAME" "dist/${{ steps.zip.outputs.file }}" \

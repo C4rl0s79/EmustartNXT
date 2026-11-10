@@ -10,7 +10,7 @@ import { verifyRelease } from './releaseSigning'
 import { POWERSHELL, SCHTASKS } from './systemTools'
 
 // Self-update from GitHub releases, the way EmuStart does it (emustart/updater.py):
-//  1. check the latest release of C4rl0s79/Launcher and pick the file for this build
+//  1. check the latest Lumen release of C4rl0s79/EmustartNXT (tag lumen-v…) and pick the file for this build
 //     (zip = folder version, setup = installed, portable = single exe),
 //  2. download it into LumenData\update with progress, check the size, GitHub's SHA-256 and the
 //     Ed25519 release signature (<file>.sig, releaseSigning.ts) — nothing is used without them,
@@ -19,9 +19,47 @@ import { POWERSHELL, SCHTASKS } from './systemTools'
 //     backs the program up, swaps the files (LumenData is never touched), restores the backup on
 //     failure and starts Lumen again. Log: LumenData\logs\update.log.
 
-export const REPO = 'C4rl0s79/Launcher'
-const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`
+// One repository for EmuStart and Lumen (EmustartNXT): its releases are of both programs, told apart by the
+// tag — Lumen's are lumen-v<version>. /releases/latest would be whichever program came out last: the list is read
+// and the newest Lumen release taken (pickRelease). Lumen up to 1.0.53 read C4rl0s79/Launcher — the first
+// release from here is published there too, so they get it and then ask here.
+export const REPO = 'C4rl0s79/EmustartNXT'
+export const TAG_PREFIX = 'lumen-v'
+const API_URL = `https://api.github.com/repos/${REPO}/releases?per_page=30`
+/** EmuStart releases may push Lumen's past the 30 newest: the next pages, at most this many */
+const MAX_PAGES = 5
+/** until EmustartNXT has a Lumen release: the old repository (v<version>) */
+const LEGACY_URL = 'https://api.github.com/repos/C4rl0s79/Launcher/releases/latest'
 const DOWNLOAD_PREFIX = `https://github.com/${REPO}/releases/download/`
+const LEGACY_DOWNLOAD_PREFIX = 'https://github.com/C4rl0s79/Launcher/releases/download/'
+
+/**
+ * The newest Lumen release: the release list page by page until one is found (MAX_PAGES), then the old
+ * repository. `getJson(url)` → the API's answer (fetch; replaced in tests).
+ */
+export async function findRelease(getJson: (url: string) => Promise<unknown>): Promise<GhRelease> {
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const data = await getJson(`${API_URL}&page=${page}`)
+    const rel = pickRelease(data)
+    if (rel.tag_name || !Array.isArray(data) || data.length < 30) {
+      if (rel.tag_name) return rel
+      break
+    }
+  }
+  return pickRelease(await getJson(LEGACY_URL))
+}
+
+type GhRelease = { tag_name?: string; body?: string; html_url?: string; published_at?: string; assets?: GhAsset[]; draft?: boolean; prerelease?: boolean }
+
+/** The newest published Lumen release of a release list (newest first, as GitHub gives it); one release is taken as it is. */
+export function pickRelease(data: unknown): GhRelease {
+  if (!Array.isArray(data)) return (data ?? {}) as GhRelease
+  const mine = (data as GhRelease[]).filter((r) => !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(TAG_PREFIX))
+  return mine.reduce<GhRelease | undefined>((best, r) => (!best || isNewer(tagVersion(r.tag_name), tagVersion(best.tag_name)) ? r : best), undefined) ?? {}
+}
+
+/** version of a release tag: lumen-v1.0.54 (EmustartNXT) or v1.0.53 (the old repository) → 1.0.54 / 1.0.53 */
+export const tagVersion = (tag: string | undefined): string => (tag ?? '').replace(new RegExp(`^${TAG_PREFIX}`), '').replace(/^v/, '')
 
 export function vtuple(v: string): number[] {
   return (v.match(/\d+/g) ?? []).slice(0, 4).map(Number)
@@ -59,8 +97,8 @@ interface GhAsset {
 }
 
 /** GitHub "latest release" JSON → what this build would download. */
-export function readRelease(rel: { tag_name?: string; body?: string; html_url?: string; published_at?: string; assets?: GhAsset[] }, flavor: UpdateFlavor, current: string): UpdateInfo {
-  const version = (rel.tag_name ?? '').replace(/^v/, '')
+export function readRelease(rel: GhRelease, flavor: UpdateFlavor, current: string): UpdateInfo {
+  const version = tagVersion(rel.tag_name)
   const assets = rel.assets ?? []
   const asset = flavor === 'dev' ? undefined : assets.find((a) => ASSET_RE[flavor].test(a.name))
   const sig = asset ? assets.find((a) => a.name === `${asset.name}.sig`) : undefined
@@ -284,7 +322,8 @@ export class Updater extends EventEmitter {
   /** download addresses must come from this repository's releases (or the explicit test feed) */
   private allowed(url: string): boolean {
     if (this.o.feed) return url.startsWith(new URL(this.o.feed).origin + '/')
-    return url.startsWith(DOWNLOAD_PREFIX)
+    // (the old repository: only until EmustartNXT has a Lumen release — findRelease falls back to it)
+    return url.startsWith(DOWNLOAD_PREFIX) || url.startsWith(LEGACY_DOWNLOAD_PREFIX)
   }
 
   async check(): Promise<UpdateState> {
@@ -298,14 +337,18 @@ export class Updater extends EventEmitter {
     this.set({ phase: 'checking', error: undefined })
     try {
       // a stalled connection must not leave "checking" on screen for good
-      const res = await fetch(this.o.feed ?? API_URL, {
-        headers: { 'User-Agent': `Lumen/${this.o.current}`, Accept: 'application/vnd.github+json' },
-        signal: AbortSignal.timeout(this.o.checkTimeoutMs ?? 20_000)
-      }).catch((e: Error) => {
-        throw e.name === 'TimeoutError' ? new Error('GitHub nie odpowiada') : e
-      })
-      if (!res.ok) throw new Error(`GitHub: HTTP ${res.status}`)
-      const info = readRelease(await res.json(), this.o.flavor, this.o.current)
+      const getJson = async (url: string): Promise<unknown> => {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': `Lumen/${this.o.current}`, Accept: 'application/vnd.github+json' },
+          signal: AbortSignal.timeout(this.o.checkTimeoutMs ?? 20_000)
+        }).catch((e: Error) => {
+          throw e.name === 'TimeoutError' ? new Error('GitHub nie odpowiada') : e
+        })
+        if (!res.ok) throw new Error(`GitHub: HTTP ${res.status}`)
+        return res.json()
+      }
+      const rel = this.o.feed ? pickRelease(await getJson(this.o.feed)) : await findRelease(getJson)
+      const info = readRelease(rel, this.o.flavor, this.o.current)
       const phase = !info.newer ? 'none' : !info.file ? 'none' : readyVersion === info.version ? 'ready' : 'available'
       this.set({
         phase,

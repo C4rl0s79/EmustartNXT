@@ -570,8 +570,9 @@ class Bridge(private val act: MainActivity) {
     }
 
     private fun appUpdateCheck(): JSONObject = try {
-        val rel = installer.latestRelease("C4rl0s79/EmuStart")
-        val ver = rel.optString("tag_name").removePrefix("v")
+        // jedno repozytorium EmuStart i Lumena: najnowsze wydanie EmuStart (tag emustart-v…); do 0.62 — C4rl0s79/EmuStart
+        val rel = installer.latestTagged("C4rl0s79/EmustartNXT", "emustart-v", "C4rl0s79/EmuStart")
+        val ver = tagVersion(rel.optString("tag_name"), "emustart-v")
         val assets = rel.optJSONArray("assets") ?: JSONArray()
         val apk = (0 until assets.length()).map { assets.getJSONObject(it) }
             .firstOrNull { Regex("EmuStart-[\\d.]+-android\\.apk").matches(it.optString("name")) }

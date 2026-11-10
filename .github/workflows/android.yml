@@ -3,16 +3,21 @@ name: Android
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["emustart-v*"]
     paths:
-      - "android/**"
-      - "web/**"
-      - "emustart/__init__.py"
+      - "emustart/android/**"
+      - "emustart/web/**"
+      - "emustart/emustart/__init__.py"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+# EmustartNXT: EmuStart lives in emustart/ (Lumen in lumen/)
+defaults:
+  run:
+    working-directory: emustart
 
 jobs:
   apk:
@@ -47,10 +52,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.apk.outputs.file }}
-          path: ${{ steps.apk.outputs.file }}
+          path: emustart/${{ steps.apk.outputs.file }}
 
       - name: Podpis wydania (emustart/signing.py — serwer sprawdza go przed udostępnieniem APK)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/emustart-v')
         env:
           EMUSTART_SIGNING_KEY: ${{ secrets.EMUSTART_SIGNING_KEY }}
         run: |
@@ -59,7 +64,7 @@ jobs:
           python3 tools/release_sign.py verify "${{ steps.apk.outputs.file }}"
 
       - name: Dołączenie do wydania
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/emustart-v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

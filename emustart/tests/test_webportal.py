@@ -255,13 +255,20 @@ def test_panel_invites_and_google_config(site):
 def _release(monkeypatch, files: dict, sigs: dict):
     def fake_get(url, timeout=30):
         if url.startswith("https://api.github.com/"):
-            repo = url.split("/repos/")[1].split("/releases")[0]
-            assets = [{"name": n, "size": len(b), "browser_download_url": f"https://dl/{n}", "digest": ""}
-                      for n, b in files.items() if ("Lumen" in n) == (repo == "C4rl0s79/Launcher")]
-            assets += [{"name": n + ".sig", "browser_download_url": f"https://dl/{n}.sig"} for n in sigs
-                       if ("Lumen" in n) == (repo == "C4rl0s79/Launcher")]
-            ver = "1.0.13" if repo == "C4rl0s79/Launcher" else "0.49.0"
-            return io.BytesIO(json.dumps({"tag_name": "v" + ver, "assets": assets}).encode())
+            # one repository (EmustartNXT): releases of both programs, told apart by the tag; an older EmuStart
+            # release and a Lumen draft must not be taken
+            assert url.split("/repos/")[1].split("/releases")[0] == "C4rl0s79/EmustartNXT"
+
+            def assets(lumen: bool) -> list:
+                out = [{"name": n, "size": len(b), "browser_download_url": f"https://dl/{n}", "digest": ""}
+                       for n, b in files.items() if ("Lumen" in n) == lumen]
+                return out + [{"name": n + ".sig", "browser_download_url": f"https://dl/{n}.sig"} for n in sigs
+                              if ("Lumen" in n) == lumen]
+            rels = [{"tag_name": "lumen-v1.0.99", "draft": True, "assets": []},
+                    {"tag_name": "lumen-v1.0.13", "assets": assets(True)},
+                    {"tag_name": "emustart-v0.49.0", "assets": assets(False)},
+                    {"tag_name": "emustart-v0.48.0", "assets": []}]
+            return io.BytesIO(json.dumps(rels).encode())
         name = url.rsplit("/", 1)[1]
         if name.endswith(".sig"):
             return io.BytesIO(sigs[name[:-4]].encode())

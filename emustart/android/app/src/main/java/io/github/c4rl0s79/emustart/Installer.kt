@@ -130,6 +130,24 @@ class Installer(private val act: MainActivity) {
     /** Najnowsze wydanie repozytorium (API GitHuba). */
     fun latestRelease(repo: String): JSONObject = json("https://api.github.com/repos/$repo/releases/latest")
 
+    /**
+     * Najnowsze opublikowane wydanie z tagiem `prefix` (np. emustart-v) — repozytorium z wydaniami kilku programów
+     * (EmustartNXT: EmuStart i Lumen), gdzie /releases/latest dałoby to, co wyszło ostatnie. Brak — pusty obiekt.
+     */
+    fun latestTagged(repo: String, prefix: String, legacy: String): JSONObject {
+        // Lumen wydaje częściej: wydanie EmuStart bywa dalej niż 30 najnowszych — kolejne strony (najwyżej 5)
+        for (page in 1..5) {
+            val list = jsonArray("https://api.github.com/repos/$repo/releases?per_page=30&page=$page")
+            val best = (0 until list.length()).map { list.getJSONObject(it) }
+                .filter { !it.optBoolean("draft") && !it.optBoolean("prerelease") && it.optString("tag_name").startsWith(prefix) }
+                .maxWithOrNull(compareBy<JSONObject, String>(VERSION_ORDER) { tagVersion(it.optString("tag_name"), prefix) })
+            if (best != null) return best
+            if (list.length() < 30) break
+        }
+        // dopóki EmustartNXT nie ma wydania EmuStart — dotychczasowe repozytorium
+        return latestRelease(legacy)
+    }
+
     /** Następny instalator z kolejki (po powrocie do EmuStart). */
     fun next() {
         if (running || queue.isEmpty()) return
@@ -174,6 +192,17 @@ class Installer(private val act: MainActivity) {
         val uri = FileProvider.getUriForFile(act, act.packageName + ".files", apk)
         return Intent(Intent.ACTION_VIEW).setDataAndType(uri, APK)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    private fun jsonArray(url: String): JSONArray {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 10000; c.readTimeout = 20000
+        c.setRequestProperty("Accept", "application/vnd.github+json")
+        c.setRequestProperty("User-Agent", "EmuStart-Android")
+        try {
+            if (c.responseCode != 200) throw IllegalStateException("${URL(url).host}: ${c.responseCode}")
+            return JSONArray(c.inputStream.bufferedReader().readText())
+        } finally { c.disconnect() }
     }
 
     private fun json(url: String): JSONObject {
@@ -255,4 +284,19 @@ class Installer(private val act: MainActivity) {
         if (!tmp.renameTo(dst)) { dst.delete(); tmp.renameTo(dst) }
         return dst
     }
+}
+
+/** wersja z tagu: emustart-v0.63.0 (EmustartNXT) albo v0.62.0 (dawne repozytorium) → 0.63.0 / 0.62.0 */
+fun tagVersion(tag: String, prefix: String): String = tag.removePrefix(prefix).removePrefix("v")
+
+/** porządek wersji 0.9.0 < 0.63.0 (liczby, nie tekst; dowolnie długie — porównywane jako ciągi cyfr) */
+val VERSION_ORDER: Comparator<String> = Comparator { a, b ->
+    fun parts(v: String) = Regex("\\d+").findAll(v).map { it.value.trimStart('0').ifEmpty { "0" } }.toList()
+    val x = parts(a)
+    val y = parts(b)
+    (0 until maxOf(x.size, y.size)).map {
+        val p = x.getOrElse(it) { "0" }
+        val q = y.getOrElse(it) { "0" }
+        if (p.length != q.length) p.length.compareTo(q.length) else p.compareTo(q)
+    }.firstOrNull { it != 0 } ?: 0
 }

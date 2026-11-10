@@ -23,19 +23,25 @@ import time
 import urllib.request
 from pathlib import Path
 
-from emustart import __version__, paths, signing
+from emustart import __version__, paths, signing, updater
 
 log = logging.getLogger("emustart.clientdist")
 
 UA = f"EmuStart-Server/{__version__}"
 EVERY = 6 * 3600
-# program → repozytorium, plik wydania, klucz i przedrostek podpisu
+# program → repozytorium, przedrostek tagu wydania, plik wydania, klucz i przedrostek podpisu. Jedno repozytorium
+# (EmustartNXT) z wydaniami obu programów — rozróżnionymi tagiem (updater.pick_release)
+# (legacy: dawne repozytorium programu — dopóki w EmustartNXT nie ma jego wydania)
+REPO = updater.REPO
 APPS = {
-    "emustart-windows": {"repo": "C4rl0s79/EmuStart", "asset": re.compile(r"EmuStart-[\d.]+-win64\.zip"),
+    "emustart-windows": {"repo": REPO, "tag": "emustart-v", "legacy": "C4rl0s79/EmuStart",
+                         "asset": re.compile(r"EmuStart-[\d.]+-win64\.zip"),
                          "key": signing.RELEASE_PUBKEY, "prefix": signing.PREFIX},
-    "emustart-android": {"repo": "C4rl0s79/EmuStart", "asset": re.compile(r"EmuStart-[\d.]+-android\.apk"),
+    "emustart-android": {"repo": REPO, "tag": "emustart-v", "legacy": "C4rl0s79/EmuStart",
+                         "asset": re.compile(r"EmuStart-[\d.]+-android\.apk"),
                          "key": signing.RELEASE_PUBKEY, "prefix": signing.PREFIX},
-    "lumen-windows": {"repo": "C4rl0s79/Launcher", "asset": re.compile(r"Lumen-[\d.]+-setup\.exe"),
+    "lumen-windows": {"repo": REPO, "tag": "lumen-v", "legacy": "C4rl0s79/Launcher",
+                      "asset": re.compile(r"Lumen-[\d.]+-setup\.exe"),
                       "key": signing.LUMEN_PUBKEY, "prefix": signing.LUMEN_PREFIX},
 }
 _lock = threading.Lock()
@@ -67,10 +73,20 @@ def _get(url: str, timeout: float = 30):
                                   timeout=timeout)
 
 
-def _latest(app: str) -> dict:
+def _latest(app: str, pages: dict | None = None) -> dict:
+    """Najnowsze wydanie programu. `pages`: odpowiedzi API z tego odświeżenia — wszystkie programy są w jednym
+    repozytorium, lista pobierana raz, nie raz na program (limit zapytań GitHuba bez logowania)."""
     spec = APPS[app]
-    with _get(f"https://api.github.com/repos/{spec['repo']}/releases/latest", 20) as r:
-        rel = json.loads(r.read())
+    cache = pages if pages is not None else {}
+
+    def get_json(url: str):
+        if url not in cache:
+            with _get(url, 20) as r:
+                cache[url] = json.loads(r.read())
+        return cache[url]
+    rel = updater.find_release(get_json, spec["repo"], spec["tag"], spec.get("legacy", ""))
+    if not rel:
+        raise ValueError("brak wydania tego programu na GitHubie")
     assets = rel.get("assets") or []
     a = next((x for x in assets if spec["asset"].fullmatch(x.get("name") or "")), None)
     if not a:
@@ -78,7 +94,7 @@ def _latest(app: str) -> dict:
     sig = next((x for x in assets if x.get("name") == a["name"] + ".sig"), None)
     if not sig:
         raise ValueError(f"wydanie {rel.get('tag_name')}: brak podpisu {a['name']}.sig")
-    return {"version": (rel.get("tag_name") or "").lstrip("v"), "name": a["name"], "url": a["browser_download_url"],
+    return {"version": updater.tag_version(rel.get("tag_name") or "", spec["tag"]), "name": a["name"], "url": a["browser_download_url"],
             "size": int(a.get("size") or 0), "sha256": (a.get("digest") or "").removeprefix("sha256:").lower(),
             "sig_url": sig["browser_download_url"], "published": rel.get("published_at") or ""}
 
@@ -123,10 +139,11 @@ def refresh(apps: list | None = None) -> dict:
     try:
         _job.update(running=True, log=[])
         idx = load_index()
+        pages: dict = {}                      # jedna lista wydań na odświeżenie (wspólne repozytorium)
         for app in apps or list(APPS):
             cur = idx.get(app) or {}
             try:
-                rel = _latest(app)
+                rel = _latest(app, pages)
                 if cur.get("version") == rel["version"] and path(app, idx):
                     cur.pop("error", None)
                     idx[app] = cur

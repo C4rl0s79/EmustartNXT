@@ -4,7 +4,7 @@ Dwa programy, każdy z własnym plikiem wydania (i podpisem):
 EmuStart (PC) — `EmuStart-<wersja>-win64.zip` (EmuStart/EmuStart.exe),
 EmuStart Server — `EmuStart-Server-<wersja>-win64.zip` (EmuStartServer/EmuStartServer.exe).
 
-1. `latest()` — najnowsze wydanie C4rl0s79/EmuStart i plik tego programu.
+1. `latest()` — najnowsze wydanie EmuStart z C4rl0s79/EmustartNXT (tag emustart-v…) i plik tego programu.
 2. `Job` — pobranie ZIP-a do `update\\` obok exe (z postępem), sprawdzenie skrótu SHA-256
    i **podpisu wydania** (`<zip>.sig`, Ed25519 — emustart/signing.py; bez poprawnego podpisu
    nic nie jest rozpakowywane), sprawdzenie archiwum (`EmuStart\\EmuStart.exe` i
@@ -37,8 +37,17 @@ from emustart import __version__, paths
 
 log = logging.getLogger("emustart.updater")
 
-REPO = "C4rl0s79/EmuStart"
-API_URL = f"https://api.github.com/repos/{REPO}/releases/latest"
+# Jedno repozytorium EmuStart i Lumena (EmustartNXT): wydania obu programów, rozróżnione tagiem — EmuStart
+# emustart-v<wersja>, Lumen lumen-v<wersja>. /releases/latest dałoby to, co wyszło ostatnie: czytamy listę
+# i bierzemy najnowsze wydanie EmuStart (pick_release). EmuStart do 0.62 pytał C4rl0s79/EmuStart — pierwsze
+# wydanie stąd trafia także tam, żeby je dostał i potem pytał już tutaj.
+REPO = "C4rl0s79/EmustartNXT"
+TAG_PREFIX = "emustart-v"
+API_URL = f"https://api.github.com/repos/{REPO}/releases?per_page=30"
+# dopóki EmustartNXT nie ma wydania EmuStart — dotychczasowe repozytorium (v<wersja>, /releases/latest)
+LEGACY_REPO = "C4rl0s79/EmuStart"
+# Lumen wydaje częściej: wydanie EmuStart bywa dalej niż 30 najnowszych — kolejne strony, najwyżej tyle
+MAX_PAGES = 5
 DOWNLOAD_PREFIX = f"https://github.com/{REPO}/releases/download/"
 UA = f"EmuStart/{__version__}"
 TASK = "EmuStart Server"
@@ -61,14 +70,45 @@ def vtuple(v: str) -> tuple:
     return tuple(int(x) for x in re.findall(r"\d+", v or "")[:4])
 
 
+def tag_version(tag: str, prefix: str = TAG_PREFIX) -> str:
+    """Wersja z tagu: emustart-v0.63.0 (EmustartNXT) albo v0.62.0 (dawne repozytorium) → 0.63.0 / 0.62.0."""
+    tag = tag or ""
+    return (tag[len(prefix):] if tag.startswith(prefix) else tag).lstrip("v")
+
+
+def find_release(get_json, repo: str = REPO, prefix: str = TAG_PREFIX, legacy: str = LEGACY_REPO) -> dict:
+    """Najnowsze wydanie programu (tag `prefix`) w repozytorium z wydaniami kilku programów: kolejne strony
+    listy, aż się znajdzie (najwyżej MAX_PAGES); brak — najnowsze wydanie dawnego repozytorium `legacy`.
+    `get_json(url)` → odpowiedź API (zamieniana w testach)."""
+    for page in range(1, MAX_PAGES + 1):
+        data = get_json(f"https://api.github.com/repos/{repo}/releases?per_page=30&page={page}")
+        rel = pick_release(data, prefix)
+        if rel or not isinstance(data, list) or len(data) < 30:
+            break
+    if not rel and legacy:
+        rel = pick_release(get_json(f"https://api.github.com/repos/{legacy}/releases/latest"), prefix)
+    return rel
+
+
+def pick_release(data, prefix: str = TAG_PREFIX) -> dict:
+    """Najnowsze opublikowane wydanie programu (tag z przedrostkiem) z listy wydań; pojedyncze wydanie — jak jest."""
+    if not isinstance(data, list):
+        return data if isinstance(data, dict) else {}
+    mine = [r for r in data if isinstance(r, dict) and not r.get("draft") and not r.get("prerelease")
+            and (r.get("tag_name") or "").startswith(prefix)]
+    return max(mine, key=lambda r: vtuple(tag_version(r.get("tag_name") or "", prefix)), default={})
+
+
 def latest(timeout: float = 15, app: str = "") -> dict:
     """{version, tag, url, size, notes, published, newer} najnowszego wydania (plik programu `app`)."""
     app = app or kind()
-    req = urllib.request.Request(API_URL, headers={"User-Agent": UA, "Accept": "application/vnd.github+json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        rel = json.loads(r.read())
+    def get_json(url: str):
+        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    rel = find_release(get_json)
     tag = rel.get("tag_name") or ""
-    ver = tag.lstrip("v")
+    ver = tag_version(tag)
     root = APPS[app][0]
     asset = next((a for a in rel.get("assets") or []
                   if APPS[app][1].fullmatch(a.get("name") or "")), None)

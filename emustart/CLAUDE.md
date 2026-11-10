@@ -25,7 +25,12 @@
 ## Wydania
 - Wersja w `emustart/__init__.py` (APK bierze ją stąd). Każdy PR z wydaniem: wersja +
   wpis w CHANGELOG.
-- Tag `vX.Y.Z` wypychasz sam, gdy PR z wydaniem jest scalony do `main` (nie wcześniej).
+- Tag `emustart-vX.Y.Z` wypychasz sam, gdy PR z wydaniem jest scalony do `main` (nie wcześniej). Repozytorium
+  EmustartNXT (`C4rl0s79/EmustartNXT`) ma wydania EmuStart (`emustart-v…`, CI: `.github/workflows/`) i Lumena
+  (`lumen-v…`); aktualizatory wybierają najnowsze wydanie po przedrostku tagu.
+- **Wydanie pomostowe (jednorazowo, pierwsze wydanie z EmustartNXT):** EmuStart ≤ 0.62 pyta jeszcze
+  `C4rl0s79/EmuStart` (`/releases/latest`, tag `v…`, pliki tylko z tamtego repozytorium) — te same pliki z `.sig`
+  trafiają tam jako wydanie `vX.Y.Z`; dopiero wersja z niego pyta EmustartNXT.
 
 ## Jeden ekosystem: klient Windows + serwer + APK + Lumen
 - To jeden system. Przy każdej zmianie sprawdź, czy nie psuje współpracy między modułami

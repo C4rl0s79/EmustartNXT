@@ -275,3 +275,41 @@ def test_script_runs_tools_by_full_path_and_fails_on_missing_robocopy(tmp_path):
     assert calls and all(c.startswith("& $robo") for c in calls)
     assert not any(ln.strip().startswith("schtasks") or "{ schtasks" in ln for ln in s.splitlines())
     assert "$null -eq $rc1 -or $null -eq $rc2" in s
+
+
+# ── jedno repozytorium EmuStart i Lumena (EmustartNXT): wydanie wybierane po tagu ──
+def test_pick_release_takes_the_newest_emustart_release_of_a_mixed_list():
+    from emustart import updater
+    rels = [{"tag_name": "lumen-v1.0.54"}, {"tag_name": "emustart-v0.64.0", "draft": True},
+            {"tag_name": "emustart-v0.63.0-rc", "prerelease": True}, {"tag_name": "emustart-v0.63.0"},
+            {"tag_name": "emustart-v0.9.0"}]
+    assert updater.pick_release(rels)["tag_name"] == "emustart-v0.63.0"
+    assert updater.pick_release(rels, "lumen-v")["tag_name"] == "lumen-v1.0.54"
+    assert updater.pick_release([{"tag_name": "lumen-v1.0.54"}]) == {}
+    assert updater.pick_release({"tag_name": "v0.62.0"})["tag_name"] == "v0.62.0"   # pojedyncze wydanie — jak jest
+
+
+def test_tag_version_reads_both_tag_forms():
+    from emustart import updater
+    assert updater.tag_version("emustart-v0.63.0") == "0.63.0"
+    assert updater.tag_version("v0.62.0") == "0.62.0"
+    assert updater.tag_version("lumen-v1.0.54", "lumen-v") == "1.0.54"
+
+
+def test_find_release_pages_past_other_programs_then_falls_back_to_the_old_repository():
+    from emustart import updater
+    asked = []
+    page1 = [{"tag_name": f"lumen-v1.0.{90 - i}"} for i in range(30)]
+
+    def get(url):
+        asked.append(url)
+        return page1 if "page=1" in url else [{"tag_name": "emustart-v0.70.0"}]
+    assert updater.find_release(get)["tag_name"] == "emustart-v0.70.0"
+    assert len(asked) == 2
+    # nothing of EmuStart in EmustartNXT yet: the old repository's latest (v…)
+    asked.clear()
+    rel = updater.find_release(lambda url: (asked.append(url),
+                                            {"tag_name": "v0.62.0"} if "C4rl0s79/EmuStart/" in url
+                                            else [{"tag_name": "lumen-v1.0.54"}])[1])
+    assert rel["tag_name"] == "v0.62.0"
+    assert asked[-1].endswith("C4rl0s79/EmuStart/releases/latest")

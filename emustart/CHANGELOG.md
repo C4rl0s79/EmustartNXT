@@ -6,6 +6,15 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan — jedno repozytorium (EmustartNXT)
+- EmuStart (serwer, klient PC, Android) i Lumen w jednym repozytorium `C4rl0s79/EmustartNXT`: wydania EmuStart
+  z tagiem `emustart-v…`, Lumena `lumen-v…`. Aktualizator EmuStart (PC, serwer), rozsyłanie klientów przez
+  serwer i aplikacja Android wybierają najnowsze wydanie swojego programu po przedrostku tagu (kolejne strony
+  listy wydań, najwyżej 5; dopóki tu nie ma wydania programu — dotychczasowe repozytorium). Serwer pobiera
+  listę wydań raz na odświeżenie. CI w `.github/workflows/` (tag `emustart-v*`).
+- Pierwsze wydanie stąd trafia też do `C4rl0s79/EmuStart` jako `v…` (wydanie pomostowe), żeby zainstalowane
+  kopie je dostały. Nie dotyka: formatu plików wydania, podpisów (ten sam klucz), API serwera `/v1`.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);
