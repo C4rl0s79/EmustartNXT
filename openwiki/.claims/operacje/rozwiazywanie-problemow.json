@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:85ef95ff79655a21600ed16b04c320d25a40cbc97f67bd80d8ad2e035970637e",
+  "claims": [
+    {
+      "id": "claim_62e14bc91255431e9634b0367a62fbb4",
+      "statement": "Zapytanie z adresu publicznego na port zwykły lub szyfrowany dostaje 403, a serwer loguje ostrzeżenie najwyżej raz na godzinę na port.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/server.py#L31-L82",
+          "version": "repo-lines-v1:sha256:bb4d5cf8e326fbd688c1587eb86366717e6c9598b64fd3d17c9f68537d5e5238:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4YTFlZmY0OTI5Zjg5YmQyYWFhMTgyODViMTIyYWJhOWY1YTVlZWQwYzIzYjE4NDY0Y2Y2MGI1ODRmMGJjMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MGRmYjRlMDQ3NmNlYWM0YzFjYWE0Y2I1OTgwMTRmNTIzYWFlZmRhYjkxOWRlMTIwMjg0N2Q3MDJiMTE2MzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzNWU2OWYwM2RkYzVjNjFhYjFmOTFlNjI3YWJkNTkyNzk5Y2ZhOThhODdhODMxMTAzYWQyYTA5NGExOWEwY2IifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c84ca39645b497ba75865cfcdef8683",
+      "statement": "Serwer na koncie SYSTEM sam dopisuje regułę zapory dla portu szyfrowanego przy starcie; bez uprawnień zostawia tylko wpis w logu.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L1330-L1355",
+          "version": "repo-lines-v1:sha256:0e0087105c0685bbca9aa1f644d4a67b5b2eebafec0562fec8c5ffaca17a319a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzMjc4NjgxMWViZmZhZjVjNmU5YjIwNmQ4OTM1MTUzNmUwYjU3ZWQ4YzNlZGJjZTkzODc1ZWQyYjg0ZTA2Y2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjYTIxOWMxZThmYmI4M2Q4NTAwMTZiYmYzODNmMDVjOTg1ZDE4OTVhMzI5NGYyNWYxZDQyNjFjMzc0NTlkMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhMGNjZWQ0Yjk0ODUwOWE3YWYwODJmOWEzOTNhODQwNjczZDRhNzI2ZDAxNTZmYTk1OGE4M2IyZDI0NDlkMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4Zjg4MzgxM2Q1ZGVjY2U1ZDNmY2ZlNDk4NGFmYjAwZDRmMjA3ZGRlYTQxNmIzZDBiOWE5MzEyMTA5ZGQzZDgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7906405e00554ab6b3f728765bcbe7ba",
+      "statement": "Panel serwera, gdy serwer nie odpowiada i nie da się go uruchomić, odsyła do logs\\emustart.log, a wybrane foldery zamienia na ścieżki UNC, bo serwer jako SYSTEM nie zna liter dysków sieciowych.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/server_main.py#L162-L190",
+          "version": "repo-lines-v1:sha256:4b541cc8797ae68a932ecd6889ed73318d53ca9e87ff221539409bf7e788ddbc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyMGY3NTg2NmE3MjBmNWQ4ZTc2YWNhNThkMDAzYTBkNzg5OGQyZTk3NWYxYzI1NTk4ODE2NjViYjIwODM4ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyODczNWIzMjYzMjI2NjIzMmE0NTRjYmI2Mjk0MDQ5NzA0YmE1M2I1YzM5OTIyYzkzYzM0ZjRjNDMzODg0OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2MWUwZTg2NmIzNWI0MWRlMzYyZTI1OTE3ZWNhNzlkYWZmNjVkMzU3MDFmZGViMDA5NDA4NGVhODcyZDU1YzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4ZjNjNTY2MTkyYWQ0ODRmMGI1ZjcwNGY3M2E5ODQ3YzMzZTI4NWYzOWZlMGIwOTNmMjkzYzI3N2EwMTQ4YzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8d8ccb9366ac4f6daed43f7d4535f715",
+      "statement": "Lumen zgłasza brak silnika, zajęty folder danych przez samodzielny EmuStart i brak modułów Pythona osobnymi komunikatami z radą.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L138-L160",
+          "version": "repo-lines-v1:sha256:db69d9c235d7e2db61e4931ad3a8e071bedb44b2aa8d7f477c38b70924e0f4e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0NzVlOTRhOTA0YWM0OWIzMTU0ZDQ2NzJhNjZlODYyOWI4NmRhYzc0ZTNlMjkzN2JlNjkyN2FlM2RhMTFjNTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4OTFlZDEzZmUwNTk3ZDAwZTA2ODQ0YWJiZjI5MjJhMTFmZGU3NDJlZGUyYTEwMzNlMmZkNDMyMzk3MzlhZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ZTFiYmM5YzA4NjJlNDY0NGJlZjFmZmU5MDliNjdlOGM0Mjk1M2RlZjM0Y2Y4ZDI5OWI3MWQ4NTlhNjMxM2UifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L80-L95",
+          "version": "repo-lines-v1:sha256:e481b2989a956e654550b6299fb8d8211f905a5151fc4739e383fad5c06185b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwOWM2ODcyZTE2M2VhM2FiMTYxNDBiZGFhZWJlOTBlMWU1OTRkYjQyMzMxNWY3MTMxOTA4YjkyNDBlYjkwNTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlODRhYTFlMmExYWZmYmI5M2NhNzY4OGFiYjczNjhhMjdhMGVkOGE0MTc2ZDFjOGJiZmJlYzA4Yzg5MmMxNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5YTg4NDU5OTljZDNjZDNiZGM4OTUxNzJkMjU2NWMxYzBkYzVjYmQxOTk5NGVkNjlmOThjNDE4Y2VkYWZjZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiNDE4NDE5YmQ1NDc3NGZkMzU0ZGU0NTg3OTE3MmY2N2U0OWNjYmY1NDRkZWE4OTIyNjIxODlmZDQzYjIyMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b577fd2805234e6a9d846407f60c3a3b",
+      "statement": "engine_main.py --diag-controllers wypisuje diagnostykę kontrolerów (także jako JSON) bez uruchamiania silnika.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/engine_main.py#L1-L13",
+          "version": "repo-lines-v1:sha256:6bdf76594b2c28206dd0c34f84d9838d8471742d435db0d721c7706a536e1ddb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZWNkMmI1OGY2ZWY4N2YyZTA1MjEwMjBiZjA1YWU5YmE4ZTJkZDMwNDg1NWNlOTQ5MGE3MzQ2Y2RjMzYzZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjZlODcwNmI0MzA0N2YyYTZkYjY3ZjEzMjYzODU5NTYwNGU2N2YzNjk2Njg3NmNlMDE1OGYwMDUzZTZiZDEifQ"
+        },
+        {
+          "resource": "repo://lumen/engine/engine_main.py#L56-L75",
+          "version": "repo-lines-v1:sha256:f7a6b97ab6d21cf4d91352c2225a2f9fdb954e9771a44054319fd1020140a672:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzOTUyMDVhNjA2YzUyZGU3MjI3MDAxN2E1NTUxMGEwMzA0YWNmZGU2ZWU4MzQ5YTE0YzliMTk4NTMzY2Y1YzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2Y2MxNWMwMGY2YWM1MDU1NjUyMjIyZmU3ODk1MzhiMzhiYTQ1NTQ1NzA0MmY0ODM3MWI3ZDYyMDA4M2IzMTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ZWMyYzg0Yjg2MTVmODA2ZmU1NjY1NDM3NzFjNjU2ZjE1MDhhMjIxMjVkODVhYTI4MDAwZmNmZGJlNWM3MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2Y2E2OTI2NmYzNGExMmI4NWM1ZGY5ODRlOThjNzM0NGYxYmRhNjEwNWNjODkwMDVkNzU5YjZiODEyMDYzNzUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3fef2668ce2abfbb6fe134ceefecb53c1d9c25a55329750bc60c264c7270a871",
+  "claims": [
+    {
+      "id": "claim_4688fbcad5bc4dcb9abff56048e26190",
+      "statement": "Repozytorium EmustartNXT łączy EmuStart (emustart/: serwer, klient Windows, Android) i Lumen (lumen/) z zachowaną historią; pliki lokalne czyta Lumen, a silnik EmuStart służy do wymiany danych z serwerem.",
+      "evidence": [
+        {
+          "resource": "repo://README.md",
+          "version": "repo-file-v1:sha256:d9cc01436033de6392485ea168ab8a0639572899a0b26bec9de299a632d51664"
+        }
+      ]
+    },
+    {
+      "id": "claim_48e40f03a04a4f559c6213deac6feb11",
+      "statement": "Serwer domyślnie słucha na porcie 8740, a port szyfrowany to server_tls_port albo port zwykły + 1.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L50-L50",
+          "version": "repo-lines-v1:sha256:4ca011c00be4f02ccc7b430096f9e720aef585fe60f3bfaa799f1f96e96eb922:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNhMDExYzAwYmU0ZjAyY2NjN2I0MzAwOTZmOWU3MjBhZWY1ODVmZTYwZjNiZmFhNzk5ZjFmOTZlOTZlYjkyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNhMDExYzAwYmU0ZjAyY2NjN2I0MzAwOTZmOWU3MjBhZWY1ODVmZTYwZjNiZmFhNzk5ZjFmOTZlOTZlYjkyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2ZlYzJhYTQ3NTIzYjY1MzJiZTIwNzNjNGJjZmUwZjJjNzk1MGM3M2U4MTQ2OGRiZjhkNzkzNjc3OWMwODJlYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWMzMzY3YmViZDg5YzU3YzJhYzVmZDczOTFjMmY0MDFhMjVkNDUyZTkyMmJlMzljZTA0MzEzZjkwOGNkYjZjYyJ9"
+        },
+        {
+          "resource": "repo://emustart/server_main.py#L140-L148",
+          "version": "repo-lines-v1:sha256:2bd12acc8803a61e3333746f4dd0095171c6732383d35ff345255ba4542d5d59:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjA4MTZiYmYzNDU2ZWVkM2YzM2E0NWM5NzhhMjQ4OTkyM2NiNzEzZThiNDEyZDk2ZmY3YmQyMTVjMzc0NjVhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzRmNzg0ZTkxMGJiZTQzYjY0YTQ2MGJmODViZDA1ZjZlNGZjZWY5NTc1NDUzMzM0NTI2YTgzNTIwOWQ5YWFkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzc3NzA0ZjFkYzJmNThkN2QzZjc0YTE3NTVjMzI2ODMxMWQ2NjFjZmEzZWQwNmU4MmYyNGE2NDViMzI5NWIzZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc2MDM0MmM3NDU5YzYyMGQ0YTA3OTQxM2E2NzE0OTFmMzBhNGYxMzE2Y2ZjYzQxNmVjYzIzMjEwYzgyNWY2MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_87992b0788a441d582ad3372abd3d80f",
+      "statement": "Silnik EmuStart w Lumenie działa bez okna, a Lumen woła go przez POST /api/<metoda> na 127.0.0.1 z nagłówkami X-EmuStart i X-Lumen-Token.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/engine_main.py#L1-L13",
+          "version": "repo-lines-v1:sha256:6bdf76594b2c28206dd0c34f84d9838d8471742d435db0d721c7706a536e1ddb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZWNkMmI1OGY2ZWY4N2YyZTA1MjEwMjBiZjA1YWU5YmE4ZTJkZDMwNDg1NWNlOTQ5MGE3MzQ2Y2RjMzYzZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjZlODcwNmI0MzA0N2YyYTZkYjY3ZjEzMjYzODU5NTYwNGU2N2YzNjk2Njg3NmNlMDE1OGYwMDUzZTZiZDEifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L207-L220",
+          "version": "repo-lines-v1:sha256:94f113a1dcf5f570249a7ced21b4e3946c49b7eb8b6787abc786be2b5d09c2a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMzE1NzA4ZWNkNGQ0OWJmYmI5MjQ5Y2ZkY2YwYTY5NTUzNmJkZTc1MDMxOGVkYTI0NzE1ZmY3ODM0NTg4NDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiODUxOTZmNWZmYjg4MWY2MmNhNGZkNGM5ZWQ4ZGMwYTA1NjJkNjgxNTIxODAzYzUxMTc3YTBkZjMxNTIxMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI1MTkwMzY4ODIzYzM5M2ZhODczOTk3N2JmNzY2MDgzYjVjZDRmOTNmNGYxNzFkNjAyODMyYWRmNjY1Y2JiYzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwM2E4MWYwYWMyMTA0ODMwMDM4YWM0NTI1ZjU1NDg3MjFhNWU4ZWYxNWRmZTE1YWE3ODhlZGZlM2U4YzYzYWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ddb341583a0540e88eefb8bf717ec937",
+      "statement": "lumen/engine/ jest kopią repozytorium EmuStart (dawniej git subtree) z własnymi dodatkami Lumena; UPSTREAM.md opisuje procedurę aktualizacji z EmuStart.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/UPSTREAM.md",
+          "version": "repo-file-v1:sha256:b032eb0a4895b2f1cf557ff31ad7ba4df3132783de4ddd465cfaddc0a38bb68d"
+        }
+      ]
+    },
+    {
+      "id": "claim_f006793035df484abe44e3b5bebfed97",
+      "statement": "Od Lumen 1.0.0 interfejs Lumena to React w dwóch układach, bez osobnego widoku z interfejsem EmuStart.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/docs/INTEGRATION.md#L80-L105",
+          "version": "repo-lines-v1:sha256:68952a80de30f5926f454ad86f0a37a3f7f1dc3378d5b9e997e7189e395152d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4N2QzNGVmNDgzYTE0M2Q4YWM0MzgzMDkwNjNhOWY5N2JkZDU4YzBlNTc4YzM5MzdiNDk4MDJjNzRkMzBiMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4OTAxNzgzNDY2Nzk5ODAxMTdhMzEyODhiMmFjMGNkYTVhMGQ3NmNkNDM1ZTliNDQxOWRhNjgzNDlmYWE4NWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4ZTgwZmYxMDI1ODA1ZDg1YjY5MjgxMjM1MWQzOGQyYTk2Y2Y3MjJiNTlkMGQxM2NkODdhNjk1MWRiZDA5OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiNzY0YmUxZDJiNmE3NmM4ZGM1ODFkZGIzYWQ1MzFjNDVmZWZiOWZiMzNhY2FjZWIzYTI3NmU5MGE0N2RlMmYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

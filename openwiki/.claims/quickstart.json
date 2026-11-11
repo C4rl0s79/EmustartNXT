@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:88df4b56fd9c6b671d9b5855af9707d53e0dd2b842e7ee81ad0f46adee005f59",
+  "claims": [
+    {
+      "id": "claim_e43d7f0a7630400ead447529199e17f5",
+      "statement": "EmustartNXT zawiera EmuStart w emustart/ (serwer, klient Windows, aplikacja Android) i Lumen w lumen/; kierunek rozwoju to klient EmuStart wchłonięty przez Lumena i EmuStart jako serwer.",
+      "evidence": [
+        {
+          "resource": "repo://README.md",
+          "version": "repo-file-v1:sha256:d9cc01436033de6392485ea168ab8a0639572899a0b26bec9de299a632d51664"
+        }
+      ]
+    },
+    {
+      "id": "claim_3109c384d78644918ddefac0f042a05c",
+      "statement": "Lumen uruchamia się ze źródeł przez npm install i npm run dev; wymaga Node.js 22+ i Pythona 3.12+ z engine/requirements.txt.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/README.md#L27-L50",
+          "version": "repo-lines-v1:sha256:902e30369f7080a9e2a0905ebebc981ce873612397022519bf34298405bf06d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyOGZjZTkyYjkxNmNhNGMwMGViMGU3MWRlOWUwNmQ4NzA2MDdlMzQ0YzJlZjcwODUwYmFjMWVjMDg2ODA4MmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0Y2Q5OGNkNjBhMGI5YzhjYzUxYTVmOTJmNDhiZDhhNTYyYmFlNzg0Njk2NTdiYWY1YzZiNDcxZWQ1ZDA5NTIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}
