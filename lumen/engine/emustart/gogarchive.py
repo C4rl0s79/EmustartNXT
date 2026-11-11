@@ -420,6 +420,31 @@ def _save_cache(root: str, builds: dict) -> None:
         log.warning("GOG: nie zapisałem pamięci podręcznej indeksu: %s", ex)
 
 
+class _CacheWriter:
+    """Zapis pamięci podręcznej także w trakcie indeksu: restart serwera przed końcem długiego indeksu nie traci
+    buildów już sprawdzonych (oba etapy) — następny start bierze je z pamięci i sprawdza tylko resztę.
+    Zapis w trakcie dokłada nowe wpisy do poprzedniej pamięci, więc przerwany indeks (także `deep`) nie usuwa wpisów,
+    do których jeszcze nie doszedł; stary wpis zmienionego buildu ma inny stempel i nie zostanie użyty. Dopiero zapis
+    końcowy zastępuje pamięć wynikiem tego indeksu. Restart w etapie rekordów pierwszego indeksu nadal zaczyna od zera
+    (nic nie jest jeszcze sprawdzone)."""
+
+    def __init__(self, root: str, old: dict):
+        self.root, self.old = root, old
+        self.unsaved, self.saved_at = 0, time.monotonic()
+
+    def added(self) -> None:
+        self.unsaved += 1
+
+    def maybe(self, new: dict) -> None:
+        if self.unsaved and (self.unsaved >= CACHE_SAVE_EVERY
+                             or time.monotonic() - self.saved_at >= CACHE_SAVE_SECONDS):
+            _save_cache(self.root, {**self.old, **new})
+            self.unsaved, self.saved_at = 0, time.monotonic()
+
+    def final(self, new: dict) -> None:
+        _save_cache(self.root, new)
+
+
 def _cacheable(e: dict) -> dict:
     return {k: v for k, v in e.items() if k not in ("chunks", "ok")}
 
@@ -483,7 +508,9 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     from emustart import gogmeta
     gogmeta.load(str(Path(root).parent))          # opisy i grafiki z folderów gier GOG Managera
     INDEX.update(total=len(recs), done=0, phase="records")
-    cache = {} if deep else _load_cache(root)
+    old_cache = _load_cache(root)
+    cache = {} if deep else old_cache
+    writer = _CacheWriter(root, old_cache)
     new_cache: dict = {}
     quick = []
     reused = 0
@@ -508,13 +535,8 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
                 publish(e, True)
         else:
             reject(e)
-    # pamięć podręczna zapisywana także w trakcie: restart serwera przed końcem pierwszego (długiego) indeksu nie
-    # traci tego, co już sprawdzone — następny start bierze to z pamięci, a sprawdza tylko resztę
-    if quick and new_cache:
-        _save_cache(root, new_cache)
     INDEX.update(total=len(quick), done=0, phase="chunks")
     sizes = ChunkSizes(arc)
-    unsaved, saved_at = 0, time.monotonic()
     for key, stamp, e in quick:
         why = chunk_problem(arc, e["chunks"], deep, sizes)
         INDEX["done"] += 1
@@ -526,11 +548,9 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
             res["builds"][(e["product_id"], e["build_id"])] = e
             if stamp is not None:
                 new_cache[key] = {"stamp": stamp, "entry": _cacheable(e)}
-                unsaved += 1
-                if unsaved >= CACHE_SAVE_EVERY or time.monotonic() - saved_at >= CACHE_SAVE_SECONDS:
-                    _save_cache(root, new_cache)
-                    unsaved, saved_at = 0, time.monotonic()
-    _save_cache(root, new_cache)
+                writer.added()
+        writer.maybe(new_cache)
+    writer.final(new_cache)
     log.info("GOG: indeks %s — buildów: %d (z pamięci podręcznej: %d), pominiętych: %d",
              root, len(res["builds"]), reused, len(res["rejected"]))
     return res

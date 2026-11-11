@@ -292,13 +292,16 @@ class _Crash(BaseException):
     """Serwer zamknięty w trakcie indeksu (przechodzi przez `except Exception`)."""
 
 
-def test_cache_survives_restart_in_the_middle_of_the_index(arc, monkeypatch):
-    root, _ = arc
-    second = "778"                                               # drugi build tej samej gry
+def _second_build(root, second="778") -> str:
+    """Drugi build tej samej gry (kopia rekordu i meta)."""
     d = root / "products" / PID
     rec = json.loads((d / f"{BUILD}.json").read_text(encoding="utf-8"))
     (d / f"{second}.json").write_text(json.dumps({**rec, "build_id": second}), encoding="utf-8")
     (d / f"{second}.meta.json").write_bytes((d / f"{BUILD}.meta.json").read_bytes())
+    return second
+
+
+def _crash_on_second_chunk_check(monkeypatch):
     monkeypatch.setattr(ga, "CACHE_SAVE_EVERY", 1)
     real = ga.chunk_problem
     seen = []
@@ -309,6 +312,29 @@ def test_cache_survives_restart_in_the_middle_of_the_index(arc, monkeypatch):
             raise _Crash()
         return real(*a, **k)
     monkeypatch.setattr(ga, "chunk_problem", crash_on_second)
+    return real
+
+
+def _saved_keys() -> list:
+    return sorted(json.loads(ga._cache_path().read_text(encoding="utf-8"))["builds"])
+
+
+def test_interrupted_deep_index_keeps_the_cache(arc, monkeypatch):
+    root, _ = arc
+    second = _second_build(root)
+    _index(root)
+    full = _saved_keys()
+    assert full == [f"{PID}/{BUILD}", f"{PID}/{second}"]
+    _crash_on_second_chunk_check(monkeypatch)
+    with pytest.raises(_Crash):
+        ga.refresh(str(root), deep=True, wait=True)              # restart w trakcie „Sprawdź dokładnie”
+    assert _saved_keys() == full                                 # pamięć nie skurczyła się do sprawdzonych
+
+
+def test_cache_survives_restart_in_the_middle_of_the_index(arc, monkeypatch):
+    root, _ = arc
+    second = _second_build(root)
+    real = _crash_on_second_chunk_check(monkeypatch)
     with pytest.raises(_Crash):
         _index(root)                                             # restart przed końcem pierwszego indeksu
     saved = json.loads(ga._cache_path().read_text(encoding="utf-8"))["builds"]
