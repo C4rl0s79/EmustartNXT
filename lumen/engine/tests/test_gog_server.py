@@ -288,6 +288,39 @@ def test_cached_build_serves_only_its_chunks(arc):
     assert f.name in ga.INDEX["builds"][(PID, BUILD)]["chunks"]
 
 
+class _Crash(BaseException):
+    """Serwer zamknięty w trakcie indeksu (przechodzi przez `except Exception`)."""
+
+
+def test_cache_survives_restart_in_the_middle_of_the_index(arc, monkeypatch):
+    root, _ = arc
+    second = "778"                                               # drugi build tej samej gry
+    d = root / "products" / PID
+    rec = json.loads((d / f"{BUILD}.json").read_text(encoding="utf-8"))
+    (d / f"{second}.json").write_text(json.dumps({**rec, "build_id": second}), encoding="utf-8")
+    (d / f"{second}.meta.json").write_bytes((d / f"{BUILD}.meta.json").read_bytes())
+    monkeypatch.setattr(ga, "CACHE_SAVE_EVERY", 1)
+    real = ga.chunk_problem
+    seen = []
+
+    def crash_on_second(*a, **k):
+        seen.append(1)
+        if len(seen) == 2:
+            raise _Crash()
+        return real(*a, **k)
+    monkeypatch.setattr(ga, "chunk_problem", crash_on_second)
+    with pytest.raises(_Crash):
+        _index(root)                                             # restart przed końcem pierwszego indeksu
+    saved = json.loads(ga._cache_path().read_text(encoding="utf-8"))["builds"]
+    assert sorted(saved) == [f"{PID}/{BUILD}"]                   # to, co sprawdzone, jest w pamięci
+    monkeypatch.setattr(ga, "chunk_problem", real)
+    ga.INDEX.update(running=False)
+    recs = _count(monkeypatch, "index_record")
+    st = _index(root)                                            # następny start
+    assert recs == [(PID, second)]                               # sprawdzana tylko reszta
+    assert st["builds"] == 2 and not st["rejected"]
+
+
 def test_changed_record_is_indexed_again(arc, monkeypatch):
     root, _ = arc
     _index(root)

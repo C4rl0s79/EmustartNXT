@@ -369,6 +369,8 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
 # a manifest buildu — hashem zawartości z dysku. `deep` nie korzysta z pamięci podręcznej.
 
 CACHE_VERSION = 1
+CACHE_SAVE_EVERY = 25          # buildów sprawdzonych od ostatniego zapisu pamięci podręcznej (w trakcie indeksu)
+CACHE_SAVE_SECONDS = 60.0      # albo tyle sekund — co nastąpi pierwsze
 
 
 def _cache_path() -> Path:
@@ -506,8 +508,13 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
                 publish(e, True)
         else:
             reject(e)
+    # pamięć podręczna zapisywana także w trakcie: restart serwera przed końcem pierwszego (długiego) indeksu nie
+    # traci tego, co już sprawdzone — następny start bierze to z pamięci, a sprawdza tylko resztę
+    if quick and new_cache:
+        _save_cache(root, new_cache)
     INDEX.update(total=len(quick), done=0, phase="chunks")
     sizes = ChunkSizes(arc)
+    unsaved, saved_at = 0, time.monotonic()
     for key, stamp, e in quick:
         why = chunk_problem(arc, e["chunks"], deep, sizes)
         INDEX["done"] += 1
@@ -519,6 +526,10 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
             res["builds"][(e["product_id"], e["build_id"])] = e
             if stamp is not None:
                 new_cache[key] = {"stamp": stamp, "entry": _cacheable(e)}
+                unsaved += 1
+                if unsaved >= CACHE_SAVE_EVERY or time.monotonic() - saved_at >= CACHE_SAVE_SECONDS:
+                    _save_cache(root, new_cache)
+                    unsaved, saved_at = 0, time.monotonic()
     _save_cache(root, new_cache)
     log.info("GOG: indeks %s — buildów: %d (z pamięci podręcznej: %d), pominiętych: %d",
              root, len(res["builds"]), reused, len(res["rejected"]))

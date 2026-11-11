@@ -44,6 +44,26 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.3] — 2026-11-11
+
+Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
+Windows, instalator gier GOG w Lumenie, APK i emulatory bez zmian — klienci biorą z `gogarchive.py` tylko stałe
+i sprawdzanie ścieżek, indeks buduje wyłącznie tryb serwera.
+
+### Poprawione
+- **Indeks GOG po restarcie serwera nie zaczyna od zera:** pamięć podręczna indeksu
+  (`<dane serwera>/gog/index-cache.json`, 0.63.1) zapisywała się dopiero na końcu pełnego indeksu, więc restart
+  programu albo komputera przed końcem pierwszego (długiego) indeksu nie zostawiał nic i każdy start znowu
+  indeksował całe archiwum, udostępniając przez długi czas 0 gier. Teraz zapis idzie na bieżąco: po etapie
+  rekordów i w trakcie sprawdzania chunków (co 25 buildów albo co minutę). Do pamięci trafia nadal tylko build,
+  który przeszedł oba etapy.
+
+**Czego NIE dotyka.** Lista gier, panel, format `index-cache.json`, API `/v1/gog`, tryb `deep`, klienci.
+
+**Sprawdzone:** 681 testów EmuStart (1 nowy: restart w połowie indeksu zostawia sprawdzone buildy w pamięci,
+następny start sprawdza tylko resztę — na kodzie 0.63.2 ten test nie przechodzi), 118 testów GOG w `lumen/engine`.
+**Niesprawdzone:** restart prawdziwego serwera w trakcie indeksu.
+
 ## [0.63.2] — 2026-11-10
 
 Zakres: klient Windows (`uipad.py`, `web/app.js`, `web/options.js`) i interfejs APK (ten sam `app.js`; pad z
