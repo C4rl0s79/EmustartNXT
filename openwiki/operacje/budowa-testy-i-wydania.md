@@ -5,7 +5,7 @@ description: "Jak zbudować i przetestować EmuStart (build.ps1, PyInstaller, Gr
 tags: [build, ci, release, testing, signing, github-actions, openwiki]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-11T20:46:08.589Z
 sources:
   - id: openwiki-source-4e3e538728489e7a1208c697
     resource: repo://.github/workflows/android.yml
@@ -17,11 +17,15 @@ sources:
     resource: repo://emustart/build.ps1
   - id: openwiki-source-5938cfad97d428b6e016845b
     resource: repo://emustart/emustart/signing.py
+  - id: openwiki-source-0e32751ee2661d39a58dab3e
+    resource: repo://lumen/electron-builder.yml
   - id: openwiki-source-0489da0a61fcd248c992eb27
     resource: repo://lumen/package.json
+  - id: openwiki-source-f2d8491c8ff6aa07a5172ec8
+    resource: repo://lumen/README.md
   - id: openwiki-source-d69f512d6dbd56a78b25462c
     resource: repo://lumen/scripts/sign-release.mjs
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
 ---
 
 # Budowa, testy i wydania
@@ -125,9 +129,12 @@ i `openwiki-update.yml`; testy Lumena uruchamia się lokalnie.
    — klucz prywatny Ed25519 z pliku wskazanego przez `LUMEN_SIGNING_KEY_FILE`; skrypt sprawdza, czy
    pasuje do `RELEASE_PUBKEY` w `src/main/releaseSigning.ts`, i podpisuje wiadomość
    `lumen-release-v1\n<nazwa>\n<sha256>`.
-4. Tag `lumen-vX.Y.Z` i wydanie GitHub z czterema plikami (zip, exe, oba `.sig`).
+4. Wydanie GitHub w `C4rl0s79/EmustartNXT` z tagiem `lumen-vX.Y.Z` i czterema plikami:
+   `Lumen-X.Y.Z-portable.zip`, `Lumen-X.Y.Z-setup.exe` (cele `zip` i `nsis` w `lumen/electron-builder.yml`)
+   i ich pliki `.sig` (`lumen/README.md`, sekcja „Wydanie (podpisy)”).
 
-> **TODO: do weryfikacji** — kroki 1 i 4 wynikają z praktyki opiekuna, nie z pliku w repozytorium.
+> **TODO: do weryfikacji** — krok 1 (podbicie wersji w `package.json`) i moment założenia tagu wynikają
+> z praktyki opiekuna, nie z pliku w repozytorium.
 
 ## Automatyczna aktualizacja OpenWiki
 

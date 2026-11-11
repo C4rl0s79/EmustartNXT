@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:85ef95ff79655a21600ed16b04c320d25a40cbc97f67bd80d8ad2e035970637e",
+  "pageVersion": "sha256:091f72204536e33984b65b24a9dc5b1aebcf350196250f33865035b6e0a314d2",
   "claims": [
     {
       "id": "claim_62e14bc91255431e9634b0367a62fbb4",
@@ -59,10 +59,20 @@
           "version": "repo-lines-v1:sha256:f7a6b97ab6d21cf4d91352c2225a2f9fdb954e9771a44054319fd1020140a672:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzOTUyMDVhNjA2YzUyZGU3MjI3MDAxN2E1NTUxMGEwMzA0YWNmZGU2ZWU4MzQ5YTE0YzliMTk4NTMzY2Y1YzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2Y2MxNWMwMGY2YWM1MDU1NjUyMjIyZmU3ODk1MzhiMzhiYTQ1NTQ1NzA0MmY0ODM3MWI3ZDYyMDA4M2IzMTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ZWMyYzg0Yjg2MTVmODA2ZmU1NjY1NDM3NzFjNjU2ZjE1MDhhMjIxMjVkODVhYTI4MDAwZmNmZGJlNWM3MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2Y2E2OTI2NmYzNGExMmI4NWM1ZGY5ODRlOThjNzM0NGYxYmRhNjEwNWNjODkwMDVkNzU5YjZiODEyMDYzNzUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2ce2b5f8dc724bf383fc5d55a3d27869",
+      "statement": "Skróty pada w grze używają przytrzymanego Select (Select + A otwiera menu) we wszystkich emulatorach; obsługa padów wyłączona dezaktywuje skróty.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/hotkey.py#L1-L60",
+          "version": "repo-lines-v1:sha256:7f365e6a7bc1c1d47e059b68328457c61d6720a2008ef5778e313dfb2a77cd68:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MTc3ZTdmNzFhNTMwYzYxMzM5MDlkZDgwMjMyOTJjZmEwZTNlNWVmMjI5YjhmNWUxYTkzMzI2Yzg4YTc3NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZmYxZTEyMTJmZGU5NGJmNzA3M2RhZDVhOWRhMjVlNTM2OGZmMTVjMzZmNGFhOWUwMGZkM2QzZGM2ZDM0ZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjZDZlNTI3OGNjZTdjNjg0OWI0YjM5ZDBkZmIwN2ViMDFhZjIzYTVhYzA5NzU5NjBiNjc5NWI1MmUxNjI0MmYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-11T20:46:08.589Z"
   }
 }

@@ -5,7 +5,7 @@ description: "Budowa Lumena: proces główny Electron, preload window.lumen, ren
 tags: [lumen, electron, react, deck, updater, architecture]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-11T20:46:08.589Z
 sources:
   - id: openwiki-source-5a39473792996e9404198864
     resource: repo://lumen/src/main/core/uiMode.ts
@@ -21,7 +21,7 @@ sources:
     resource: repo://lumen/src/main/updater.ts
   - id: openwiki-source-1ad07c49b6016e10a33d1af2
     resource: repo://lumen/src/preload/index.ts
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
 ---
 
 # Lumen — launcher Electron
@@ -113,9 +113,6 @@ oraz dane silnika EmuStart z pamięcią gier, emulatorami i BIOS-ami. Starsze pl
 3. skrypt PowerShell poza procesem czeka na zamknięcie Lumena i silnika, robi kopię programu,
    podmienia pliki (nie dotyka `LumenData`), w razie błędu przywraca kopię; log
    `LumenData\logs\update.log`.
-
-> Uwaga: `lumen/README.md` (sekcja „Aktualizacje”) wciąż podaje repozytorium `C4rl0s79/Launcher` —
-> aktualny jest kod `updater.ts` (`REPO = 'C4rl0s79/EmustartNXT'`).
 
 Budowa i wydanie Lumena: [Budowa, testy i wydania](../operacje/budowa-testy-i-wydania.md).
 

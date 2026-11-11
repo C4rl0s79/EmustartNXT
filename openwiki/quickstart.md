@@ -5,13 +5,13 @@ description: "Punkt wejścia do wiki EmustartNXT: czym jest system EmuStart + Lu
 tags: [quickstart, overview, navigation, emustart, lumen]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-11T20:46:08.589Z
 sources:
   - id: openwiki-source-f2d8491c8ff6aa07a5172ec8
     resource: repo://lumen/README.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
 ---
 
 # Szybki start — mapa wiki EmustartNXT
@@ -60,9 +60,17 @@ Szczegóły i wydania: [Budowa, testy i wydania](operacje/budowa-testy-i-wydania
 
 ## Znane rozbieżności dokumentacji z kodem
 
-- `lumen/README.md` podaje repozytorium aktualizacji `C4rl0s79/Launcher`; kod (`lumen/src/main/updater.ts`)
-  czyta `C4rl0s79/EmustartNXT` (tagi `lumen-v…`).
+Skutki przenosin do monorepo (2026-11-10):
+
+- `updater.py` i `clientdist.py` w kopii silnika (`lumen/engine/`) wciąż wskazują dawne repozytoria —
+  zob. [Most Lumen ↔ silnik](integracje/most-lumen-silnik.md#stan-kopii-sprawdzony-w-historii-git-2026-11-11).
+- Workflow Android nie reaguje na tagi `emustart-v…` (sekrety podpisu APK nieprzeniesione) —
+  zob. [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md).
+
+Starsze niż monorepo:
+
 - Docstring `emustart/emustart/remote.py` mówi o API „przez HTTP”; od 0.43 `/v1` wymaga HTTPS.
 - `lumen/engine/UPSTREAM.md` opisuje stan subtree (v0.54.3) z dawnego repozytorium Launcher.
+- Komentarz „LB + A” w `lumen/engine/engine_main.py` — od 0.62.0 skrót menu w grze to Select + A.
 
 Miejsca oznaczone w wiki **TODO: do weryfikacji** nie dały się potwierdzić w kodzie.

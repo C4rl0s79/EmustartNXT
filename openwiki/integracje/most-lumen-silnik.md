@@ -5,8 +5,12 @@ description: "Jak Lumen uruchamia silnik EmuStart (EmuStartEngine.exe albo engin
 tags: [lumen, engine, ipc, integration, emustart, security]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-11T20:46:08.589Z
 sources:
+  - id: openwiki-source-40546d6d119f4cf5e98eb99f
+    resource: repo://emustart/emustart/clientdist.py
+  - id: openwiki-source-d75b88eab7851fe64f602a5c
+    resource: repo://emustart/emustart/updater.py
   - id: openwiki-source-931c6505100c05d7a9b392d9
     resource: repo://lumen/engine/emustart/lumen.py
   - id: openwiki-source-9733b1fd9c40323c5ddf4535
@@ -15,7 +19,7 @@ sources:
     resource: repo://lumen/src/main/emustart/engine.ts
   - id: openwiki-source-d1b9ce3766cc38562686f8ba
     resource: repo://lumen/src/main/index.ts
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
 ---
 
 # Most Lumen ↔ silnik EmuStart
@@ -113,10 +117,22 @@ Według `lumen/docs/INTEGRATION.md` w silniku zmienione są też wspólne pliki:
 (katalog danych z `EMUSTART_HOME`) i `emustart/server.py` (`X-Lumen-Token`). `.openwikiignore`
 pomija kopie wspólnych plików, więc ta wiki opisuje je tylko na podstawie `INTEGRATION.md`.
 
-> **TODO: do weryfikacji** — kopie się rozjechały: `emustart/` ma wersję 0.63.5, silnik w
-> `lumen/engine/` — 0.62.0; `lumen/engine/UPSTREAM.md` wciąż podaje v0.54.3 i polecenie
-> `git subtree pull --prefix engine …` ze starego repozytorium Launcher. Aktualnego sposobu
-> synchronizacji kopii w monorepo nie da się potwierdzić w kodzie.
+### Stan kopii (sprawdzony w historii git, 2026-11-11)
+
+- **Przy przenosinach do EmustartNXT (2026-11-10)** obie kopie miały EmuStart 0.62.0 i różniły się
+  tylko zamierzonymi zmianami silnika w `paths.py` i `server.py`.
+- **Po przenosinach** poprawki funkcji EmuStart 0.63.x (pad, indeks archiwum GOG, nazwy kolekcji)
+  wprowadzano w obu kopiach w tych samych commitach. Numer wersji silnika (`__init__.py`) zostaje 0.62.0
+  i nie jest podbijany przy wydaniach EmuStart.
+- **Rozjazd z przenosin:** commit, który przestawił aktualizatory na EmustartNXT, zmienił
+  `emustart/emustart/updater.py` i `emustart/emustart/clientdist.py` (tagi `emustart-v…`/`lumen-v…`,
+  lista wydań), ale nie ich kopie w silniku — tam wciąż są dawne repozytoria `C4rl0s79/EmuStart`
+  i `C4rl0s79/Launcher`. Lumen aktualizuje się własnym `updater.ts`, więc nie dotyczy to aktualizacji
+  Lumena. Rozjazd nie ma dziś skutku: `lumen/src` nie woła metod `app_update_*` silnika (aktualizator
+  EmuStart), a `clientdist` używa tylko panel serwera (`srvadmin.py`), którego silnik nie uruchamia.
+- `lumen/engine/UPSTREAM.md` jest nieaktualny od przed przenosin (podaje v0.54.3 i
+  `git subtree pull --prefix engine` ze starego repozytorium Launcher); w monorepo zmiany przenosi się
+  ręcznie między `emustart/` i `lumen/engine/` (różne końce linii: LF i CRLF).
 
 ## Powiązane
 

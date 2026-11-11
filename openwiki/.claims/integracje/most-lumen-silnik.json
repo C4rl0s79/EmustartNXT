@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9baa3f507bf105e76018946499ebf813642513d459e581b62fc8d8d713c055fe",
+  "pageVersion": "sha256:1f833b9977692d44593dddb7dfe007a898a36eb174c47db73c3bba9d3b188bbd",
   "claims": [
     {
       "id": "claim_5fabdcc3128644edb39e7bc245ef8f65",
@@ -89,10 +89,30 @@
           "version": "repo-lines-v1:sha256:0dce1347a10d12291df6e6da8586101f39a22fe23caa19c17667f5434b069a47:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViMjQ3ZDE4ZDk0ZThjYmVhNmI3ZDM3NDFjOGRiN2ZlMjg4YzQ4MTY0YTdhZDgyMmM2ZWNjZjNlYWUxNDIwODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjZlODcwNmI0MzA0N2YyYTZkYjY3ZjEzMjYzODU5NTYwNGU2N2YzNjk2Njg3NmNlMDE1OGYwMDUzZTZiZDEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2da5670ad30b4b52821e5fa5b28f9a88",
+      "statement": "Aktualizator EmuStart w emustart/ wybiera najnowsze wydanie z tagiem emustart-v z C4rl0s79/EmustartNXT, z dawnym repozytorium C4rl0s79/EmuStart jako zapasem.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/updater.py#L1-L60",
+          "version": "repo-lines-v1:sha256:1a05951b5236beef5070c48d51710434ba5216527731d8fea02f00cfa83089da:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzZGNiYzkwNTE4OThjODZiMzIxNDJmZDc4MzhiMDNlYTYwNzM3NjM2YmFjMzM5NWQ2NTljODUwYTNkZGJhZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExM2U5MmQwNTFkNTc0ZDIyZDY2ZGM1OTAzNTBjYjVhOTllNWQwYWU2YjI5YmVmOWI0N2M1OWRlMzZmMjM2NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxMWQxYjM0MjBmZTg5ZTc0YzQyNTJiMzZhZTgwZWRhNTc3ZjMyNjgwM2FmYzNjYjllODQ0NWE3ZDQ4YWFlYWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_296dd201cd1749be99bf7769a7a1a18d",
+      "statement": "clientdist w emustart/ pobiera programy do strony serwera z jednego repozytorium EmustartNXT, rozróżniając je przedrostkiem tagu emustart-v i lumen-v, z dawnymi repozytoriami jako legacy.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/clientdist.py#L26-L48",
+          "version": "repo-lines-v1:sha256:f5c0798b99c335dfc83f13044d68702545f18cdce469c59e9378c04bdca75ae1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwOWZkNWRjZjUwMWMzNzZjMTdhZGQzYzUwZmVhZWU1MDY3YjE2ZDQ5Y2Y0MGM3OTA2YWUwODM4OTA2Mjc5ZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZGRmZTc3MjY4ZWY1ODI0NGI3MTAwNzVlNTYwNzhiNjg5M2Y5ZGY1YzBlNjk1MWI1ZjBkNTA4YmQ0NmVjMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyMDIyZjIxNmVhNWVmNjkxNDBlNjJmMDdiNTUyZTgyMDIxZWI1NzRlYTlkYzU4NzhjZTk4YWI2ZmI4NjJkNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjVmY2M3MGJiNmE1MzIyOTVkODg0ZTA4MzRiMDJjMWQxNjFlNDYzZWFhMTk2OWQ2NDc4MTNlNDVlYmRkY2MifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-11T20:46:08.589Z"
   }
 }

@@ -5,8 +5,10 @@ description: "Diagnostyka typowych problemów systemu EmustartNXT: urządzenie n
 tags: [troubleshooting, network, firewall, logs, engine, server]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-11T20:46:08.589Z
 sources:
+  - id: openwiki-source-269bd79d82cebe60040832db
+    resource: repo://emustart/emustart/hotkey.py
   - id: openwiki-source-39316019f7b366045ad545d4
     resource: repo://emustart/emustart/remote.py
   - id: openwiki-source-a124d623671267edfd450054
@@ -17,7 +19,7 @@ sources:
     resource: repo://lumen/engine/engine_main.py
   - id: openwiki-source-2df32bc926e05bf8be1063ec
     resource: repo://lumen/src/main/emustart/engine.ts
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
 ---
 
 # Rozwiązywanie problemów
@@ -105,9 +107,12 @@ Diagnostyka padów bez uruchamiania Lumena: `engine_main.py --diag-controllers [
 Według dokumentacji użytkownika: pliki zablokowane po rozpakowaniu ZIP-a (`Unblock-File`), brak
 .NET Framework 4.8 albo WebView2 Runtime — szczegóły w `emustart/docs/wiki/Rozwiązywanie-problemów.md`.
 
-> **TODO: do weryfikacji** — dokumentacja użytkownika podaje skrót menu w grze „Select + A”,
-> a `lumen/engine/engine_main.py` w komentarzu mówi o „LB + A”. Nie ustalono, który skrót jest
-> aktualny w którym kliencie.
+## Menu w grze się nie otwiera
+
+Skrót to **przytrzymany Select + A** — od EmuStart 0.62.0 skróty pada w grze używają Select zamiast LB
+we wszystkich emulatorach (`emustart/emustart/hotkey.py`, `emustart/CHANGELOG.md` → 0.62.0). Komentarz
+„LB + A” w `lumen/engine/engine_main.py` pochodzi sprzed tej zmiany. Skróty nie działają przy wyłączonej
+obsłudze padów (`--pady=brak`).
 
 ## Powiązane
 
