@@ -2,74 +2,74 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architektura/klienci-emustart.md": {
-      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
-      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e",
-      "pageVersion": "sha256:2463886b7bdaed5cf747e73e4f93149797fe4b922db46f490fe53e1d841733de",
+      "pageVersion": "sha256:8d6d69cc7b3289d77cee552232de079f5c636618b3c28edadbc5c653b3133458",
       "completedBy": "claude-code",
-      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f"
+      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f",
+      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
+      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e"
     },
     "/openwiki/architektura/lumen.md": {
-      "pageVersion": "sha256:5f664f5693dda137c43c5876cbc1e9b051fff4a21901ff796d15c4c5e3e6b032",
+      "pageVersion": "sha256:e807f6c4ea5b9894b3d9450e3720c2598ff93d37f587c13258f53bc413df4c82",
       "completedBy": "claude-code",
       "completedRunId": "6b5ab66d-be6f-4565-8cd0-c377630d0e66",
       "gitHead": "5221d46297d09aec46b8d4d099a28f8d45f4fd5c",
       "sourceFingerprint": "sha256:9d875a4dbab4bce64ee4850f8c9e266fa5b6ac8b819956f113eb0a5bd0ce8024"
     },
     "/openwiki/architektura/przeglad-systemu.md": {
-      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
-      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e",
-      "pageVersion": "sha256:3fef2668ce2abfbb6fe134ceefecb53c1d9c25a55329750bc60c264c7270a871",
+      "pageVersion": "sha256:7d32487f219076f4979fa27c8eb4ea4095c988efd95e80364578baeea7e4d09d",
       "completedBy": "claude-code",
-      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f"
+      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f",
+      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
+      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e"
     },
     "/openwiki/architektura/serwer-emustart.md": {
-      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
-      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e",
-      "pageVersion": "sha256:55d51bb0a86292aa63afe9a1f591162bdc31cd7675f30f51be7ee13baa70bd60",
+      "pageVersion": "sha256:7ee33e0119aee5da2f6b2e00dc8016dbd33251f7455b8109ba806f7d2b74dc6b",
       "completedBy": "claude-code",
-      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f"
+      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f",
+      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
+      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e"
     },
     "/openwiki/integracje/most-lumen-silnik.md": {
-      "pageVersion": "sha256:1f833b9977692d44593dddb7dfe007a898a36eb174c47db73c3bba9d3b188bbd",
+      "pageVersion": "sha256:3a187a60b22c17f9f0ac7fb443a86ab0406f37dfcd79a070da78a6201c098c21",
       "completedBy": "claude-code",
       "completedRunId": "6b5ab66d-be6f-4565-8cd0-c377630d0e66",
       "gitHead": "5221d46297d09aec46b8d4d099a28f8d45f4fd5c",
       "sourceFingerprint": "sha256:9d875a4dbab4bce64ee4850f8c9e266fa5b6ac8b819956f113eb0a5bd0ce8024"
     },
     "/openwiki/operacje/budowa-testy-i-wydania.md": {
-      "pageVersion": "sha256:4d07bca6da751595cbcae0597d0cc0818dcce13870d802429ff91ab3923284f1",
+      "pageVersion": "sha256:47744e46b6c9d8a4d45a14f1dbdbf47f01d63c16bb4b977ed258ac7dff781be0",
       "completedBy": "claude-code",
-      "completedRunId": "6b5ab66d-be6f-4565-8cd0-c377630d0e66",
-      "gitHead": "5221d46297d09aec46b8d4d099a28f8d45f4fd5c",
-      "sourceFingerprint": "sha256:9d875a4dbab4bce64ee4850f8c9e266fa5b6ac8b819956f113eb0a5bd0ce8024"
+      "completedRunId": "66df77bc-0ebb-4274-abe8-27023c680ca8",
+      "gitHead": "2eb551b611af750bddd95b56fe67e90b5f856c32",
+      "sourceFingerprint": "sha256:071c20928ca1d7b5c523d23be544b515e09e0424d9b319f8739c5ee9682f9057"
     },
     "/openwiki/operacje/konfiguracja-porty-i-sciezki.md": {
-      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
-      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e",
-      "pageVersion": "sha256:70a1e49601e2e8a819a1024f1f51a1ceb4f9c9b70831bf5e75a17e084212b281",
+      "pageVersion": "sha256:eb2ca23457d6790e05dc693486963253fcf6ef58142b9f8da3b49d2aa7b4858c",
       "completedBy": "claude-code",
-      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f"
+      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f",
+      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
+      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e"
     },
     "/openwiki/operacje/rozwiazywanie-problemow.md": {
-      "pageVersion": "sha256:091f72204536e33984b65b24a9dc5b1aebcf350196250f33865035b6e0a314d2",
+      "pageVersion": "sha256:63e9add7f18c208dbb6940e6b64247652cb48c640364d9ea453c1399286e319d",
       "completedBy": "claude-code",
       "completedRunId": "6b5ab66d-be6f-4565-8cd0-c377630d0e66",
       "gitHead": "5221d46297d09aec46b8d4d099a28f8d45f4fd5c",
       "sourceFingerprint": "sha256:9d875a4dbab4bce64ee4850f8c9e266fa5b6ac8b819956f113eb0a5bd0ce8024"
     },
     "/openwiki/przeplywy/api-v1.md": {
-      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
-      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e",
-      "pageVersion": "sha256:5a03061f8d9aedf19dae8caf1f077657802b4676e430ea0e180354e87151235f",
+      "pageVersion": "sha256:cd60ae2b38e831e60ad35c63c94273425b4a7fb33ffb944f9abf04684880a500",
       "completedBy": "claude-code",
-      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f"
+      "completedRunId": "5b603a32-0355-4048-9a88-4aa74445f23f",
+      "gitHead": "c15610f23926d4ca97a3bdbabafa9a851b8dc522",
+      "sourceFingerprint": "sha256:98bb1d47188c5065948740c6522e4868a5cd678bd9d4fe4efd6fb43834cc915e"
     },
     "/openwiki/quickstart.md": {
-      "pageVersion": "sha256:c7fe24954375d1fcc20cf3e3cb6a92f964ee3e9e55596d8dee2ef757a75e0b53",
+      "pageVersion": "sha256:779434f6fc9e1ab6e677eca2fb6db73234411d4834b34da54dbebd275d7723cf",
       "completedBy": "claude-code",
-      "completedRunId": "6b5ab66d-be6f-4565-8cd0-c377630d0e66",
-      "gitHead": "5221d46297d09aec46b8d4d099a28f8d45f4fd5c",
-      "sourceFingerprint": "sha256:9d875a4dbab4bce64ee4850f8c9e266fa5b6ac8b819956f113eb0a5bd0ce8024"
+      "completedRunId": "66df77bc-0ebb-4274-abe8-27023c680ca8",
+      "gitHead": "2eb551b611af750bddd95b56fe67e90b5f856c32",
+      "sourceFingerprint": "sha256:071c20928ca1d7b5c523d23be544b515e09e0424d9b319f8739c5ee9682f9057"
     }
   }
 }

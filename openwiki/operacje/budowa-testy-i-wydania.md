@@ -5,10 +5,12 @@ description: "Jak zbudować i przetestować EmuStart (build.ps1, PyInstaller, Gr
 tags: [build, ci, release, testing, signing, github-actions, openwiki]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:46:08.589Z
+    at: 2026-11-11T20:54:21.084Z
 sources:
   - id: openwiki-source-4e3e538728489e7a1208c697
     resource: repo://.github/workflows/android.yml
+  - id: openwiki-source-405b8b710d216259d5c49bbb
+    resource: repo://.github/workflows/lumen.yml
   - id: openwiki-source-6d4b4e707b8d60b6ccfa3425
     resource: repo://.github/workflows/openwiki-update.yml
   - id: openwiki-source-c50d065f5235e5ffd41ee89b
@@ -25,7 +27,7 @@ sources:
     resource: repo://lumen/README.md
   - id: openwiki-source-d69f512d6dbd56a78b25462c
     resource: repo://lumen/scripts/sign-release.mjs
-generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Budowa, testy i wydania
@@ -118,23 +120,28 @@ Silnik ze źródeł wymaga Pythona 3.12+ i `pip install -r engine/requirements.t
 - `npm test` — vitest; `npm run typecheck` — `tsc --noEmit`;
 - `npm run test:engine` — `pytest` w `lumen/engine/tests`.
 
-**Lumen nie ma workflowu CI** — w `.github/workflows/` są tylko `windows.yml`, `android.yml`
-i `openwiki-update.yml`; testy Lumena uruchamia się lokalnie.
+### CI i wydanie Lumena (`.github/workflows/lumen.yml`)
 
-### Wydanie Lumena (lokalnie, bez CI)
+| Zadanie | Wyzwalacz | Co robi |
+|---|---|---|
+| `test` | PR i push na `main` (zmiany w `lumen/**`), tag `lumen-v*`, ręcznie | `windows-latest`, Node 24, Python 3.14: `npm ci`, `npm run typecheck`, `npm test`, `pytest` w `lumen/engine/tests` |
+| `build` | tag `lumen-v*` albo ręcznie, po `test` | silnik (`python -m PyInstaller … lumen-engine.spec`) i Lumen (`electron-vite build`, `electron-builder --publish never`) |
 
-1. Wersja w `lumen/package.json` (+ `package-lock.json`).
-2. `npm run dist`.
-3. Podpis: `node scripts/sign-release.mjs release/Lumen-X.Y.Z-portable.zip release/Lumen-X.Y.Z-setup.exe`
-   — klucz prywatny Ed25519 z pliku wskazanego przez `LUMEN_SIGNING_KEY_FILE`; skrypt sprawdza, czy
-   pasuje do `RELEASE_PUBKEY` w `src/main/releaseSigning.ts`, i podpisuje wiadomość
-   `lumen-release-v1\n<nazwa>\n<sha256>`.
-4. Wydanie GitHub w `C4rl0s79/EmustartNXT` z tagiem `lumen-vX.Y.Z` i czterema plikami:
-   `Lumen-X.Y.Z-portable.zip`, `Lumen-X.Y.Z-setup.exe` (cele `zip` i `nsis` w `lumen/electron-builder.yml`)
-   i ich pliki `.sig` (`lumen/README.md`, sekcja „Wydanie (podpisy)”).
+Przy tagu `lumen-vX.Y.Z` zadanie `build` dodatkowo:
 
-> **TODO: do weryfikacji** — krok 1 (podbicie wersji w `package.json`) i moment założenia tagu wynikają
-> z praktyki opiekuna, nie z pliku w repozytorium.
+1. sprawdza, że `X.Y.Z` zgadza się z wersją w `lumen/package.json` (inaczej błąd);
+2. podpisuje `Lumen-X.Y.Z-portable.zip` i `Lumen-X.Y.Z-setup.exe` skryptem
+   `scripts/sign-release.mjs` — klucz Ed25519 (PEM) z sekretu `LUMEN_SIGNING_KEY`, zapisany na czas kroku
+   do pliku tymczasowego; skrypt sprawdza zgodność z `RELEASE_PUBKEY` w `src/main/releaseSigning.ts`
+   i podpisuje wiadomość `lumen-release-v1\n<nazwa>\n<sha256>`;
+3. zakłada wydanie (jeśli go nie ma) z opisem z treści adnotowanego tagu i dołącza oba pliki z `.sig`.
+
+Ręczne uruchomienie buduje to samo bez podpisu i wydania (pliki jako artefakty przebiegu). Procedura
+opiekuna (`lumen/README.md`, „Wydanie (GitHub Actions)”): PR z wersją w `package.json` i
+`package-lock.json`, po scaleniu adnotowany tag `git tag -a lumen-vX.Y.Z --cleanup=verbatim -F <notatki>`
+(`--cleanup=verbatim` zachowuje nagłówki Markdown `#`) i jego push.
+
+Awaryjnie lokalnie: `npm run dist`, potem `scripts/sign-release.mjs` z kluczem w `LUMEN_SIGNING_KEY_FILE`.
 
 ## Automatyczna aktualizacja OpenWiki
 

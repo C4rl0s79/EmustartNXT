@@ -17,7 +17,7 @@ sources:
     resource: repo://emustart/emustart/paths.py
   - id: openwiki-source-bacca483d37d13cf87b2b3d3
     resource: repo://lumen/src/main/logger.ts
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Konfiguracja, porty, ścieżki i logi

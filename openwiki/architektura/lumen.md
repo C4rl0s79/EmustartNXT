@@ -21,7 +21,7 @@ sources:
     resource: repo://lumen/src/main/updater.ts
   - id: openwiki-source-1ad07c49b6016e10a33d1af2
     resource: repo://lumen/src/preload/index.ts
-generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Lumen — launcher Electron

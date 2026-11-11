@@ -19,7 +19,7 @@ sources:
     resource: repo://lumen/engine/engine_main.py
   - id: openwiki-source-2df32bc926e05bf8be1063ec
     resource: repo://lumen/src/main/emustart/engine.ts
-generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Rozwiązywanie problemów

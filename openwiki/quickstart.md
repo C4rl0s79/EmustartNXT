@@ -5,13 +5,17 @@ description: "Punkt wejścia do wiki EmustartNXT: czym jest system EmuStart + Lu
 tags: [quickstart, overview, navigation, emustart, lumen]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:46:08.589Z
+    at: 2026-11-11T20:54:21.084Z
 sources:
+  - id: openwiki-source-405b8b710d216259d5c49bbb
+    resource: repo://.github/workflows/lumen.yml
+  - id: openwiki-source-c50d065f5235e5ffd41ee89b
+    resource: repo://.github/workflows/windows.yml
   - id: openwiki-source-f2d8491c8ff6aa07a5172ec8
     resource: repo://lumen/README.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-11T20:46:08.589Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Szybki start — mapa wiki EmustartNXT
@@ -35,7 +39,9 @@ Kierunek: klient EmuStart przechodzi do Lumena, EmuStart zostaje serwerem.
 | Lumen | `npm install`, potem `npm run dev` (`lumen/`) | Node.js 22+, Python 3.12+ z `engine/requirements.txt` |
 | Android | `gradle -p android assembleRelease` (`emustart/`) | JDK 17, Gradle 8.11.1 (jak w CI) |
 
-Szczegóły i wydania: [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md).
+Szczegóły i wydania: [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md). Oba programy wydaje
+GitHub Actions: EmuStart przy tagu `emustart-v…` (`.github/workflows/windows.yml`), Lumen przy tagu
+`lumen-v…` (`.github/workflows/lumen.yml`).
 
 ## Która strona odpowiada na pytanie
 

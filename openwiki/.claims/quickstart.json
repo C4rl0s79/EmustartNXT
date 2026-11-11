@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c7fe24954375d1fcc20cf3e3cb6a92f964ee3e9e55596d8dee2ef757a75e0b53",
+  "pageVersion": "sha256:779434f6fc9e1ab6e677eca2fb6db73234411d4834b34da54dbebd275d7723cf",
   "claims": [
     {
       "id": "claim_e43d7f0a7630400ead447529199e17f5",
@@ -21,10 +21,24 @@
           "version": "repo-lines-v1:sha256:902e30369f7080a9e2a0905ebebc981ce873612397022519bf34298405bf06d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyOGZjZTkyYjkxNmNhNGMwMGViMGU3MWRlOWUwNmQ4NzA2MDdlMzQ0YzJlZjcwODUwYmFjMWVjMDg2ODA4MmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0Y2Q5OGNkNjBhMGI5YzhjYzUxYTVmOTJmNDhiZDhhNTYyYmFlNzg0Njk2NTdiYWY1YzZiNDcxZWQ1ZDA5NTIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_fc57d54f8dd24591a3f0fd923286c86d",
+      "statement": "EmuStart jest wydawany przez workflow windows.yml przy tagu emustart-v*, a Lumen przez workflow lumen.yml przy tagu lumen-v*.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/lumen.yml",
+          "version": "repo-file-v1:sha256:281abb37a59d4be6755f63e41d18fff077c97a77eaac4bb60625bc133ee30174"
+        },
+        {
+          "resource": "repo://.github/workflows/windows.yml",
+          "version": "repo-file-v1:sha256:5fb72b24e98c02ab44897496b6dbeac333bb4b21d3c7e1d8187e6862dfb64fca"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:46:08.589Z"
+    "at": "2026-11-11T20:54:21.084Z"
   }
 }
