@@ -234,32 +234,45 @@ def _clean_names(names) -> dict:
     return out
 
 
+NAMES_MAX_AGE = 90 * 86400          # nazwy z urządzenia, które tyle się nie synchronizowało, nie są pokazywane
+
+
 def group_names() -> dict:
-    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}. Każde konto ma
-    swoje (ostatni zestaw z jego Lumena); ta sama kolekcja pod różnymi nazwami w kontach — nazwy po „ / ”."""
+    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}. Każde urządzenie
+    ma swój zestaw (ostatni z jego Lumena); ta sama kolekcja pod różnymi nazwami — nazwy po „ / ”."""
     out: dict = {}
+    old = time.time() - NAMES_MAX_AGE
     for _name, a in sorted((_load().get("accounts") or {}).items()):
-        for k, v in (a.get("group_names") or {}).items():
-            out.setdefault(k, [])
-            if v not in out[k]:
-                out[k].append(v)
+        for _dev, e in sorted((a.get("group_names_by_device") or {}).items()):
+            if not isinstance(e, dict) or float(e.get("at") or 0) < old:
+                continue
+            for k, v in (e.get("names") or {}).items():
+                out.setdefault(k, [])
+                if v not in out[k]:
+                    out[k].append(v)
     return {k: " / ".join(v) for k, v in out.items()}
 
 
-def sync(account: str, items: list, names=None) -> dict:
+def sync(account: str, items: list, names=None, device: str = "") -> dict:
     """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
-    `names` — wszystkie kolekcje widoczne w bibliotece Lumena tego konta; zastępują poprzedni zestaw konta (usunięta
-    kolekcja znika z panelu). Brak pola (starszy Lumen, biblioteka jeszcze niewczytana) — nazwy bez zmian."""
+    `names` — wszystkie kolekcje widoczne w bibliotece Lumena na tym urządzeniu; zastępują poprzedni zestaw tego
+    urządzenia (usunięta kolekcja znika z panelu), nie ruszają nazw z innych urządzeń konta (inny PC bez tych kolekcji
+    nie kasuje ich nazw). Brak pola (starszy Lumen, biblioteka jeszcze niewczytana) — nazwy bez zmian."""
     if not isinstance(items, list) or len(items) > MAX_ITEMS:
         raise ArtError("zła lista wyborów")
     names = _clean_names(names) if isinstance(names, dict) else None
     with _lock:
         d = _load()
         a = _acc(d, account)
-        changed = False
-        if names is not None and a.get("group_names") != names:
-            a["group_names"] = names
-            changed = True
+        changed = a.pop("group_names", None) is not None          # zestaw całego konta z 0.63.4
+        if names is not None:
+            by_dev = a.setdefault("group_names_by_device", {})
+            cur = by_dev.get(str(device or "")) or {}
+            now = time.time()
+            # znacznik czasu odświeżany najwyżej raz na dobę: synchronizacja co 10 minut nie zapisuje pliku bez zmian
+            if cur.get("names") != names or now - float(cur.get("at") or 0) > 86400:
+                by_dev[str(device or "")] = {"names": names, "at": now}
+                changed = True
         for it in items:
             try:
                 key = str(it["key"])

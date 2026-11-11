@@ -44,6 +44,23 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.5] — 2026-11-11
+
+Zakres: serwer (`userart.py`, `remote.py`); kopia w silniku Lumena (`lumen/engine/`) dla zgodności. Lumen, klient
+Windows i APK bez zmian.
+
+### Poprawione
+- **„Domyślne grafiki grup”: nazwy kolekcji znikały mimo połączonego Lumena.** W 0.63.4 zestaw nazw z Lumena
+  zastępował nazwy całego konta, więc drugie urządzenie tego konta bez tych kolekcji (inny komputer, TV) przy każdej
+  synchronizacji (co 10 minut) kasowało nazwy wysłane przez pierwsze. Teraz serwer trzyma nazwy osobno dla każdego
+  urządzenia: pusty zestaw z jednego urządzenia nie rusza nazw z innych, a usunięta kolekcja znika po synchronizacji
+  urządzenia, które ją miało. Nazwy z urządzenia, które nie synchronizowało się od 90 dni, nie są pokazywane.
+  Na serwerze 0.63.4 nazwy wysłane z tego komputera pojawiały się w panelu i znikały przed kolejnym sprawdzeniem,
+  a Lumen tego komputera wylicza dla swojego konta Steam poprawny zestaw — stąd wniosek, że kasowało je inne
+  urządzenie konta (nie sprawdzone wprost: serwer nie zapisywał, które urządzenie wysłało nazwy).
+
+**Czego NIE dotyka.** Lumen (wysyła nazwy jak w 1.0.56), grafiki i ich wybór, wygląd panelu.
+
 ## [0.63.4] — 2026-11-11
 
 Zakres: serwer (panel) i Lumen 1.0.56 (wysyła nazwy kolekcji); te same pliki serwera w kopii silnika `lumen/engine/`.

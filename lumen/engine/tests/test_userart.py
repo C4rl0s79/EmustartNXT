@@ -142,6 +142,31 @@ def test_panel_shows_lumen_names_of_collection_groups(data, srv):  # noqa: F811
     assert userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza"
 
 
+def test_second_device_of_account_does_not_wipe_collection_names(data, srv, monkeypatch):  # noqa: F811
+    from emustart import srvadmin
+    userart.upload("Ala", "navgrp:col/steamcol:uc-9iS1UmZnatNQ", "logo", PNG)
+    _d, pc = keyhelp.device("Ala", games=True)
+    _d, tv = keyhelp.device("Ala", games=True, name="tv")                 # to samo konto, inny Lumen bez kolekcji
+    label = lambda: {g["id"]: g["label"] for g in srvadmin.art_defaults(None, {})["groups"]}  # noqa: E731
+    _req(srv, "POST", "/v1/userart/choices", pc, body={"items": [], "names": {
+        "navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Yakuza", "navgrp:col/steamcol:uc-60iU98XD1KYP": "Zachtronics"}})
+    _req(srv, "POST", "/v1/userart/choices", tv, body={"items": [], "names": {}})        # co 10 minut z TV
+    assert label()["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Kolekcje: Yakuza"
+    _req(srv, "POST", "/v1/userart/choices", pc, body={"items": [], "names": {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Yakuza"}})
+    assert "navgrp:col/steamcol:uc-60iU98XD1KYP" not in label()                      # usunięta na tym PC — znika
+    # zestaw konta z 0.63.4 nie jest już pokazywany, a pierwsza synchronizacja go usuwa
+    idx = paths.DATA / "userart" / "index.json"
+    d = json.loads(idx.read_text(encoding="utf-8"))
+    d["accounts"]["Ala"]["group_names"] = {"navgrp:col/stara": "Stara"}
+    idx.write_text(json.dumps(d), encoding="utf-8")
+    assert "navgrp:col/stara" not in userart.group_names()
+    _req(srv, "POST", "/v1/userart/choices", tv, body={"items": []})
+    assert "group_names" not in json.loads(idx.read_text(encoding="utf-8"))["accounts"]["Ala"]
+    # urządzenie, które nie synchronizowało się od 90 dni, nie jest brane pod uwagę
+    monkeypatch.setattr(userart.time, "time", lambda: 9e9)
+    assert userart.group_names() == {}
+
+
 def test_panel_preview_served_locally(data):
     import urllib.request
     from emustart import server
