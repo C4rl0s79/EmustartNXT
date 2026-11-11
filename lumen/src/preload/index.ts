@@ -183,6 +183,7 @@ const api: LumenApi = {
     openExternal: (url) => invoke(IPC.appOpenExternal, url),
     listDir: (dir, o) => invoke(IPC.appListDir, dir, o),
     quit: () => invoke(IPC.appQuit),
+    hideToTray: () => invoke(IPC.appHide),
     onFocusChange: (cb) => subscribe(IPC.appFocus, cb),
     onPadState: (cb) => subscribe(IPC.padState, cb),
     platform: process.platform

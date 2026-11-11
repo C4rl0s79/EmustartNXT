@@ -1540,6 +1540,13 @@ function registerIpc(): void {
     await shell.openExternal(url)
   })
   handle(IPC.appQuit, () => app.quit())
+  // TV menu → Wyjdź z Lumen → Schowaj do zasobnika: like closing the window with the Deck on (it keeps running)
+  handle(IPC.appHide, () => {
+    if (!settings.get().deck.enabled || !deck?.window || !win || win.isDestroyed()) return false
+    win.hide()
+    log.info('window', 'hidden to the tray (TV menu)')
+    return true
+  })
   handle(IPC.appListDir, (dir: string, o: FsListOptions) =>
     listDir(String(dir ?? ''), { kind: o?.kind === 'file' ? 'file' : 'folder', extensions: Array.isArray(o?.extensions) ? o.extensions : undefined }, places())
   )
