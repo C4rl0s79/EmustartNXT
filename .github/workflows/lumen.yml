@@ -58,7 +58,9 @@ jobs:
         run: npm run typecheck
 
       - name: Testy (vitest)
-        run: npm test
+        # dłuższy limit niż domyślne 5 s: na maszynie CI pierwszy dynamiczny import() modułu w teście
+        # (zimna transformacja) potrafi trwać ponad 5 s; lokalnie cały plik testów trwa ułamek sekundy
+        run: npm test -- --testTimeout=30000
 
       - name: Testy silnika (pytest)
         working-directory: lumen/engine
