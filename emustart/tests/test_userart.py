@@ -132,7 +132,7 @@ def test_panel_shows_lumen_names_of_collection_groups(data, srv):  # noqa: F811
                                                    "Kolekcje: Yakuza"]
     # drugie konto: ta sama kolekcja pod inną nazwą — obie nazwy
     _req(srv, "POST", "/v1/userart/choices", bob, body={"items": [], "names": {"navgrp:col/cat:952f63a5-c48b-4e38": "Yakuza 0"}})
-    assert userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza / Yakuza 0"
+    assert userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza 0 / Yakuza"   # najnowsza (Bob) pierwsza
     st, _c = _req(srv, "POST", "/v1/userart/choices", ala, body={"items": []})   # starszy Lumen — nazwy zostają
     assert st == 200 and "navgrp:col/steamcol:uc-nowa" in userart.group_names()
     # pełny zestaw zastępuje poprzedni: usunięta kolekcja znika z panelu
@@ -146,7 +146,7 @@ def test_second_device_of_account_does_not_wipe_collection_names(data, srv, monk
     from emustart import srvadmin
     userart.upload("Ala", "navgrp:col/steamcol:uc-9iS1UmZnatNQ", "logo", PNG)
     _d, pc = keyhelp.device("Ala", games=True)
-    _d, tv = keyhelp.device("Ala", games=True, name="tv")                 # to samo konto, inny Lumen bez kolekcji
+    _tvid, tv = keyhelp.device("Ala", games=True, name="tv")              # to samo konto, inny Lumen bez kolekcji
     label = lambda: {g["id"]: g["label"] for g in srvadmin.art_defaults(None, {})["groups"]}  # noqa: E731
     _req(srv, "POST", "/v1/userart/choices", pc, body={"items": [], "names": {
         "navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Yakuza", "navgrp:col/steamcol:uc-60iU98XD1KYP": "Zachtronics"}})
@@ -154,16 +154,30 @@ def test_second_device_of_account_does_not_wipe_collection_names(data, srv, monk
     assert label()["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Kolekcje: Yakuza"
     _req(srv, "POST", "/v1/userart/choices", pc, body={"items": [], "names": {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Yakuza"}})
     assert "navgrp:col/steamcol:uc-60iU98XD1KYP" not in label()                      # usunięta na tym PC — znika
-    # zestaw konta z 0.63.4 nie jest już pokazywany, a pierwsza synchronizacja go usuwa
+    # zestaw konta z 0.63.4: zapasowo, dopóki urządzenie konta nie przyśle nazw; potem usuwany
     idx = paths.DATA / "userart" / "index.json"
     d = json.loads(idx.read_text(encoding="utf-8"))
-    d["accounts"]["Ala"]["group_names"] = {"navgrp:col/stara": "Stara"}
+    d["accounts"]["Ala"]["group_names"] = {"navgrp:col/stara": "Stara", "navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Inna"}
+    d["accounts"]["Ala"]["group_names_by_device"]["zepsute"] = {"at": "x", "names": "nie słownik"}   # uszkodzony wpis
     idx.write_text(json.dumps(d), encoding="utf-8")
-    assert "navgrp:col/stara" not in userart.group_names()
-    _req(srv, "POST", "/v1/userart/choices", tv, body={"items": []})
-    assert "group_names" not in json.loads(idx.read_text(encoding="utf-8"))["accounts"]["Ala"]
+    names = userart.group_names()
+    assert names["navgrp:col/stara"] == "Stara" and names["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Yakuza"
+    st, _c = _req(srv, "POST", "/v1/userart/choices", tv, body={"items": []})        # bez nazw — zestaw zostaje
+    assert st == 200 and "group_names" in json.loads(idx.read_text(encoding="utf-8"))["accounts"]["Ala"]
+    st, _c = _req(srv, "POST", "/v1/userart/choices", tv, body={"items": [], "names": {}})
+    acc = json.loads(idx.read_text(encoding="utf-8"))["accounts"]["Ala"]
+    assert st == 200 and "group_names" not in acc and "zepsute" not in acc["group_names_by_device"]
+    # ta sama kolekcja pod nową nazwą na TV: najnowsza pierwsza
+    _req(srv, "POST", "/v1/userart/choices", tv, body={"items": [], "names": {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "RGG"}})
+    assert userart.group_names()["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "RGG / Yakuza"
+    # odwołane urządzenie się nie liczy, a jego wpis znika przy następnej synchronizacji konta
+    from emustart import devices
+    devices.revoke(_tvid)
+    assert userart.group_names()["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Yakuza"
+    _req(srv, "POST", "/v1/userart/choices", pc, body={"items": [], "names": {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Yakuza"}})
+    assert _tvid not in json.loads(idx.read_text(encoding="utf-8"))["accounts"]["Ala"]["group_names_by_device"]
     # urządzenie, które nie synchronizowało się od 90 dni, nie jest brane pod uwagę
-    monkeypatch.setattr(userart.time, "time", lambda: 9e9)
+    monkeypatch.setattr(userart, "NAMES_MAX_AGE", -1)
     assert userart.group_names() == {}
 
 
