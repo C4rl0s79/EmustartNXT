@@ -43,8 +43,12 @@ def upload(cfg: dict, pid: int, path: str, game: str, kind: str) -> dict:
     return out
 
 
-def sync(cfg: dict, pid: int, items: list) -> dict:
-    return sc._Client(cfg, pid).json("POST", "/v1/userart/choices", {"items": items})
+def sync(cfg: dict, pid: int, items: list, names: dict | None = None) -> dict:
+    """`names` — nazwy kolekcji Lumena ({navgrp:col/<id>: nazwa}) dla panelu serwera; starszy serwer je pomija."""
+    body = {"items": items}
+    if names:
+        body["names"] = names
+    return sc._Client(cfg, pid).json("POST", "/v1/userart/choices", body)
 
 
 def gallery(cfg: dict, pid: int, game: str, kind: str) -> dict:

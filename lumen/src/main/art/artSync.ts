@@ -74,6 +74,16 @@ export function parseDefaults(raw: Record<string, { sha?: string; ext?: string }
   return out
 }
 
+/**
+ * names of this library's collection groups (shared/libraryNav.ts: Lumen categories and Steam collections, id
+ * `col/<category id>`), keyed like group art (navgrp:…) — the server panel shows them instead of bare ids
+ */
+export function groupNames(p: Prefs): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const c of p.categories) if ((c.kind === 'custom' || c.kind === 'steam') && c.name.trim()) out[`navgrp:col/${c.id}`] = c.name.trim()
+  return out
+}
+
 /** `file` choices waiting for upload: [layout, game, kind, path] */
 export function pendingFiles(p: Prefs): [ArtLayout, string, ArtKind, string][] {
   const out: [ArtLayout, string, ArtKind, string][] = []

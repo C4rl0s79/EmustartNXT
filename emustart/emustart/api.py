@@ -478,8 +478,8 @@ class Api:
     def art_user_upload(self, path: str, game: str, kind: str) -> dict:
         return self._art_user("upload", str(path), str(game), str(kind))
 
-    def art_user_sync(self, items: list) -> dict:
-        return self._art_user("sync", items if isinstance(items, list) else [])
+    def art_user_sync(self, items: list, names: dict | None = None) -> dict:
+        return self._art_user("sync", items if isinstance(items, list) else [], names if isinstance(names, dict) else None)
 
     def art_user_gallery(self, game: str, kind: str) -> dict:
         return self._art_user("gallery", str(game), str(kind))

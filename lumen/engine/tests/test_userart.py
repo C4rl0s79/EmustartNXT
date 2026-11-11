@@ -106,6 +106,30 @@ def test_group_defaults_only_from_uploaded_art(data):
     assert userart.defaults()["defaults"] == {}
 
 
+def test_panel_shows_lumen_names_of_collection_groups(data, srv):  # noqa: F811
+    from emustart import srvadmin
+    userart.upload("Ala", "navgrp:col/steamcol:uc-9iS1UmZnatNQ", "logo", PNG)
+    userart.upload("Ala", "navgrp:col/cat:952f63a5-c48b-4e38", "logo", GIF)
+    labels = {g["id"]: g["label"] for g in srvadmin.art_defaults(None, {})["groups"]}
+    assert labels["navgrp:col/steamcol:uc-9iS1UmZnatNQ"].endswith("(nazwa nieznana — połącz Lumena z serwerem)")
+    _d, ala = keyhelp.device("Ala", games=True)
+    names = {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Resident  Evil", "navgrp:col/cat:952f63a5-c48b-4e38": "Yakuza",
+             "navgrp:col/emusys:ps2": "PS2 ulubione",                    # kolekcja jeszcze bez grafiki
+             "navgrp:grp:pc": "podmiana", "gog:1": "nie grupa", "navgrp:col/x": "\x07zła"}
+    st, _c = _req(srv, "POST", "/v1/userart/choices", ala, body={"items": [], "names": names})
+    assert st == 200
+    groups = srvadmin.art_defaults(None, {})["groups"]
+    labels = {g["id"]: g["label"] for g in groups}
+    assert labels["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Kolekcje: Resident Evil"
+    assert labels["navgrp:col/cat:952f63a5-c48b-4e38"] == "Kolekcje: Yakuza"
+    assert labels["navgrp:col/emusys:ps2"] == "Kolekcje: PS2 ulubione"
+    assert labels["navgrp:grp:pc"] == "PC"                                # wbudowanych nazw Lumen nie zmienia
+    assert "gog:1" not in labels and "navgrp:col/x" not in labels
+    assert [g["label"] for g in groups][11:] == ["Kolekcje: PS2 ulubione", "Kolekcje: Resident Evil", "Kolekcje: Yakuza"]
+    st, _c = _req(srv, "POST", "/v1/userart/choices", ala, body={"items": []})   # starszy Lumen — nazwy zostają
+    assert st == 200 and userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza"
+
+
 def test_panel_preview_served_locally(data):
     import urllib.request
     from emustart import server

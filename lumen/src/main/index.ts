@@ -35,7 +35,7 @@ import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { SteamFamily } from './steam/family'
-import { applyServer, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
+import { applyServer, groupNames, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -798,7 +798,7 @@ async function syncArt(): Promise<void> {
       })
     }
     await syncLbTitles()
-    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get())], 60_000)
+    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get()), groupNames(prefs.get())], 60_000)
     if (!r.choices) return
     const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
     if (d?.defaults) {

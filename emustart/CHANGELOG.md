@@ -63,6 +63,22 @@ Zmiany: `gogmeta.py` (czy gra ma instalator Windows), `gogarchive.py` (gry z rek
 
 Czego NIE dotyka: lista gier w klientach, API `/v1/gog`, indeks i pamięć podręczna, liczba udostępnianych gier.
 
+### Plan: nazwy grup w „Domyślne grafiki grup” (zgłoszone 2026-11-11)
+
+Lista grup w panelu serwera pokazuje dla kolekcji same identyfikatory (`col/steamcol:uc-…`, `col/cat:<uuid>`), bo
+serwer zna tylko id z wgranych grafik — nazwy są w Lumenie. Zmiana: Lumen przy synchronizacji grafik
+(`POST /v1/userart/choices`) dosyła nazwy swoich kolekcji (kolekcje Steam, kategorie Lumena, kolekcje platform —
+`prefs.categories`), tak jak wyświetla je w bibliotece; serwer je zapamiętuje (`userart.json` → `group_names`),
+a panel pokazuje „Kolekcje: <nazwa>”. Na liście są też kolekcje bez wgranej jeszcze grafiki. Grupa, której nazwy
+żaden Lumen jeszcze nie przysłał, ma dopisek „(nazwa nieznana — połącz Lumena z serwerem)”.
+
+Moduły: serwer (`userart.py`, `remote.py`, `srvadmin.py`), Lumen (`src/main/art/artSync.ts`, `src/main/index.ts`,
+silnik: `artsync.py`, `api.py`). Starszy Lumen bez nazw i starszy serwer bez obsługi nazw działają jak dotąd
+(pole `names` jest opcjonalne i pomijane). Klient Windows i APK nie mają grafik grup — bez zmian.
+
+Czego NIE dotyka: same grafiki, ich wybór i synchronizacja, nazwy gier, biblioteka w Lumenie.
+
+## [0.63.3] — 2026-11-11
 
 Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
 Windows, instalator gier GOG w Lumenie, APK i emulatory bez zmian — klienci biorą z `gogarchive.py` tylko stałe

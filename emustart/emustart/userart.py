@@ -219,14 +219,42 @@ def _valid_choice(c) -> dict | None:
     raise ArtError("zły wybór")
 
 
-def sync(account: str, items: list) -> dict:
-    """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta."""
+GROUP_ID = re.compile(r"^navgrp:col/[A-Za-z0-9:_.-]{1,180}$")
+MAX_GROUP_NAMES = 2000
+
+
+def _clean_names(names) -> dict:
+    """{grupa: nazwa} kolekcji z Lumena (jak w jego bibliotece) — tylko poprawne wpisy, nazwa bez znaków sterujących."""
+    out = {}
+    if not isinstance(names, dict):
+        return out
+    for k, v in list(names.items())[:MAX_GROUP_NAMES]:
+        name = " ".join(str(v or "").split())
+        if isinstance(k, str) and GROUP_ID.match(k) and name and len(name) <= 120 and name.isprintable():
+            out[k] = name
+    return out
+
+
+def group_names() -> dict:
+    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}."""
+    return dict(_load().get("group_names") or {})
+
+
+def sync(account: str, items: list, names=None) -> dict:
+    """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
+    `names` — nazwy kolekcji z Lumena (opcjonalne; starszy Lumen ich nie wysyła), ostatnio przysłana wygrywa."""
     if not isinstance(items, list) or len(items) > MAX_ITEMS:
         raise ArtError("zła lista wyborów")
+    names = _clean_names(names)
     with _lock:
         d = _load()
         a = _acc(d, account)
         changed = False
+        if names:
+            gn = d.setdefault("group_names", {})
+            if any(gn.get(k) != v for k, v in names.items()):
+                gn.update(names)
+                changed = True
         for it in items:
             try:
                 key = str(it["key"])

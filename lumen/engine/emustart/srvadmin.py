@@ -670,8 +670,16 @@ def art_defaults(api, args: dict) -> dict:
     from emustart import userart
     items = {k: userart.gallery("", "", k)["items"] for k in ("logo", "hero")}
     known = dict(ART_GROUPS)
-    extra = sorted({i["game"] for v in items.values() for i in v if i["game"].startswith("navgrp:") and i["game"] not in known})
-    return {"ok": True, "groups": [{"id": g, "label": n} for g, n in ART_GROUPS] + [{"id": g, "label": g[7:]} for g in extra],
+    names = userart.group_names()                 # nazwy kolekcji, jak w bibliotece Lumena (przysyła je Lumen)
+    extra = {i["game"] for v in items.values() for i in v if i["game"].startswith("navgrp:") and i["game"] not in known}
+    extra |= set(names) - set(known)
+
+    def label(g: str) -> str:
+        if g in names:
+            return f"Kolekcje: {names[g]}"
+        return f"{g[7:]} (nazwa nieznana — połącz Lumena z serwerem)"
+    rest = sorted(({"id": g, "label": label(g)} for g in extra), key=lambda x: (x["id"] not in names, x["label"].lower()))
+    return {"ok": True, "groups": [{"id": g, "label": n} for g, n in ART_GROUPS] + rest,
             "defaults": userart.defaults()["defaults"], "items": items}
 
 
