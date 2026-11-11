@@ -1,0 +1,51 @@
+# OpenWiki: ścieżki, których agent dokumentacji nie czyta ani nie opisuje.
+
+# wyniki skanów bezpieczeństwa (lokalne, nieśledzone)
+CLAUDE-SECURITY-*/
+
+# pliki generowane i budowane
+**/graphify-out/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+lumen/out/
+lumen/release/
+emustart/build/
+emustart/dist/
+emustart/android/app/build/
+emustart/android/.gradle/
+*.log
+
+# sekrety i dane lokalne (na wszelki wypadek — nie są w repozytorium)
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.keystore
+**/*.jks
+
+# lumen/engine — kopia emustart/ (silnik Lumena, ta sama treść, inne końce linii).
+# Opisywana raz, w emustart/; z kopii zostają tylko pliki, których emustart/ nie ma.
+lumen/engine/.github/
+lumen/engine/android/
+lumen/engine/assets/
+lumen/engine/docs/
+lumen/engine/tools/
+lumen/engine/web/
+lumen/engine/CHANGELOG.md
+lumen/engine/CLAUDE.md
+lumen/engine/CONCEPT.md
+lumen/engine/README.md
+lumen/engine/ROADMAP.md
+lumen/engine/build.ps1
+lumen/engine/emustart.spec
+lumen/engine/main.py
+lumen/engine/requirements.txt
+lumen/engine/server_main.py
+lumen/engine/emustart/*
+!lumen/engine/emustart/lumen.py
+!lumen/engine/emustart/lumen_discs.py
+!lumen/engine/emustart/lumen_hide.py
+!lumen/engine/emustart/lumen_pads.py
+lumen/engine/tests/*
+!lumen/engine/tests/test_lumen_*.py
