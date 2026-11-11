@@ -1,0 +1,158 @@
+name: Lumen
+
+# Lumen (lumen/): testy przy każdym PR i pushu na main; wydanie przy tagu lumen-v*.
+#
+# Tag lumen-vX.Y.Z (adnotowany — jego opis staje się opisem wydania): testy, budowa silnika EmuStart
+# (PyInstaller) i Lumena (electron-vite + electron-builder), podpis Ed25519 (scripts/sign-release.mjs),
+# wydanie z Lumen-X.Y.Z-portable.zip, Lumen-X.Y.Z-setup.exe i ich plikami .sig.
+# Ręczne uruchomienie: ta sama budowa bez podpisu i wydania — pliki jako artefakty przebiegu.
+#
+# Sekret LUMEN_SIGNING_KEY: klucz prywatny wydań Lumena (Ed25519, PKCS#8 PEM — cała treść pliku .pem).
+# Skrypt podpisu sprawdza, czy pasuje do RELEASE_PUBKEY w lumen/src/main/releaseSigning.ts.
+
+on:
+  push:
+    branches: [main]
+    tags: ["lumen-v*"]
+    paths:
+      - "lumen/**"
+      - ".github/workflows/lumen.yml"
+  pull_request:
+    paths:
+      - "lumen/**"
+      - ".github/workflows/lumen.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: lumen
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: lumen/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"     # jak EmuStart (compression.zstd w silniku)
+          cache: pip
+          cache-dependency-path: lumen/engine/requirements.txt
+
+      - name: Zależności
+        run: |
+          npm ci
+          python -m pip install --upgrade pip
+          python -m pip install -r engine/requirements.txt
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testy (vitest)
+        run: npm test
+
+      - name: Testy silnika (pytest)
+        working-directory: lumen/engine
+        run: python -m pytest -q -p no:cacheprovider tests
+
+  build:
+    # tag lumen-v* albo ręczne uruchomienie; push na main i PR kończą się na testach
+    if: startsWith(github.ref, 'refs/tags/lumen-v') || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: lumen/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: lumen/engine/requirements.txt
+
+      - name: Zależności
+        run: |
+          npm ci
+          python -m pip install --upgrade pip
+          python -m pip install -r engine/requirements.txt pyinstaller
+
+      - name: Wersja
+        id: ver
+        shell: bash
+        run: |
+          ver=$(node -p "require('./package.json').version")
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/lumen-v* && "${GITHUB_REF_NAME#lumen-v}" != "$ver" ]]; then
+            echo "::error title=Lumen::Tag $GITHUB_REF_NAME nie pasuje do wersji $ver w lumen/package.json"
+            exit 1
+          fi
+
+      # jak `npm run dist`, ale silnik przez `python` z setup-python (skrypt używa `py -3`, który na maszynie CI
+      # może wybrać inną wersję) i bez publikacji przez electron-builder (wydanie zakłada krok niżej)
+      - name: Budowa silnika EmuStart (PyInstaller)
+        working-directory: lumen/engine
+        run: python -m PyInstaller --noconfirm --log-level WARN lumen-engine.spec
+
+      - name: Budowa Lumena
+        run: |
+          npx electron-vite build
+          npx electron-builder --win --config electron-builder.yml --publish never
+
+      - name: Podpis wydania (scripts/sign-release.mjs)
+        if: startsWith(github.ref, 'refs/tags/lumen-v')
+        shell: bash
+        env:
+          LUMEN_SIGNING_KEY: ${{ secrets.LUMEN_SIGNING_KEY }}
+        run: |
+          if [ -z "$LUMEN_SIGNING_KEY" ]; then
+            echo "::error title=Lumen::Brak sekretu LUMEN_SIGNING_KEY (opis na początku pliku)"
+            exit 1
+          fi
+          key="$RUNNER_TEMP/lumen-release.pem"
+          printf '%s\n' "$LUMEN_SIGNING_KEY" > "$key"
+          trap 'rm -f "$key"' EXIT
+          v="${{ steps.ver.outputs.ver }}"
+          LUMEN_SIGNING_KEY_FILE="$key" node scripts/sign-release.mjs \
+            "release/Lumen-$v-portable.zip" "release/Lumen-$v-setup.exe"
+
+      - name: Artefakty przebiegu
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lumen-${{ steps.ver.outputs.ver }}
+          path: |
+            lumen/release/Lumen-${{ steps.ver.outputs.ver }}-portable.zip
+            lumen/release/Lumen-${{ steps.ver.outputs.ver }}-setup.exe
+
+      - name: Wydanie
+        if: startsWith(github.ref, 'refs/tags/lumen-v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.ver.outputs.ver }}"
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # opis wydania: treść adnotowanego tagu (checkout nie zawsze pobiera obiekt tagu)
+            git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+            git for-each-ref "refs/tags/$GITHUB_REF_NAME" --format='%(contents)' > notes.md
+            [ -s notes.md ] || echo "Lumen $v" > notes.md
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Lumen $v" --notes-file notes.md \
+              || gh release view "$GITHUB_REF_NAME" >/dev/null
+          fi
+          gh release upload "$GITHUB_REF_NAME" \
+            "release/Lumen-$v-portable.zip" "release/Lumen-$v-portable.zip.sig" \
+            "release/Lumen-$v-setup.exe" "release/Lumen-$v-setup.exe.sig" --clobber

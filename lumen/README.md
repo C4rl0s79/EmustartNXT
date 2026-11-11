@@ -92,20 +92,30 @@ usuwane po pracy): kopia zapasowa, podmiana, przy błędzie powrót do poprzedni
 
 Wersje do 0.3.4 nie mają aktualizatora — 0.4.0 trzeba raz pobrać ręcznie.
 
-### Wydanie (podpisy)
+### Wydanie (GitHub Actions)
 
-```bash
-npm run dist
-```
+Wydania buduje i publikuje workflow `.github/workflows/lumen.yml` (C4rl0s79/EmustartNXT):
 
-```bash
-node scripts/sign-release.mjs release/Lumen-<w>-portable.zip release/Lumen-<w>-setup.exe
-```
+1. PR z wydaniem: wersja w `package.json` (`npm version <w> --no-git-tag-version`, razem z `package-lock.json`).
+2. Po scaleniu do `main`: adnotowany tag na commicie scalenia — jego treść staje się opisem wydania
+   (`--cleanup=verbatim`, żeby nagłówki Markdown `#` nie zostały usunięte jako komentarze):
 
-Klucz prywatny wydań: `D:\GIT\_klucze\launcher-release-ed25519.pem` (albo `LUMEN_SIGNING_KEY_FILE`) — nigdy
-w repozytorium; skrypt sprawdza, czy pasuje do klucza publicznego w `src/main/releaseSigning.ts`. Do wydania
-na GitHubie (C4rl0s79/EmustartNXT, tag `lumen-v<w>`) trafiają dwa pliki — `Lumen-<w>-portable.zip`,
-`Lumen-<w>-setup.exe` — i ich dwa pliki `.sig`.
+   ```bash
+   git tag -a lumen-v<w> --cleanup=verbatim -F notatki.md <commit>
+   git push origin lumen-v<w>
+   ```
+
+3. Workflow uruchamia testy (typecheck, vitest, pytest silnika), sprawdza, czy tag pasuje do wersji
+   w `package.json`, buduje silnik i Lumena, podpisuje pliki (`scripts/sign-release.mjs`, klucz z sekretu
+   `LUMEN_SIGNING_KEY`) i zakłada wydanie z `Lumen-<w>-portable.zip`, `Lumen-<w>-setup.exe` i ich plikami `.sig`.
+
+Ręczne uruchomienie workflowu (Actions → Lumen → Run workflow) buduje to samo bez podpisu i wydania — pliki
+są artefaktami przebiegu. PR i push na `main` uruchamiają tylko testy.
+
+Lokalnie (awaryjnie, bez CI): `npm run dist`, potem
+`node scripts/sign-release.mjs release/Lumen-<w>-portable.zip release/Lumen-<w>-setup.exe` z kluczem
+w `LUMEN_SIGNING_KEY_FILE`. Klucz prywatny nigdy nie trafia do repozytorium; skrypt sprawdza, czy pasuje
+do klucza publicznego w `src/main/releaseSigning.ts`.
 
 ## Konfiguracja
 
