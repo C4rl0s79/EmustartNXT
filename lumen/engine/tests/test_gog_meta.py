@@ -61,6 +61,32 @@ def test_art_prefers_transparent_logo_and_stays_in_folder(arc):
     assert gogmeta.art_path("999", "grid") is None
 
 
+def _library_folder(base, slug, pid, title, installers):
+    d = base / slug
+    d.mkdir()
+    (d / f"product_{slug}.json").write_text(json.dumps({
+        "id": pid, "slug": slug, "title": title, "downloads": {"installers": installers}}), encoding="utf-8")
+
+
+def test_panel_lists_library_games_without_archive(arc):
+    root, game = arc
+    base = root.parent
+    prod = json.loads((game / "product_testowa_gra.json").read_text(encoding="utf-8"))
+    prod["downloads"] = {"installers": [{"os": "windows"}]}           # gra z archiwum — nie na liście
+    (game / "product_testowa_gra.json").write_text(json.dumps(prod), encoding="utf-8")
+    _library_folder(base, "nowa_gra", 3001, "Nowa Gra", [{"os": "windows"}, {"os": "linux"}])
+    _library_folder(base, "alfa_nowa", 3002, "alfa Nowa", [{"os": "windows"}])
+    _library_folder(base, "goodies_pack", 3003, "Goodies Pack", [])          # same dodatki
+    _library_folder(base, "tylko_mac", 3004, "Tylko Mac", [{"os": "mac"}])
+    ga.refresh(str(root), wait=True)
+    assert ga.status()["not_archived"] == ["alfa Nowa", "Nowa Gra"]
+    from emustart import srvconfig
+    st = srvconfig.gog_status()
+    assert st["ok"] and st["missing"] == ["alfa Nowa", "Nowa Gra"]
+    ga.refresh("", wait=True)                                    # archiwum wyłączone — nic do pokazania
+    assert ga.status()["not_archived"] == []
+
+
 def test_html_to_text():
     assert gogmeta.html_to_text("<script>x</script>A<br>B<h2>C</h2>&quot;D&quot;") == 'A\nB\nC\n"D"'
 

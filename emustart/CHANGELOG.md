@@ -44,7 +44,25 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
-## [0.63.3] — 2026-11-11
+### Plan: gry bez archiwum w panelu serwera (zgłoszone 2026-11-11, wygląd zatwierdzony)
+
+Gry, które GOG Manager ma w bibliotece (folder `<katalog GOG>/<slug>/` z metadanymi), ale nie ma ich w archiwum
+depotów, nie były nigdzie widoczne — ani na liście gier, ani w pominiętych. Pod stanem pola „archiwum GOG” w panelu
+serwera dochodzi zwijana lista:
+
+    Bez archiwum (57) — gry z biblioteki GOG Managera, których nie ma w _depots
+      uruchom „Aktualizuj wszystko” w GOG Managerze
+      Alan Wake
+      Wing Commander™ III: Heart of the Tiger: 30th Anniversary Edition
+      …
+
+Na liście: gra z folderem metadanych, z instalatorem Windows na GOG i bez żadnego rekordu w `_depots/products`
+(gry z niekompletnym archiwum są jak dotąd w „pominiętych”). Bez pozycji z samymi dodatkami (goodies).
+Zmiany: `gogmeta.py` (czy gra ma instalator Windows), `gogarchive.py` (gry z rekordem — z indeksu), `srvconfig.py`
+(lista w stanie pola), `web/server.js` (zwijana lista); te same pliki w kopii silnika Lumena.
+
+Czego NIE dotyka: lista gier w klientach, API `/v1/gog`, indeks i pamięć podręczna, liczba udostępnianych gier.
+
 
 Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
 Windows, instalator gier GOG w Lumenie, APK i emulatory bez zmian — klienci biorą z `gogarchive.py` tylko stałe

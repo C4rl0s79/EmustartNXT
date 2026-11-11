@@ -476,7 +476,7 @@ def build_chunks(arc: "Archive", pid: str, build: str) -> dict:
 
 _lock = threading.Lock()
 INDEX: dict = {"root": "", "builds": {}, "rejected": [], "error": "", "built": 0.0, "running": False,
-               "done": 0, "total": 0}
+               "done": 0, "total": 0, "record_pids": []}
 _want: dict = {"root": "", "deep": False, "gen": 0}     # ostatnie żądanie (panel / start serwera)
 _pin_lock = threading.Lock()
 
@@ -490,7 +490,7 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     Chunk wysyłany klientowi jest i tak sprawdzany MD5 (`chunk_bytes`) — brak = błąd instalacji, nie zły plik.
     Build niezmieniony od poprzedniego indeksu (czasy i rozmiary rekordu i meta) jest brany z pamięci podręcznej
     (`_cache_path`) bez obu etapów; `deep` zawsze sprawdza wszystko."""
-    res = {"root": root, "builds": {}, "rejected": [], "error": "", "built": time.time()}
+    res = {"root": root, "builds": {}, "rejected": [], "error": "", "built": time.time(), "record_pids": []}
     if not root:
         res["error"] = "nie ustawiono folderu archiwum"
         return res
@@ -501,6 +501,7 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     except (ArchiveError, OSError) as ex:
         res["error"] = str(ex)
         return res
+    res["record_pids"] = sorted({pid for pid, _b in recs})      # gry z jakimkolwiek rekordem (panel: „bez archiwum”)
     def reject(e):
         res["rejected"].append({k: e.get(k) for k in ("product_id", "build_id", "title", "reason")})
         log.info("GOG: pomijam %s/%s (%s): %s", e.get("product_id"), e.get("build_id"), e.get("title"), e.get("reason"))
@@ -562,7 +563,7 @@ def refresh(root: str, deep: bool = False, wait: bool = False) -> None:
     with _lock:
         _want.update(root=root, deep=deep, gen=_want["gen"] + 1)
         if not root:                                  # wyłączenie: od razu nic nie udostępniamy
-            INDEX.update(root="", builds={}, rejected=[], error="")
+            INDEX.update(root="", builds={}, rejected=[], error="", record_pids=[])
             from emustart import gogmeta
             gogmeta.clear()
         if INDEX["running"]:
@@ -579,7 +580,7 @@ def refresh(root: str, deep: bool = False, wait: bool = False) -> None:
                 with _lock:
                     if gen == _want["gen"] and INDEX["root"] != r:
                         # inna ścieżka niż udostępniana: stare gry znikają od razu, nowe pojawiają się po kolei
-                        INDEX.update(root=r, builds={}, rejected=[], error="")
+                        INDEX.update(root=r, builds={}, rejected=[], error="", record_pids=[])
 
                 def publish(e, add, gen=gen):
                     with _lock:
@@ -614,7 +615,9 @@ def refresh(root: str, deep: bool = False, wait: bool = False) -> None:
 def status() -> dict:
     """Do panelu serwera."""
     games = {pid for pid, _b in INDEX["builds"]}
-    return {"root": INDEX["root"], "games": len(games), "builds": len(INDEX["builds"]),
+    from emustart import gogmeta
+    missing = gogmeta.not_archived(set(INDEX.get("record_pids") or [])) if INDEX["root"] and INDEX["built"] else []
+    return {"root": INDEX["root"], "games": len(games), "builds": len(INDEX["builds"]), "not_archived": missing,
             "rejected": list(INDEX["rejected"]), "error": INDEX["error"], "running": INDEX["running"],
             "done": INDEX["done"], "total": INDEX["total"], "built": INDEX["built"], "phase": INDEX.get("phase", "")}
 

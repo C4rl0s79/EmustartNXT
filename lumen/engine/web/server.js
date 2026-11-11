@@ -554,7 +554,12 @@ document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("cli
 /* ── konfiguracja: foldery (emustart/srvconfig.py) ── */
 let cfgFields = [];
 function cfgMsg(text, ok) { toast(text, ok); }
-const stHtml = (s) => `<span class="st ${s.ok ? "ok" : "bad"}">${esc(s.text)}</span>`;
+const stHtml = (s) => `<span class="st ${s.ok ? "ok" : "bad"}">${esc(s.text)}</span>` + missingHtml(s.missing);
+// archiwum GOG: gry z biblioteki GOG Managera, których nie ma w _depots (srvconfig.gog_status → missing)
+const missingHtml = (list) => !list?.length ? "" :
+  `<details class="missing"><summary>Bez archiwum (${list.length}) — gry z biblioteki GOG Managera, których nie ma w _depots</summary>` +
+  `<div class="muted">uruchom „Aktualizuj wszystko” w GOG Managerze</div>` +
+  `<ul>${list.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>`;
 let cfgPoll = 0;
 async function refreshConfig() {
   const r = await admin("config").catch(() => null);
