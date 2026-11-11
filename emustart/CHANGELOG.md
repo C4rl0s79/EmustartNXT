@@ -44,6 +44,29 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.5] — 2026-11-11
+
+Zakres: serwer (`userart.py`, `remote.py`); ta sama zmiana w kopii silnika Lumena (`lumen/engine/`, Lumen 1.0.57 —
+używana tylko w trybie serwera). Wysyłanie nazw z Lumena, klient Windows i APK bez zmian.
+
+### Poprawione
+- **„Domyślne grafiki grup”: nazwy kolekcji znikały mimo połączonego Lumena.** W 0.63.4 zestaw nazw z Lumena
+  zastępował nazwy całego konta, więc drugie urządzenie tego konta bez tych kolekcji (inny komputer, TV) przy każdej
+  synchronizacji (co 10 minut) kasowało nazwy wysłane przez pierwsze. Teraz serwer trzyma nazwy osobno dla każdego
+  urządzenia: pusty zestaw z jednego urządzenia nie rusza nazw z innych, a usunięta kolekcja znika po synchronizacji
+  urządzenia, które ją miało. Nie liczą się urządzenia odwołane, przeniesione do innego konta ani nieaktywne od
+  90 dni (ich wpisy są usuwane przy synchronizacji konta). Ta sama kolekcja pod różnymi nazwami — najnowsza
+  pierwsza. Zestaw całego konta z 0.63.4 zostaje zapasowo (kolekcje bez nazwy z żadnego urządzenia), dopóki
+  urządzenie konta nie przyśle własnych nazw. Uszkodzony wpis w pliku nie blokuje synchronizacji ani panelu.
+  Na serwerze 0.63.4 nazwy wysłane z tego komputera pojawiały się w panelu i znikały przed kolejnym sprawdzeniem,
+  a Lumen tego komputera wylicza dla swojego konta Steam poprawny zestaw — stąd wniosek, że kasowało je inne
+  urządzenie konta (nie sprawdzone wprost: serwer nie zapisywał, które urządzenie wysłało nazwy).
+
+**Czego NIE dotyka.** Wysyłanie nazw z Lumena (jak w 1.0.56), grafiki i ich wybór, wygląd panelu.
+
+**Sprawdzone:** 685 testów EmuStart (nowy test dwóch urządzeń jednego konta nie przechodzi na 0.63.4 — objaw jak
+w zgłoszeniu), silnik Lumena; code review przed scaleniem. **Niesprawdzone:** prawdziwy serwer z dwoma Lumenami.
+
 ## [0.63.4] — 2026-11-11
 
 Zakres: serwer (panel) i Lumen 1.0.56 (wysyła nazwy kolekcji); te same pliki serwera w kopii silnika `lumen/engine/`.

@@ -234,22 +234,60 @@ def _clean_names(names) -> dict:
     return out
 
 
+NAMES_MAX_AGE = 90 * 86400          # nazwy z urządzenia, które tyle się nie synchronizowało, nie są pokazywane
+SHARED_KEY_DEVICE = "serwer"        # wspólny klucz serwera (EmuStart na komputerze z serwerem) — remote._sync_identity
+
+
+def _at(e) -> float:
+    try:
+        return float(e.get("at") or 0) if isinstance(e, dict) else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _device_of_account(dev: str, account: str) -> bool:
+    """Urządzenie nadal należy do tego konta (nie odwołane, nie zastąpione, nie przeniesione)."""
+    if dev == SHARED_KEY_DEVICE:
+        return True
+    from emustart import devices
+    return devices.account_raw(dev).lower() == str(account).lower()
+
+
 def group_names() -> dict:
-    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}. Każde konto ma
-    swoje (ostatni zestaw z jego Lumena); ta sama kolekcja pod różnymi nazwami w kontach — nazwy po „ / ”."""
+    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}. Każde urządzenie
+    ma swój zestaw (ostatni z jego Lumena); urządzenie odwołane, przeniesione do innego konta albo nieaktywne od
+    90 dni się nie liczy. Ta sama kolekcja pod różnymi nazwami — nazwy po „ / ”, najnowsza pierwsza. Zestaw całego
+    konta z 0.63.4 tylko dla kolekcji, których nazwy nie przysłało żadne urządzenie."""
+    seen: list = []                                      # (at, kolekcja, nazwa)
+    legacy: dict = {}
+    old = time.time() - NAMES_MAX_AGE
+    for account, a in (_load().get("accounts") or {}).items():
+        if not isinstance(a, dict):
+            continue
+        if isinstance(a.get("group_names"), dict):
+            legacy.update(a["group_names"])
+        for dev, e in (a.get("group_names_by_device") or {}).items():
+            at = _at(e)
+            if at < old or not isinstance(e.get("names"), dict) or not _device_of_account(dev, account):
+                continue
+            seen += [(at, k, v) for k, v in e["names"].items() if isinstance(v, str)]
     out: dict = {}
-    for _name, a in sorted((_load().get("accounts") or {}).items()):
-        for k, v in (a.get("group_names") or {}).items():
-            out.setdefault(k, [])
-            if v not in out[k]:
-                out[k].append(v)
-    return {k: " / ".join(v) for k, v in out.items()}
+    for _at_, k, v in sorted(seen, key=lambda x: -x[0]):
+        out.setdefault(k, [])
+        if v not in out[k]:
+            out[k].append(v)
+    names = {k: " / ".join(v) for k, v in out.items()}
+    for k, v in legacy.items():
+        if isinstance(k, str) and isinstance(v, str) and k not in names:
+            names[k] = v
+    return names
 
 
-def sync(account: str, items: list, names=None) -> dict:
+def sync(account: str, items: list, names=None, device: str = "") -> dict:
     """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
-    `names` — wszystkie kolekcje widoczne w bibliotece Lumena tego konta; zastępują poprzedni zestaw konta (usunięta
-    kolekcja znika z panelu). Brak pola (starszy Lumen, biblioteka jeszcze niewczytana) — nazwy bez zmian."""
+    `names` — wszystkie kolekcje widoczne w bibliotece Lumena na tym urządzeniu; zastępują poprzedni zestaw tego
+    urządzenia (usunięta kolekcja znika z panelu), nie ruszają nazw z innych urządzeń konta (inny PC bez tych kolekcji
+    nie kasuje ich nazw). Brak pola (starszy Lumen, biblioteka jeszcze niewczytana) — nazwy bez zmian."""
     if not isinstance(items, list) or len(items) > MAX_ITEMS:
         raise ArtError("zła lista wyborów")
     names = _clean_names(names) if isinstance(names, dict) else None
@@ -257,9 +295,24 @@ def sync(account: str, items: list, names=None) -> dict:
         d = _load()
         a = _acc(d, account)
         changed = False
-        if names is not None and a.get("group_names") != names:
-            a["group_names"] = names
-            changed = True
+        if names is not None:
+            by_dev = a.get("group_names_by_device")
+            if not isinstance(by_dev, dict):
+                by_dev = a["group_names_by_device"] = {}
+            # wpisy urządzeń odwołanych / przeniesionych do innego konta — plik nie rośnie przy każdym parowaniu
+            for dev in [k for k in by_dev if not _device_of_account(k, account)]:
+                del by_dev[dev]
+                changed = True
+            dev = str(device or "")
+            cur = by_dev.get(dev)
+            now = time.time()
+            # znacznik czasu odświeżany najwyżej raz na dobę: synchronizacja co 10 minut nie zapisuje pliku bez zmian
+            if not isinstance(cur, dict) or cur.get("names") != names or now - _at(cur) > 86400:
+                by_dev[dev] = {"names": names, "at": now}
+                changed = True
+            # zestaw całego konta z 0.63.4 — dopiero gdy urządzenie konta przysłało własne nazwy
+            if a.pop("group_names", None) is not None:
+                changed = True
         for it in items:
             try:
                 key = str(it["key"])

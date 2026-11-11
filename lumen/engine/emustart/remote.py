@@ -1059,7 +1059,7 @@ def userart_call(handler, method: str, parts: list) -> None:
     body = handler.rfile.read(n) if method == "POST" and n else b""
 
     def run():
-        acc, _dev = _sync_identity(handler)
+        acc, dev = _sync_identity(handler)
         if method == "GET" and parts == ["defaults"]:
             return userart.defaults()
         if method == "GET" and parts == ["titles"]:
@@ -1070,7 +1070,7 @@ def userart_call(handler, method: str, parts: list) -> None:
             return userart.upload(acc, q.get("game", ""), q.get("kind", ""), body)
         d = json.loads(body or b"{}") if method == "POST" else {}
         if method == "POST" and parts == ["choices"]:
-            return userart.sync(acc, d.get("items"), d.get("names"))
+            return userart.sync(acc, d.get("items"), d.get("names"), dev)   # nazwy kolekcji — osobno dla urządzenia
         if method == "POST" and parts == ["remove"]:
             return userart.remove(acc, str(d.get("game") or ""), str(d.get("kind") or ""), str(d.get("sha") or ""))
         raise ValueError("nieznany adres")
