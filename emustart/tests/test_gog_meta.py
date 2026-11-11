@@ -79,12 +79,12 @@ def test_panel_lists_library_games_without_archive(arc):
     _library_folder(base, "goodies_pack", 3003, "Goodies Pack", [])          # same dodatki
     _library_folder(base, "tylko_mac", 3004, "Tylko Mac", [{"os": "mac"}])
     ga.refresh(str(root), wait=True)
-    assert ga.status()["not_archived"] == ["alfa Nowa", "Nowa Gra"]
+    assert ga.not_archived() == ["alfa Nowa", "Nowa Gra"]
     from emustart import srvconfig
     st = srvconfig.gog_status()
     assert st["ok"] and st["missing"] == ["alfa Nowa", "Nowa Gra"]
     ga.refresh("", wait=True)                                    # archiwum wyłączone — nic do pokazania
-    assert ga.status()["not_archived"] == []
+    assert ga.not_archived() == []
 
 
 def test_html_to_text():

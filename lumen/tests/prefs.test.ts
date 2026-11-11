@@ -209,14 +209,17 @@ describe('wybory grafik między urządzeniami', () => {
     expect(pendingFiles(p)).toEqual([['tv', 'navgrp:grp:pc', 'logo', 'C:/moje/logo.png']])
     expect(applyServer(p, { 'tv|navgrp:grp:pc|logo': { choice: { type: 'none' }, at: 9e9 } }).changed).toEqual([])
   })
-  it('nazwy kolekcji dla panelu serwera: kategorie Lumena i kolekcje Steam, jak w bibliotece', async () => {
+  it('nazwy kolekcji dla panelu serwera: tylko grupy „Kolekcje” widoczne w bibliotece, z ich etykietą', async () => {
     const { groupNames } = await import('../src/main/art/artSync')
-    const cat = (id: string, name: string, kind: 'smart' | 'custom' | 'steam' | 'emustart') => ({ id, name, kind, pinned: false, order: 0 })
-    const p = base({
-      categories: [cat('cat:952f63a5', 'Yakuza', 'custom'), cat('steamcol:uc-9iS1UmZnatNQ', ' Resident Evil ', 'steam'),
-        cat('emusys:ps2', 'PS2', 'emustart'), cat('smart:recent', 'Ostatnio', 'smart'), cat('cat:pusta', '  ', 'custom')]
-    })
-    expect(groupNames(p)).toEqual({ 'navgrp:col/cat:952f63a5': 'Yakuza', 'navgrp:col/steamcol:uc-9iS1UmZnatNQ': 'Resident Evil' })
+    const nav = [
+      { id: 'pc', label: 'PC', games: [], subs: [{ id: 'pc/steam', label: 'Steam', games: [] }] },
+      { id: 'col', label: 'Kolekcje', games: [], subs: [
+        { id: 'col/cat:952f63a5', label: 'Yakuza', games: [] },
+        { id: 'col/steamcol:uc-9iS1UmZnatNQ', label: ' Resident Evil ', games: [] },
+        { id: 'col/cat:pusta', label: '  ', games: [] }] }
+    ] as unknown as import('../src/shared/libraryNav').NavGroup[]
+    expect(groupNames(nav)).toEqual({ 'navgrp:col/cat:952f63a5': 'Yakuza', 'navgrp:col/steamcol:uc-9iS1UmZnatNQ': 'Resident Evil' })
+    expect(groupNames([])).toEqual({})
   })
   it('zmiana i usunięcie wyboru dostają znacznik czasu; stare wybory jako najstarsze', async () => {
     const { localItems } = await import('../src/main/art/artSync')

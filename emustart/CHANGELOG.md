@@ -44,39 +44,32 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
-### Plan: gry bez archiwum w panelu serwera (zgłoszone 2026-11-11, wygląd zatwierdzony)
+## [0.63.4] — 2026-11-11
 
-Gry, które GOG Manager ma w bibliotece (folder `<katalog GOG>/<slug>/` z metadanymi), ale nie ma ich w archiwum
-depotów, nie były nigdzie widoczne — ani na liście gier, ani w pominiętych. Pod stanem pola „archiwum GOG” w panelu
-serwera dochodzi zwijana lista:
+Zakres: serwer (panel) i Lumen 1.0.56 (wysyła nazwy kolekcji); te same pliki serwera w kopii silnika `lumen/engine/`.
+Klient Windows i APK bez zmian (nie mają panelu serwera ani grafik grup).
 
-    Bez archiwum (57) — gry z biblioteki GOG Managera, których nie ma w _depots
-      uruchom „Aktualizuj wszystko” w GOG Managerze
-      Alan Wake
-      Wing Commander™ III: Heart of the Tiger: 30th Anniversary Edition
-      …
+### Dodane
+- **Panel serwera → archiwum GOG: lista „Bez archiwum (N)”** — gry z biblioteki GOG Managera (folder
+  `<katalog GOG>/<slug>/` z metadanymi, instalator Windows na GOG), które nie mają żadnego rekordu w
+  `_depots/products`. Dotąd nie były widoczne nigdzie — ani na liście gier, ani w pominiętych. Zwijana lista pod
+  stanem pola, z podpowiedzią „uruchom „Aktualizuj wszystko” w GOG Managerze” (od GOG Managera 1.6.1 archiwizuje
+  też takie gry). Bez pozycji z samymi dodatkami; gry z niekompletnym archiwum zostają w „pominiętych”.
 
-Na liście: gra z folderem metadanych, z instalatorem Windows na GOG i bez żadnego rekordu w `_depots/products`
-(gry z niekompletnym archiwum są jak dotąd w „pominiętych”). Bez pozycji z samymi dodatkami (goodies).
-Zmiany: `gogmeta.py` (czy gra ma instalator Windows), `gogarchive.py` (gry z rekordem — z indeksu), `srvconfig.py`
-(lista w stanie pola), `web/server.js` (zwijana lista); te same pliki w kopii silnika Lumena.
+### Poprawione
+- **„Domyślne grafiki grup”: nazwy kolekcji zamiast identyfikatorów.** Zamiast `col/steamcol:uc-…` /
+  `col/cat:<uuid>` panel pokazuje „Kolekcje: <nazwa>”, tak jak w bibliotece Lumena. Lumen przy synchronizacji
+  grafik (`POST /v1/userart/choices`, nowe opcjonalne pole `names`) dosyła nazwy kolekcji widocznych w swojej
+  bibliotece (kategorie Lumena i kolekcje Steam z grami); serwer trzyma je osobno dla każdego konta, nowy zestaw
+  zastępuje poprzedni (usunięta kolekcja znika z listy), ta sama kolekcja pod różnymi nazwami w kontach — nazwy po
+  „ / ”. Na liście są też kolekcje bez wgranej grafiki. Kolekcja, której nazwy żaden Lumen jeszcze nie przysłał,
+  ma dopisek „(nazwa nieznana — połącz Lumena z serwerem)”. Starszy Lumen i starszy serwer działają jak dotąd.
 
-Czego NIE dotyka: lista gier w klientach, API `/v1/gog`, indeks i pamięć podręczna, liczba udostępnianych gier.
+**Czego NIE dotyka.** Lista gier w klientach, API `/v1/gog`, indeks GOG, same grafiki i ich wybór, nazwy gier.
 
-### Plan: nazwy grup w „Domyślne grafiki grup” (zgłoszone 2026-11-11)
-
-Lista grup w panelu serwera pokazuje dla kolekcji same identyfikatory (`col/steamcol:uc-…`, `col/cat:<uuid>`), bo
-serwer zna tylko id z wgranych grafik — nazwy są w Lumenie. Zmiana: Lumen przy synchronizacji grafik
-(`POST /v1/userart/choices`) dosyła nazwy swoich kolekcji (kolekcje Steam, kategorie Lumena, kolekcje platform —
-`prefs.categories`), tak jak wyświetla je w bibliotece; serwer je zapamiętuje (`userart.json` → `group_names`),
-a panel pokazuje „Kolekcje: <nazwa>”. Na liście są też kolekcje bez wgranej jeszcze grafiki. Grupa, której nazwy
-żaden Lumen jeszcze nie przysłał, ma dopisek „(nazwa nieznana — połącz Lumena z serwerem)”.
-
-Moduły: serwer (`userart.py`, `remote.py`, `srvadmin.py`), Lumen (`src/main/art/artSync.ts`, `src/main/index.ts`,
-silnik: `artsync.py`, `api.py`). Starszy Lumen bez nazw i starszy serwer bez obsługi nazw działają jak dotąd
-(pole `names` jest opcjonalne i pomijane). Klient Windows i APK nie mają grafik grup — bez zmian.
-
-Czego NIE dotyka: same grafiki, ich wybór i synchronizacja, nazwy gier, biblioteka w Lumenie.
+**Sprawdzone:** 684 testy EmuStart (2 nowe), 737 testów silnika Lumena, 354 testy Lumena (1 nowy) i typecheck;
+lista „Bez archiwum” na prawdziwym archiwum (45 gier) i zrzut ekranu panelu (Edge headless); code review przed
+scaleniem. **Niesprawdzone:** nazwy kolekcji z prawdziwego Lumena połączonego z serwerem.
 
 ## [0.63.3] — 2026-11-11
 

@@ -46,7 +46,7 @@ def upload(cfg: dict, pid: int, path: str, game: str, kind: str) -> dict:
 def sync(cfg: dict, pid: int, items: list, names: dict | None = None) -> dict:
     """`names` — nazwy kolekcji Lumena ({navgrp:col/<id>: nazwa}) dla panelu serwera; starszy serwer je pomija."""
     body = {"items": items}
-    if names:
+    if names is not None:                 # także pusty zestaw: konto nie ma już kolekcji
         body["names"] = names
     return sc._Client(cfg, pid).json("POST", "/v1/userart/choices", body)
 

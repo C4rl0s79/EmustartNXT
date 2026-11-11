@@ -265,6 +265,12 @@ function applyDeck(): void {
   if (!settings.get().deck.enabled && win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
 }
 
+/** names of the library's collections for the server panel; null until the library is read (keeps the server's names) */
+function currentGroupNames(): Record<string, string> | null {
+  const s = unified.current
+  return s.games.length ? groupNames(buildNav(s.games, prefs.get(), s.collections)) : null
+}
+
 /** library subgroups that can be Deck tabs, from the library as it is now */
 function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
   const s = unified.current
@@ -798,7 +804,7 @@ async function syncArt(): Promise<void> {
       })
     }
     await syncLbTitles()
-    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get()), groupNames(prefs.get())], 60_000)
+    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get()), currentGroupNames()], 60_000)
     if (!r.choices) return
     const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
     if (d?.defaults) {

@@ -595,7 +595,7 @@ def refresh(root: str, deep: bool = False, wait: bool = False) -> None:
                     res = build_index(r, d, publish) if r else {"root": "", "builds": {}, "rejected": [], "error": ""}
                 except Exception as ex:
                     log.exception("GOG: indeks")
-                    res = {"root": r, "builds": {}, "rejected": [], "error": str(ex)}
+                    res = {"root": r, "builds": {}, "rejected": [], "error": str(ex), "record_pids": []}
                 with _lock:
                     if gen != _want["gen"]:
                         continue                      # w międzyczasie inna ścieżka — ten wynik jest nieaktualny
@@ -615,11 +615,20 @@ def refresh(root: str, deep: bool = False, wait: bool = False) -> None:
 def status() -> dict:
     """Do panelu serwera."""
     games = {pid for pid, _b in INDEX["builds"]}
-    from emustart import gogmeta
-    missing = gogmeta.not_archived(set(INDEX.get("record_pids") or [])) if INDEX["root"] and INDEX["built"] else []
-    return {"root": INDEX["root"], "games": len(games), "builds": len(INDEX["builds"]), "not_archived": missing,
+    return {"root": INDEX["root"], "games": len(games), "builds": len(INDEX["builds"]),
             "rejected": list(INDEX["rejected"]), "error": INDEX["error"], "running": INDEX["running"],
             "done": INDEX["done"], "total": INDEX["total"], "built": INDEX["built"], "phase": INDEX.get("phase", "")}
+
+
+def not_archived() -> list:
+    """Panel: tytuły gier z biblioteki GOG Managera bez żadnego rekordu w archiwum (po zakończonym indeksie)."""
+    with _lock:
+        ready = bool(INDEX["root"] and INDEX["built"] and not INDEX["error"])
+        have = set(INDEX.get("record_pids") or [])
+    if not ready:
+        return []
+    from emustart import gogmeta
+    return gogmeta.not_archived(have)
 
 
 def _public_build(e: dict) -> dict:

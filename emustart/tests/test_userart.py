@@ -112,22 +112,34 @@ def test_panel_shows_lumen_names_of_collection_groups(data, srv):  # noqa: F811
     userart.upload("Ala", "navgrp:col/cat:952f63a5-c48b-4e38", "logo", GIF)
     labels = {g["id"]: g["label"] for g in srvadmin.art_defaults(None, {})["groups"]}
     assert labels["navgrp:col/steamcol:uc-9iS1UmZnatNQ"].endswith("(nazwa nieznana — połącz Lumena z serwerem)")
+    userart.upload("Ala", "navgrp:grp:nowa", "logo", PNG + b"n")          # grupa spoza kolekcji — bez dopisku
     _d, ala = keyhelp.device("Ala", games=True)
+    _d, bob = keyhelp.device("Bob", games=True, name="bob")
     names = {"navgrp:col/steamcol:uc-9iS1UmZnatNQ": "Resident  Evil", "navgrp:col/cat:952f63a5-c48b-4e38": "Yakuza",
-             "navgrp:col/emusys:ps2": "PS2 ulubione",                    # kolekcja jeszcze bez grafiki
-             "navgrp:grp:pc": "podmiana", "gog:1": "nie grupa", "navgrp:col/x": "\x07zła"}
+             "navgrp:col/steamcol:uc-nowa": "Nowa​ " + "x" * 200,          # bez grafiki; długa, ze znakiem niewidocznym
+             "navgrp:grp:pc": "podmiana", "gog:1": "nie grupa", "navgrp:col/x": "\x07"}
     st, _c = _req(srv, "POST", "/v1/userart/choices", ala, body={"items": [], "names": names})
     assert st == 200
     groups = srvadmin.art_defaults(None, {})["groups"]
     labels = {g["id"]: g["label"] for g in groups}
     assert labels["navgrp:col/steamcol:uc-9iS1UmZnatNQ"] == "Kolekcje: Resident Evil"
     assert labels["navgrp:col/cat:952f63a5-c48b-4e38"] == "Kolekcje: Yakuza"
-    assert labels["navgrp:col/emusys:ps2"] == "Kolekcje: PS2 ulubione"
+    assert labels["navgrp:col/steamcol:uc-nowa"] == "Kolekcje: " + ("Nowa " + "x" * 200)[:120]
     assert labels["navgrp:grp:pc"] == "PC"                                # wbudowanych nazw Lumen nie zmienia
+    assert labels["navgrp:grp:nowa"] == "grp:nowa"
     assert "gog:1" not in labels and "navgrp:col/x" not in labels
-    assert [g["label"] for g in groups][11:] == ["Kolekcje: PS2 ulubione", "Kolekcje: Resident Evil", "Kolekcje: Yakuza"]
+    assert [g["label"] for g in groups][11:14] == [labels["navgrp:col/steamcol:uc-nowa"], "Kolekcje: Resident Evil",
+                                                   "Kolekcje: Yakuza"]
+    # drugie konto: ta sama kolekcja pod inną nazwą — obie nazwy
+    _req(srv, "POST", "/v1/userart/choices", bob, body={"items": [], "names": {"navgrp:col/cat:952f63a5-c48b-4e38": "Yakuza 0"}})
+    assert userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza / Yakuza 0"
     st, _c = _req(srv, "POST", "/v1/userart/choices", ala, body={"items": []})   # starszy Lumen — nazwy zostają
-    assert st == 200 and userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza"
+    assert st == 200 and "navgrp:col/steamcol:uc-nowa" in userart.group_names()
+    # pełny zestaw zastępuje poprzedni: usunięta kolekcja znika z panelu
+    _req(srv, "POST", "/v1/userart/choices", ala, body={"items": [], "names": {"navgrp:col/cat:952f63a5-c48b-4e38": "Yakuza"}})
+    assert "navgrp:col/steamcol:uc-nowa" not in {g["id"] for g in srvadmin.art_defaults(None, {})["groups"]}
+    _req(srv, "POST", "/v1/userart/choices", bob, body={"items": [], "names": {}})     # Bob nie ma już kolekcji
+    assert userart.group_names()["navgrp:col/cat:952f63a5-c48b-4e38"] == "Yakuza"
 
 
 def test_panel_preview_served_locally(data):

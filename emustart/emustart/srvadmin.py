@@ -677,7 +677,9 @@ def art_defaults(api, args: dict) -> dict:
     def label(g: str) -> str:
         if g in names:
             return f"Kolekcje: {names[g]}"
-        return f"{g[7:]} (nazwa nieznana — połącz Lumena z serwerem)"
+        if g.startswith("navgrp:col/"):           # nazwy kolekcji przysyła Lumen (userart.sync)
+            return f"{g[7:]} (nazwa nieznana — połącz Lumena z serwerem)"
+        return g[7:]
     rest = sorted(({"id": g, "label": label(g)} for g in extra), key=lambda x: (x["id"] not in names, x["label"].lower()))
     return {"ok": True, "groups": [{"id": g, "label": n} for g, n in ART_GROUPS] + rest,
             "defaults": userart.defaults()["defaults"], "items": items}
