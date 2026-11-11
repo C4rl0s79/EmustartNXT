@@ -301,7 +301,30 @@ function TvMenu({
   themeName: string
 }) {
   const loggedIn = useStore((s) => !!s.snapshot?.emustart?.server)
-  const items: [string, () => void][] = [
+  // with the Deck on Lumen keeps running in the tray (like closing the window): ask whether to hide or really quit
+  const deckOn = useStore((s) => !!s.settings?.deck?.enabled)
+  const [askExit, setAskExit] = useState(false)
+  // back to the menu, on its last item (Wyjdź z Lumen): Anuluj, Wstecz and Start alike
+  const leaveExit = (): void => {
+    setAskExit(false)
+    setIdx(menuItems.length - 1)
+  }
+  const exitItems: [string, () => void][] = [
+    [
+      'Schowaj do zasobnika',
+      () => {
+        void api()
+          .app.hideToTray()
+          .then((hidden) => {
+            if (hidden) onClose()
+            else useStore.getState().toast('Deck nie działa — nie można schować Lumena do zasobnika.', 'error')
+          })
+      }
+    ],
+    ['Zamknij Lumen całkowicie', () => void api().app.quit()],
+    ['Anuluj', () => leaveExit()]
+  ]
+  const menuItems: [string, () => void][] = [
     ['Ustawienia', onSettings],
     [`Motyw: ${themeName}`, onTheme],
     ['Wygląd', onLook],
@@ -367,8 +390,16 @@ function TvMenu({
         useStore.getState().setJobsOpen(true)
       }
     ],
-    ['Wyjdź z Lumen', () => void api().app.quit()]
+    [
+      'Wyjdź z Lumen',
+      () => {
+        if (!deckOn) return void api().app.quit()
+        setAskExit(true)
+        setIdx(0)
+      }
+    ]
   ]
+  const items = askExit ? exitItems : menuItems
   const [idx, setIdx] = useState(0)
   useActions(
     {
@@ -387,11 +418,13 @@ function TvMenu({
         return true
       },
       back: () => {
-        onClose()
+        if (askExit) leaveExit()
+        else onClose()
         return true
       },
       menu: () => {
-        onClose()
+        if (askExit) leaveExit()
+        else onClose()
         return true
       }
     },
@@ -399,14 +432,15 @@ function TvMenu({
       modal: true,
       hints: [
         { action: 'confirm', label: 'Wybierz' },
-        { action: 'back', label: 'Zamknij' }
+        { action: 'back', label: askExit ? 'Wróć' : 'Zamknij' }
       ]
     }
   )
   return (
     <div className="tv-modal">
       <div className="tv-panel">
-        <h2>Menu</h2>
+        <h2>{askExit ? 'Wyjść z Lumena?' : 'Menu'}</h2>
+        {askExit && <p className="tv-note">Deck jest włączony — Lumen może działać dalej w zasobniku.</p>}
         <ul className="tv-menulist">
           {items.map(([label, run], i) => (
             <li key={label} className={i === idx ? 'sel' : ''} onMouseEnter={() => setIdx(i)} onClick={run}>

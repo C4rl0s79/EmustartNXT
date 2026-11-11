@@ -298,6 +298,8 @@ export interface LumenApi {
     /** read-only listing for the in-app path picker ('' = shortcuts and drives) */
     listDir(dir: string, o: FsListOptions): Promise<FsListing>
     quit(): Promise<void>
+    /** with the Deck on: hide the window to the tray (Lumen keeps running); false = nothing to hide to */
+    hideToTray(): Promise<boolean>
     onFocusChange(cb: (focused: boolean) => void): () => void
     /** XInput controller state from the main process (see main/input/xinput.ts) */
     onPadState(cb: (pads: PadState[]) => void): () => void
@@ -345,6 +347,7 @@ export const IPC = {
   appOpenLogs: 'app:openLogs',
   appOpenExternal: 'app:openExternal',
   appQuit: 'app:quit',
+  appHide: 'app:hide',
   deckMenu: 'deck:menu',
   deckGroup: 'deck:group',
   deckScreen: 'deck:screen',
