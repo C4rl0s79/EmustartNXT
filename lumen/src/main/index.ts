@@ -271,6 +271,11 @@ function currentGroupNames(): Record<string, string> | null {
   return s.games.length ? groupNames(buildNav(s.games, prefs.get(), s.collections)) : null
 }
 
+/** the window goes to the tray instead of quitting: the Deck is on and running (closing the window, TV menu → Wyjdź) */
+function hidesToTray(): boolean {
+  return settings.get().deck.enabled && !!deck?.window
+}
+
 /** library subgroups that can be Deck tabs, from the library as it is now */
 function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
   const s = unified.current
@@ -372,7 +377,7 @@ function createWindow(): void {
   // query-session-end comes also for a shutdown the player then cancels)
   win.on('session-end', () => (sessionEnding = true))
   win.on('close', (e) => {
-    if (shutDown || sessionEnding || !settings.get().deck.enabled || !deck?.window) return
+    if (shutDown || sessionEnding || !hidesToTray()) return
     e.preventDefault()
     win?.hide()
     log.info('window', 'hidden (Deck is on)')
@@ -1542,7 +1547,7 @@ function registerIpc(): void {
   handle(IPC.appQuit, () => app.quit())
   // TV menu → Wyjdź z Lumen → Schowaj do zasobnika: like closing the window with the Deck on (it keeps running)
   handle(IPC.appHide, () => {
-    if (!settings.get().deck.enabled || !deck?.window || !win || win.isDestroyed()) return false
+    if (!hidesToTray() || !win || win.isDestroyed()) return false
     win.hide()
     log.info('window', 'hidden to the tray (TV menu)')
     return true

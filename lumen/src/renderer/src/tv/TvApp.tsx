@@ -304,16 +304,25 @@ function TvMenu({
   // with the Deck on Lumen keeps running in the tray (like closing the window): ask whether to hide or really quit
   const deckOn = useStore((s) => !!s.settings?.deck?.enabled)
   const [askExit, setAskExit] = useState(false)
+  // back to the menu, on its last item (Wyjdź z Lumen): Anuluj, Wstecz and Start alike
+  const leaveExit = (): void => {
+    setAskExit(false)
+    setIdx(menuItems.length - 1)
+  }
   const exitItems: [string, () => void][] = [
     [
       'Schowaj do zasobnika',
       () => {
-        onClose()
-        void api().app.hideToTray()
+        void api()
+          .app.hideToTray()
+          .then((hidden) => {
+            if (hidden) onClose()
+            else useStore.getState().toast('Deck nie działa — nie można schować Lumena do zasobnika.', 'error')
+          })
       }
     ],
     ['Zamknij Lumen całkowicie', () => void api().app.quit()],
-    ['Anuluj', () => setAskExit(false)]
+    ['Anuluj', () => leaveExit()]
   ]
   const menuItems: [string, () => void][] = [
     ['Ustawienia', onSettings],
@@ -409,14 +418,13 @@ function TvMenu({
         return true
       },
       back: () => {
-        if (askExit) {
-          setAskExit(false)
-          setIdx(menuItems.length - 1)
-        } else onClose()
+        if (askExit) leaveExit()
+        else onClose()
         return true
       },
       menu: () => {
-        onClose()
+        if (askExit) leaveExit()
+        else onClose()
         return true
       }
     },
