@@ -44,6 +44,31 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.3] — 2026-11-11
+
+Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
+Windows, instalator gier GOG w Lumenie, APK i emulatory bez zmian — klienci biorą z `gogarchive.py` tylko stałe
+i sprawdzanie ścieżek, indeks buduje wyłącznie tryb serwera.
+
+### Poprawione
+- **Indeks GOG po restarcie serwera nie zaczyna od zera:** pamięć podręczna indeksu
+  (`<dane serwera>/gog/index-cache.json`, 0.63.1) zapisywała się dopiero na końcu pełnego indeksu, więc restart
+  programu albo komputera przed końcem pierwszego (długiego) indeksu nie zostawiał nic i każdy start znowu
+  indeksował całe archiwum, udostępniając przez długi czas 0 gier. Teraz zapis idzie na bieżąco: po etapie
+  sprawdzania chunków (co 25 buildów albo co minutę). Do pamięci trafia nadal tylko build, który przeszedł oba
+  etapy. Zapis w trakcie dokłada wpisy do poprzedniej pamięci — przerwany indeks, także „dokładny” (`deep`), nie
+  usuwa wpisów, do których jeszcze nie doszedł; wynik całego indeksu zastępuje pamięć dopiero na końcu.
+
+**Ograniczenie.** Restart w pierwszym etapie (rekordy) pierwszego indeksu nadal zaczyna od zera — w tym etapie
+żaden build nie jest jeszcze sprawdzony do końca.
+
+**Czego NIE dotyka.** Lista gier, panel, format `index-cache.json`, API `/v1/gog`, klienci.
+
+**Sprawdzone:** 682 testy EmuStart (2 nowe, oba nie przechodzą na kodzie sprzed zmiany: restart w połowie indeksu
+zostawia sprawdzone buildy w pamięci, a następny start sprawdza tylko resztę; przerwany indeks `deep` nie zmniejsza
+pamięci), testy GOG w `lumen/engine`; code review przed scaleniem. **Niesprawdzone:** restart prawdziwego serwera
+w trakcie indeksu.
+
 ## [0.63.2] — 2026-11-10
 
 Zakres: klient Windows (`uipad.py`, `web/app.js`, `web/options.js`) i interfejs APK (ten sam `app.js`; pad z

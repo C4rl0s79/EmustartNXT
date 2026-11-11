@@ -288,6 +288,65 @@ def test_cached_build_serves_only_its_chunks(arc):
     assert f.name in ga.INDEX["builds"][(PID, BUILD)]["chunks"]
 
 
+class _Crash(BaseException):
+    """Serwer zamknięty w trakcie indeksu (przechodzi przez `except Exception`)."""
+
+
+def _second_build(root, second="778") -> str:
+    """Drugi build tej samej gry (kopia rekordu i meta)."""
+    d = root / "products" / PID
+    rec = json.loads((d / f"{BUILD}.json").read_text(encoding="utf-8"))
+    (d / f"{second}.json").write_text(json.dumps({**rec, "build_id": second}), encoding="utf-8")
+    (d / f"{second}.meta.json").write_bytes((d / f"{BUILD}.meta.json").read_bytes())
+    return second
+
+
+def _crash_on_second_chunk_check(monkeypatch):
+    monkeypatch.setattr(ga, "CACHE_SAVE_EVERY", 1)
+    real = ga.chunk_problem
+    seen = []
+
+    def crash_on_second(*a, **k):
+        seen.append(1)
+        if len(seen) == 2:
+            raise _Crash()
+        return real(*a, **k)
+    monkeypatch.setattr(ga, "chunk_problem", crash_on_second)
+    return real
+
+
+def _saved_keys() -> list:
+    return sorted(json.loads(ga._cache_path().read_text(encoding="utf-8"))["builds"])
+
+
+def test_interrupted_deep_index_keeps_the_cache(arc, monkeypatch):
+    root, _ = arc
+    second = _second_build(root)
+    _index(root)
+    full = _saved_keys()
+    assert full == [f"{PID}/{BUILD}", f"{PID}/{second}"]
+    _crash_on_second_chunk_check(monkeypatch)
+    with pytest.raises(_Crash):
+        ga.refresh(str(root), deep=True, wait=True)              # restart w trakcie „Sprawdź dokładnie”
+    assert _saved_keys() == full                                 # pamięć nie skurczyła się do sprawdzonych
+
+
+def test_cache_survives_restart_in_the_middle_of_the_index(arc, monkeypatch):
+    root, _ = arc
+    second = _second_build(root)
+    real = _crash_on_second_chunk_check(monkeypatch)
+    with pytest.raises(_Crash):
+        _index(root)                                             # restart przed końcem pierwszego indeksu
+    saved = json.loads(ga._cache_path().read_text(encoding="utf-8"))["builds"]
+    assert sorted(saved) == [f"{PID}/{BUILD}"]                   # to, co sprawdzone, jest w pamięci
+    monkeypatch.setattr(ga, "chunk_problem", real)
+    ga.INDEX.update(running=False)
+    recs = _count(monkeypatch, "index_record")
+    st = _index(root)                                            # następny start
+    assert recs == [(PID, second)]                               # sprawdzana tylko reszta
+    assert st["builds"] == 2 and not st["rejected"]
+
+
 def test_changed_record_is_indexed_again(arc, monkeypatch):
     root, _ = arc
     _index(root)

@@ -369,6 +369,8 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
 # a manifest buildu — hashem zawartości z dysku. `deep` nie korzysta z pamięci podręcznej.
 
 CACHE_VERSION = 1
+CACHE_SAVE_EVERY = 25          # buildów sprawdzonych od ostatniego zapisu pamięci podręcznej (w trakcie indeksu)
+CACHE_SAVE_SECONDS = 60.0      # albo tyle sekund — co nastąpi pierwsze
 
 
 def _cache_path() -> Path:
@@ -416,6 +418,31 @@ def _save_cache(root: str, builds: dict) -> None:
         os.replace(tmp, p)
     except OSError as ex:
         log.warning("GOG: nie zapisałem pamięci podręcznej indeksu: %s", ex)
+
+
+class _CacheWriter:
+    """Zapis pamięci podręcznej także w trakcie indeksu: restart serwera przed końcem długiego indeksu nie traci
+    buildów już sprawdzonych (oba etapy) — następny start bierze je z pamięci i sprawdza tylko resztę.
+    Zapis w trakcie dokłada nowe wpisy do poprzedniej pamięci, więc przerwany indeks (także `deep`) nie usuwa wpisów,
+    do których jeszcze nie doszedł; stary wpis zmienionego buildu ma inny stempel i nie zostanie użyty. Dopiero zapis
+    końcowy zastępuje pamięć wynikiem tego indeksu. Restart w etapie rekordów pierwszego indeksu nadal zaczyna od zera
+    (nic nie jest jeszcze sprawdzone)."""
+
+    def __init__(self, root: str, old: dict):
+        self.root, self.old = root, old
+        self.unsaved, self.saved_at = 0, time.monotonic()
+
+    def added(self) -> None:
+        self.unsaved += 1
+
+    def maybe(self, new: dict) -> None:
+        if self.unsaved and (self.unsaved >= CACHE_SAVE_EVERY
+                             or time.monotonic() - self.saved_at >= CACHE_SAVE_SECONDS):
+            _save_cache(self.root, {**self.old, **new})
+            self.unsaved, self.saved_at = 0, time.monotonic()
+
+    def final(self, new: dict) -> None:
+        _save_cache(self.root, new)
 
 
 def _cacheable(e: dict) -> dict:
@@ -481,7 +508,9 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     from emustart import gogmeta
     gogmeta.load(str(Path(root).parent))          # opisy i grafiki z folderów gier GOG Managera
     INDEX.update(total=len(recs), done=0, phase="records")
-    cache = {} if deep else _load_cache(root)
+    old_cache = _load_cache(root)
+    cache = {} if deep else old_cache
+    writer = _CacheWriter(root, old_cache)
     new_cache: dict = {}
     quick = []
     reused = 0
@@ -519,7 +548,9 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
             res["builds"][(e["product_id"], e["build_id"])] = e
             if stamp is not None:
                 new_cache[key] = {"stamp": stamp, "entry": _cacheable(e)}
-    _save_cache(root, new_cache)
+                writer.added()
+        writer.maybe(new_cache)
+    writer.final(new_cache)
     log.info("GOG: indeks %s — buildów: %d (z pamięci podręcznej: %d), pominiętych: %d",
              root, len(res["builds"]), reused, len(res["rejected"]))
     return res
