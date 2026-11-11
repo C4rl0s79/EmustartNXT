@@ -219,14 +219,47 @@ def _valid_choice(c) -> dict | None:
     raise ArtError("zły wybór")
 
 
-def sync(account: str, items: list) -> dict:
-    """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta."""
+GROUP_ID = re.compile(r"^navgrp:col/[A-Za-z0-9:_.-]{1,180}$")
+MAX_GROUP_NAMES = 2000
+
+
+def _clean_names(names) -> dict:
+    """{grupa: nazwa} kolekcji z Lumena (jak w jego bibliotece) — poprawne id; nazwa bez znaków niewidocznych
+    i sterujących, skrócona do 120 znaków (nie odrzucana: Lumen pokazuje ją w całości)."""
+    out = {}
+    for k, v in list(names.items())[:MAX_GROUP_NAMES]:
+        name = " ".join("".join(ch for ch in str(v or "") if ch.isprintable() or ch.isspace()).split())[:120].strip()
+        if isinstance(k, str) and GROUP_ID.match(k) and name:
+            out[k] = name
+    return out
+
+
+def group_names() -> dict:
+    """Nazwy kolekcji Lumena dla panelu serwera (Domyślne grafiki grup): {navgrp:col/<id>: nazwa}. Każde konto ma
+    swoje (ostatni zestaw z jego Lumena); ta sama kolekcja pod różnymi nazwami w kontach — nazwy po „ / ”."""
+    out: dict = {}
+    for _name, a in sorted((_load().get("accounts") or {}).items()):
+        for k, v in (a.get("group_names") or {}).items():
+            out.setdefault(k, [])
+            if v not in out[k]:
+                out[k].append(v)
+    return {k: " / ".join(v) for k, v in out.items()}
+
+
+def sync(account: str, items: list, names=None) -> dict:
+    """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
+    `names` — wszystkie kolekcje widoczne w bibliotece Lumena tego konta; zastępują poprzedni zestaw konta (usunięta
+    kolekcja znika z panelu). Brak pola (starszy Lumen, biblioteka jeszcze niewczytana) — nazwy bez zmian."""
     if not isinstance(items, list) or len(items) > MAX_ITEMS:
         raise ArtError("zła lista wyborów")
+    names = _clean_names(names) if isinstance(names, dict) else None
     with _lock:
         d = _load()
         a = _acc(d, account)
         changed = False
+        if names is not None and a.get("group_names") != names:
+            a["group_names"] = names
+            changed = True
         for it in items:
             try:
                 key = str(it["key"])

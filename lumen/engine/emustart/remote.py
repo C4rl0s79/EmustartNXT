@@ -1070,7 +1070,7 @@ def userart_call(handler, method: str, parts: list) -> None:
             return userart.upload(acc, q.get("game", ""), q.get("kind", ""), body)
         d = json.loads(body or b"{}") if method == "POST" else {}
         if method == "POST" and parts == ["choices"]:
-            return userart.sync(acc, d.get("items"))
+            return userart.sync(acc, d.get("items"), d.get("names"))
         if method == "POST" and parts == ["remove"]:
             return userart.remove(acc, str(d.get("game") or ""), str(d.get("kind") or ""), str(d.get("sha") or ""))
         raise ValueError("nieznany adres")

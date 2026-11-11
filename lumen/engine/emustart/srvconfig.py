@@ -140,7 +140,8 @@ def gog_status() -> dict:
     if st["rejected"]:
         why = "; ".join(f"{r.get('title') or r.get('product_id')}: {r.get('reason')}" for r in st["rejected"][:3])
         text += f" · pominięte: {len(st['rejected'])} — {why}" + (" …" if len(st["rejected"]) > 3 else "")
-    return {"ok": True, "text": text}
+    # gry z biblioteki GOG Managera bez żadnego rekordu w archiwum — panel pokazuje je jako zwijaną listę
+    return {"ok": True, "text": text, "missing": gogarchive.not_archived()}
 
 
 def _mapped(value: str) -> bool:

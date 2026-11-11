@@ -1,4 +1,5 @@
 import type { ArtChoice, ArtKind, ArtLayout, Prefs } from '@shared/types'
+import type { NavGroup } from '@shared/libraryNav'
 
 // Art choices and the player's own images across devices (engine/emustart/artsync.py, server: userart.py).
 // Key: <layout>|<game>|<kind>. Newest choice wins; a removed choice travels as null. Local files are uploaded
@@ -71,6 +72,17 @@ export function parseDefaults(raw: Record<string, { sha?: string; ext?: string }
     if (!/^[0-9a-f]{64}$/.test(String(v?.sha)) || !/^(png|jpg|webp|gif)$/.test(String(v?.ext))) continue
     out[gameId] = { ...out[gameId], [kind]: { type: 'user', sha: v.sha!, ext: v.ext! } }
   }
+  return out
+}
+
+/**
+ * names of the collection groups the library shows now (buildNav → 'Kolekcje': Lumen categories and Steam
+ * collections with games, id `col/<category id>`), keyed like group art (navgrp:…) — the server panel shows them
+ * instead of bare ids. The whole set replaces this account's names on the server, so a removed collection goes away.
+ */
+export function groupNames(nav: NavGroup[]): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const s of nav.find((g) => g.id === 'col')?.subs ?? []) if (s.label.trim()) out[`navgrp:${s.id}`] = s.label.trim()
   return out
 }
 

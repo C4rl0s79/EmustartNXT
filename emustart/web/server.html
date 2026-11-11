@@ -48,6 +48,9 @@
   .field input { flex: 1; min-width: 0; }
   input { font: inherit; color: var(--text); background: #0f131c; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
   .st { font-size: 12px; } .st.ok { color: var(--ok); } .st.bad { color: var(--warn); }
+  details.missing { font-size: 12px; margin-top: 6px; }
+  details.missing summary { cursor: pointer; color: var(--warn); }
+  details.missing ul { max-height: 260px; overflow: auto; margin: 4px 0 0; padding-left: 18px; }
   select, textarea { font: inherit; color: var(--text); background: #0f131c; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
   .gres { display: grid; gap: 2px; margin-top: 8px; max-height: 260px; overflow: auto; }
   .gres button { text-align: left; background: none; border: 0; border-radius: 6px; padding: 5px 8px; }

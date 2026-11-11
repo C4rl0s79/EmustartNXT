@@ -118,7 +118,10 @@ def _entry(folder: Path) -> tuple | None:
             if f.is_file():
                 art[kind] = f.name
                 break
-    return pid, {"dir": str(folder), "slug": slug, "title": str(prod.get("title") or ""),
+    dl = prod.get("downloads") if isinstance(prod.get("downloads"), dict) else {}
+    installer = any(isinstance(r, dict) and str(r.get("os") or "").lower() == "windows"
+                    for r in dl.get("installers") or [])
+    return pid, {"dir": str(folder), "slug": slug, "title": str(prod.get("title") or ""), "installer": installer,
                  "description": html_to_text(desc.get("full") or desc.get("lead") or ""),
                  "lead": html_to_text(desc.get("lead") or "", 1500),
                  "release": str(gal.get("releaseDate") or prod.get("release_date") or "")[:10],
@@ -142,6 +145,15 @@ def load(root: str) -> int:
         META.update(root=root, games=games)
     log.info("GOG: metadane %s — gier: %d", root, len(games))
     return len(games)
+
+
+def not_archived(have: set) -> list:
+    """Tytuły gier z biblioteki GOG Managera (folder z metadanymi, instalator Windows na GOG), których nie ma
+    w archiwum depotów (`have` — identyfikatory gier z rekordem). Bez pozycji z samymi dodatkami."""
+    with _lock:
+        games = list(META["games"].items())
+    return sorted((e["title"] or e["slug"] for pid, e in games if e.get("installer") and pid not in have),
+                  key=str.lower)
 
 
 def clear() -> None:

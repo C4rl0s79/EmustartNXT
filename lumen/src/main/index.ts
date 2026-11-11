@@ -35,7 +35,7 @@ import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { SteamFamily } from './steam/family'
-import { applyServer, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
+import { applyServer, groupNames, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -263,6 +263,12 @@ function applyDeck(): void {
   deck?.sync()
   scheduleDeckSync()
   if (!settings.get().deck.enabled && win && !win.isDestroyed() && !win.isVisible()) restoreWindow()
+}
+
+/** names of the library's collections for the server panel; null until the library is read (keeps the server's names) */
+function currentGroupNames(): Record<string, string> | null {
+  const s = unified.current
+  return s.games.length ? groupNames(buildNav(s.games, prefs.get(), s.collections)) : null
 }
 
 /** library subgroups that can be Deck tabs, from the library as it is now */
@@ -798,7 +804,7 @@ async function syncArt(): Promise<void> {
       })
     }
     await syncLbTitles()
-    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get())], 60_000)
+    const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get()), currentGroupNames()], 60_000)
     if (!r.choices) return
     const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
     if (d?.defaults) {

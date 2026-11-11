@@ -44,6 +44,33 @@ dokumentacji Lumena, wydanie.
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
 
+## [0.63.4] — 2026-11-11
+
+Zakres: serwer (panel) i Lumen 1.0.56 (wysyła nazwy kolekcji); te same pliki serwera w kopii silnika `lumen/engine/`.
+Klient Windows i APK bez zmian (nie mają panelu serwera ani grafik grup).
+
+### Dodane
+- **Panel serwera → archiwum GOG: lista „Bez archiwum (N)”** — gry z biblioteki GOG Managera (folder
+  `<katalog GOG>/<slug>/` z metadanymi, instalator Windows na GOG), które nie mają żadnego rekordu w
+  `_depots/products`. Dotąd nie były widoczne nigdzie — ani na liście gier, ani w pominiętych. Zwijana lista pod
+  stanem pola, z podpowiedzią „uruchom „Aktualizuj wszystko” w GOG Managerze” (od GOG Managera 1.6.1 archiwizuje
+  też takie gry). Bez pozycji z samymi dodatkami; gry z niekompletnym archiwum zostają w „pominiętych”.
+
+### Poprawione
+- **„Domyślne grafiki grup”: nazwy kolekcji zamiast identyfikatorów.** Zamiast `col/steamcol:uc-…` /
+  `col/cat:<uuid>` panel pokazuje „Kolekcje: <nazwa>”, tak jak w bibliotece Lumena. Lumen przy synchronizacji
+  grafik (`POST /v1/userart/choices`, nowe opcjonalne pole `names`) dosyła nazwy kolekcji widocznych w swojej
+  bibliotece (kategorie Lumena i kolekcje Steam z grami); serwer trzyma je osobno dla każdego konta, nowy zestaw
+  zastępuje poprzedni (usunięta kolekcja znika z listy), ta sama kolekcja pod różnymi nazwami w kontach — nazwy po
+  „ / ”. Na liście są też kolekcje bez wgranej grafiki. Kolekcja, której nazwy żaden Lumen jeszcze nie przysłał,
+  ma dopisek „(nazwa nieznana — połącz Lumena z serwerem)”. Starszy Lumen i starszy serwer działają jak dotąd.
+
+**Czego NIE dotyka.** Lista gier w klientach, API `/v1/gog`, indeks GOG, same grafiki i ich wybór, nazwy gier.
+
+**Sprawdzone:** 684 testy EmuStart (2 nowe), 737 testów silnika Lumena, 354 testy Lumena (1 nowy) i typecheck;
+lista „Bez archiwum” na prawdziwym archiwum (45 gier) i zrzut ekranu panelu (Edge headless); code review przed
+scaleniem. **Niesprawdzone:** nazwy kolekcji z prawdziwego Lumena połączonego z serwerem.
+
 ## [0.63.3] — 2026-11-11
 
 Zakres: serwer (indeks archiwum GOG; ta sama zmiana w kopii silnika `lumen/engine/emustart/gogarchive.py`). Klient
