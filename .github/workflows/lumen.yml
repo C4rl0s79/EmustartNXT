@@ -52,7 +52,7 @@ jobs:
         run: |
           npm ci
           python -m pip install --upgrade pip
-          python -m pip install -r engine/requirements.txt
+          python -m pip install -r engine/requirements.txt pillow   # pillow: testy grafik (jak windows.yml)
 
       - name: Typecheck
         run: npm run typecheck
@@ -90,7 +90,7 @@ jobs:
         run: |
           npm ci
           python -m pip install --upgrade pip
-          python -m pip install -r engine/requirements.txt pyinstaller
+          python -m pip install -r engine/requirements.txt pyinstaller pillow
 
       - name: Wersja
         id: ver
