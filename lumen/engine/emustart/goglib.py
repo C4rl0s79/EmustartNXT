@@ -16,7 +16,7 @@ import time
 from collections import deque
 from pathlib import Path
 
-from emustart import config, gogfinal, goginstall as gi
+from emustart import config, gogadmin, gogfinal, goginstall as gi
 from emustart.gogarchive import BUILD_ID, PRODUCT_ID, UnsafePath, safe_rel
 
 log = logging.getLogger("emustart.goglib")
@@ -527,6 +527,8 @@ class GogService:
         self._last.pop(pid, None)
         msg = "Usunięto grę." if r["dir_removed"] else \
             f"Usunięto pliki gry. Zostało {r['left']} plików (zapisy / pliki gracza) w {r['dir']}."
+        if r.get("admin_left"):
+            msg += f" Nie usunięto {r['admin_left']} wpisów rejestru (brak zgody administratora)."
         return {"ok": True, "message": msg, **r}
 
     def finish_admin(self, pid: str, elevate=None) -> dict:
@@ -536,10 +538,16 @@ class GogService:
         if not e or e.get("state") != gi.ST_NEEDS_ADMIN:
             return {"ok": False, "reason": "Ta gra nie czeka na krok administratora."}
         acts = (e.get("finalize") or {}).get("admin") or []
-        ok = gogfinal.run_admin_registry(acts, gi.gog_dir() / "admin" / pid, elevate)
-        if not ok:
+        done = gogadmin.capture(acts)        # stan rejestru sprzed zapisu — deinstalator go przywraca
+        res = gogadmin.run(gogadmin.set_steps(done), gi.gog_dir() / "admin" / pid, elevate)
+        if not all(res):
+            # część kroków mogła się wykonać — zapamiętane do cofnięcia; reszta czeka na ponowienie
+            e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + [d for d, ok in zip(done, res) if ok]
+            e["finalize"]["admin"] = [a for a, ok in zip(acts, res) if not ok]
+            gi.save_entry(e)
             return {"ok": False, "reason": "Kroku administratora nie wykonano (odmowa w oknie UAC albo błąd)."}
-        e["finalize"]["admin_done"] = acts
+        # dopisane, nie zastąpione — po kroku dla DLC zostają też kroki gry podstawowej (do cofnięcia)
+        e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + done
         e["finalize"]["admin"] = []
         e["state"] = gi.ST_INSTALLED
         e["error"] = ""

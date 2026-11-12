@@ -33,7 +33,7 @@ import zlib
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
-from emustart import gogfinal, paths
+from emustart import gogadmin, gogfinal, paths
 from emustart.gogarchive import (BUILD_ID, HEX32, PRODUCT_ID, UnsafePath, depot_langs, norm_lang, safe_join,
                                  safe_rel)
 
@@ -965,9 +965,10 @@ def repair(source, pid: str, cancel=None, on_progress=None, on_phase=None) -> di
     return _run(source, e, plan, bundle, done, cancel, on_progress, phase, mode="repair")
 
 
-def uninstall(pid: str, remove_hkcu=None) -> dict:
+def uninstall(pid: str, remove_hkcu=None, elevate=None) -> dict:
     """Usuwa tylko pliki zarządzane przez EmuStart (z manifestu i utworzone przy finalizacji), puste katalogi
-    z manifestu i pusty katalog gry. Zapisy (savePath), pliki dodane przez grę lub gracza i wszystko poza
+    z manifestu i pusty katalog gry; cofa kroki administratora (HKLM — jedno okno UAC; odmowa nie wstrzymuje
+    usuwania plików, wynik w `admin_left`). Zapisy (savePath), pliki dodane przez grę lub gracza i wszystko poza
     katalogiem gry zostają. Archiwum na serwerze nie jest dotykane."""
     e = load_entry(pid)
     if not e:
@@ -978,11 +979,13 @@ def uninstall(pid: str, remove_hkcu=None) -> dict:
         e["error"] = f"Nie usunięto {len(kept_errors)} plików (np. {kept_errors[0]}) — zamknij grę i spróbuj ponownie."
         save_entry(e)
         raise GogError(e["error"])
+    admin_left = _undo_admin(e, elevate)
     _forget(e, remove_hkcu)
-    return {"removed": removed, "left": left, "dir": str(root), "dir_removed": not root.exists()}
+    return {"removed": removed, "left": left, "dir": str(root), "dir_removed": not root.exists(),
+            "admin_left": admin_left}
 
 
-def discard(pid: str, remove_hkcu=None) -> None:
+def discard(pid: str, remove_hkcu=None, elevate=None) -> None:
     """Porzucenie przerwanej instalacji (przed instalacją z innym wyborem): jej pliki jak przy odinstalowaniu."""
     e = load_entry(pid)
     if not e:
@@ -991,7 +994,20 @@ def discard(pid: str, remove_hkcu=None) -> None:
     if errors:
         raise GogError(f"Nie usunięto plików przerwanej instalacji ({len(errors)}, np. {errors[0]}) — "
                        "zamknij programy, które ich używają, i spróbuj ponownie.")
+    _undo_admin(e, elevate)
     _forget(e, remove_hkcu)
+
+
+def _undo_admin(e: dict, elevate=None) -> int:
+    """Kroki administratora tej gry (HKLM: wartości sprzed instalacji wracają, dodane znikają) — jedno okno UAC.
+    Zwraca liczbę kroków, których nie cofnięto (odmowa w oknie UAC, błąd)."""
+    steps = gogadmin.undo_steps((e.get("finalize") or {}).get("admin_done") or [])
+    if not steps:
+        return 0
+    left = gogadmin.run(steps, gog_dir() / "admin" / str(e["product_id"]), elevate).count(False)
+    if left:
+        log.warning("GOG %s: nie cofnięto %d kroków administratora (rejestr HKLM)", e["product_id"], left)
+    return left
 
 
 def _forget(e: dict, remove_hkcu=None) -> None:
@@ -1002,6 +1018,7 @@ def _forget(e: dict, remove_hkcu=None) -> None:
     except FileNotFoundError:
         pass
     shutil.rmtree(gog_dir() / "manifests" / str(e["product_id"]), ignore_errors=True)
+    shutil.rmtree(gog_dir() / "admin" / str(e["product_id"]), ignore_errors=True)
 
 
 def _remove_managed(e: dict) -> tuple:

@@ -47,7 +47,8 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | Etap | Zakres | Stan |
 |---|---|---|
 | 0 | Pliki „support” z `app\`, finalizacja z Dokumentami na innym dysku, migracja starych instalacji (PR #25) | zrobione (testy); czeka na sprawdzenie na żywo |
-| 1 | Wspólny krok administratora (jeden UAC, plik wsadowy, zapis wykonanych kroków); deinstalator HKLM (oba widoki, `.reg`), `finish_admin` z DLC | następny |
+| 1 | Wspólny krok administratora: `gogadmin` — ten sam program silnika z `--gog-admin=<plik>` w jednym oknie UAC (zamiast regedit/`.reg`), tylko znane kroki pod `HKLM\Software`; stan rejestru sprzed instalacji zapamiętany; odinstalowanie/porzucenie cofa kroki (przywraca albo usuwa, oba widoki); `admin_done` dopisywane (DLC) | zrobione (testy: 11 nowych, `main.py`/`engine_main.py --gog-admin` uruchomione bez UAC); czeka na sprawdzenie na żywo z UAC |
+| 1a | Następny krok: etap 2 — wartości `GOG.com\Games\<id>` dopisywane do kroków administratora każdej gry | następny |
 | 2 | Rejestr `GOG.com\Games\<id>` zawsze (punkt 9) | — |
 | 3 | `installSDB` + odinstalowanie | — |
 | 4 | `Execute`/`execute` (UAC i bez), zapora + odinstalowanie, `gameux` pominięty | — |

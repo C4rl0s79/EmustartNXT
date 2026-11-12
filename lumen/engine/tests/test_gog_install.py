@@ -13,8 +13,9 @@ from pathlib import Path
 import keyhelp
 import pytest
 
-from emustart import gogarchive as ga, gogfinal, goginstall as gi, goglib, paths
+from emustart import gogadmin, gogarchive as ga, gogfinal, goginstall as gi, goglib, paths
 from goghelp import BIG, BUILD, DLC_FILES, DLC_META, GAME_EXE, PID, SCRIPT, build_archive
+from gogadminhelp import fake_reg, steps_file  # noqa: F401  (fixture)
 from test_three_devices import srv  # noqa: F401  (fixture)
 
 
@@ -71,6 +72,7 @@ def env(tmp_path, monkeypatch):
     regs = []
     monkeypatch.setattr(gogfinal, "set_hkcu", regs.append)        # nigdy prawdziwy rejestr w testach
     monkeypatch.setattr(gogfinal, "remove_hkcu", lambda acts: 0)
+    monkeypatch.setattr(gogfinal, "_shell_runas", lambda *a, **k: False)   # nigdy prawdziwe okno UAC (fake_reg: zgoda)
     monkeypatch.setattr(gogfinal, "user_documents", lambda: tmp_path / "Dokumenty")
     yield {"root": root, "games": tmp_path / "GOG Games", "regs": regs, "tmp": tmp_path}
     ga.INDEX.update(root="", builds={}, rejected=[], error="", running=False)
@@ -174,7 +176,7 @@ def test_hklm_needs_admin_and_is_not_installed(env):
     assert not svc.launch(PID)["ok"]
     assert not svc.finish_admin(PID, elevate=lambda *a, **k: False)["ok"]       # odmowa UAC
     assert gi.load_entry(PID)["state"] == gi.ST_NEEDS_ADMIN
-    assert "[HKEY_LOCAL_MACHINE\\Software\\Test]" in gogfinal.reg_file(e["finalize"]["admin"])
+    assert gogadmin.set_steps(gogadmin.capture(e["finalize"]["admin"]))[0]["subkey"] == "Software\\Test"
 
 
 def test_finalization_error_leaves_install_unfinished(env):
@@ -423,21 +425,18 @@ def test_uninstall_removes_whole_folder_when_nothing_of_the_player_is_left(env):
 
 # ── poprawki z przeglądu kodu ──
 
-def test_hklm_is_written_to_both_registry_views():
-    acts = [{"root": "HKLM", "subkey": "Software\\GOG.com\\Games\\1001", "name": "path", "type": "string", "data": "C:\\G"}]
-    reg64 = gogfinal.reg_file(acts, wow64=True)
-    assert "[HKEY_LOCAL_MACHINE\\Software\\GOG.com\\Games\\1001]" in reg64
-    assert "[HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\GOG.com\\Games\\1001]" in reg64    # gry 32-bitowe
-    reg32 = gogfinal.reg_file(acts, wow64=False)
-    assert "WOW6432Node" not in reg32
+def test_hklm_is_written_to_both_registry_views(fake_reg):
+    """gry GOG to zwykle programy 32-bitowe — na 64-bitowym Windows wartość w obu widokach"""
+    a = {"root": "HKLM", "subkey": "Software\\GOG.com\\Games\\1001", "name": "path", "type": "string", "data": "C:\\G"}
+    gogadmin.main(str(steps_file(fake_reg["dir"], gogadmin.set_steps(gogadmin.capture([a])))))
+    assert fake_reg["reg"].data[("64", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
+    assert fake_reg["reg"].data[("32", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
 
 
-def test_expandstring_and_dword_in_reg_file():
-    acts = [{"root": "HKLM", "subkey": "Software\\T", "name": "p", "type": "expandstring", "data": "%A%"},
-            {"root": "HKLM", "subkey": "Software\\T", "name": "n", "type": "dword", "data": "0001"}]
-    reg = gogfinal.reg_file(acts, wow64=False)
-    assert '"p"=hex(2):25,00,41,00,25,00,00,00' in reg            # REG_EXPAND_SZ, nie REG_SZ
-    assert '"n"=dword:00000001' in reg
+def test_expandstring_dword_and_binary_values():
+    assert gogadmin.act_value({"type": "expandstring", "data": "%A%"}) == {"t": gogadmin.REG_EXPAND_SZ, "v": "%A%"}
+    assert gogadmin.act_value({"type": "dword", "data": "0001"}) == {"t": gogadmin.REG_DWORD, "v": 1}
+    assert gogadmin.act_value({"type": "binary", "data": "AAEC"}) == {"t": gogadmin.REG_BINARY, "v": {"hex": "000102"}}
 
 
 @pytest.mark.parametrize("typ,data,ok", [("dword", "0001", "1"), ("dword", "0x10", "16"), ("dword", "abc", None),
