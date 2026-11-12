@@ -149,10 +149,14 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     const r = await call<{ ok: boolean; tasks?: GogPlayTask[] }>('gog_play_tasks', [pidOf(gameId)])
     return r.ok ? (r.tasks ?? []) : []
   })
-  handle(IPC.gogUninstall, async (gameId: string) => {
-    const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_uninstall', [pidOf(gameId)], 10 * 60_000)
+  handle(IPC.gogUninstall, async (gameId: string, removeOutside?: boolean) => {
+    const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_uninstall', [pidOf(gameId), removeOutside === true], 10 * 60_000)
     void gog.refresh(false)
     return result(r, 'Usunięto grę.')
+  })
+  handle(IPC.gogUninstallPreview, async (gameId: string) => {
+    const r = await call<{ ok: boolean; outside?: string[]; saves?: string[] }>('gog_uninstall_preview', [pidOf(gameId)])
+    return { outside: r.ok ? (r.outside ?? []) : [], saves: r.ok ? (r.saves ?? []) : [] }
   })
   handle(IPC.gogFinishAdmin, async (gameId: string) => {
     // the engine shows Windows' UAC prompt — no timeout shorter than a person needs to read it

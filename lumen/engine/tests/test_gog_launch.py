@@ -72,5 +72,8 @@ def test_bat_game_task_runs_through_cmd(tmp_path, monkeypatch):
     seen = {}
     monkeypatch.setattr(gogfinal.subprocess, "Popen", lambda cmd, **k: seen.setdefault("cmd", cmd))
     monkeypatch.setattr(gogfinal.os, "name", "nt")
+    # CI (GitHub Actions) działa jako administrator — wtedy start szedłby przez token powłoki (unelevated.popen)
+    from emustart import gogadmin
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)
     gogfinal.start(s)
     assert seen["cmd"] == f'cmd.exe /c ""{app / "run_GMDX.bat"}" -x"'

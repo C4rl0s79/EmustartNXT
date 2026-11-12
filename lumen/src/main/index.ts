@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -9,7 +9,9 @@ import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
+import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
+import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
 import { listDir } from './fsBrowse'
 import { Limiter } from './net'
 import { detectFlavor, Updater } from './updater'
@@ -68,6 +70,12 @@ protocol.registerSchemesAsPrivileged([
   // logos through mask-image) are fetched in CORS mode, unlike <img>
   { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }
 ])
+
+/** ta kopia Lumena — nowa kopia przekazuje ją działającej (okno wyboru przy innej wersji / innym folderze) */
+const thisInstance: LumenInstance = { version: app.getVersion(), exe: process.execPath, pid: process.pid }
+// Działa już Lumen (ta sama albo inna kopia): prośba do niego, zanim ta kopia ruszy folder danych (instances.ts).
+// Osobny profil (LUMEN_USER_DATA — testy, rozwój) nie oddaje startu zwykłemu Lumenowi.
+if (!process.env.LUMEN_USER_DATA && handOffToRunning(thisInstance) === 'exit') process.exit(0)
 
 // Data folder: LumenData next to the exe in packaged builds (installer and portable) — settings,
 // caches, EmuStart data with the game cache, emulators and BIOS files, temp files (dataDir.ts).
@@ -192,7 +200,11 @@ const loginItem = (): { path: string; args: string[]; name: string } => ({
   args: app.isPackaged ? [DECK_ARG] : [app.getAppPath(), DECK_ARG],
   name: LOGIN_NAME
 })
+/** Lumen jako administrator (paczka): autostart przez Harmonogram zadań — wpis Run nie uruchomi programu
+ *  wymagającego uprawnień administratora (Windows go pomija); z kodu źródłowego — wpis Run jak dotąd. */
+const autostartByTask = (): boolean => app.isPackaged && isElevated()
 function getAutostart(): boolean {
+  if (autostartByTask()) return autostartTaskExists()
   try {
     return app.getLoginItemSettings(loginItem()).openAtLogin
   } catch {
@@ -201,6 +213,20 @@ function getAutostart(): boolean {
 }
 /** writes the login item; false when Windows refused it (a locked registry, a security program) */
 function setAutostart(on: boolean): boolean {
+  if (autostartByTask()) {
+    const it = loginItem()
+    const ok = setAutostartTask(on, it.path, it.args)
+    if (ok) {
+      try {
+        app.setLoginItemSettings({ openAtLogin: false, ...it }) // stary wpis Run (sprzed trybu administratora)
+      } catch {
+        /* brak wpisu — nic do usunięcia */
+      }
+      log.info('deck', `start with Windows: ${on ? `on (Harmonogram zadań, ${AUTOSTART_DELAY_S} s po zalogowaniu)` : 'off'}`)
+    }
+    deck?.refreshMenu()
+    return ok
+  }
   try {
     app.setLoginItemSettings({ openAtLogin: on, ...loginItem() })
     log.info('deck', `start with Windows: ${on ? 'on' : 'off'}`)
@@ -214,6 +240,17 @@ function setAutostart(on: boolean): boolean {
 }
 /** Lumen's folder moved (the zip version): the login item still names the old Lumen.exe — written again here */
 function refreshAutostartPath(): void {
+  if (autostartByTask()) {
+    // przejście na Harmonogram (wpis Run z wcześniejszej wersji) albo przeniesiony folder — zadanie wskazuje ten Lumen.exe
+    let runOn = false
+    try {
+      runOn = app.getLoginItemSettings(loginItem()).openAtLogin
+    } catch {
+      runOn = false
+    }
+    if (runOn || (autostartTaskExists() && !autostartTaskExists(process.execPath))) setAutostart(true)
+    return
+  }
   try {
     const items = (app.getLoginItemSettings(loginItem()) as { launchItems?: { name: string; path: string; enabled: boolean }[] }).launchItems ?? []
     const mine = items.find((i) => i.name === LOGIN_NAME)
@@ -1542,7 +1579,7 @@ function registerIpc(): void {
   })
   handle(IPC.appOpenExternal, async (url: string) => {
     if (!/^https:\/\//.test(url)) throw new Error('Dozwolone są tylko adresy https.')
-    await shell.openExternal(url)
+    await openUnelevated(url) // przeglądarka bez uprawnień administratora, także gdy Lumen je ma
   })
   handle(IPC.appQuit, () => app.quit())
   // TV menu → Wyjdź z Lumen → Schowaj do zasobnika: like closing the window with the Deck on (it keeps running)
@@ -1672,6 +1709,31 @@ async function emustartDefaults(): Promise<void> {
 
 // ---------------- lifecycle ----------------
 
+/** wybrana w oknie „dwie kopie” — uruchamiana po zamknięciu tej (silnik i dane zwolnione) */
+let conflictOpen = false
+let unregisterRunning: () => void = () => undefined
+/** Prośba nowej kopii (instances.ts): ta sama kopia — tylko okno na wierzch; inna — okno wyboru. „Przełącz”: ta
+ *  kopia się zamyka (nowa czeka i startuje sama — stąd nic nie jest uruchamiane). */
+async function onOtherInstance(other: LumenInstance): Promise<Answer> {
+  restoreWindow()
+  if (!isOtherCopy(thisInstance, other) || conflictOpen || shutDown) return 'stay'
+  conflictOpen = true
+  try {
+    const m = conflictMessage(thisInstance, other)
+    log.info('app', `druga kopia: Lumen ${other.version} (${other.exe})`)
+    const opts = { type: 'question' as const, title: 'Lumen', message: m.message, detail: m.detail, buttons: m.buttons, defaultId: 0, cancelId: 0, noLink: true }
+    const { response } = await (win && !win.isDestroyed() ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts))
+    if (response !== 1) {
+      log.info('app', 'druga kopia: zostaje działająca')
+      return 'stay'
+    }
+    log.info('app', `druga kopia: zamykam się — startuje ${other.exe}`)
+    setTimeout(() => app.quit(), 100) // odpowiedź zapisana, zanim ta kopia zacznie się zamykać
+    return 'switch'
+  } finally {
+    conflictOpen = false
+  }
+}
 app.on('second-instance', () => restoreWindow())
 
 let started = false // set once the app is ready: a second instance quitting at once has nothing to stop
@@ -1684,6 +1746,7 @@ app.whenReady().then(async () => {
   family.on('change', () => library.setFamily(family.games(library.current.steam.activeSteamId)))
   platformCatalog = await platformsFile.load()
   started = true
+  if (!process.env.LUMEN_USER_DATA) unregisterRunning = registerRunning(thisInstance, onOtherInstance)
   registerArtProtocol()
   registerIpc()
 
@@ -1824,7 +1887,10 @@ app.on('before-quit', (e) => {
   if (shutDown || !started) return
   e.preventDefault()
   shutDown = true
-  void shutdown().finally(() => app.quit())
+  void shutdown().finally(() => {
+    unregisterRunning()
+    app.quit()
+  })
 })
 
 async function shutdown(): Promise<void> {

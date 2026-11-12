@@ -34,6 +34,8 @@ export function gogFacts(game: Game, server?: string): [string, string | undefin
     ['DLC', g.dlcs?.length ? g.dlcs.map(dlcName).join(', ') : undefined],
     ['Folder', g.installDir],
     ['Biblioteki systemowe', g.runtimes?.length ? g.runtimes.map((r) => `${r.id}${r.done ? ' ✓' : ''}`).join(', ') : undefined],
+    ['Pominięte kroki instalatora', g.skipped?.length ? g.skipped.join('; ') : undefined],
+    ['Nieudane kroki administratora', g.adminFailed ? `${g.adminFailed} (pominięte po 3 próbach — gra może nie działać poprawnie)` : undefined],
     ['Uwaga', g.updateNote],
     ['Błąd', g.state !== 'installed' ? g.error : undefined]
   ]
@@ -67,11 +69,23 @@ export function GogActions({ game }: { game: Game }) {
     useStore.getState().toast(r.ok ? `Pliki zgodne z manifestem (${r.checked}).` : `Niezgodnych plików: ${r.badCount} — „Napraw pliki” pobierze tylko je z serwera.`, r.ok ? 'info' : 'error')
   }
   const uninstall = async (): Promise<void> => {
-    const i = await askChoice(`Usunąć ${game.name} z tego komputera?`, [
-      'Usuń pliki gry (zapisy i pliki dodane przez grę zostają; archiwum na serwerze bez zmian)',
+    // pliki skopiowane przez instalator poza folder gry (Dokumenty, AppData — np. domyślne ustawienia): wybór gracza
+    const outside = (await attempt(api().gog.uninstallPreview(game.id)))?.outside ?? []
+    if (!outside.length) {
+      const i = await askChoice(`Usunąć ${game.name} z tego komputera?`, [
+        'Usuń pliki gry (zapisy i pliki dodane przez grę zostają; archiwum na serwerze bez zmian)',
+        'Anuluj'
+      ])
+      if (i === 0) report(await attempt(api().gog.uninstall(game.id)))
+      return
+    }
+    const names = outside.slice(0, 3).map((p) => p.split(/[\\/]/).slice(-2).join('\\')).join(', ') + (outside.length > 3 ? ', …' : '')
+    const i = await askChoice(`Usunąć ${game.name} z tego komputera? Instalator skopiował też ${outside.length} plik(ów) poza folder gry: ${names}`, [
+      `Usuń grę, zostaw pliki w Dokumentach / AppData (${outside.length})`,
+      `Usuń grę i pliki w Dokumentach / AppData (${outside.length}) — zapisy zostają`,
       'Anuluj'
     ])
-    if (i === 0) report(await attempt(api().gog.uninstall(game.id)))
+    if (i === 0 || i === 1) report(await attempt(api().gog.uninstall(game.id, i === 1)))
   }
 
   return (
@@ -113,7 +127,7 @@ export function GogActions({ game }: { game: Game }) {
           className="btn"
           data-nav
           data-key="gog-runtimes"
-          title="Visual C++ / DirectX z zależności gry — każdy instalator zapyta o zgodę administratora (UAC)"
+          title="Visual C++ / DirectX z zależności gry, których nie ma w Windows — jedno okno UAC (Lumen jako administrator: bez okna)"
           onClick={async () => report(await attempt(api().gog.installRuntimes(game.id)))}
         >
           Biblioteki systemowe

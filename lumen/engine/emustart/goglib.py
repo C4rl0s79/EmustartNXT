@@ -82,6 +82,9 @@ class GogService:
                 "primary": e.get("primary") or "", "dlcs": e.get("dlcs") or [], "error": e.get("error") or "",
                 "admin_steps": len((e.get("finalize") or {}).get("admin") or []),
                 "admin_pending": bool((e.get("finalize") or {}).get("admin")),
+                # kroki instalatora gry, których Lumen nie wykonał (szczegóły gry) i kroki, które ciągle się nie udają
+                "skipped": [str(x) for x in (e.get("finalize") or {}).get("skipped") or []],
+                "admin_failed": len((e.get("finalize") or {}).get("admin_failed") or []),
                 "runtimes": e.get("runtimes") or [], "pending_dlc": (e.get("pending_dlc") or {}).get("dlcs") or [],
                 "installed_at": e.get("installed_at") or 0, "last_played": e.get("last_played") or 0,
                 "launch": (e.get("launch") or {}).get("name") or "", "running": pid in running}

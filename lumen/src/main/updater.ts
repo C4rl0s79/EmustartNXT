@@ -5,6 +5,7 @@ import { createWriteStream, existsSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import yauzl from 'yauzl'
 import type { UpdateFlavor, UpdateInfo, UpdateState } from '@shared/types'
+import { isElevated } from './elevation'
 import { log } from './logger'
 import { verifyRelease } from './releaseSigning'
 import { POWERSHELL, SCHTASKS } from './systemTools'
@@ -261,7 +262,10 @@ function startScript(script: string, cwd: string): Promise<string> {
   const tr = `"${POWERSHELL}" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${script}"`
   const run = (args: string[]): Promise<void> =>
     new Promise((resolve, reject) => execFile(SCHTASKS, args, { windowsHide: true, timeout: 15000 }, (e) => (e ? reject(e) : resolve())))
-  return run(['/Create', '/F', '/TN', UPDATE_TASK, '/SC', 'ONCE', '/ST', '00:00', '/IT', '/TR', tr])
+  // Lumen jako administrator: skrypt też z uprawnieniami — inaczej nie widzi ścieżki silnika (Get-Process) i nie
+  // czeka na jego zamknięcie, a ponowny start Lumena (requireAdministrator) pokazałby okno UAC
+  const rl = isElevated() ? ['/RL', 'HIGHEST'] : []
+  return run(['/Create', '/F', '/TN', UPDATE_TASK, '/SC', 'ONCE', '/ST', '00:00', '/IT', ...rl, '/TR', tr])
     .then(() => run(['/Run', '/TN', UPDATE_TASK]))
     .then(() => 'zadanie Harmonogramu')
     .catch((e) => {

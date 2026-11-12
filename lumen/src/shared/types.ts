@@ -140,6 +140,10 @@ export interface GogGameInfo {
   adminSteps?: number
   /** system libraries (Visual C++, DirectX) shipped as dependencies, and whether they were run */
   runtimes?: { id: string; done: boolean }[]
+  /** kroki instalatora gry, których Lumen nie wykonał (np. Eksplorator gier Windows, ścieżka deinstalatora Inno) */
+  skipped?: string[]
+  /** kroki administratora pominięte po 3 nieudanych próbach (np. biblioteka, wpis zgodności) */
+  adminFailed?: number
   pendingDlc?: string[]
   /** the server has a different build than the installed one (updating is not supported yet) */
   updateNote?: string
