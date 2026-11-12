@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:70a1e49601e2e8a819a1024f1f51a1ceb4f9c9b70831bf5e75a17e084212b281",
+  "claims": [
+    {
+      "id": "claim_ccdd4d347bef4bc5945079ca3a0a1e48",
+      "statement": "Klient EmuStart trzyma config.json, data\\library.sqlite, data\\media, logs i cache obok programu, a gry rozpakowane na sesję w %TEMP%\\emustart\\run.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/paths.py#L15-L39",
+          "version": "repo-lines-v1:sha256:25067ac6ce060e756b1c14bbaa117fe0f110166c5ed07699d63970c82d2a5a18:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNmU3MzA5NGZmYWQwNjVhMzM5YjQ4MjI0YmRkNzBiZDRlOGQxMGRiNWE1YjBhZjkyYjM4ZWM4ZDg5Mjc5Y2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyMzJmODAzYjdlYTRkN2NjMjhlNTIxYTM2OTRmMGNhOWRkNTJhODVmMDVmOGNhNmQ2M2YxZTA2MGIxMWU0NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJiMGEwNDM1YTdhNGQ3NTRmNmNmZGIyN2EwYzA2NDQ0YjY1MmI2NmE2Njk1YWY5MWQ3YjkzZTZjNDUwZjE2MDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzYWYwMTAyNzEwY2E1ZDAyOWZiYjk0MDA0NDViZTMwODJkMzBjNTBiZjU1ZjA0Yjc2OGUwMGMyYWZjODgxMzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf805387799d47b08a8f046fdadfdaf3",
+      "statement": "Uszkodzony config.json jest przenoszony do config.json.broken, a program startuje z wartościami domyślnymi.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/config.py#L42-L60",
+          "version": "repo-lines-v1:sha256:f7f2a788b6cba99902e5362a4ed3b45a9ec32f9998497810ed702b16176a06cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkMGQyNzIzNDJhNzI3MjRlOGJiMDYyZmVhM2Y1N2QwYjY5Y2QzNThhYzliMjdmMTM1OTdjZTA2YjFjMmZhZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5MDgyM2Q0YzY0ZTU4MjZjMjZhZmI5YmY4YTRhYmM2ZDdjNWMxMzI3NzczODcxMGU2NzM5M2E4OTM4YTNkM2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4M2I1YjgwYWU5MmZkZDIwYTY3NjZkYzE3MzE4ZDMxMmVlZGEwZjU5MTg1YTI4MjM2OTUzMzg3MGFhYjg3NmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ca35d192c7f5472a818284814f1ca430",
+      "statement": "Domyślny folder emulatorów to Emulatory obok programu, chyba że ustawiono EMUSTART_HOME albo działa układ serwera.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/config.py#L62-L70",
+          "version": "repo-lines-v1:sha256:bb412605c41247d6183381374d13c55c86a91db13ff324ffb51014f33d25cc20:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTVkMmM3N2M2NTYwN2NiMDA1MzM2YmIyYmM3NGI3ZjVmZDdiMmUyYTVkNjU1YTIwNDU3YmRkZDI0MzRhYzE4NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDMwZWI1YzU3YmQ4MGFiODcwYzQzNzdkZDA4YTkyZDg2OTlmZWZlMGNmMWM3OGQzMDMyYzdhMjgxYzVmMWFlNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzFlMmZhNTJiMmE1ZjI1NDJhZDY3NWRkZGQ4YTA5NDhlZDI5MzhhNWFiNDQ3NGYyNjQxODQxZTYyYzkyMDM3YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7c543c0cdbdd41ac929dda565f533187",
+      "statement": "Logi EmuStart rotują się co 2 MB z trzema kopiami; panel serwera loguje do %LOCALAPPDATA%\\EmuStart Server\\logs.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/boot.py#L38-L54",
+          "version": "repo-lines-v1:sha256:84e8f6c4b777c9a09845a8ba1ea9c83bbd6ab949d8b497b365a4a0070098a129:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNzk3MzZiNzY3ZGRjNWY4Zjc0OTY2NGU0NTkyZDg3MTg3MjhhNWI4ZjY0NWFlMmQ3ZWViNzhlODYxN2FjNzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzODg5ZWMxZmIzYmEyM2YzNjY0MTljMjk2NDg3Y2ZjNDgxYzc4MmViNWE5MWRiYjI1MzI3NzFmNzM2ODk4NTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3NmMwNjVhZWMzMjYzMTE5NWNkYjNiMmMwZGY2OGQ5YjNhMjI1N2JhMTg5Y2M5MzQ3MmU4MjVmOTQ1NTE5ZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwM2E1NjFmMWM2YjI1ZDc5ZWE2NTQ0MzdlMzRmYjU4YmQ2ZDA0OWVkZTBiZjliNTk0MDk5NzA1M2IyMjNiMWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7b2ddaba1b24225b6e6cf6d45b15cc7",
+      "statement": "Lumen loguje do logs\\lumen.log w katalogu danych, przenosząc plik większy niż 2 MB do lumen.old.log.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/logger.ts#L11-L11",
+          "version": "repo-lines-v1:sha256:7c3edf7262a93e7bfb87618ca2e24ab72d3daca84674b4c7c62fcb3e3f122418:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2MzZWRmNzI2MmE5M2U3YmZiODc2MThjYTJlMjRhYjcyZDNkYWNhODQ2NzRiNGM3YzYyZmNiM2UzZjEyMjQxOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2MzZWRmNzI2MmE5M2U3YmZiODc2MThjYTJlMjRhYjcyZDNkYWNhODQ2NzRiNGM3YzYyZmNiM2UzZjEyMjQxOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDZmODEwZDRlMDlkZTUwODI2YmM5YzA2OWVlYjhkMWViMjRmMTc5MTE3YzJhY2M5MTNlNjZkY2NlODQwMzMzZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmEwMWFmYWZhNzQ3NzZkMzdlNjhkZjAzOTUyMGMwNDhlZTY5MjNlOGY5NGFlNWFhYjIyMTE0ZmNjZTg2ODc5YiJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/logger.ts#L25-L34",
+          "version": "repo-lines-v1:sha256:4ef049a017de804a1d776bbdfeeaaff4bd75e2ac80c5c08cb6c0d22fb325922d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxNmIwZDc1OGIwOGJjZmFiN2ZmNzE1M2JjOTNmZjA1NzYxNmFjMTVhZDJkNThjZTQ4Y2NjZDAxYmI5ZjFlMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhlMmNlM2ZkYzMyNTAzNjNhYmFlNzQwMGZlMTUzZWM4NTNiMmIwYTVhZTFlMDEyOTc2MTJiMGI3Y2JiNDMyN2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjZWM1ZWMyMTM5ZDUyZjdkMzE2Y2QzYmEzOWM4ZTNiZTViYWM5MGJmNmRiZTIzNjAxMjBmMDQxZDQ3Mjk1OTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b60c4423fe1452c98fa8906cfa795bc",
+      "statement": "Wylogowanie klienta z serwera usuwa z konfiguracji server_url, server_key, server_keyname, server_keykind, server_account i server_fp oraz klucz z magazynu kluczy.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/api.py#L2226-L2237",
+          "version": "repo-lines-v1:sha256:eae733ca0ee416607d0505a06f5ee670df8759ae1e1d884ecefc882d71442865:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4NGQ1ZGQyY2ViNTdhNmU1YTQxMTU5ZTgyMjc5NmE1ZGNhMjU3ODgzMGRiYmY2OTVjMzlhMjM1NzVkNDJiNWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYzI5YmIzZDNmMGQ1ODRiMTk4YjQyOWI2MDdhNTA1OGExMDE4YmMyNGY0Njg2YmY3NWRhNTE5YzcwYWU2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhOGE2ODVhODRkYjFjYTQ1ZjA3YWM1NzQ1NTVmYjAyY2FhM2IxMGViY2ZiYWFiZmZkYTg4ZDgwYmE5ZWQzNGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZTFhMzllZmViOTQ2OTc1YmFiODUwY2E2NzYxYTZkMzAyYTAyZjZlOTNiYzhlYjc3N2FhMzA5ODE2NDgyYzcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

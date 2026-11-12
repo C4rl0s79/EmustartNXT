@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5a03061f8d9aedf19dae8caf1f077657802b4676e430ea0e180354e87151235f",
+  "claims": [
+    {
+      "id": "claim_771bf5e9f0784994a117e3c00bc03e12",
+      "statement": "Logowanie urządzenia przebiega przez POST /v1/enroll/request (kod logowania albo konto i hasło), opcjonalne zatwierdzenie przez /v1/enroll/pending i /v1/enroll/decide, /v1/enroll/poll, a potem podpisane wyzwanie /v1/auth/challenge i /v1/auth/token dające token sesji ważny 1 h.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/enroll.py#L1-L31",
+          "version": "repo-lines-v1:sha256:629ca6c1a19ae27eec18198e590c00d84761c682a5fee3b768338617002ec66f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMGRiYjM2Nzg4ZDllMTViZmVhYjI1MGJmOWQ1MWI2NTI5NjFiY2ViNDI3YTI3YWY2MzBkNTRiMjJjNzNjMzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3NWQ0NTg5ZTkxY2M4Y2I5NzQ4ODlkYWIwMWRlMTVkYjE1NzRjYTEwZWVjNzI5MGExMDliZjU4OGM5NGUwMWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0MzBhMDhmOTllNzNjOTUwNjE0MWUyY2IwZGY2Y2RkOTM2NWVkZGE5ZjQwY2IwZWUwY2IzYTdjZGRhYTFhMjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_10a3588e83fc456a8fb1cf2b36f1bc64",
+      "statement": "Każde urządzenie ma własną parę kluczy EC P-256, a serwer zna tylko klucz publiczny; konta zakłada się tylko z zaproszenia albo w panelu.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/enroll.py#L1-L20",
+          "version": "repo-lines-v1:sha256:7c697ff2126c293dc2456e84ec9dea8f2fa78d3a58a05ebef9cef4cbf9cbd39e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMGRiYjM2Nzg4ZDllMTViZmVhYjI1MGJmOWQ1MWI2NTI5NjFiY2ViNDI3YTI3YWY2MzBkNTRiMjJjNzNjMzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiNmIxZTg1N2JjZjFkOWIyMTEzMzdiMGI2OTk0ZjJmNDlkNWZkNjBjNjRiN2Q1NzFlYmZmNTdjNTFiMmRjOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzMjExOWQ5YWM2ODg0NjRhMzk4NDhkZTk5ODcxMWNhZmRmY2QyMjU5MzQ3MmM3NTdiZTE0NDhiNzZjMGIwZDYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c779eca77c804b378e959e48fd2feb08",
+      "statement": "server.py kieruje POST /v1/enroll/*, /v1/auth/*, /v1/savesync/, /v1/userart/ i /v1/lock/ do modułu remote, a pozostałe POST /v1 kończą się 404.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/server.py#L148-L164",
+          "version": "repo-lines-v1:sha256:26a70d4082b1389605af273741fdc21f04ba52c0afd535d98a5e7fe45aaf9547:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkYmYyYWYzNTY1YWExOWRkMWIxNmVkNDVjMzQzOGJjMjU1ZWQ0OTVlMzliMjMwZDczOGNjZWJjNmYxYjE2NWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmOGQ0MDEzMmUzMTc2YmYxMjQwNTI3ZTFhM2Y5NWEwZWIwOTk0NmQzNmUzZWQ0YzE3NzhhZTNjMDNhZDRjNTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjMzNmM2Q3ZjQ0MjIwNTE5NDYxMGQ1ZmZiZjg3N2VlNDUzOTZkY2RhYTFlOTk1MTljYjY1YTllYjExNjU5NWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg5OTQ0ZGRiYWRkYzM4YWM3MTNmZDQ0YjdlMGVkNmY4ZmZhODBkZDZiZDNiMmM1MWRiOWU0NWYzNDg2NjY3Y2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5ff23f83e3c40d3bb708905f4295687",
+      "statement": "GET /v1 bez autoryzacji zwraca 401; /v1/info podaje wersję, api 1, listę funkcji, adresy serwera oraz port i odcisk TLS.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L275-L291",
+          "version": "repo-lines-v1:sha256:b48e320c4f20ab30153bc4d2e4036ef736522dc35edf5f8d1b198b9599833ff1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2NzM1N2UxMjA5NWQzYWNlMzQwZGI4MzgzMmE3NmIzMjU5NTA3YTY0MmUzZGYyMjE0MDVjYzM2NDBjMzA1NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4NDhhZGNjZWYwOWZiODljMDc1MGJmNTI4NmI1ZDg1N2JjMzIyZGYwNzBmNDZmNzg0MmFlNDJhNTZkNWNhZjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3N2FmZGRiNDAxMzVhMDllMzU2Mjg2NTIyMGIwYWYzMDFhNTkyN2Y3YmIxMGU4Yzg2ZmI3YTY4OTY1MGE2NTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5YTExYzU3OTEzMDQwOWFjYmRiZjcxOWJlYmU1N2NiNWFjYTcwOTM1OTIyMjk3Njk2OWVlM2U4NDI2NmM0NzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9df19294beff43918d2e6471c77d7db6",
+      "statement": "GET /v1/library zwraca systemy albo gry systemu (es, since) i odmawia 403 kontu bez prawa pobierania gier.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L295-L306",
+          "version": "repo-lines-v1:sha256:54f7df89f4af242c933ea29e4f6f0fb575beb8b5ecf0a80f6cccf5a09e77b035:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjOTk0NzA1OTY0YmUzNzE4YTY1OTlhNzQyMTU1NDU3ZmE0MmI1Yzg0ODk5ZGZkNDY5OWMxZDgzOTM2OGUyNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMDdiZTZhNmVlOTk5NjUwNjA1ZGRjYmVlODcwZjAwMDhmZGIwZjEyNjJkNDcxZDVkYTA2ZGNhZDA0ZGUwNDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5YTExYzU3OTEzMDQwOWFjYmRiZjcxOWJlYmU1N2NiNWFjYTcwOTM1OTIyMjk3Njk2OWVlM2U4NDI2NmM0NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzZmE1YzA2NmYyMzk0NDE1MGYyMTAxYjliZGQ3YjA5NGMyMjIyOGM5MjYzYTFhMmNiZDU4YjBhODdiODhkMDYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc937d4de93c43aba7b08178310805cb",
+      "statement": "Paczki zapisów wysyła się przez POST /v1/savesync/upload/init i commit z treścią przez PUT /v1/files/u/<token>, a pobiera przez GET /v1/files/d/<token> z Range; blokadę profilu obsługuje POST /v1/lock/take|renew|release|status.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L1092-L1170",
+          "version": "repo-lines-v1:sha256:5c803ed13b8e67a6304d933a8f96c694226486ce42f2210c95890a3fd889d459:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZTcyOGUxYmNmODhlYjhiZGFmNjg5NDM0ZDQ4NDg5MTIxYTJiMmJmODg1Nzk1MjEyNzc3NjNlYzYyZGNmZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNzk2Y2VkMzY1MDlmNDEyNmE0N2VmNDc2OTBiNDEwODNlYTQ5NjIwYjcyMDhhMDU5ZDc5OTlkYWNkMzFjN2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1Yzk2ODAyZTg0NjM0NmZjOTgzZTdmNTk5ZThlNDY3ZDc2Zjg2NTUzOTQxNzM0MGY2MDkwOTM4YTExOGJhMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwZmRlMWIwYWNmMTBmNDZjZGRmMjlkODMwMDMxMDc3MzY5OWVkZDc0MTM4ZTAwZTNkZTVkOWZhYjUwNjZkYWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0d996644679c4408ac47985641ba84a9",
+      "statement": "Synchronizacja zapisów jest server-authoritative: klucz paczki to konto, platforma, game_id, emulator, rdzeń i rodzaj paczki, konto pochodzi z tokenu, a rozbieżne zmiany rozstrzyga gracz.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/docs/SAVE_SYNC_DESIGN.md#L1-L37",
+          "version": "repo-lines-v1:sha256:22cf8f4ec2e9ef6a1cdc6d74a935a9011ee48dd7f720f0ea25a4ee19175bb2d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjYTE5YmIyZDk2ZGY0Yjc0ZmViZmQ0Zjk5Y2MwYmUxZWZkNTE2OTFmYjliY2U4OGY0ZTI0ZTRiOTY3NzRmYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTJmYjdkMTJiODM1ZjllMWE1N2I2YzZmYjg0YmVhYzA3YzE4OTI2ZWQ5NGZiYzEwMGQzNmFlMGRiMzU0NDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwYTk1ZTcxNjNjMzNmZDU3MzA5NDc0YjNmMWMwN2ExZTEyMzg3MmZhZGI1ODdjOTQ4MmUxMDMwMDg0MWFjNmIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

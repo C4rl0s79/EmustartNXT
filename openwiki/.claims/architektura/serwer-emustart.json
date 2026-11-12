@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:55d51bb0a86292aa63afe9a1f591162bdc31cd7675f30f51be7ee13baa70bd60",
+  "claims": [
+    {
+      "id": "claim_d15654d1b8c749d4bc9d4bf30fe65bce",
+      "statement": "EmuStartServer.exe ma tryby: panel (domyślnie i --panel), --service (serwer bez okna), --install (autostart, zapora, skrót) i --login-link (link logowania do schowka).",
+      "evidence": [
+        {
+          "resource": "repo://emustart/server_main.py#L1-L11",
+          "version": "repo-lines-v1:sha256:91cd785323f0a311e36ee69534deccb66d942e844c443384c83d883cb962e201:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1OTRiMGMxYjU1MmUxZmRhOGQ1YmE4NGRlYzE4NDJmM2I0NDEzYWU0MjVkNTFhMzM3YmMwZTc1YjY4YzU1MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3NWQ0NTg5ZTkxY2M4Y2I5NzQ4ODlkYWIwMWRlMTVkYjE1NzRjYTEwZWVjNzI5MGExMDliZjU4OGM5NGUwMWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0MzBhMDhmOTllNzNjOTUwNjE0MWUyY2IwZGY2Y2RkOTM2NWVkZGE5ZjQwY2IwZWUwY2IzYTdjZGRhYTFhMjIifQ"
+        },
+        {
+          "resource": "repo://emustart/server_main.py#L31-L44",
+          "version": "repo-lines-v1:sha256:0923563d9637b40f0f54279ea1ab6736a073607111692b8484493a76a2ea3cd1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NTg1M2VjNmExYzc1ZjdmYjc1M2I5ODQ0NTc4NDgyMmFjZThjMDZiOGU1MjQ2MWJhZDk4MWI0Njk1NzY0MmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNTRiN2Q0Nzc2YWM1MzhmODgxOTFlNDJkNjdiZGVkM2ZlZDBkMDcxNzE0NjIyNzFiN2UxM2E2NTQ4Y2FkM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhOTEwYjc3ZTE5MzRlN2QyZDM1MzczMWYzOTliZjJlYzM5ZmM1OGNlZGZkNzAwYTAyYWVjNTViMzBiM2YwNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwZTJjYTlhYmQwZjc4NWYzNTYzNWJhZGQ5Y2VkYzg1Y2JmMDY0MmI4OTQ2ZDMxZmQ5ODhkNDNmNDA0NWM2NzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3ad7b357ed5e457e83c04290f6d3b3b4",
+      "statement": "--install ogranicza zapis w folderze programu do SYSTEM i Administratorów, tworzy zadanie Harmonogramu 'EmuStart Server' na koncie SYSTEM z --service bez limitu czasu i z ponowieniami, skrót panelu oraz reguły zapory dla portu i portu + 1.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L1358-L1391",
+          "version": "repo-lines-v1:sha256:b2a399d42901b119bf7ca210123a4379cbcb76b8cb7e8be1db65da0b7805761f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ODMwMGExZmNkZjQ0YTJjMzY3ZWQ4ODU2NTFmNmM5ZjFmOTU2NDljNTYyZGNlOTk1MGVkZjdjMDlkN2ZkZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZGQ3Y2NkMGMxZDM5ZDIyZWQzZjYyY2Y1MGUyZTk2ODBlYmE1OWQyOTdmOTlkNDRmZTQ5YzRmMjZlZGE0YzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjczZGM3ZWFhODcwYTAzZTY1YjA3ZTcwYTBhYThmNWYwYjcxOWY1YjU2OTQ2M2Q2NmNjYjc3NjhjZWQ5ZGZlMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMDk2NmU2YjE5NWUzOGM3MzUxZDA2ODcyY2E4OTI5YjZhYmIzYjcwZTg2YWIzZTk1MzY5ZGMxYjFjN2RmYzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_619bf9fd23634ebdacb095e47622c42c",
+      "statement": "Dane serwera poza grami leżą w podkatalogu server obok programu; tryb --service przenosi tam config.json i data z wersji 0.x.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/paths.py#L42-L80",
+          "version": "repo-lines-v1:sha256:6158605464e0f9c5c7850522f958e50e28791f5b7adb16bdcd46d5184aaf0819:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4MGY3YjkwOGRhNDk0NjA2ZTI1Y2Q0N2U1Yjc3ZjkzOTFhMDVkMTBhOTBiMjA1OGFmNjMxM2MwNGE1NzU1MzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MzI2MjJmNThiYmFmZmQzYzkxN2U1MmJlNWQzMmJlNWQ4OGIxNzUyMTI2MWE3OWNkMmFhZTk3NDE2NjhhZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3Yjg0OTNkMDE2ZTcxMmY4NWRhZGNlYmQzODVkZjVkMzQ5YjM4ZjIwNTBkNjI0NTk1ZWM5M2YxMGI5ZTI4OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2M2Y3ZTU3ZTY4MWM3YzNhZTRhMTJjMmM3NTAxNThiNGM4NjQyNmFiNmU2ZTU1YjE4YTFhMGIwMjY0MmQ5Y2YifQ"
+        },
+        {
+          "resource": "repo://emustart/server_main.py#L76-L83",
+          "version": "repo-lines-v1:sha256:27df5f1da83d9259b02733e461166a9226fa70d3457e0045938183ee96716fae:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWY0NjNmOGI0MTIzNTNjMDcwNmVhNDY1NTZmMDhmMjAyMTM5ZTUzZjg3N2RiOTllNDcwN2NjY2EwMzY5ZjM3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGJmOTJhNDllMTkyYjJmMjFkZjZlZThiZjRkMDcyMjkwMGRjN2I1ODNhNGVmODY3ODFlMmNkNGNlZDE2OTFiOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTMzMzI3OWNmNTY2ZWM5MDkyMjhjZjUzY2U4MDJiZTAzZGNkNDJhMDIyZTZkMDllNzM1NjdmMDg2NzI2MGYyNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDFmNDU1YzY5NWEzYzAxNDkzODY5ZmM4YTM1MWY4YzE5ZjVjZDk0MGJjNTdmNzE2ZWRjYzU0NjNhNjVlM2E2MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7beae0694bc544b8893ad51de596f25d",
+      "statement": "Przy starcie serwer uruchamia w tle indeks archiwum GOG i reguły zapisów (gdy ustawiono gog_depots_dir), dzienne kopie kont, dzienne sprawdzanie emulatorów i dystrybucję programów, a potem nasłuchuje na 0.0.0.0 i otwiera port TLS.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/server_main.py#L86-L137",
+          "version": "repo-lines-v1:sha256:882e7e411dd7b18bf83be85aff2c54813cab3f017360bcff01a923de1acbe08e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ1ZmRhNTI1OWMyYTJjZTBjNGI5Nzg4Y2QyZGNlYmIzOGQyMzAwMjFjNzM0N2YxMzYyZjliZmExOWNlYmRlMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyY2JlMDAwYWVkYmM0YzU5NmNlNjQ1YmJkMDczMzU4ZDdhYjZhODE5MDg4N2YyNjUxNWM2NGI2NjYxMzE1ZTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6a23b362e36440649d5b1506fd962859",
+      "statement": "Port zwykły i szyfrowany przyjmują tylko adresy prywatne, loopback, link-local i Tailscale 100.64.0.0/10; pozostałe dostają 403.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/server.py#L31-L48",
+          "version": "repo-lines-v1:sha256:c0dd146e7f6c72ccf056cafbc6acba9aeae6358b98dcffb7b87c1a5b4333f29f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4YTFlZmY0OTI5Zjg5YmQyYWFhMTgyODViMTIyYWJhOWY1YTVlZWQwYzIzYjE4NDY0Y2Y2MGI1ODRmMGJjMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MGRmYjRlMDQ3NmNlYWM0YzFjYWE0Y2I1OTgwMTRmNTIzYWFlZmRhYjkxOWRlMTIwMjg0N2Q3MDJiMTE2MzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiMThjNjI1NzE5ODA4MDRjMjBmMWE5MGZlMDBlODkyNWM3N2VkMTU2ZWYxYzAxYTAxMDIyY2MyNDBlZmQ0NGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3ef87e57b0274d06bb7629353b0bf7cf",
+      "statement": "API /v1 jest dostępne tylko przez TLS albo z loopbacku bez nagłówka CF-Connecting-IP; interfejs, /api i /admin tylko z loopbacku z właściwym Host.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/server.py#L86-L124",
+          "version": "repo-lines-v1:sha256:9cb3b08dc492918ee6f65e610c0f7701376d3d10b8479dd1e2a8cf98597e3d0a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxNTU3MmZmMWYzODlhNThmYTU2NWQ2ZTE4YzNmYmI0MGI4ODBiYjRiZmNmMDc5MmI2M2JkZjhiZWZlNWU4ZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzNWU2OWYwM2RkYzVjNjFhYjFmOTFlNjI3YWJkNTkyNzk5Y2ZhOThhODdhODMxMTAzYWQyYTA5NGExOWEwY2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkNGE0ODNiNjNmZjNiMWJhYmY0MDhhOTJjNGQ0ZjZhMTYzY2EyYzdlNTQwMzk2ZmI4YmMwNjU1YjExNmQwMjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_948ad545295a407085d1294da375da91",
+      "statement": "Serwer używa własnego certyfikatu EC P-256 przypinanego odciskiem SHA-256; klucz prywatny jest zaszyfrowany hasłem chronionym DPAPI komputera.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/tls.py#L1-L20",
+          "version": "repo-lines-v1:sha256:7b2d32a08929190b1aba0f518354773dbefd15a6ec6352e160bf0bdc2c00738e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhZGY5YjE3ZGY1MmM2NWZmYjA3OTc1YTk2ZmNlOTU0MjgxYzJmNjQzYTZhYTY2ODljNzBmMDZlZDA3ZDhhZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OWYzMjkwZDgxNTYxZjZjNmI4MzU2MDkxNTkwMzQ1ZTg1ZWMyOTM3MzU2NjZhYTQ0MGIwNzlhM2NlYTkyNTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_790537d051dd4ddb8dd9c4e85bd0253b",
+      "statement": "Port publiczny (domyślnie 8742) jest otwierany przez UPnP, odnawiany co 20 minut, dopuszcza tylko /v1/, /media/, /assets/ z tokenem (poza czterema trasami logowania) i blokuje adres po 20 błędach w 10 minut na 30 minut.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/public.py#L1-L37",
+          "version": "repo-lines-v1:sha256:4a0f5d32d2f17790f9b7ca1a04aba4c23b0788adadc7c7e6d08c3c02da356da3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkOTQ5MTk0NGMxMzg5MTdkZmMxZDdkMmJkOTdmOTFhMDdmNGM1OTI4ZTdjMWMzNGRlM2YxYmJlYWQyZGMzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OWM1ZDYwNmNlY2FmNDFkZTJjY2EyMzlhOThkOTUzZWY0OGJiMDI5YWQ0OGQwNjUzMzYyM2UxYzdjMThjMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkMWU3ZWY5YTc3OTczZGI5ZmIwOWZlZWIxOGE5NGExYjg5NzM0OGJkNmQ4YzEyZDM5Yjg2ZmMyNjZiMmRiMzcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

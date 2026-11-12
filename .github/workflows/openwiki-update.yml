@@ -1,0 +1,108 @@
+# Aktualizacja dokumentacji OpenWiki (openwiki/) — na podstawie oficjalnego szablonu
+# https://github.com/langchain-ai/openwiki/blob/main/examples/openwiki-update.yml
+# Różnice względem szablonu: push na main + ręczne uruchomienie (bez harmonogramu), Node LTS, przypięta wersja
+# OpenWiki, dostawca z ustawień repozytorium, PR tylko ze zmianami w openwiki/, bez LangSmith, bez telemetrii,
+# bez auto-merge.
+#
+# Włączenie (Settings → Secrets and variables → Actions):
+#   - zmienna OPENWIKI_PROVIDER: anthropic | openai | openrouter | gemini | copilot (nazwy dostawców OpenWiki),
+#   - zmienna OPENWIKI_MODEL_ID: identyfikator modelu tego dostawcy,
+#   - sekret z kluczem dostawcy: ANTHROPIC_API_KEY | OPENAI_API_KEY | OPENROUTER_API_KEY | GEMINI_API_KEY |
+#     COPILOT_API_KEY (token OAuth GitHub),
+#   - Settings → Actions → General → „Allow GitHub Actions to create and approve pull requests”.
+# Dopóki OPENWIKI_PROVIDER nie jest ustawiona, push na main pomija zadanie; dokumentację aktualizuje się lokalnie
+# (Claude Code z integracją OpenWiki: „Update this repository's OpenWiki for changes since its last successful run.”).
+
+name: OpenWiki Update
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "openwiki/**"          # scalenie PR z dokumentacją nie uruchamia kolejnej aktualizacji
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: openwiki-update
+  cancel-in-progress: false    # kolejne pushe czekają; przerwana generacja nie zostawia połowy stron
+
+jobs:
+  update:
+    # bez wybranego dostawcy push nie uruchamia OpenWiki (ręczne uruchomienie kończy się komunikatem niżej)
+    if: ${{ vars.OPENWIKI_PROVIDER != '' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check provider settings
+        env:
+          OPENWIKI_PROVIDER: ${{ vars.OPENWIKI_PROVIDER }}
+          OPENWIKI_MODEL_ID: ${{ vars.OPENWIKI_MODEL_ID }}
+        run: |
+          if [ -z "$OPENWIKI_PROVIDER" ] || [ -z "$OPENWIKI_MODEL_ID" ]; then
+            echo "::error title=OpenWiki::Ustaw zmienne repozytorium OPENWIKI_PROVIDER i OPENWIKI_MODEL_ID oraz sekret z kluczem dostawcy (opis na początku pliku)."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: true
+          # pełna historia: `openwiki code --update` porównuje HEAD z ostatnio opisanym commitem
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: lts/*
+
+      - name: Install OpenWiki
+        # mermaid + jsdom: dokładne sprawdzanie diagramów Mermaid (jak w szablonie)
+        run: npm install --global openwiki@0.9.0 mermaid@11.16.0 jsdom@29.1.1
+
+      - name: Run OpenWiki
+        id: openwiki
+        continue-on-error: true
+        run: openwiki code --update --print
+        env:
+          OPENWIKI_TELEMETRY_DISABLED: "1"
+          OPENWIKI_PROVIDER: ${{ vars.OPENWIKI_PROVIDER }}
+          OPENWIKI_MODEL_ID: ${{ vars.OPENWIKI_MODEL_ID }}
+          # klucz wybranego dostawcy; nieustawione sekrety są puste i OpenWiki ich nie używa
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COPILOT_API_KEY: ${{ secrets.COPILOT_API_KEY }}
+
+      - name: Remove transient OpenWiki run state
+        if: ${{ !cancelled() }}
+        run: rm -f -- openwiki/.run.json
+
+      - name: Create OpenWiki update pull request
+        id: create-pr
+        if: ${{ !cancelled() }}
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          # wyłącznie dokumentacja — kod aplikacji, workflowy i inne pliki nie trafiają do PR
+          add-paths: openwiki
+          branch: openwiki/update
+          commit-message: "docs: update OpenWiki"
+          title: "docs: update OpenWiki"
+          body: |
+            Automatyczna aktualizacja dokumentacji OpenWiki (tylko `openwiki/`). Bez auto-merge — do przejrzenia.
+
+            Wynik OpenWiki: ${{ steps.openwiki.outcome }}
+
+            Przy wyniku `failure` PR zawiera tylko strony ukończone przed błędem. Po scaleniu następne uruchomienie
+            zaczyna od tego stanu.
+
+      - name: Annotate OpenWiki update pull request
+        if: ${{ !cancelled() && steps.create-pr.outputs.pull-request-url != '' }}
+        run: echo "::notice title=OpenWiki update pull request::${{ steps.create-pr.outputs.pull-request-url }}"
+
+      - name: Propagate OpenWiki failure
+        if: ${{ steps.openwiki.outcome == 'failure' }}
+        run: exit 1

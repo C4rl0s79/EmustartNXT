@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5f664f5693dda137c43c5876cbc1e9b051fff4a21901ff796d15c4c5e3e6b032",
+  "claims": [
+    {
+      "id": "claim_306e709c34e14457af6d392686268821",
+      "statement": "UnifiedLibrary zestawia gry Steam, EmuStart i GOG z serwera EmuStart w jednej bibliotece i nigdy nie łączy ich po tytule.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:05ffa1c63e113a5dd7da981ebafb053adb53a3b7bf48c7586386dc69a0fc8d21:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNmVhYmZlNzBmYzkyN2Y3ZjEwZGY0MzIzOWIyMTI0YTQyODBmOTE5MTRhNmU2NjRiYTFlZDQ0ZWY3ODE3ZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA3N2IxMTJiMDRjMWU4ODExMWUyOTMyYWM2M2M4MTc1MzhjMzA2OWQ5YzllN2QxYTg1NDYwNTAzMGRhZTliZGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ad755c8312284033afcf6cde3da54f87",
+      "statement": "Tryb pulpitu i tryb TV to dwa układy tego samego renderera React; przełączenie zmienia tylko układ i pełny ekran, a zadania trwają dalej. F10 przełącza układ.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/core/uiMode.ts#L1-L30",
+          "version": "repo-lines-v1:sha256:29c7b1e8f44bbb748fee0b35ca9521b4f99e7209deb45e93b033e9d62c4ae043:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzYmE4ODM0OTRkNTE3YjEyYmE2OWIzYmQxYjllMjBjOTBiNmZiNmI0NTBjNDFmYzBmMDIzMjE0YzgyM2M0ZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMzkzNWU1ZjA2ODBmMGVjN2U5NzQ4MzRmYzlkN2IxOWM5NzY2ZWYwNjk2NmYzNzkwMThiOGZmNWVkMmNlMmUifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L419-L425",
+          "version": "repo-lines-v1:sha256:fde4fa9ae7f33ebda49aa6cea752e24d878a4ae035565675dd60da65470d7633:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWIwNjMwYTdlOTA1ZWMzMTgxYzU4MDhmYTI3MGZhY2M2OGY1YTRiY2Q5YjNhZjFmOTRkOThmOGJkZjc3NTIwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E2MDFmYjMyMjc1M2E5ZTg1ZTBhNTM4YmIzNWE0OGU0MzUzNmQzZjg4YWVlMzZlNDhiYjg3NmI4MDQwOThkNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjk2MGYxNGU2NjkzZThlOTc3MTVjOTA3YzdjNTQxODczMTgxYjk4NjE5ODVhNjBkYjkwMzQwZmE1NDU4YzkwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2M5ZjcwMGVhZWE4MjNiOGYxNjE1N2Q0NzQ1YWY1NThkMjZkYjlmMTRhMWUwYzUxYzZiNWY4YjZlNWNkNWY3MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf8b8f1cb4944984827a4a2181a60928",
+      "statement": "Preload wystawia rendererowi jeden obiekt window.lumen przez contextBridge.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/preload/index.ts#L193-L193",
+          "version": "repo-lines-v1:sha256:652ea2f17e14b225c8638e853aaf554050d32d167abf065cda01bb63be5d6308:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUyZWEyZjE3ZTE0YjIyNWM4NjM4ZTg1M2FhZjU1NDA1MGQzMmQxNjdhYmYwNjVjZGEwMWJiNjNiZTVkNjMwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUyZWEyZjE3ZTE0YjIyNWM4NjM4ZTg1M2FhZjU1NDA1MGQzMmQxNjdhYmYwNjVjZGEwMWJiNjNiZTVkNjMwOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_db701fd6bc584f6ca925b64b1f8af562",
+      "statement": "Katalog danych Lumena to LUMEN_USER_DATA, <folder exe>\\LumenData dla wersji przenośnej i zainstalowanej (z powrotem do userData Electrona, gdy folder jest tylko do odczytu) albo userData Electrona przy uruchomieniu ze źródeł; katalog tmp w nim staje się TEMP/TMP procesów potomnych.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/dataDir.ts#L40-L52",
+          "version": "repo-lines-v1:sha256:31de3ff19794752510608d76f4d40354adbc3acb627fb4e4f47eea67e954b5d0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1YTQxNzc3YjhkN2Y1YmM5ZWFkZDY0N2FmZDNhNjVjY2VkZGUwYzAwNWZhMjlkOTllYmM2ZTBmNmZmODg5ZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzMzhiZGIyNzYwNjhmYmIyN2Y1Mjk4NDhjOWIyZWEyYmRhNWU4OGE5N2Y0ZTdhNTJiY2U5MGQ4ZGM1Y2M1ODIifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L72-L95",
+          "version": "repo-lines-v1:sha256:efcf980af89a0ee64462a920c843dd7ee27162b1969101cfaf1e12f300d8bab8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MzUyZGZhNmM1ODYzOTljNTJmMGI4ZmZmN2U2NTJjZWRiYjI5YmI0NTZkZmVkMmQwOGU1ZjdhMTA1ZmQ3ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTE1NjQ5MzFjYmYyYWM3MDU1OWY3YzEzMGM5MGFkNGQyNjIyZWE5MzliNDRlYjlhZTEzMTk5N2RmMTYxOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMTQzNTRlNDllMTVlNDg3ODE0NzRiYmNjZWMwMzk1ODEwN2E2YWRmMmU1NDM1NzM3OTc2NTQyYjU5ODNiOTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_263b803a0c3d42b2974068e67d66b42e",
+      "statement": "Gdy Deck jest włączony i działa, zamknięcie okna głównego chowa Lumena do zasobnika zamiast kończyć program.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L274-L277",
+          "version": "repo-lines-v1:sha256:9fa39c898ecdb02e53d1e632c2a2874e8e77a16cd8756f9a035d0d4d1938423b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGFkOTBhMWE0NjM4ZmE4NGMzNjcwNWVhMmI0YTVlNDI1ZmYxMDM0YTQwOTFiNDI2ZjYyMTBkZmJkMmJmOTMwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQ1NTU5YTFlOTdiMDMyNmI4OTQ0ZjI2MGY4OTIwZjMyNTQ2MDg1YmQ3ZjMxYWNiOWVjMjFkMTQ3ZmUwOTY1OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2VkODgyMzgwMDQxZWZlYzIwODgwMzVmODBiYjAyNTlmMThjNmU1NGNlYTQzNjFhODY2ODQyZjA0NGI1MDJlZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5c58e94a2e7b4890b3e6139399afd16b",
+      "statement": "Okno Decka istnieje tylko przy włączonym Decku, leży nad tapetą i pod oknami aplikacji, bez fokusu i poza Alt+Tab.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/deckWindow.ts#L1-L10",
+          "version": "repo-lines-v1:sha256:89a868bb662422739a4057533ca69f5e69f504d8ac993c6fc8fec72fa7bae65f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMWE0Mzk3YTkyOTU4ZjFhYjBkMjhjOWUzOTk4YWM3YzcyZmE2NzlhMzhjOWRlNjM2MDYxMmI0MjVmNjE4ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4YTQ0N2EzMTIwMmM0ZTU4MzkzNjgyZmI5Y2M4ODIzYjUxNTA0NTQ0MTRlYjk2ZmQ1ZjBhYmJiOWZjNWQ5OTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a23d72c43c9c4996967d53c644858861",
+      "statement": "Aktualizator Lumena wybiera najnowsze wydanie z tagiem lumen-v z C4rl0s79/EmustartNXT (do 5 stron), weryfikuje rozmiar, SHA-256 i podpis Ed25519, a podmianę plików wykonuje skrypt PowerShell bez ruszania LumenData.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/updater.ts#L12-L35",
+          "version": "repo-lines-v1:sha256:72cb50a65489d03f3050e86ae68dfaaacb41729bfdbcbfb584a856c99dffc206:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViZjFiNDkxYzkyZDJmYTE1MjcwYTIxMGU5ZDEwMzY2MTRiMjJhOTc5ZWIzNjdmMmZhNmUyNjgyZjM3MDljNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxNGEwYTNmNDJiNDk5MzVlOTNkYjBlZDhlYzhmOWRhZmUwMDAwMDllNTgzZmJlY2I0M2RlZTFkZjVjNjBjYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZkZDFlNGNkNzI1OWIwNGI0Nzc4OTAyYzMwMGE0MGQ5YzNiMTU5MDJmMmJkMmM0Y2ViNGE2NjU3ZTI2MTNhMGIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:46:08.589Z"
+  }
+}

@@ -76,7 +76,8 @@ Pliki nie są podpisane certyfikatem, więc Windows SmartScreen może przy pierw
 
 ### Aktualizacje (jak w EmuStart)
 
-Lumen sam sprawdza wydania na GitHubie (C4rl0s79/Launcher) — przy starcie i raz dziennie — i pokazuje
+Lumen sam sprawdza wydania na GitHubie (C4rl0s79/EmustartNXT, najnowsze wydanie z tagiem `lumen-v…`; wersje
+do 1.0.53 pytały C4rl0s79/Launcher) — przy starcie i raz dziennie — i pokazuje
 „⬆ Nowa wersja” na górnym pasku. Ustawienia → **Aktualizacja Lumen** (albo tryb TV: Menu → „Sprawdź aktualizację Lumen”):
 **Pobierz** → **Zainstaluj i uruchom ponownie**. Pobrany plik musi mieć skrót SHA-256 zgodny z wydaniem
 **i poprawny podpis wydania Lumen** (Ed25519, `<plik>.sig`, klucz publiczny w programie) — inaczej nic nie jest
@@ -103,7 +104,8 @@ node scripts/sign-release.mjs release/Lumen-<w>-portable.zip release/Lumen-<w>-s
 
 Klucz prywatny wydań: `D:\GIT\_klucze\launcher-release-ed25519.pem` (albo `LUMEN_SIGNING_KEY_FILE`) — nigdy
 w repozytorium; skrypt sprawdza, czy pasuje do klucza publicznego w `src/main/releaseSigning.ts`. Do wydania
-na GitHubie trafiają trzy pliki i trzy pliki `.sig`.
+na GitHubie (C4rl0s79/EmustartNXT, tag `lumen-v<w>`) trafiają dwa pliki — `Lumen-<w>-portable.zip`,
+`Lumen-<w>-setup.exe` — i ich dwa pliki `.sig`.
 
 ## Konfiguracja
 

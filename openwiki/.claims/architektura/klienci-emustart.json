@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:2463886b7bdaed5cf747e73e4f93149797fe4b922db46f490fe53e1d841733de",
+  "claims": [
+    {
+      "id": "claim_33f79c16583346fab72c66b622aa1bd0",
+      "statement": "Klient Windows w trybie --browser uruchamia serwer interfejsu na porcie 8765 bez okna, a w trybie okna tworzy okno pywebview z obiektem Api jako js_api.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/main.py#L1-L9",
+          "version": "repo-lines-v1:sha256:e5ecc75835a0f7e029cdc254ff4a470006acfae8a64cb489576711253d47b1a8:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDk2ZWFlYmIxZTJhM2E3Y2NiOGVjNmZmZDgxZGRiNzBlNjdmOGFiNWFkZWFmYzNmMjZmZjc2ODU1NDRhYzdlYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDc1ZDQ1ODllOTFjYzhjYjk3NDg4OWRhYjAxZGUxNWRiMTU3NGNhMTBlZWM3MjkwYTEwOWJmNTg4Yzk0ZTAxYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQzMGEwOGY5OWU3M2M5NTA2MTQxZTJjYjBkZjZjZGQ5MzY1ZWRkYTlmNDBjYjBlZTBjYjNhN2NkZGFhMWEyMiJ9"
+        },
+        {
+          "resource": "repo://emustart/main.py#L44-L55",
+          "version": "repo-lines-v1:sha256:e063cfd98dbc957063815dc8d70c757d2837d421aaed46d7a5caae6bb1901821:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MTlmYTc1ZWZiYzVhNTc1MTAyYjg2MGI2OTRkYWQ2N2FkZTIzZGQ1N2I3NThmMmFjNWZjMzAyMjcyNGU4ZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0N2IzY2FjZWU4MjI2YWRhZmYxMzg0OWFjOWIzMmUyNmZkNzBiNTQ0N2U2ZGQyZGRmN2M5YWY2OTJlYmRhNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlM2FjN2Q4MDIzMjZmNzYxZGE1Mzg4N2MzOWE4MjJiMTZlMzI0M2I4OWVkNWI2NTI1ODM5M2E4MGI3ZGI5OGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjZmQxZmE0YzM2M2UwOWQ2YWY1NTkzMzVmOWE1Njk3YmU0N2U4NmJiYTM0MjhkNTM0ZDZkYzA0MTk4ZTQ3ZDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf85130f1f5e41f68f77c916489d7f4b",
+      "statement": "Wywołania POST /api/<metoda> są przyjmowane tylko z tego komputera z poprawnym nagłówkiem Host i nagłówkiem X-EmuStart: 1; nazwa metody wskazuje metodę obiektu Api, a argumenty to lista JSON.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/server.py#L163-L183",
+          "version": "repo-lines-v1:sha256:41c43031e09052b6de64c73f56f5eef7ef6f70d7a7a3d7f01fd1dcff8b748a59:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YTBkMThjZDRjZTcwYzY3YzNhNjMyZGQ2ZTEwZGM1MDc0MzliZmZhN2IwMWQyNGVjM2E5OTkyNDU5YmE0NzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OWU2ZmIxYmUyNWM4ZTZjNjY1NmQ1MWZkYWE5NDI0YWQzNmE4ODFkOTRlODAxOWI2M2U4M2UyZGU2MTdmNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhZGFhN2Q0ZjZiNTJkYTlhZjY3NDc4N2ZiZDM4MDQzM2FjMzMwYTRmNzIzMGUxMDM0N2MyMjJmYTlmNjJlN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyZDY1OWNmZjk3YWI2MGM3MGNlYTJmZWYwZmE4ZWY4YzJjZGM0MzliMmMyNDk1YmY3ZTIzODRmNzc2MWEyNDgifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/server.py#L86-L101",
+          "version": "repo-lines-v1:sha256:309c6d72137e9d7fe35f633e6c3f201b7d782e1b51c36cd458a4472f56a6b025:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxNTU3MmZmMWYzODlhNThmYTU2NWQ2ZTE4YzNmYmI0MGI4ODBiYjRiZmNmMDc5MmI2M2JkZjhiZWZlNWU4ZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzNWU2OWYwM2RkYzVjNjFhYjFmOTFlNjI3YWJkNTkyNzk5Y2ZhOThhODdhODMxMTAzYWQyYTA5NGExOWEwY2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzNjNhNGRmMGYwOGU0ZGU3Y2UyNGQ0MmZiMzE2ZDFmNzJiNWUxODJlY2U5YTk2OGU0MDA5OWY3NjM3ZDA0MmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_38036e7749834bff8fc1cef2fd7eed48",
+      "statement": "Klient uruchomiony w katalogu z aktywnym układem serwera (jest server/config.json, nie ma config.json) przełącza ścieżki na dane serwera.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/paths.py#L49-L53",
+          "version": "repo-lines-v1:sha256:16b3d2b101bfcc8cb0ce50c6cdd62b747b18c394a5679d6368a06c1b96ff2c77:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTU1NGZkZjZhMjU4NDExZGQ1ZTRmNmZhYWQ0YTNlMTdjZTc0NmI0ZDUxNDE5NjA3MzVmZTM0MmVmMTAzNzdhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWRmZGMzM2FjMDFhNjZiZmYwYmNmZTMyOTM2ZDIxYmEyNzI2MmUwNGVmMTE3MDM2NDY2ZWMwYTYwMjJiNTgwYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmM1YWZiNDQwZmU2ZWJiMWUxZDU5ZTJiZTkyOTM1YjQ0MTI1NGQwNzE4YjczMGE2MzgyY2FmODEwNzhjNGQ0MSJ9"
+        },
+        {
+          "resource": "repo://emustart/main.py#L36-L40",
+          "version": "repo-lines-v1:sha256:365948dea97096d22325c78957c93440e5ddfe52cf12ce9c0a11250836462901:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWJiYzk4MTgzMzliMjJlYTI2ZjBlOTQxNWI1MzY5ZjgwMTJjZjI3NTA2N2M2ZTBjODViM2JlNDI0NDBiMjg0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTBmNTFjYzAzYjBhNzQ3ODY2NmY4MTIyM2M4ZGMzNmVhNzdlMDMwOGQ2Y2JkMGRhZjA0ZjI0Y2MwMWQ1ZmJlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVmMWUyZGI2OTVjZDExZTQxNDkyZjgxYTE5MzA5ZjRjNjFiYjYzNzliYWU4OTUzZjYwMzdkYWY0MjA4NzE1ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmUzYWM3ZDgwMjMyNmY3NjFkYTUzODg3YzM5YTgyMmIxNmUzMjQzYjg5ZWQ1YjY1MjU4MzkzYTgwYjdkYjk4YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_10050ae2b5e047a9a9ef76326efc0d1b",
+      "statement": "Komputer bez folderów z grami pobiera bibliotekę z GET /v1/library tylko dla systemów zmienionych od ostatniej synchronizacji, a gry z serwera mają src 'serwer'.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/libsync.py#L1-L31",
+          "version": "repo-lines-v1:sha256:356121be85f824e15548437457a353942c1c825a4d1dfb134c151aee4356cf21:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1ZTRlM2Y3YjAzZGE0MzA3ZTBjYzRjMDBlZWNmYTcxMmMzYTdiNGQ2YmY3OTEzOWU0MWVjMjBlN2ExYjM4NTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMGE1NTlmNDU4ZWYzZDJjMzlkYWRkMzA5ZjBlMjU5NzkxNjBhZjdkNTJjNmVjYTg1MTE1NGVjNmEzNWY1NjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZjYzQ0Mjg2Mjk0ZGRjMTIzYWU4NzAyZDJmOTQ1YzEyNjFhZjU3ZmIwMTkwNzg3NGM4MGNmNTMwZjU2OGY4NmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f1c124e9af9b4c17ace090d2bd2dfa6b",
+      "statement": "Aplikacja Android bierze versionName z emustart/emustart/__init__.py i kopiuje emustart/web (bez portal/) do zasobów przy budowaniu.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/build.gradle.kts#L62-L68",
+          "version": "repo-lines-v1:sha256:f457fee7c61d3211fa7737592c7a0c4d1f5e407d7a722abbf152bd6c57ab07f6:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzNhY2I2MjcxYjU0MDE1NDkyMzg3ZTkzMzk1ZDQxMTQxNDJmZGRmOGNjNWY1ZDlhMDgzYWIzZGY4ZThjZDZkOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjMwMTI1OGU0MmRiYTc3MmQ3YTQ3MjU0OTFmMmFiY2E2YWEwMGM0NDYyMmQ2MDJlOGIzZjBiYWViYzEyZDY3MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2Q0MDU3MTFiMmQzNjliZmQyN2IyMmQ2Mzg3M2FiZjkzOWFjYzkyYTM3OTY0MDFjZGE1ZmZlYWU0NWYxOTViZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmVjZWQ1YmY3OGI3YjlkOWRkMGM1OWNlOTI2NTZiYzY0MmM2YWIzODliMTVjZTIwNjMyYWRkNjlmMDAyMjlhMyJ9"
+        },
+        {
+          "resource": "repo://emustart/android/app/build.gradle.kts#L8-L30",
+          "version": "repo-lines-v1:sha256:05be2bdbc37853de6e99148052b1f77e46354bd4709518e009143ab758f342b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMTBiODVkMjY3NjhiMjMyYmZkY2Q2NjJjZWZlY2ZiMzY5MTgwNGE3NjQ0YTg0ZGNjMGZhYWUwMDYyYmU4ZjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0NWZmMTE4MGNhYWIwNWFjNTEzNDI3N2M1NzE5MjM0ODkzZDY2Mjg0MDJjMDFkYjM2YTliNTJkOWIwOWMzY2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3ZDMyYTIzM2FlOWYxNDg3MzIwZTliMjVkOTA0MzdkYzdjMjE0ZjBlNGMwOTIzNWY4ZjdkNjU2ZGJlNjEzYTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4ZDk4OTI2YjE5ODc3NjM4ZmI2NzVlYjFjNjAzMDE2NTQyNzk2MjNlYzNlOTVhYzQ1OTUyYTJjNjU3MGFjOTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e4d8d3458ded4c9f8202f5c5b10f11f2",
+      "statement": "MainActivity ładuje interfejs z http://emustart.local/index.html?android, serwuje go z zasobów aplikacji bez ruchu sieciowego i rejestruje most JavaScript EmuAndroid.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/MainActivity.kt#L30-L66",
+          "version": "repo-lines-v1:sha256:fa71ba6d2232cb7372f48330b8733235af9f6fdd8e91a10c17b5130554b4bcc7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MmQ2N2ZjMjYyYjM2MzZiMDk0MDE1ZGUzNjBjYmIyY2YyYjEzMjVhN2FiMDIwNTQ0MDcyMzc5N2M2YzEzNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhNTdiMzk5ZTg5MTJlYTJkYjRlMWE3MDJmMTQ1MGY1MDVhNTkwMGI5NWZiYmJkZWRjYjJmMTQ1M2FkZTJjODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmZDVjNTE3Mzc0NGJhZTMxOWNhZTY1N2FmODA0M2VhM2Q3MWIxZWFjZDlmM2M4MGMxMDM0M2VjMzNkZWE2YzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiMjcyZGNiYmI4OWQ0Njg3YTk4NWVmMTY0YzE0MDZmNWI0NjY5YjYwMWY5NzI0OTU2YzI1MjlmNWFjYmJkYTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_af1cc00e47a84794b1081a5b07ffe719",
+      "statement": "Pad na Androidzie trafia do interfejsu przez window.__emuPad, rejestrowane w web/app.js jako źródło 'apk'.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/MainActivity.kt#L104-L104",
+          "version": "repo-lines-v1:sha256:bb914d7391347dfafeddd89603e8269be888fd613c7131f35be6475452b57f24:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI5MTRkNzM5MTM0N2RmYWZlZGRkODk2MDNlODI2OWJlODg4ZmQ2MTNjNzEzMWYzNWJlNjQ3NTQ1MmI1N2YyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI5MTRkNzM5MTM0N2RmYWZlZGRkODk2MDNlODI2OWJlODg4ZmQ2MTNjNzEzMWYzNWJlNjQ3NTQ1MmI1N2YyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzM4ZTM0NzYzYWExNmNhODk5MjhjM2YxNWQ0MzRmMWNiZDY1YThhMjczN2FlMTUxYjgzY2JmMzdkNTNjY2FhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTNkNmIxMmVjODkxZDEzNjc1ZmI0ZmE5ZTk5ZmYyNjljMGI3NWQwNjI5N2I4MDcyOGE3MmI1YmY4YWRkMmIxYSJ9"
+        },
+        {
+          "resource": "repo://emustart/web/app.js#L1486-L1486",
+          "version": "repo-lines-v1:sha256:6766bc66ba43c3f4d21c3a11221286a3073c53fbf82a96bcdcb6ff11ccc44955:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc2NmJjNjZiYTQzYzNmNGQyMWMzYTExMjIxMjg2YTMwNzNjNTNmYmY4MmE5NmJjZGNiNmZmMTFjY2M0NDk1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc2NmJjNjZiYTQzYzNmNGQyMWMzYTExMjIxMjg2YTMwNzNjNTNmYmY4MmE5NmJjZGNiNmZmMTFjY2M0NDk1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTkwYTU3NWE0OGE4YmE3OTk2ZDgzNjhjNDI5Nzc5NjMzZDM3ZTk3NTgzMWZkZDFlM2VkMTNlNGIyZmY2NzRkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzhjNGM1MjdmYjk3NWJhOWNlZjIxN2RhMDIxM2NlMDJhOGZjNGQ4NTcxMzJiZmZkMGQ5NjA4MzhlMzMyZDQzNSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_59c418d681ed41cebc88a71627fc5e3e",
+      "statement": "Aplikacja Android używa tylko adresów https (własny certyfikat z odciskiem lub tunel z CA), porządkuje je: LAN, Tailscale, publiczny, tunel, sprawdza je zapytaniem POST /v1/auth/challenge i pamięta wybrany adres 5 minut.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Server.kt#L43-L110",
+          "version": "repo-lines-v1:sha256:85d44ed5c3b047ea32433e9cc607c6737f9e1051b8c695b728cf5796724a348e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDA4ZmJiMGJkOTAxMTllNDFkOTM1MDQ3MTgzMzEzM2RjMTU2NDFjZDdjOThjZmFiNDFjM2M1YmVmODVmYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjYjRlOWJkYmNlMDI2ODRlMjk4YzNiZjRiNDVlYmM1NTBjMmJkODk0OGI3MWEzOWU3NGYwZTUyMjkzNGY0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2OGI0MDA1Y2FlY2JhOWNjMGI3MTEyZTAwMDA5ZDkyNWMzMWY4ZTBmZGViMmZmM2I3ZmUzNTIxNDYxNmNkNzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYjE4NzM4OTMzY2ExODFmMGM5MjUwYTg1N2U5MjEwNWE4Y2I0Mjk5MDA0NjExMDlkMjE1ZTVhNGExZTU0NTEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:26:15.897Z"
+  }
+}

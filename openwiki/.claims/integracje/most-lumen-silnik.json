@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:1f833b9977692d44593dddb7dfe007a898a36eb174c47db73c3bba9d3b188bbd",
+  "claims": [
+    {
+      "id": "claim_5fabdcc3128644edb39e7bc245ef8f65",
+      "statement": "Lumen uruchamia dołączony EmuStartEngine.exe z resources\\engine, a bez niego engine/engine_main.py Pythonem z ustawień, LUMEN_PYTHON albo py -3.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L233-L245",
+          "version": "repo-lines-v1:sha256:1c5a6d2664fda041d6df8a7fd1fe95834402374daeb94d3b2aede11dab4593a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4NzUxNGQ0YzVkZjI4ZTE4ODgwYzVlZGQzOTcyNDllY2RlNTdiZTI5MmRlMzM3MTg3NGIzNDE4MjlhM2EzZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1ZGUwYTk5MzY4OWZmZTI1Y2VlMjllM2NkZGVmZjBhNzY0MTI3MzhmZDk0MDBhNzE5NTE5MDkyNDgzZjRiYWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0a09977a76ac4ae3828c1f3446545191",
+      "statement": "Silnik dostaje EMUSTART_HOME, losowy LUMEN_ENGINE_TOKEN maskowany w logach, LUMEN_WINDOW_TITLE oraz TEMP/TMP z danych Lumena.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L93-L112",
+          "version": "repo-lines-v1:sha256:79ed4a3c5d742b27558272976aaa008d952a59fcc006cb4e653c966fbbd09c67:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5YjZlOGQ0ODdkZjY0NGU4MmJkYTYwM2EyNDM2ZTdkM2EzYTllOTQ0ZjllOWUxZjU5ODAwZTBkMmI3MjI4ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxM2MxZWFhZjFhMTA1YWZlZmY1YWE0NWE5MjQ2NmJjYmRiNzBmZDA4N2E0YzQ5ZTY1ODgwODlkNzVhNzBkY2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZmU0NjEyMzc3YTljN2FmMTViMjkyZDVhYTA1N2Q4NjQ3MWY1N2Y0MjAxNTBkMjQwYTVhMmFkMmEzZGMzMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4MGRmYjQwMTE0MTJjNmU2YjMyNjc2NjhhZTQ5YzBmOTEzZTVlODQ1N2JiYmJkNTA2OGIwMzcyZTRlZDk2YmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ff93ec0bbc1d4d6c9ce315e59caf00ac",
+      "statement": "Silnik wypisuje na stdout {\"lumen_engine\": 1, \"port\", \"version\"} po starcie serwera na losowym porcie i kończy pracę po EOF na stdin.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/engine_main.py#L80-L109",
+          "version": "repo-lines-v1:sha256:fd6a6ef0588785fc8e363299073efad4ca7694e92bffaa790e46e0efabd73f3b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExNzc2YmQ2MjA5NDgzYTIxNTk1MmQ5Yzk4MmNhMzc0OGRlMzFlZDE2NDIwMTIxMDhlZGE4OWI2MzY1YzY1ZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZTk5MjMyY2QzYTMwOWY1MGNiZDZmNjYyMTI3ZWVhYWZjZTFmNzM2MjkyZGVmYjExM2Q5ODFhMjBjN2Q4NTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1YzFiZmQwZmIxNmRjOTIxYWY0NTI5M2IwNWFmYTViMDlmMmVlOWVmNGNjZTExMTNhZTEyZmFhODMxYTllOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d8b882c061234b87b93701d7e6dc38a6",
+      "statement": "Lumen uznaje silnik za gotowy po linii handshake na stdout, przekazuje linie lumen_event jako zdarzenia i zabija proces bez handshake po 45 s.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L115-L178",
+          "version": "repo-lines-v1:sha256:9c57bb2007b71f97f6f6fff419e4b26d436a4b6ee0e0a93a1a767b4b41539aa0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMTA5OTgwZDdjZTFkZTE1ZjBlODY1ZWU4ZDEzMTZmMjQ2ODI0MmU4MzAyNDNiOWFmZTI3YmIxYmVhNjdiYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU1OWEwMmFhNDk4M2MyNGZhZjdiYjkyMDc2ZmM0MGQ4MGE4NGFiMjExMmU3MmM2ODhkODJjMzkwNDU1MjJlNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjMWQ2YjFhZjI5MjNjNTk4Y2RjMDUxODZjODhjMjdjZDU4ODI3NjRkM2ZmYmY4ZGNlMDNiYmZlZDg4YmJlYzQifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L31-L32",
+          "version": "repo-lines-v1:sha256:bcbaa2ef602dfcf574f59827bddd8ae4ef78ec0ba34e4035f4c1d4cc975bf49e:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDI1NzIwNWE4NWMwOGM1YTEyZWE3YjRlYzdmNzcyMDRkNzMwMmVlNzYwZjEyNTAzYTVjOGFiOWZiMGE0NjlkNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTQ0NjI0ZGRlYWFiOWM0Yzc5MzkwZmIzM2NhYTY0MzFmODQ1NmMyODZiYzlmYWVlMzQ4ZTViMzNmYzlkNTYyZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2Q2NjRjN2JjOGFiZjhiNmYxZWQyYmUzMjg0MDA0N2Q3Mzg3ODNiNGViNTEyZGJmYWJjMWEyZGQzOTViZGE0NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjY0YTEzNjhjNWJiNmIwYzg2NzFlYWE1NGIzOTE2ZDYyNmIxMjEzZWJkMzdhNTZmMTU3YzdhZTkyMTI3ZGRlZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3f873a600a6e4f5f85c19f6bf488903a",
+      "statement": "Wywołania silnika to POST /api/<metoda> na 127.0.0.1 z X-EmuStart i X-Lumen-Token, z walidacją nazwy metody i limitem 30 s; LUMEN_DRY_RUN=1 blokuje launch i configure_emulator.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L205-L230",
+          "version": "repo-lines-v1:sha256:1d0ac8ef6b22de0c94f294640bce8d1dfc9ced3f9b01f5c269339807bcce7eab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3MGE1MDk4OTUwOGNjM2JmYTc4N2Y0MGY5NTgzZjVkMWYwMDZkZjkyYmQxOGU0N2ZhZWRhM2UwMjA4YWZiZDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhiN2U1MmFlMWJhYTU3NmFmMmIwZjE3OTJlYzkxZjViNzBlM2M5NDhmN2EzMTYzOTkwYjJjY2I1NzhmOGUzZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiMDRmMDAxOWYwZTY1NTMwMDY3YTA3YzgwZjU0MzljNmFkNjI2YjY2Y2RkYzYxMTQ3MjNkYWViNzU1ZTZlZTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5670b23b78d948eea4aaf49a030cab35",
+      "statement": "Po nieoczekiwanym zakończeniu gotowego silnika Lumen restartuje go do 3 razy z rosnącą przerwą; stop zamyka stdin i zabija proces po 8 s.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/engine.ts#L138-L203",
+          "version": "repo-lines-v1:sha256:f5f66d88751fd28bbaab729db9d2b32bbb2dc2aa1c68b44c76726303f02b1e19:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0NzVlOTRhOTA0YWM0OWIzMTU0ZDQ2NzJhNjZlODYyOWI4NmRhYzc0ZTNlMjkzN2JlNjkyN2FlM2RhMTFjNTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4OTFlZDEzZmUwNTk3ZDAwZTA2ODQ0YWJiZjI5MjJhMTFmZGU3NDJlZGUyYTEwMzNlMmZkNDMyMzk3MzlhZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MTkwMzY4ODIzYzM5M2ZhODczOTk3N2JmNzY2MDgzYjVjZDRmOTNmNGYxNzFkNjAyODMyYWRmNjY1Y2JiYzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_af7615a9f9c6416496f7aada9fe62d19",
+      "statement": "Domyślny katalog danych silnika to <userData Lumena>\\emustart, chyba że ustawiono emustartHome.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L110-L110",
+          "version": "repo-lines-v1:sha256:0041bcbb8853edef7a2bfef9bfc96d375e77b25cfb7196e950cd7d49a0b8ccbb:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MWJjYmI4ODUzZWRlZjdhMmJmZWY5YmZjOTZkMzc1ZTc3YjI1Y2ZiNzE5NmU5NTBjZDdkNDlhMGI4Y2NiYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MWJjYmI4ODUzZWRlZjdhMmJmZWY5YmZjOTZkMzc1ZTc3YjI1Y2ZiNzE5NmU5NTBjZDdkNDlhMGI4Y2NiYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzMxNmRlYjVmZDg3MDZjODMzYmUzOTdmNjViNmE0NjViMzU5ZDYwY2UxYWMzMTU2YzY3ZGZkMTY4ZTMyZjVhMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWZkNTczZjQyNTcwMjY3YWNjMWZlMWE2N2U2ZDBmZTNkMDZlZjVhNDc3MzRmZWNlYzM0MjM2YzRiZTdmYmY3MCJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L124-L124",
+          "version": "repo-lines-v1:sha256:126a71707ec5bcccc7dcbc13ce0735add8d8a9afbf0d781a71a7dc2abd2e954b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI2YTcxNzA3ZWM1YmNjY2M3ZGNiYzEzY2UwNzM1YWRkOGQ4YTlhZmJmMGQ3ODFhNzFhN2RjMmFiZDJlOTU0YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI2YTcxNzA3ZWM1YmNjY2M3ZGNiYzEzY2UwNzM1YWRkOGQ4YTlhZmJmMGQ3ODFhNzFhN2RjMmFiZDJlOTU0YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWJkMGYzZWFmYTRmMWJhMWIzODE5NDI5NGFlM2IxYzJmNzQ2NzI4NmYwOWM2YTczNmMyMWYzZjAyNmNiMmM4MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGEyYTZiMGQyYWM0NGEwZjYyZDk5NDRlOGQyNzliMDZjODZkYzJhOGFiMTVhNWMwMzk4ZTFiNjY3YmJmYjI5NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_68c9f3d978fc4f40835a705be9288a92",
+      "statement": "LumenApi rozszerza Api EmuStart o zestawienia lumen_* dla biblioteki, zadań i opcji gry; interfejs web EmuStart nie jest w silniku używany.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/emustart/lumen.py#L1-L12",
+          "version": "repo-lines-v1:sha256:0dce1347a10d12291df6e6da8586101f39a22fe23caa19c17667f5434b069a47:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViMjQ3ZDE4ZDk0ZThjYmVhNmI3ZDM3NDFjOGRiN2ZlMjg4YzQ4MTY0YTdhZDgyMmM2ZWNjZjNlYWUxNDIwODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjZlODcwNmI0MzA0N2YyYTZkYjY3ZjEzMjYzODU5NTYwNGU2N2YzNjk2Njg3NmNlMDE1OGYwMDUzZTZiZDEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2da5670ad30b4b52821e5fa5b28f9a88",
+      "statement": "Aktualizator EmuStart w emustart/ wybiera najnowsze wydanie z tagiem emustart-v z C4rl0s79/EmustartNXT, z dawnym repozytorium C4rl0s79/EmuStart jako zapasem.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/updater.py#L1-L60",
+          "version": "repo-lines-v1:sha256:1a05951b5236beef5070c48d51710434ba5216527731d8fea02f00cfa83089da:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzZGNiYzkwNTE4OThjODZiMzIxNDJmZDc4MzhiMDNlYTYwNzM3NjM2YmFjMzM5NWQ2NTljODUwYTNkZGJhZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExM2U5MmQwNTFkNTc0ZDIyZDY2ZGM1OTAzNTBjYjVhOTllNWQwYWU2YjI5YmVmOWI0N2M1OWRlMzZmMjM2NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxMWQxYjM0MjBmZTg5ZTc0YzQyNTJiMzZhZTgwZWRhNTc3ZjMyNjgwM2FmYzNjYjllODQ0NWE3ZDQ4YWFlYWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_296dd201cd1749be99bf7769a7a1a18d",
+      "statement": "clientdist w emustart/ pobiera programy do strony serwera z jednego repozytorium EmustartNXT, rozróżniając je przedrostkiem tagu emustart-v i lumen-v, z dawnymi repozytoriami jako legacy.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/clientdist.py#L26-L48",
+          "version": "repo-lines-v1:sha256:f5c0798b99c335dfc83f13044d68702545f18cdce469c59e9378c04bdca75ae1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwOWZkNWRjZjUwMWMzNzZjMTdhZGQzYzUwZmVhZWU1MDY3YjE2ZDQ5Y2Y0MGM3OTA2YWUwODM4OTA2Mjc5ZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZGRmZTc3MjY4ZWY1ODI0NGI3MTAwNzVlNTYwNzhiNjg5M2Y5ZGY1YzBlNjk1MWI1ZjBkNTA4YmQ0NmVjMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyMDIyZjIxNmVhNWVmNjkxNDBlNjJmMDdiNTUyZTgyMDIxZWI1NzRlYTlkYzU4NzhjZTk4YWI2ZmI4NjJkNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjVmY2M3MGJiNmE1MzIyOTVkODg0ZTA4MzRiMDJjMWQxNjFlNDYzZWFhMTk2OWQ2NDc4MTNlNDVlYmRkY2MifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-11T20:46:08.589Z"
+  }
+}
