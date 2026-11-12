@@ -6,6 +6,19 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Instalacja gier GOG: pliki „support” i foldery na innym dysku — plan
+
+Zgłoszenie: Oblivion GOTY i Tex Murphy: Under a Killing Moon kończą instalację w Lumenie błędem finalizacji.
+- Pliki depotu z flagą `support` i ścieżką `app\…` (147 gier w archiwum, głównie DOSBox/ScummVM) trafiają do
+  głównego folderu gry, jak w GOG Galaxy — nie do podfolderu `app\`. Krok skryptu „kopiuj `{supportDir}/app` do
+  `{app}`” (Al-Qadim, Prisoner of Ice) jest wtedy wykonany bez kopiowania. Inne pliki `support` (`1\`, `add\`,
+  `save\`…) bez zmian. Wznowienie przerwanej instalacji dociąga pliki we właściwe miejsce.
+- Finalizacja nie przerywa się, gdy skrypt kopiuje pliki do Dokumentów/AppData na innym dysku niż folder gry
+  (`path is on mount 'C:', start on mount 'D:'`).
+
+Nie dotyka: listy gier, sterowania, menu, API `/v1/…`, zapisów, serwera i archiwum GOG Managera, APK (nie instaluje
+gier GOG). Zmiana w `emustart/` i silniku Lumena `lumen/engine/`.
+
 ### Ustawienia DeepSource (issues #14, #16) — plan
 
 - Nowy `.deepsource.toml` w głównym folderze repozytorium: wzorce testów, wykluczenia (dane testowe, `openwiki/`,

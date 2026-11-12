@@ -52,6 +52,12 @@ def user_documents() -> Path:
     return Path.home() / "Documents"
 
 
+def _is_app_support(src: Path, dst: Path, app: Path) -> bool:
+    """Źródło = {supportDir}/app, cel = {app} (katalog gry)."""
+    norm = lambda p: os.path.normcase(os.path.abspath(p))  # noqa: E731
+    return norm(src) == norm(Path(app) / "app") and norm(dst) == norm(app)
+
+
 def _inside(p: Path, *roots: Path) -> bool:
     rp = Path(os.path.abspath(p))
     for r in roots:
@@ -257,7 +263,7 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
     "created" (pliki utworzone kopią — do odinstalowania), "dirs" (puste foldery utworzone przez skrypt)}; błąd akcji,
     która musi się udać → FinalizeError. `known` — pliki gry z manifestu (małe litery, względne): kopia poza nimi
     należy do instalacji także wtedy, gdy powstała w przerwanej wcześniej finalizacji."""
-    res = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": []}
+    res: dict[str, list] = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": []}
     hkcu = hkcu or set_hkcu
     data = read_script(app, pid)
     if not data:
@@ -270,8 +276,8 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
     # poza katalogiem gry skrypt może pisać tylko w folderach użytkownika (Dokumenty, AppData, ProgramData)
     user_dirs = [docs_dir] + [Path(sysf[k]) for k in ("winAppData", "winLocalAppData", "winProgramData") if sysf.get(k)]
 
-    def resolve(s: str) -> Path:
-        s = _symbols(s, app, pid, sysf)
+    def resolve(s: str | None) -> Path:
+        s = _symbols(s or "", app, pid, sysf)
         if "{" in s:
             raise FinalizeError(f"nieznany symbol w ścieżce {s!r}")
         return Path(s.replace("\\", os.sep).replace("/", os.sep))
@@ -279,6 +285,9 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
     def is_new(t: Path) -> bool:
         if known is None:
             return not t.exists()
+        if not _inside(t, app):
+            # Dokumenty/AppData poza plikami gry; relpath między dyskami (gra na D:, profil na C:) rzuca ValueError
+            return True
         return os.path.relpath(t, app).replace("\\", "/").lower() not in known
 
     for act in data.get("actions") or []:
@@ -298,6 +307,10 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             if not (_inside(src, app) and _inside(dst, app, *user_dirs)):
                 raise FinalizeError(f"supportData poza katalogiem gry: {args.get('source')} → {args.get('target')}")
             typ = str(args.get("type") or "").lower()
+            if typ == "folder" and not src.is_dir() and _is_app_support(src, dst, app):
+                # {supportDir}/app → {app} (Al-Qadim): pliki „support” z app/ instalator zapisał już w katalogu gry
+                res["done"].append("supportData app (pliki już w katalogu gry)")
+                continue
             if typ == "file" and not src.is_file():
                 # skrypt wskazuje miejsce sprzed przebudowy paczki (Control, Fallout: London): ten sam plik gdzie indziej w grze
                 src = next(iter(sorted(p for p in app.rglob(src.name) if p.is_file())), src)

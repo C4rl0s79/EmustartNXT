@@ -291,6 +291,15 @@ def _sig(it: dict):
     return it.get("md5") or tuple((c.get("md5"), c.get("size")) for c in it.get("chunks") or []) or None
 
 
+def support_rel(it: dict, rel: str) -> str:
+    """Plik z flagą `support` i ścieżką `app/…` należy do katalogu gry (jak w GOG Galaxy): DOSBox Tex Murphy'ego
+    leży w manifeście jako `app\\DOSBOX\\…`, a playTask wskazuje `DOSBOX\\dosbox.exe`. Inne pliki „support”
+    (`1/`, `add/`, `userdocs/`…) zostają w {supportDir} (= katalog gry) — rozkłada je skrypt gry. "" = sam folder `app`."""
+    if "support" in (it.get("flags") or []) and (rel.lower() == "app" or rel.lower().startswith("app/")):
+        return rel[4:]
+    return rel
+
+
 def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool = True, deps: bool = True) -> dict:
     """Plan instalacji z manifestu buildu i wyboru. Języki i DLC tylko z dostępnych na serwerze — bez
     cichej zamiany na angielski. `base=False` — tylko DLC (dogrywanie do istniejącej instalacji)."""
@@ -348,9 +357,11 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
             sfc[gi] = (dep["smallFilesContainer"].get("chunks") or [])
         for it in dep.get("items") or []:
             try:
-                rel = safe_rel(it.get("path"))
+                rel = support_rel(it, safe_rel(it.get("path")))
             except UnsafePath as ex:
                 raise GogError(f"niebezpieczna ścieżka w manifeście: {ex}")
+            if not rel:
+                continue
             t = it.get("type")
             if t == "DepotDirectory":
                 dirs.add(rel)

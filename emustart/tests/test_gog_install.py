@@ -703,3 +703,78 @@ def test_more_script_forms_from_the_archive(tmp_path):
 def test_guid_without_dashes_in_registry_key(tmp_path):
     k = "SOFTWARE\\Microsoft\\DirectPlay\\Services\\{5146ab8cb6b1ce11920c00aa006c4972}"
     assert gogfinal.registry_action({"root": "HKEY_CURRENT_USER", "subkey": k, "valueName": "a", "valueData": "b"}, tmp_path, "1")["subkey"] == k
+
+
+# ── pliki „support” z app/ i finalizacja na innym dysku (Tex Murphy, Al-Qadim, Oblivion) ──
+
+SUPPORT_APP = [("app\\DOSBOX\\dosbox.exe", b"MZdosbox", ["executable", "support"]),
+               ("app\\dosboxTex3.conf", b"[dosbox]\n", ["support"]),
+               ("1\\Oblivion.ini", b"[General]\n", ["support"])]
+
+
+def test_support_files_from_app_go_to_game_folder(env):
+    """Tex Murphy: DOSBox w manifeście jako app\\DOSBOX\\… z flagą support, playTask wskazuje DOSBOX\\dosbox.exe."""
+    env["root"] = env["tmp"] / "_d_sup"
+    build_archive(env["root"], extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED
+    assert (target / "DOSBOX" / "dosbox.exe").read_bytes() == b"MZdosbox"
+    assert (target / "dosboxTex3.conf").is_file() and not (target / "app" / "DOSBOX").exists()
+    assert (target / "1" / "Oblivion.ini").is_file()                 # inne pliki „support” — {supportDir}/1 jak dotąd
+    assert gi.uninstall(PID, remove_hkcu=lambda a: None)["dir_removed"]
+
+
+def test_script_copying_support_app_into_game_folder_is_done(env):
+    """Al-Qadim / Prisoner of Ice: supportData {supportDir}/app → {app} — pliki już są w katalogu gry."""
+    env["root"] = env["tmp"] / "_d_alq"
+    s = json.loads(json.dumps(SCRIPT))
+    s["actions"].append({"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/app", "target": "{app}", "type": "folder"}}})
+    build_archive(env["root"], script=s, extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED and (target / "DOSBOX" / "dosbox.exe").is_file()
+
+
+def test_support_app_step_without_app_folder(tmp_path):
+    """Folderu app/ nie ma (pliki „support” są już w katalogu gry) — krok wykonany, nie „brak źródła”."""
+    app = tmp_path / "g"
+    app.mkdir()
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/app", "target": "{app}", "type": "folder"}}}]}))
+    r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known=set())
+    assert r["done"] == ["supportData app (pliki już w katalogu gry)"] and r["created"] == []
+    # inne źródło, którego nie ma — nadal błąd
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "source": "{supportDir}/add", "target": "{app}", "type": "folder"}}}]}))
+    with pytest.raises(gogfinal.FinalizeError):
+        gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known=set())
+
+
+def test_support_rel_only_strips_app_of_support_files():
+    assert gi.support_rel({"flags": ["support"]}, "app/DOSBOX/dosbox.exe") == "DOSBOX/dosbox.exe"
+    assert gi.support_rel({"flags": ["support"]}, "app") == ""
+    assert gi.support_rel({"flags": ["support"]}, "application/x.dat") == "application/x.dat"
+    assert gi.support_rel({"flags": ["support"]}, "userdocs/DragonAge.ini") == "userdocs/DragonAge.ini"
+    assert gi.support_rel({}, "app/dosbox.conf") == "app/dosbox.conf"          # zwykły plik gry w folderze app
+
+
+def test_finalize_copies_to_documents_on_another_drive(env, monkeypatch):
+    """Oblivion: gra na D:, Dokumenty na C: — os.path.relpath między dyskami rzuca ValueError."""
+    real = gogfinal.os.path.relpath
+    docs = env["tmp"] / "Dokumenty"
+
+    def relpath(p, start=None):
+        if str(p).startswith(str(docs)):
+            raise ValueError("path is on mount 'C:', start on mount 'D:'")
+        return real(p, start) if start is not None else real(p)
+    monkeypatch.setattr(gogfinal.os.path, "relpath", relpath)
+    env["root"] = env["tmp"] / "_d_obl"
+    s = json.loads(json.dumps(SCRIPT))
+    s["actions"].append({"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/1", "target": "{userdocs}/My Games/Oblivion", "type": "folder"}}})
+    build_archive(env["root"], script=s, extra_files=SUPPORT_APP)
+    e, _target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED
+    assert (docs / "My Games" / "Oblivion" / "Oblivion.ini").is_file()
+    assert str(docs / "My Games" / "Oblivion" / "Oblivion.ini") in e["created_files"]
+
