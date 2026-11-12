@@ -30,11 +30,13 @@ class Proc:
         self.pid = pid
         self.returncode: int | None = None
 
-    def _code(self) -> int | None:
+    def _code(self) -> int:
+        """Kod wyjścia — wołane tylko po zakończeniu procesu (uchwyt zasygnalizowany): 259 to wtedy zwykły kod
+        wyjścia gry, nie STILL_ACTIVE (jak subprocess.Popen)."""
         from ctypes import wintypes
         code = wintypes.DWORD()
         ctypes.windll.kernel32.GetExitCodeProcess(self._h, ctypes.byref(code))
-        return None if code.value == 259 else int(code.value)          # 259 = STILL_ACTIVE
+        return int(code.value)
 
     def poll(self) -> int | None:
         if self.returncode is None and ctypes.windll.kernel32.WaitForSingleObject(self._h, 0) == 0:

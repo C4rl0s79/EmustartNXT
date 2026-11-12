@@ -11,7 +11,7 @@ import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOpt
 import { initLogger, log } from './logger'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
-import { asInstance, conflictMessage, handOffToRunning, isOtherCopy, launchInstance, registerRunning, type LumenInstance } from './instances'
+import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
 import { listDir } from './fsBrowse'
 import { Limiter } from './net'
 import { detectFlavor, Updater } from './updater'
@@ -72,10 +72,10 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 /** ta kopia Lumena — nowa kopia przekazuje ją działającej (okno wyboru przy innej wersji / innym folderze) */
-const thisInstance: LumenInstance = { version: app.getVersion(), exe: process.execPath, args: process.argv.slice(1) }
+const thisInstance: LumenInstance = { version: app.getVersion(), exe: process.execPath, pid: process.pid }
 // Działa już Lumen (ta sama albo inna kopia): prośba do niego, zanim ta kopia ruszy folder danych (instances.ts).
 // Osobny profil (LUMEN_USER_DATA — testy, rozwój) nie oddaje startu zwykłemu Lumenowi.
-if (!process.env.LUMEN_USER_DATA && handOffToRunning(thisInstance)) process.exit(0)
+if (!process.env.LUMEN_USER_DATA && handOffToRunning(thisInstance) === 'exit') process.exit(0)
 
 // Data folder: LumenData next to the exe in packaged builds (installer and portable) — settings,
 // caches, EmuStart data with the game cache, emulators and BIOS files, temp files (dataDir.ts).
@@ -98,7 +98,7 @@ app.setPath('temp', tempDir)
 process.env.TEMP = tempDir
 process.env.TMP = tempDir
 
-if (!app.requestSingleInstanceLock(thisInstance)) {
+if (!app.requestSingleInstanceLock()) {
   app.quit()
 }
 
@@ -1710,26 +1710,31 @@ async function emustartDefaults(): Promise<void> {
 // ---------------- lifecycle ----------------
 
 /** wybrana w oknie „dwie kopie” — uruchamiana po zamknięciu tej (silnik i dane zwolnione) */
-let switchTo: LumenInstance | null = null
 let conflictOpen = false
 let unregisterRunning: () => void = () => undefined
-function onOtherInstance(other: LumenInstance | null): void {
+/** Prośba nowej kopii (instances.ts): ta sama kopia — tylko okno na wierzch; inna — okno wyboru. „Przełącz”: ta
+ *  kopia się zamyka (nowa czeka i startuje sama — stąd nic nie jest uruchamiane). */
+async function onOtherInstance(other: LumenInstance): Promise<Answer> {
   restoreWindow()
-  if (!other || !isOtherCopy(thisInstance, other) || conflictOpen || shutDown) return
+  if (!isOtherCopy(thisInstance, other) || conflictOpen || shutDown) return 'stay'
   conflictOpen = true
-  const m = conflictMessage(thisInstance, other)
-  log.info('app', `druga kopia: Lumen ${other.version} (${other.exe})`)
-  const opts = { type: 'question' as const, title: 'Lumen', message: m.message, detail: m.detail, buttons: m.buttons, defaultId: 0, cancelId: 0, noLink: true }
-  void (win && !win.isDestroyed() ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts))
-    .then(({ response }) => {
-      if (response !== 1) return log.info('app', 'druga kopia: zostaje działająca')
-      log.info('app', `druga kopia: przełączam na ${other.exe}`)
-      switchTo = other
-      app.quit()
-    })
-    .finally(() => (conflictOpen = false))
+  try {
+    const m = conflictMessage(thisInstance, other)
+    log.info('app', `druga kopia: Lumen ${other.version} (${other.exe})`)
+    const opts = { type: 'question' as const, title: 'Lumen', message: m.message, detail: m.detail, buttons: m.buttons, defaultId: 0, cancelId: 0, noLink: true }
+    const { response } = await (win && !win.isDestroyed() ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts))
+    if (response !== 1) {
+      log.info('app', 'druga kopia: zostaje działająca')
+      return 'stay'
+    }
+    log.info('app', `druga kopia: zamykam się — startuje ${other.exe}`)
+    setTimeout(() => app.quit(), 100) // odpowiedź zapisana, zanim ta kopia zacznie się zamykać
+    return 'switch'
+  } finally {
+    conflictOpen = false
+  }
 }
-app.on('second-instance', (_e, _argv, _cwd, data) => onOtherInstance(asInstance(data)))
+app.on('second-instance', () => restoreWindow())
 
 let started = false // set once the app is ready: a second instance quitting at once has nothing to stop
 app.whenReady().then(async () => {
@@ -1884,15 +1889,6 @@ app.on('before-quit', (e) => {
   shutDown = true
   void shutdown().finally(() => {
     unregisterRunning()
-    if (switchTo) {
-      // blokada jednej kopii zwolniona dopiero po zamknięciu silnika — wybrana kopia startuje na wolnych danych
-      app.releaseSingleInstanceLock()
-      try {
-        launchInstance(switchTo)
-      } catch (e) {
-        log.error('app', `druga kopia: nie udało się uruchomić ${switchTo.exe}`, e)
-      }
-    }
     app.quit()
   })
 })

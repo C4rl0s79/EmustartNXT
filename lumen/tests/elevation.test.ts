@@ -8,7 +8,7 @@ vi.mock('node:child_process', async (orig) => ({
   ...(await orig<typeof import('node:child_process')>()),
   spawn: (cmd: string, args: string[]) => {
     spawned.push({ cmd, args })
-    return { unref: () => undefined }
+    return { unref: () => undefined, on: () => undefined }
   }
 }))
 
@@ -56,5 +56,20 @@ describe('autostartTaskXml', () => {
   it('domyślne opóźnienie — 30 s (np. Tailscale zdąży się połączyć)', () => {
     expect(el.AUTOSTART_DELAY_S).toBe(30)
     expect(el.autostartTaskXml('C:\\L\\Lumen.exe', [], 'PC\\a')).toContain('<Delay>PT30S</Delay>')
+  })
+})
+
+describe('poprawki z code review', () => {
+  it('adres www dla explorer.exe: przecinki zakodowane (Explorer dzieli po nich — /root,C:…)', () => {
+    expect(el.explorerArg('https://x.example/a,/root,C:/Windows')).toBe('https://x.example/a%2C/root%2CC:/Windows')
+    expect(el.explorerArg('steam://rungameid/400')).toBe('steam://rungameid/400')
+  })
+
+  it('ścieżka w XML zadania — także z polskimi znakami w innej stronie kodowej', () => {
+    const exe = String.raw`D:\Gry\Łódź & Co\Lumen.exe`
+    expect(el.taskXmlNamesExe(String.raw`<Command>D:\Gry\Łódź &amp; Co\Lumen.exe</Command>`, exe)).toBe(true)
+    // cp852 odczytane jako UTF-8: polskie litery zniekształcone, reszta ścieżki ta sama
+    expect(el.taskXmlNamesExe(String.raw`<Command>D:\Gry\��d� &amp; Co\Lumen.exe</Command>`, exe)).toBe(true)
+    expect(el.taskXmlNamesExe(String.raw`<Command>D:\Inne\Lumen.exe</Command>`, exe)).toBe(false)
   })
 })

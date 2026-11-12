@@ -86,14 +86,22 @@ autostart przez Harmonogram zadań z opóźnieniem (np. Tailscale zdąży się p
   (`gog_uninstall_preview`, `remove_outside`); w szczegółach gry — pominięte kroki instalatora.
 - Lumen: druga kopia Lumena z **innego folderu lub w innej wersji** (np. wersja testowa przy zainstalowanej,
   schowanej w zasobniku) — działająca kopia pokazuje okno z wersją i folderem obu i pyta, która ma zostać:
-  „zostaw działającą” albo „przełącz na nową” (działająca zwalnia blokadę, uruchamia nową z jej argumentami
-  i się zamyka). Ta sama kopia uruchomiona ponownie — jak dotąd tylko przywraca okno. Działa, gdy uruchomiona
-  wcześniej kopia ma już tę zmianę (starsze wersje nadal po cichu przejmują start).
+  „zostaw działającą” albo „przełącz na nową”. Ta sama kopia uruchomiona ponownie — jak dotąd tylko przywraca okno.
+  Działa, gdy uruchomiona wcześniej kopia ma już tę zmianę (starsze wersje nadal po cichu przejmują start).
   (Uwaga z testu na żywo 2026-11-12: wersja testowa „znikała”, bo stara 1.0.57 była schowana w zasobniku.)
   Mechanizm: pliki w `%LOCALAPPDATA%\Lumen` (`running.json` działającej kopii, prośba `second-instance.json`
-  nowej, odebrana w ≤ 4 s — inaczej nowa startuje jak dotąd), sprawdzane przed wyborem folderu danych. Blokada
-  Electrona nie wystarcza (test na żywo): rozpoznaje kopie po ścieżce folderu danych, a jej komunikat od procesu
-  bez uprawnień do Lumena z uprawnieniami Windows odrzuca — nowa kopia znikała bez śladu.
+  nowej, odpowiedź `second-instance-<PID>.answer`), sprawdzane przed wyborem folderu danych. Blokada Electrona nie
+  wystarcza (test na żywo): rozpoznaje kopie po ścieżce folderu danych, a jej komunikat od procesu bez uprawnień
+  do Lumena z uprawnieniami Windows odrzuca. Działająca kopia **niczego nie uruchamia** (code review: prośbę może
+  zapisać każdy proces użytkownika — uruchomienie programu z niej przez Lumena z uprawnieniami = obejście UAC);
+  „przełącz” = działająca się zamyka, a nowa (uruchomiona przez gracza, z jego zgodą UAC) czeka i startuje sama.
+- Poprawki z code review (PR #26): zadanie aktualizacji z najwyższymi uprawnieniami, gdy Lumen je ma (skrypt
+  widzi silnik i czeka na jego zamknięcie; ponowny start bez okna UAC); adresy www do `explorer.exe` z
+  zakodowanymi przecinkami; stan zadania autostartu zapamiętany (menu zasobnika nie woła `schtasks` za każdym
+  razem) i ścieżka z polskimi znakami w innej stronie kodowej; deinstalator usuwa zadanie autostartu (jedno okno
+  UAC, tylko gdy zadanie istnieje); kod wyjścia 259 gry nie jest już „wciąż działa” (`unelevated.Proc`, obie
+  kopie silnika); „Nieudane kroki administratora” w szczegółach gry GOG. Pierwsza aktualizacja z ≤ 1.0.58 do
+  1.0.59 zapyta raz o UAC (stary aktualizator uruchamia Lumena bez uprawnień).
 
 Nie dotyka: klienta EmuStart (bez uprawnień — zachowanie bez zmian), serwera, APK, listy gier, sterowania, menu
 (poza oknem odinstalowania gry GOG i informacją w jej szczegółach).

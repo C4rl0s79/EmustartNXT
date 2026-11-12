@@ -1,42 +1,48 @@
-import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { isElevated } from './elevation'
-import { POWERSHELL } from './systemTools'
 
 /**
- * Dwie kopie Lumena (np. wersja testowa przy zainstalowanej, schowanej w zasobniku): druga kopia przekazuje
- * działającej swoją wersję, Lumen.exe i argumenty, a działająca pyta gracza, która ma zostać. Ta sama kopia
- * uruchomiona ponownie — tylko przywraca okno.
+ * Dwie kopie Lumena (np. wersja testowa przy zainstalowanej, schowanej w zasobniku): nowa kopia przekazuje
+ * działającej swoją wersję i Lumen.exe, a działająca pyta gracza, która ma zostać. Ta sama kopia uruchomiona
+ * ponownie — tylko przywraca okno.
  *
  * Przez pliki w %LOCALAPPDATA%\Lumen, nie przez blokadę jednej kopii Electrona: ta rozpoznaje kopie po ścieżce
  * folderu danych (dwie ścieżki do jednego folderu — blokada zajęta, a powiadomienie nie dochodzi; osobne foldery
  * danych — obie kopie działają naraz), a jej komunikat od procesu bez uprawnień do procesu administratora Windows
- * odrzuca. Działająca kopia zapisuje `running.json` (wersja, Lumen.exe, PID) i odbiera `second-instance.json`;
- * nowa kopia — zanim ruszy dane — zostawia prośbę i czeka, aż działająca ją odbierze.
+ * odrzuca. Działająca kopia zapisuje `running.json` (PID) i odbiera prośby `second-instance.json`; nowa kopia —
+ * zanim ruszy dane — zostawia prośbę i czeka na odpowiedź `second-instance-<PID>.answer`.
+ *
+ * Działająca kopia NICZEGO nie uruchamia: prośbę może zapisać każdy proces użytkownika, a Lumen ma uprawnienia
+ * administratora (uruchomienie programu z prośby = obejście UAC). „Przełącz” = działająca się zamyka, a nowa —
+ * uruchomiona przez gracza, z jego zgodą UAC — czeka na to i startuje sama. Fałszywa prośba może co najwyżej
+ * pokazać okno wyboru.
  */
 export interface LumenInstance {
   version: string
   exe: string
-  /** argumenty startu bez samego programu (z kodu źródłowego — z folderem aplikacji) */
-  args: string[]
+  pid: number
 }
+
+export type Answer = 'stay' | 'switch'
+
+const clip = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n)}…` : s)
 
 export function asInstance(data: unknown): LumenInstance | null {
   const d = data as Partial<LumenInstance> | null
-  if (!d || typeof d.version !== 'string' || typeof d.exe !== 'string' || !d.exe) return null
-  return { version: d.version, exe: d.exe, args: Array.isArray(d.args) ? d.args.filter((a): a is string => typeof a === 'string') : [] }
+  if (!d || typeof d.version !== 'string' || typeof d.exe !== 'string' || !d.exe || typeof d.pid !== 'number' || !Number.isInteger(d.pid) || d.pid <= 0) return null
+  // tylko do pokazania w oknie — z pliku, który może zapisać każdy proces użytkownika
+  return { version: clip(d.version, 40), exe: clip(d.exe, 400), pid: d.pid }
 }
 
 const samePath = (a: string, b: string): boolean => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase()
 
 /** Inna kopia: inny Lumen.exe albo inna wersja (np. zaktualizowana w miejscu, a stara jeszcze działa). */
-export function isOtherCopy(running: LumenInstance, incoming: LumenInstance): boolean {
+export function isOtherCopy(running: Omit<LumenInstance, 'pid'>, incoming: Omit<LumenInstance, 'pid'>): boolean {
   return !samePath(running.exe, incoming.exe) || running.version !== incoming.version
 }
 
-export function conflictMessage(running: LumenInstance, incoming: LumenInstance): { message: string; detail: string; buttons: string[] } {
+export function conflictMessage(running: Omit<LumenInstance, 'pid'>, incoming: Omit<LumenInstance, 'pid'>): { message: string; detail: string; buttons: string[] } {
   return {
     message: 'Uruchomiono drugą kopię Lumena. Która ma zostać?',
     detail: `Działa: Lumen ${running.version} — ${path.dirname(running.exe)}\nNowa: Lumen ${incoming.version} — ${path.dirname(incoming.exe)}`,
@@ -44,34 +50,16 @@ export function conflictMessage(running: LumenInstance, incoming: LumenInstance)
   }
 }
 
-const psQuote = (s: string): string => `'${s.replace(/'/g, "''")}'`
-
-/** Polecenie PowerShell uruchamiające kopię przez powłokę (manifest „jako administrator” — okno UAC). */
-export function startProcessCommand(it: LumenInstance): string {
-  // Start-Process łączy argumenty spacjami — te ze spacją w cudzysłowie
-  const args = it.args.map((a) => (/\s/.test(a) ? `"${a}"` : a))
-  return `Start-Process -FilePath ${psQuote(it.exe)} -WorkingDirectory ${psQuote(path.dirname(it.exe))}${args.length ? ` -ArgumentList ${args.map(psQuote).join(',')}` : ''}`
-}
-
-/** Uruchamia wybraną kopię (po zwolnieniu blokady jednej kopii): z uprawnieniami — wprost (bez okna UAC),
- *  bez nich — przez powłokę, która w razie potrzeby pokaże okno UAC. */
-export function launchInstance(it: LumenInstance): void {
-  if (isElevated()) {
-    spawn(it.exe, it.args, { cwd: path.dirname(it.exe), detached: true, stdio: 'ignore' }).unref()
-    return
-  }
-  spawn(POWERSHELL, ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', startProcessCommand(it)], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
-  }).unref()
-}
-
 export const INSTANCE_DIR = path.join(process.env.LOCALAPPDATA || os.homedir(), 'Lumen')
 const RUNNING = 'running.json'
 const REQUEST = 'second-instance.json'
+const answerFile = (dir: string, pid: number): string => path.join(dir, `second-instance-${pid}.answer`)
 /** tyle nowa kopia czeka na odebranie prośby — dłużej: działająca nie odpowiada (zawieszona, plik po awarii) */
 export const HANDOFF_WAIT_MS = 4000
+/** okno wyboru otwarte najdłużej tyle — potem nowa kopia się zamyka (działająca zostaje) */
+export const ANSWER_WAIT_MS = 10 * 60_000
+/** „przełącz”: działająca zamyka silnik (zapisy) — nowa czeka najdłużej tyle */
+export const EXIT_WAIT_MS = 120_000
 const POLL_MS = 500
 
 function readJson(file: string): unknown {
@@ -103,37 +91,57 @@ const sleep = (ms: number): void => {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
 }
 
-/**
- * Nowa kopia, przed wyborem folderu danych: działa inna kopia Lumena — prośba do niej (ona pokaże okno albo
- * przywróci swoje) i true (ta się zamyka). False — nikt nie działa albo nie odebrał prośby (start jak dotąd).
- */
-export function handOffToRunning(self: LumenInstance, dir = INSTANCE_DIR, waitMs = HANDOFF_WAIT_MS): boolean {
-  const running = readJson(path.join(dir, RUNNING)) as { pid?: unknown } | null
-  const pid = typeof running?.pid === 'number' ? running.pid : 0
-  if (!pid || pid === process.pid || !processAlive(pid)) return false
-  const req = path.join(dir, REQUEST)
-  try {
-    writeAtomic(req, self)
-  } catch {
-    return false
+/** czeka (blokując — przed startem aplikacji), aż `done()`; false po czasie */
+function waitFor(done: () => boolean, ms: number, step = 100): boolean {
+  for (let t = 0; t < ms; t += step) {
+    if (done()) return true
+    sleep(step)
   }
-  for (let t = 0; t < waitMs; t += 100) {
-    sleep(100)
-    if (!existsSync(req)) return true
-  }
-  rmSync(req, { force: true })
-  return false
+  return done()
 }
 
 /**
- * Działająca kopia: zapisuje się w running.json i co pół sekundy odbiera prośby nowych kopii. Zwraca funkcję
- * wyrejestrowania (przy zamykaniu — PRZED uruchomieniem wybranej kopii, inaczej ta oddałaby prośbę z powrotem).
+ * Nowa kopia, przed wyborem folderu danych. 'continue' — nikt nie działa, nie odebrał prośby albo gracz wybrał
+ * tę kopię (poprzednia już się zamknęła): start jak dotąd. 'exit' — zostaje działająca (ta się zamyka).
  */
-export function registerRunning(self: LumenInstance, onOther: (other: LumenInstance) => void, dir = INSTANCE_DIR): () => void {
+export function handOffToRunning(self: LumenInstance, dir = INSTANCE_DIR, t = { handoff: HANDOFF_WAIT_MS, answer: ANSWER_WAIT_MS, exit: EXIT_WAIT_MS }): 'continue' | 'exit' {
+  const running = readJson(path.join(dir, RUNNING)) as { pid?: unknown } | null
+  const pid = typeof running?.pid === 'number' ? running.pid : 0
+  if (!pid || pid === self.pid || !processAlive(pid)) return 'continue'
+  const req = path.join(dir, REQUEST)
+  const ans = answerFile(dir, self.pid)
+  try {
+    rmSync(ans, { force: true })
+    writeAtomic(req, self)
+  } catch {
+    return 'continue'
+  }
+  if (!waitFor(() => !existsSync(req), t.handoff)) {
+    rmSync(req, { force: true })
+    return 'continue'
+  }
+  let answer: unknown = null
+  waitFor(() => (answer = readJson(ans)) !== null || !processAlive(pid), t.answer, 200)
+  rmSync(ans, { force: true })
+  if (answer === null) return processAlive(pid) ? 'exit' : 'continue' // działająca zniknęła bez odpowiedzi — start
+  if (answer !== 'switch') return 'exit'
+  waitFor(() => !processAlive(pid), t.exit, 200)
+  return 'continue'
+}
+
+/**
+ * Działająca kopia: zapisuje się w running.json i co pół sekundy odbiera prośby nowych kopii; `onOther` zwraca
+ * odpowiedź (od razu albo po oknie wyboru). Zwraca funkcję wyrejestrowania (przy zamykaniu).
+ */
+export function registerRunning(
+  self: LumenInstance,
+  onOther: (other: LumenInstance) => Answer | Promise<Answer>,
+  dir = INSTANCE_DIR
+): () => void {
   const file = path.join(dir, RUNNING)
   const req = path.join(dir, REQUEST)
   try {
-    writeAtomic(file, { ...self, pid: process.pid })
+    writeAtomic(file, { pid: self.pid })
   } catch {
     return () => undefined
   }
@@ -141,12 +149,21 @@ export function registerRunning(self: LumenInstance, onOther: (other: LumenInsta
     if (!existsSync(req)) return
     const other = asInstance(readJson(req))
     rmSync(req, { force: true })
-    if (other) onOther(other)
+    if (!other) return
+    void Promise.resolve(onOther(other))
+      .catch((): Answer => 'stay')
+      .then((a) => {
+        try {
+          writeAtomic(answerFile(dir, other.pid), a)
+        } catch {
+          /* nowa kopia po czasie i tak się zamknie albo wystartuje */
+        }
+      })
   }, POLL_MS)
   timer.unref?.()
   return () => {
     clearInterval(timer)
     const r = readJson(file) as { pid?: unknown } | null
-    if (r?.pid === process.pid) rmSync(file, { force: true })
+    if (r?.pid === self.pid) rmSync(file, { force: true })
   }
 }

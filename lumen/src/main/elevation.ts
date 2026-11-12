@@ -40,10 +40,19 @@ export function setElevatedForTests(v: boolean | null): void {
  */
 export async function openUnelevated(target: string): Promise<void> {
   if (isElevated()) {
-    spawn(EXPLORER, [target], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+    const p = spawn(EXPLORER, [explorerArg(target)], { detached: true, stdio: 'ignore', windowsHide: true })
+    p.on('error', (e) => log.warn('app', `explorer.exe ${target}: ${e.message}`))
+    p.unref()
     return
   }
   await shell.openExternal(target)
+}
+
+/** Explorer sam dzieli argument po przecinkach (`/root,C:\…`) — w adresie www przecinki zakodowane, żeby otworzył
+ *  stronę, nie ścieżkę lokalną. Uwaga: z uprawnieniami błąd uruchomienia (brak obsługi steam://) pokazuje
+ *  Eksplorator — Lumen go nie dostaje. */
+export function explorerArg(target: string): string {
+  return /^https?:\/\//i.test(target) ? new URL(target).href.replace(/,/g, '%2C') : target
 }
 
 export const AUTOSTART_TASK = 'Lumen autostart'
@@ -80,19 +89,36 @@ export function autostartTaskXml(exe: string, args: string[], user: string, dela
 
 const currentUser = (): string => `${process.env.USERDOMAIN || os.hostname()}\\${process.env.USERNAME || os.userInfo().username}`
 
+/** ścieżka w XML zadania; znaki spoza ASCII — dowolne (wyjście schtasks bywa w stronie kodowej konsoli) */
+export function taskXmlNamesExe(text: string, exe: string): boolean {
+  const pattern = [...esc(exe)].map((c) => (c.charCodeAt(0) > 127 ? '[^<]{1,3}' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).join('')
+  return new RegExp(pattern, 'i').test(text)
+}
+
+/** XML zadania (null — brak); zapamiętany do następnej zmiany — menu zasobnika pyta o stan przy każdym otwarciu,
+ *  a schtasks.exe blokuje główny wątek */
+let taskXml: string | null | undefined
+function readTaskXml(): string | null {
+  if (taskXml === undefined) {
+    try {
+      const xml = execFileSync(SCHTASKS, ['/Query', '/TN', AUTOSTART_TASK, '/XML'], { windowsHide: true, timeout: 15000 })
+      taskXml = xml.includes(0) ? xml.toString('utf16le') : xml.toString('utf8')
+    } catch {
+      taskXml = null
+    }
+  }
+  return taskXml
+}
+
 /** Zadanie autostartu istnieje (i wskazuje ten Lumen.exe — `exe` podany: inny folder = nieaktualne). */
 export function autostartTaskExists(exe?: string): boolean {
-  try {
-    const xml = execFileSync(SCHTASKS, ['/Query', '/TN', AUTOSTART_TASK, '/XML'], { windowsHide: true, timeout: 15000 })
-    const text = xml.includes(0) ? xml.toString('utf16le') : xml.toString('utf8')
-    return !exe || text.toLowerCase().includes(esc(exe).toLowerCase())
-  } catch {
-    return false
-  }
+  const text = readTaskXml()
+  return text !== null && (!exe || taskXmlNamesExe(text, exe))
 }
 
 /** Włącza / wyłącza autostart przez Harmonogram zadań; false — Windows odmówił (zasady, brak uprawnień). */
 export function setAutostartTask(on: boolean, exe: string, args: string[], delayS = AUTOSTART_DELAY_S): boolean {
+  taskXml = undefined // stan odczytany na nowo przy następnym pytaniu
   try {
     if (!on) {
       if (autostartTaskExists()) execFileSync(SCHTASKS, ['/Delete', '/TN', AUTOSTART_TASK, '/F'], { windowsHide: true, timeout: 15000 })

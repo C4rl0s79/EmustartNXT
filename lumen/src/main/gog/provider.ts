@@ -110,6 +110,7 @@ export function gogGames(lib: GogLibraryRaw, st: GogStatusRaw | null): Game[] {
             adminSteps: inst.admin_steps,
             runtimes: inst.runtimes,
             skipped: inst.skipped?.length ? inst.skipped : undefined,
+            adminFailed: inst.admin_failed || undefined,
             pendingDlc: inst.pending_dlc?.length ? inst.pending_dlc : undefined,
             updateNote: b && inst.hash && b.hash !== inst.hash ? 'Serwer ma nowszy build tej gry. Aktualizacja zainstalowanej gry nie jest jeszcze obsługiwana.' : undefined
           }

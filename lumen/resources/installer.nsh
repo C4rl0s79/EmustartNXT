@@ -29,5 +29,13 @@
 !macro customUnInstall
   ${ifNot} ${isUpdated}
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Lumen"
+    ; Lumen jako administrator: autostart to zadanie Harmonogramu z najwyższymi uprawnieniami — po odinstalowaniu
+    ; uruchamiałoby przy logowaniu, co trafi pod tę ścieżkę. Usunięcie wymaga administratora (jedno okno UAC),
+    ; tylko gdy zadanie istnieje.
+    nsExec::Exec '"$SYSDIR\schtasks.exe" /Query /TN "Lumen autostart"'
+    Pop $R0
+    ${if} $R0 == 0
+      ExecShellWait "runas" "$SYSDIR\schtasks.exe" '/Delete /TN "Lumen autostart" /F' SW_HIDE
+    ${endIf}
   ${endIf}
 !macroend

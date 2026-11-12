@@ -35,6 +35,7 @@ export function gogFacts(game: Game, server?: string): [string, string | undefin
     ['Folder', g.installDir],
     ['Biblioteki systemowe', g.runtimes?.length ? g.runtimes.map((r) => `${r.id}${r.done ? ' ✓' : ''}`).join(', ') : undefined],
     ['Pominięte kroki instalatora', g.skipped?.length ? g.skipped.join('; ') : undefined],
+    ['Nieudane kroki administratora', g.adminFailed ? `${g.adminFailed} (pominięte po 3 próbach — gra może nie działać poprawnie)` : undefined],
     ['Uwaga', g.updateNote],
     ['Błąd', g.state !== 'installed' ? g.error : undefined]
   ]
