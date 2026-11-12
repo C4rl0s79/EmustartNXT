@@ -214,7 +214,7 @@ def test_fbneo_names_and_versions_without_mame(env, tmp_path):
                    '<game name="1941j" cloneof="1941" romof="1941"><description>1941 - Counter Attack (Japan)</description></game>'
                    '<game name="neogeo" isbios="yes"><description>Neo-Geo BIOS</description></game>'
                    '</datafile>', encoding="utf-8")
-    from emustart import art, paths
+    from emustart import art
     for n in ("1941", "1941j", "neogeo"):
         _write(roms / "fbneo" / f"{n}.zip", b"zip")
     scanner.scan_system("fbneo", roms / "fbneo")                    # bez indeksu: nazwy setów

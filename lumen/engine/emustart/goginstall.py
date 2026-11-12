@@ -586,7 +586,7 @@ def _empty_or_ours(d: Path, pid: str) -> bool:
         return True
     if not d.is_dir():
         return False
-    other = [p for p in d.iterdir()]
+    other = list(d.iterdir())
     if not other:
         return True
     e = load_entry(pid)

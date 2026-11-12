@@ -204,7 +204,7 @@ def _body(h) -> dict:
 
 # ── wejście z server.py ──
 def handles(path: str) -> bool:
-    return path == "/" or path == "/favicon.ico" or path.startswith(PATHS[1:5])
+    return path in ("/", "/favicon.ico") or path.startswith(PATHS[1:5])
 
 
 def get(h) -> None:
@@ -218,7 +218,7 @@ def get(h) -> None:
         return _json(h, _me(h, (q.get("zaproszenie") or [""])[0]))
     if path.startswith("/dl/"):
         return _download(h, path[4:])
-    if path == "/" or path == "/favicon.ico":
+    if path in ("/", "/favicon.ico"):
         return _static(h, "index.html" if path == "/" else "favicon.svg")
     if path.startswith("/portal/"):
         return _static(h, urllib.parse.unquote(path[len("/portal/"):]))
