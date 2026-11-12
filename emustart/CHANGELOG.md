@@ -6,7 +6,60 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
-### Instalacja gier GOG: pliki „support” i foldery na innym dysku — plan
+### Plan: instalacja gier GOG jak w GOG Galaxy (kroki skryptów, rejestr, deinstalator) — Lumen 1.0.58
+
+Podstawa: skan 549 gier archiwum `Z:\gog` (2026-11-12) — 87 gier miało akcję, symbol albo zadanie uruchamiania,
+których finalizacja nie obsługiwała; instalator offline Quake II i `galaxy_*.exe` (Spelunky, Mount & Blade) odczytane
+z nagłówka Inno (bez uruchamiania). Ustalenia z użytkownikiem (2026-11-12):
+- **Jedno okno UAC na instalację**: wszystkie kroki administratora gry (HKLM, SDB, `Execute` z `runAsAdmin`, zapora)
+  w jednym pliku wsadowym; każdy krok zapisany, żeby deinstalator mógł go cofnąć.
+- **Rejestr `HKLM\SOFTWARE\GOG.com\Games\<id>` zawsze** (jak instalator GOG): `PATH`, `EXE`, `EXEFILE`, `WORKINGDIR`,
+  `LAUNCHCOMMAND`, `LAUNCHPARAM`, `GAMENAME`, `gameID`, `VER`, `BUILD`, `LANGUAGE`, `INSTALLDATE`; wartości ze
+  skryptu gry mają pierwszeństwo. Bez `uninstallCommand`, menu Start, `GOGGAMEDLL`, `GUID`.
+- **`Execute`**: skrypty systemowe (`directplay`, `regs`, `regvs`, `add_reg`, `regvideodll`, `ac3`, `wmfdist`,
+  `setres`, `rmsdb`/`removesdb`, `VegasTimeOrder`, `firewall`, `regsvr32` kodeka) w kroku UAC; bez administratora
+  (`attrib`, `formatPath.bat`, `clean.bat`) od razu; `gameux.cmd` pomijany. Reguły zapory usuwane przy odinstalowaniu.
+- **`galaxy_*.exe` (22 gry) nie jest uruchamiany** (pobiera/rejestruje GOG Galaxy, skróty, deinstalator Inno) —
+  silnik odczytuje jego wpisy `[Registry]` z nagłówka Inno (flagi zgodności `AppCompatFlags\Layers`, klucze gry) i
+  wykonuje je w kroku UAC; pomija skróty, Galaxy, Eksplorator gier, deinstalator.
+- **`installSDB`** (17 gier): `sdbinst` w kroku UAC, `sdbinst -u` przy odinstalowaniu.
+- **Symbole**: `{documents}` (= Dokumenty), `{commondocs}` (Dokumenty publiczne); `{uninstallexe}`, `{code:…}` —
+  ta jedna wartość pominięta. **Nowe akcje**: `saveToFile` (tylko katalog gry), `delRegistry` (tylko `Software`,
+  z warunkami). `createShortcut` pomijany.
+- **Uruchamianie**: zadanie `.bat` przez `cmd /c`; zadanie `.lnk` — cel skrótu (program i parametry). Brak pliku
+  gry → komunikat z nazwą tego pliku, nie następne zadanie (PDF).
+- **Warunki skryptu**: `overwrite: false` i `saveGameData: true` nie nadpisują istniejących plików; `onlyOnce`
+  zapamiętany; `onLanguageChange` tylko przy zmianie języka.
+- **Synchronizacja**: ustawienia (`config`) gier GOG domyślnie włączone (przełącznik na grę zostaje); stan
+  synchronizacji gry kasowany przy odinstalowaniu/instalacji; „świeża instalacja” — pliki zapisane przez
+  instalator przy pierwszym uruchomieniu zastępowane wersją z serwera bez pytania (konflikt tylko po zmianie gracza).
+- **Biblioteki** (VC++, DirectX): wykrycie zainstalowanych (rejestr / pliki systemowe), zapamiętanie, kody 1638 i
+  3010 = sukces.
+- **Deinstalator**: HKLM z obu widoków + plik `.reg`, przywrócenie wartości HKCU sprzed instalacji, SDB, reguły
+  zapory, flagi zgodności, stan synchronizacji; `finish_admin` nie gubi kroków gry przy DLC; pliki w
+  Dokumentach/AppData — lista i wybór „usuń / zostaw” (zapisy zostają zawsze).
+- Bez zmian (decyzja użytkownika): Wing Commander III (presety pada), S.T.A.L.K.E.R. G.A.M.M.A. (`LongPathsEnabled`).
+
+Nie dotyka: listy gier, sterowania, menu (poza oknem odinstalowania i informacją o pominiętych krokach w szczegółach
+gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GOG). Silnik: `emustart/` i
+`lumen/engine/`; interfejs: Lumen (`lumen/src`).
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 0 | Pliki „support” z `app\`, finalizacja z Dokumentami na innym dysku, migracja starych instalacji (PR #25) | zrobione (testy); czeka na sprawdzenie na żywo |
+| 1 | Wspólny krok administratora (jeden UAC, plik wsadowy, zapis wykonanych kroków); deinstalator HKLM (oba widoki, `.reg`), `finish_admin` z DLC | następny |
+| 2 | Rejestr `GOG.com\Games\<id>` zawsze (punkt 9) | — |
+| 3 | `installSDB` + odinstalowanie | — |
+| 4 | `Execute`/`execute` (UAC i bez), zapora + odinstalowanie, `gameux` pominięty | — |
+| 5 | `galaxy_*.exe`: parser `[Registry]` Inno 5.x, wpisy w kroku UAC | — |
+| 6 | Symbole `{documents}`, `{commondocs}`, `{uninstallexe}`, `{code:…}`; `saveToFile`, `delRegistry` | — |
+| 7 | Uruchamianie `.bat` i `.lnk`, komunikat o brakującym pliku gry | — |
+| 8 | Warunki skryptu, synchronizacja ustawień domyślnie, stan synchronizacji, „świeża instalacja” | — |
+| 9 | Biblioteki: wykrywanie, zapamiętanie, 1638/3010 | — |
+| 10 | Deinstalator: HKCU sprzed instalacji, pliki w Dokumentach/AppData (wybór), okno w Lumenie | — |
+| 11 | Lumen: pominięte kroki w szczegółach gry, wersja 1.0.58, wydanie | — |
+
+### Instalacja gier GOG: pliki „support” i foldery na innym dysku (etap 0)
 
 Zgłoszenie: Oblivion GOTY i Tex Murphy: Under a Killing Moon kończą instalację w Lumenie błędem finalizacji.
 - Pliki depotu z flagą `support` i ścieżką `app\…` (147 gier w archiwum, głównie DOSBox/ScummVM) trafiają do
