@@ -49,7 +49,7 @@ def test_existing_player_files_not_overwritten(tmp_path):
     """overwrite: false (Divinity) i saveGameData: true (Oblivion) — plik gracza zostaje, brakujące są kopiowane."""
     app = tmp_path / "g"
     (app / "1").mkdir(parents=True)
-    (app / "1" / "Oblivion.ini").write_text("domyślne")
+    (app / "1" / "Oblivion.ini").write_text("domyślne", encoding="utf-8")   # CI: domyślne kodowanie to cp1252
     (app / "1" / "Nowy.ini").write_text("nowy")
     out = tmp_path / "Dok" / "My Games" / "Oblivion"
     out.mkdir(parents=True)
