@@ -1,4 +1,4 @@
-import { shell } from 'electron'
+import { openUnelevated } from '../elevation'
 import { log } from '../logger'
 
 // Actions are delegated to the Steam client through steam:// browser-protocol commands
@@ -45,7 +45,7 @@ export const DRY_RUN = process.env.LUMEN_DRY_RUN === '1'
 
 export async function openSteamUri(uri: string): Promise<void> {
   log.info('steam', `${DRY_RUN ? 'DRY RUN, not opening' : 'open'} ${uri}`)
-  if (!DRY_RUN) await shell.openExternal(uri)
+  if (!DRY_RUN) await openUnelevated(uri) // Lumen jako administrator — Steam i tak bez uprawnień
 }
 
 export async function openSteam(action: SteamUriAction, appId?: number): Promise<void> {

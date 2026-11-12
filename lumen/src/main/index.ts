@@ -9,6 +9,7 @@ import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
+import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { listDir } from './fsBrowse'
 import { Limiter } from './net'
@@ -192,7 +193,11 @@ const loginItem = (): { path: string; args: string[]; name: string } => ({
   args: app.isPackaged ? [DECK_ARG] : [app.getAppPath(), DECK_ARG],
   name: LOGIN_NAME
 })
+/** Lumen jako administrator (paczka): autostart przez Harmonogram zadań — wpis Run nie uruchomi programu
+ *  wymagającego uprawnień administratora (Windows go pomija); z kodu źródłowego — wpis Run jak dotąd. */
+const autostartByTask = (): boolean => app.isPackaged && isElevated()
 function getAutostart(): boolean {
+  if (autostartByTask()) return autostartTaskExists()
   try {
     return app.getLoginItemSettings(loginItem()).openAtLogin
   } catch {
@@ -201,6 +206,20 @@ function getAutostart(): boolean {
 }
 /** writes the login item; false when Windows refused it (a locked registry, a security program) */
 function setAutostart(on: boolean): boolean {
+  if (autostartByTask()) {
+    const it = loginItem()
+    const ok = setAutostartTask(on, it.path, it.args)
+    if (ok) {
+      try {
+        app.setLoginItemSettings({ openAtLogin: false, ...it }) // stary wpis Run (sprzed trybu administratora)
+      } catch {
+        /* brak wpisu — nic do usunięcia */
+      }
+      log.info('deck', `start with Windows: ${on ? `on (Harmonogram zadań, ${AUTOSTART_DELAY_S} s po zalogowaniu)` : 'off'}`)
+    }
+    deck?.refreshMenu()
+    return ok
+  }
   try {
     app.setLoginItemSettings({ openAtLogin: on, ...loginItem() })
     log.info('deck', `start with Windows: ${on ? 'on' : 'off'}`)
@@ -214,6 +233,17 @@ function setAutostart(on: boolean): boolean {
 }
 /** Lumen's folder moved (the zip version): the login item still names the old Lumen.exe — written again here */
 function refreshAutostartPath(): void {
+  if (autostartByTask()) {
+    // przejście na Harmonogram (wpis Run z wcześniejszej wersji) albo przeniesiony folder — zadanie wskazuje ten Lumen.exe
+    let runOn = false
+    try {
+      runOn = app.getLoginItemSettings(loginItem()).openAtLogin
+    } catch {
+      runOn = false
+    }
+    if (runOn || (autostartTaskExists() && !autostartTaskExists(process.execPath))) setAutostart(true)
+    return
+  }
   try {
     const items = (app.getLoginItemSettings(loginItem()) as { launchItems?: { name: string; path: string; enabled: boolean }[] }).launchItems ?? []
     const mine = items.find((i) => i.name === LOGIN_NAME)
@@ -1542,7 +1572,7 @@ function registerIpc(): void {
   })
   handle(IPC.appOpenExternal, async (url: string) => {
     if (!/^https:\/\//.test(url)) throw new Error('Dozwolone są tylko adresy https.')
-    await shell.openExternal(url)
+    await openUnelevated(url) // przeglądarka bez uprawnień administratora, także gdy Lumen je ma
   })
   handle(IPC.appQuit, () => app.quit())
   // TV menu → Wyjdź z Lumen → Schowaj do zasobnika: like closing the window with the Deck on (it keeps running)

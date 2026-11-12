@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import type { Game, GogGameInfo, GogInstallState, GogSummary, Job } from '@shared/types'
+import { isElevated } from '../elevation'
 import { log } from '../logger'
 import { JsonFile } from '../store/jsonFile'
 import type { EmustartEngine } from '../emustart/engine'
@@ -55,6 +56,8 @@ export interface GogInstallRaw {
   error?: string
   admin_steps?: number
   runtimes?: { id: string; done: boolean }[]
+  skipped?: string[]
+  admin_failed?: number
   pending_dlc?: string[]
   installed_at?: number
   last_played?: number
@@ -106,6 +109,7 @@ export function gogGames(lib: GogLibraryRaw, st: GogStatusRaw | null): Game[] {
             error: inst.error || undefined,
             adminSteps: inst.admin_steps,
             runtimes: inst.runtimes,
+            skipped: inst.skipped?.length ? inst.skipped : undefined,
             pendingDlc: inst.pending_dlc?.length ? inst.pending_dlc : undefined,
             updateNote: b && inst.hash && b.hash !== inst.hash ? 'Serwer ma nowszy build tej gry. Aktualizacja zainstalowanej gry nie jest jeszcze obsługiwana.' : undefined
           }
@@ -164,12 +168,27 @@ export class GogProvider extends EventEmitter {
       if (s === 'ready') {
         void this.refresh(true)
         this.startPolling()
+        if (isElevated()) void this.finishPendingAdmin()
       } else {
         this.stopPolling()
         this.status = null
         this.apply()
       }
     })
+  }
+
+  /** Lumen jako administrator: zaległe kroki instalacji gier (rejestr GOG, biblioteki, kroki skryptów) i niecofnięte
+   *  kroki gier odinstalowanych — od razu przy starcie, bez okna UAC (silnik ma uprawnienia). */
+  private async finishPendingAdmin(): Promise<void> {
+    try {
+      const p = await this.engine.call<{ games?: string[]; undo?: number }>('gog_admin_pending', [])
+      if (!p.games?.length && !p.undo) return
+      const r = await this.engine.call<{ ok: boolean; message?: string; reason?: string }>('gog_finish_admin_all', [], 10 * 60_000)
+      log.info('gog', `zaległe kroki administratora: ${r.ok ? r.message ?? 'OK' : r.reason ?? 'nie wykonano'}`)
+      void this.refresh(false)
+    } catch (e) {
+      log.warn('gog', `zaległe kroki administratora: ${(e as Error).message}`)
+    }
   }
 
   async init(): Promise<void> {
