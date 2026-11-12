@@ -116,7 +116,8 @@ _GUID = re.compile(r"\{(?:[0-9A-Fa-f]{32}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa
 def _symbols(s: str, app: Path, pid: str, f: dict) -> str:
     """Symbole skryptów GOG (nazwy jak w Inno Setup) → wartości na tym komputerze. Nieznane zostają (błąd u wołającego)."""
     s = str(s or "").replace("{app}", str(app)).replace("{supportDir}", str(app)).replace("{productID}", str(pid))
-    for name, key in (("userdocs", "winDocuments"), ("userappdata", "winAppData"), ("localappdata", "winLocalAppData"),
+    for name, key in (("userdocs", "winDocuments"), ("documents", "winDocuments"), ("commondocs", "winPublicDocuments"),
+                      ("userappdata", "winAppData"), ("localappdata", "winLocalAppData"),
                       ("commonappdata", "winProgramData"), ("userprofile", "home")):
         if f.get(key):
             s = s.replace("{%s}" % name, f[key])
@@ -281,6 +282,46 @@ def _run_local(exe: Path, args: str, cwd: Path) -> None:
 
 
 RUN_LOCAL = _run_local
+
+
+def _conditions(act: dict, args: dict) -> set:
+    c = (act or {}).get("conditions") or ((act or {}).get("install") or {}).get("conditions") or args.get("conditions")
+    return {str(x).strip().lower() for x in (c if isinstance(c, list) else [c] if c else [])}
+
+
+def remove_hkcu_value(subkey: str, name: str | None) -> None:
+    """delRegistry HKCU: wartość (albo pusty klucz, gdy bez nazwy)."""
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey, 0, winreg.KEY_SET_VALUE) as k:
+            if name is not None:
+                winreg.DeleteValue(k, name)
+        if name is None:
+            winreg.DeleteKey(winreg.HKEY_CURRENT_USER, subkey)
+    except OSError:
+        pass
+
+
+DEL_HKCU = remove_hkcu_value
+
+
+def _del_registry(act: dict, args: dict, app: Path, pid: str, sysf: dict, res: dict) -> None:
+    """delRegistry: stara wartość, którą skrypt usuwa przed zapisem nowej (Dragon Age: Path). HKLM — krok
+    administratora (usunięta wartość wraca przy odinstalowaniu), HKCU — od razu. Pomijane: saveGameData (dane
+    gracza, np. INSIDE trzyma ustawienia w rejestrze) i onLanguageChange (przy instalacji język się nie zmienia)."""
+    if args.get("saveGameData") or "onlanguagechange" in _conditions(act, args):
+        res["skipped"].append(f"delRegistry {args.get('subkey')} (dane gracza / zmiana języka)")
+        return
+    has_name = "valueName" in args
+    a = registry_action({"root": args.get("root"), "subkey": args.get("subkey"),
+                         "valueName": args.get("valueName") or "", "valueData": ""}, app, pid, sysf)
+    if a["root"] == "HKCU":
+        DEL_HKCU(a["subkey"], a["name"] if has_name else None)
+        res["done"].append(f"delRegistry HKCU\\{a['subkey']}")
+    elif has_name:
+        res["admin"].append({"op": "regdel", "subkey": a["subkey"], "name": a["name"]})
+    else:
+        res["skipped"].append(f"delRegistry HKLM\\{a['subkey']} (cały klucz — pominięte)")
 
 
 def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
@@ -464,6 +505,11 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             if _UNINSTALL.search(str(args.get("subkey") or "").replace("/", "\\")):
                 res["skipped"].append("wpis deinstalatora w rejestrze")   # gra nie ma deinstalatora Windows
                 continue
+            low = str(args.get("valueData") or "").lower()
+            if "{uninstallexe}" in low or "{code:" in low:
+                # ścieżka deinstalatora Inno / funkcja z kodu instalatora — gra nie ma ani jednego, ani drugiego
+                res["skipped"].append(f"rejestr {args.get('valueName')}: {args.get('valueData')}")
+                continue
             a = registry_action(args, app, pid, sysf)
             if a["root"] == "HKCU":
                 hkcu(a)
@@ -471,6 +517,22 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
                 res["done"].append(f"rejestr HKCU\\{a['subkey']} {a['name']}")
             else:
                 res["admin"].append(a)
+        elif kind == "saveToFile":
+            # S.T.A.L.K.E.R.: fsgame.ltx ze ścieżką zapisów w Dokumentach — tylko plik w katalogu gry
+            f = resolve(args.get("filename"))
+            if not _inside(f, app):
+                raise FinalizeError(f"saveToFile poza katalogiem gry: {args.get('filename')}")
+            text = _symbols(str(args.get("text") or ""), app, pid, sysf)
+            if is_new(f):
+                res["created"].append(str(f))
+            f.parent.mkdir(parents=True, exist_ok=True)
+            if f.exists():
+                f.chmod(f.stat().st_mode | 0o200)             # attrib +r z poprzedniej finalizacji
+            f.write_bytes(text.encode("utf-8" if args.get("utf8", True) else ("mbcs" if os.name == "nt" else "cp1252"),
+                                      errors="replace"))
+            res["done"].append(f"saveToFile {f.name}")
+        elif kind == "delRegistry":
+            _del_registry(act, args, app, pid, sysf, res)
         elif kind in ("Execute", "execute"):
             _execute(args, app, pid, sysf, res, hkcu, resolve)
         elif kind == "installSDB":

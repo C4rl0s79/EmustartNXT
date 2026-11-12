@@ -30,7 +30,7 @@ log = logging.getLogger("emustart.gogadmin")
 # typy wartości rejestru (stałe winreg — bez importu, planowanie działa też poza Windows)
 REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD = 1, 2, 3, 4
 _TYPES = {"string": REG_SZ, "expandstring": REG_EXPAND_SZ, "binary": REG_BINARY, "dword": REG_DWORD}
-KINDS = ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove", "sdb_remove_file", "fw_add", "fw_del",
+KINDS = ("reg_set", "reg_put", "reg_del", "reg_unset", "sdb_install", "sdb_remove", "sdb_remove_file", "fw_add", "fw_del",
          "regsvr", "unregsvr", "feature", "exec")
 FEATURES = {"DirectPlay"}
 # akcja (gogfinal/gogexec, pole "op") → krok wykonania i krok cofnięcia (None — zostaje)
@@ -111,7 +111,7 @@ def capture(acts: list) -> list:
     """[{"act", "prev": {widok: {"t","v"} | None}}] — stan rejestru przed zapisem (odczyt bez uprawnień)."""
     out = []
     for a in acts:
-        if a.get("op"):                              # nie rejestr: nic do zapamiętania (cofnięcie wg _OPS)
+        if a.get("op") and a["op"] != "regdel":      # nie rejestr: nic do zapamiętania (cofnięcie wg _OPS)
             out.append({"act": a, "prev": None})
             continue
         prev = {}
@@ -130,7 +130,9 @@ def set_steps(done: list) -> list:
     out = []
     for d in done:
         a = d["act"]
-        if a.get("op"):
+        if a.get("op") == "regdel":                 # delRegistry HKLM: wartość znika ze wszystkich widoków
+            out.append({"kind": "reg_unset", "subkey": a["subkey"], "name": a["name"]})
+        elif a.get("op"):
             out.append({**{k: v for k, v in a.items() if k != "op"}, "kind": _OPS[a["op"]][0]})
         else:
             out.append({"kind": "reg_set", "subkey": a["subkey"], "name": a["name"], **act_value(a)})
@@ -147,6 +149,10 @@ def undo_steps(done: list) -> list:
     steps = []
     for d in reversed([_norm(x) for x in done or []]):
         a, prev = d["act"], d.get("prev") or {}
+        if a.get("op") == "regdel":                 # usunięta wartość wraca tam, gdzie była
+            steps += [{"kind": "reg_put", "view": v, "subkey": a["subkey"], "name": a["name"], **prev[v]}
+                      for v in views() if prev.get(v)]
+            continue
         if a.get("op"):
             undo = _OPS.get(a["op"], (None, None))[1]
             if undo:
@@ -216,7 +222,7 @@ def run(steps: list, work: Path, elevate=None) -> list:
 def _check(s: dict) -> None:
     if s.get("kind") not in KINDS:
         raise ValueError(f"nieznany krok {s.get('kind')!r}")
-    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove"):
+    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "reg_unset", "sdb_install", "sdb_remove"):
         _check_op(s)
         return
     if s["kind"].startswith("sdb_"):
@@ -230,7 +236,7 @@ def _check(s: dict) -> None:
     sub = str(s.get("subkey") or "").replace("/", "\\")
     if not sub.lower().startswith("software\\") or ".." in sub.split("\\"):
         raise ValueError(f"klucz poza HKLM\\Software: {sub!r}")
-    if s["kind"] != "reg_set" and s.get("view") not in views():
+    if s["kind"] in ("reg_put", "reg_del") and s.get("view") not in views():
         raise ValueError(f"zły widok rejestru {s.get('view')!r}")
 
 
@@ -323,8 +329,11 @@ def _do_op(s: dict) -> None:
 
 def do_step(s: dict) -> None:
     _check(s)
-    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove"):
+    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "reg_unset", "sdb_install", "sdb_remove"):
         _do_op(s)
+    elif s["kind"] == "reg_unset":
+        for view in views():
+            REG.delete(view, s["subkey"], s["name"])
     elif s["kind"] == "sdb_install":
         SDBINST(["-q", s["file"]])
     elif s["kind"] == "sdb_remove":
