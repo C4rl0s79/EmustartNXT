@@ -54,8 +54,8 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 1 | Wspólny krok administratora: `gogadmin` — ten sam program silnika z `--gog-admin=<plik>` w jednym oknie UAC (zamiast regedit/`.reg`), tylko znane kroki pod `HKLM\Software`; stan rejestru sprzed instalacji zapamiętany; odinstalowanie/porzucenie cofa kroki (przywraca albo usuwa, oba widoki); `admin_done` dopisywane (DLC) | zrobione (testy: 11 nowych, `main.py`/`engine_main.py --gog-admin` uruchomione bez UAC); czeka na sprawdzenie na żywo z UAC |
 | 2 | Rejestr `GOG.com\Games\<id>` dla każdej gry (kroki „compat”: gra działa i bez nich, wartości skryptu mają pierwszeństwo); proces z uprawnieniami wykonuje kroki od razu przy instalacji; `gog_admin_pending` / `gog_finish_admin_all` (wszystkie gry jednym oknem UAC) | zrobione (testy); czeka na sprawdzenie na żywo |
 | 2a | Lumen: manifest „administrator”, gry/Steam/emulatory bez uprawnień, autostart przez Harmonogram zadań z opóźnieniem, `gog_finish_admin_all` przy starcie | — |
-| 2b | Następny krok: etap 3 — `installSDB` | następny |
-| 3 | `installSDB` + odinstalowanie | — |
+| 3 | `installSDB`: krok administratora `sdbinst -q` (pełna ścieżka `System32`), GUID `{{…}` z Inno normalizowany, plik tylko w katalogu gry; odinstalowanie `sdbinst -u -g` — pominięte, gdy tej samej bazy (GUID) używa inna zainstalowana gra (Dungeon Keeper 2 / Vampire, Tomb Raider 4 / 5) | zrobione (testy); czeka na sprawdzenie na żywo |
+| 3a | Następny krok: etap 4 — `Execute`/`execute`, zapora | następny |
 | 4 | `Execute`/`execute` (UAC i bez), zapora + odinstalowanie, `gameux` pominięty | — |
 | 5 | `galaxy_*.exe`: parser `[Registry]` Inno 5.x, wpisy w kroku UAC | — |
 | 6 | Symbole `{documents}`, `{commondocs}`, `{uninstallexe}`, `{code:…}`; `saveToFile`, `delRegistry` | — |

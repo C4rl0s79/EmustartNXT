@@ -1036,6 +1036,11 @@ def _undo_admin(e: dict, elevate=None) -> int:
     """Kroki administratora tej gry (HKLM: wartości sprzed instalacji wracają, dodane znikają) — jedno okno UAC.
     Zwraca liczbę kroków, których nie cofnięto (odmowa w oknie UAC, błąd)."""
     steps = gogadmin.undo_steps((e.get("finalize") or {}).get("admin_done") or [])
+    # ta sama baza zgodności (GUID) bywa w kilku grach (Dungeon Keeper 2 i Vampire, Tomb Raider 4 i 5) —
+    # zostaje, dopóki używa jej inna zainstalowana gra
+    shared = {d["act"]["guid"] for o in entries() if o.get("product_id") != e["product_id"]
+              for d in map(gogadmin._norm, (o.get("finalize") or {}).get("admin_done") or []) if d["act"].get("op") == "sdb"}
+    steps = [s for s in steps if not (s["kind"] == "sdb_remove" and s["guid"] in shared)]
     if not steps:
         return 0
     left = gogadmin.run(steps, gog_dir() / "admin" / str(e["product_id"]), elevate).count(False)

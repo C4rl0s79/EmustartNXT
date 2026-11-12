@@ -366,6 +366,15 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
                 res["done"].append(f"rejestr HKCU\\{a['subkey']} {a['name']}")
             else:
                 res["admin"].append(a)
+        elif kind == "installSDB":
+            # baza poprawek zgodności Windows (sdbinst) — krok administratora, cofany przy odinstalowaniu
+            f = resolve(args.get("sdbFile"))
+            guid = "{" + str(args.get("GUID") or "").strip().strip("{}") + "}"      # „{{…}” = nawias Inno Setup
+            if not _GUID.fullmatch(guid) or f.suffix.lower() != ".sdb" or not _inside(f, app):
+                raise FinalizeError(f"installSDB: zły plik albo GUID: {args.get('sdbFile')} {args.get('GUID')}")
+            if not f.is_file():
+                raise FinalizeError(f"installSDB: brak pliku {args.get('sdbFile')}")
+            res["admin"].append({"op": "sdb", "file": str(f), "guid": guid.lower()})
         elif kind == "savePath":
             try:
                 res["saves"].append(str(resolve(args.get("savePath"))))

@@ -158,3 +158,73 @@ def test_elevated_lumen_applies_steps_at_install_without_uac(env, fake_reg, monk
     gi.uninstall(PID, remove_hkcu=lambda a: None)
     assert fake_reg["reg"].data == {} and fake_reg["calls"] == []
 
+
+
+# ── etap 3: installSDB (bazy poprawek zgodności Windows) ──
+
+GUID = "{08a9a822-ff12-493b-b219-f95350f7d937}"
+
+
+def _sdb_script(guid=GUID, sdb="{app}/goggame.sdb"):
+    s = json.loads(json.dumps(SCRIPT))
+    s["actions"].append({"install": {"action": "installSDB", "arguments": {"GUID": guid, "sdbFile": sdb}}})
+    return s
+
+
+@pytest.fixture()
+def sdb_calls(monkeypatch):
+    calls = []
+    monkeypatch.setattr(gogadmin, "SDBINST", calls.append)
+    return calls
+
+
+def test_install_sdb_runs_in_admin_step_and_uninstall_removes_it(env, fake_reg, sdb_calls):
+    env["root"] = env["tmp"] / "_s1"
+    build_archive(env["root"], script=_sdb_script(), extra_files=[("goggame.sdb", b"sdbf", [])])
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_NEEDS_ADMIN                       # wymagane przez skrypt gry
+    assert goglib.GogService(lambda: {}).finish_admin(PID)["ok"] and len(fake_reg["calls"]) == 1
+    assert sdb_calls == [["-q", str(target / "goggame.sdb")]]
+    gi.uninstall(PID, remove_hkcu=lambda a: None)
+    assert sdb_calls[-1] == ["-q", "-u", "-g", GUID]
+
+
+def test_sdb_guid_with_inno_double_brace_and_bad_paths(tmp_path):
+    app = tmp_path / "g"
+    app.mkdir()
+    (app / "goggame.sdb").write_bytes(b"x")
+    (app / "x.dll").write_bytes(b"x")
+    (tmp_path / "poza.sdb").write_bytes(b"x")
+
+    def script(args):
+        (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "installSDB", "arguments": args}}]}))
+        return gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={})
+    r = script({"GUID": "{{9CAEEA89-0174-4aac-9544-9EBF76CCAB8E}", "sdbFile": "{app}/goggame.sdb"})   # Earth 2150
+    assert r["admin"] == [{"op": "sdb", "file": str(app / "goggame.sdb"), "guid": "{9caeea89-0174-4aac-9544-9ebf76ccab8e}"}]
+    for bad in ({"GUID": GUID, "sdbFile": "{app}/../poza.sdb"}, {"GUID": GUID, "sdbFile": "{app}/x.dll"},
+                {"GUID": "nie-guid", "sdbFile": "{app}/goggame.sdb"}, {"GUID": GUID, "sdbFile": "{app}/brak.sdb"}):
+        with pytest.raises(gogfinal.FinalizeError):
+            script(bad)
+
+
+def test_shared_sdb_guid_stays_while_another_game_uses_it(env, fake_reg, sdb_calls):
+    """Dungeon Keeper 2 i Vampire: ta sama baza zgodności — odinstalowanie jednej gry jej nie usuwa."""
+    env["root"] = env["tmp"] / "_s2"
+    build_archive(env["root"], script=_sdb_script(), extra_files=[("goggame.sdb", b"sdbf", [])])
+    _install(env)
+    assert goglib.GogService(lambda: {}).finish_admin(PID)["ok"]
+    other = {"product_id": "1207666893", "title": "Inna gra", "state": gi.ST_INSTALLED, "install_dir": str(env["tmp"] / "x"),
+             "finalize": {"admin_done": [{"act": {"op": "sdb", "file": "C:/x/goggame.sdb", "guid": GUID}, "prev": None}]}}
+    gi._entry_path("1207666893").write_text(json.dumps(other), encoding="utf-8")
+    gi.uninstall(PID, remove_hkcu=lambda a: None)
+    assert ["-q", "-u", "-g", GUID] not in sdb_calls
+
+
+@pytest.mark.parametrize("step", [
+    {"kind": "sdb_install", "file": "goggame.sdb", "guid": GUID},                       # ścieżka względna
+    {"kind": "sdb_install", "file": "C:/Windows/System32/notepad.exe", "guid": GUID},
+    {"kind": "sdb_remove", "guid": "{zly}"},
+])
+def test_elevated_process_validates_sdb_steps(fake_reg, sdb_calls, step):
+    p = steps_file(fake_reg["dir"], [step])
+    assert gogadmin.main(str(p)) == 1 and sdb_calls == []

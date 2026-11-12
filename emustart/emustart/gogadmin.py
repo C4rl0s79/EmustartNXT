@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,7 +30,8 @@ log = logging.getLogger("emustart.gogadmin")
 # typy wartości rejestru (stałe winreg — bez importu, planowanie działa też poza Windows)
 REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD = 1, 2, 3, 4
 _TYPES = {"string": REG_SZ, "expandstring": REG_EXPAND_SZ, "binary": REG_BINARY, "dword": REG_DWORD}
-KINDS = ("reg_set", "reg_put", "reg_del")
+KINDS = ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove")
+_GUID = re.compile(r"^\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}$|^\{[0-9a-f]{32}\}$")
 
 
 class WinRegistry:
@@ -103,6 +106,9 @@ def capture(acts: list) -> list:
     """[{"act", "prev": {widok: {"t","v"} | None}}] — stan rejestru przed zapisem (odczyt bez uprawnień)."""
     out = []
     for a in acts:
+        if a.get("op") == "sdb":                     # baza zgodności: nic do zapamiętania, cofnięcie = sdbinst -u
+            out.append({"act": a, "prev": None})
+            continue
         prev = {}
         for view in views():
             try:
@@ -115,8 +121,15 @@ def capture(acts: list) -> list:
 
 
 def set_steps(done: list) -> list:
-    return [{"kind": "reg_set", "subkey": d["act"]["subkey"], "name": d["act"]["name"], **act_value(d["act"])}
-            for d in done]
+    """Jeden krok na akcję (apply_admin rozdziela wyniki po kolejności)."""
+    out = []
+    for d in done:
+        a = d["act"]
+        if a.get("op") == "sdb":
+            out.append({"kind": "sdb_install", "file": a["file"], "guid": a["guid"]})
+        else:
+            out.append({"kind": "reg_set", "subkey": a["subkey"], "name": a["name"], **act_value(a)})
+    return out
 
 
 def _norm(d: dict) -> dict:
@@ -129,6 +142,9 @@ def undo_steps(done: list) -> list:
     steps = []
     for d in reversed([_norm(x) for x in done or []]):
         a, prev = d["act"], d.get("prev") or {}
+        if a.get("op") == "sdb":
+            steps.append({"kind": "sdb_remove", "guid": a["guid"]})
+            continue
         for view in views():
             p = prev.get(view)
             if p:
@@ -192,6 +208,14 @@ def run(steps: list, work: Path, elevate=None) -> list:
 def _check(s: dict) -> None:
     if s.get("kind") not in KINDS:
         raise ValueError(f"nieznany krok {s.get('kind')!r}")
+    if s["kind"].startswith("sdb_"):
+        if not _GUID.match(str(s.get("guid") or "")):
+            raise ValueError(f"zły GUID bazy zgodności {s.get('guid')!r}")
+        if s["kind"] == "sdb_install":
+            f = Path(str(s.get("file") or ""))
+            if not f.is_absolute() or f.suffix.lower() != ".sdb" or not f.is_file():
+                raise ValueError(f"zły plik bazy zgodności {s.get('file')!r}")
+        return
     sub = str(s.get("subkey") or "").replace("/", "\\")
     if not sub.lower().startswith("software\\") or ".." in sub.split("\\"):
         raise ValueError(f"klucz poza HKLM\\Software: {sub!r}")
@@ -199,9 +223,25 @@ def _check(s: dict) -> None:
         raise ValueError(f"zły widok rejestru {s.get('view')!r}")
 
 
+def _sdbinst(args: list) -> None:
+    """sdbinst.exe z katalogu systemowego (pełna ścieżka, nie PATH)."""
+    exe = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "sdbinst.exe"
+    r = subprocess.run([str(exe), *args], capture_output=True, timeout=120,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    if r.returncode != 0:
+        raise RuntimeError(f"sdbinst {' '.join(args)}: kod {r.returncode}")
+
+
+SDBINST = _sdbinst
+
+
 def do_step(s: dict) -> None:
     _check(s)
-    if s["kind"] == "reg_set":
+    if s["kind"] == "sdb_install":
+        SDBINST(["-q", s["file"]])
+    elif s["kind"] == "sdb_remove":
+        SDBINST(["-q", "-u", "-g", s["guid"]])
+    elif s["kind"] == "reg_set":
         t, v = _dec(s)
         for view in views():
             REG.set(view, s["subkey"], s["name"], t, v)
