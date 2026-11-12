@@ -834,6 +834,12 @@ def apply_admin(es: list, elevate=None) -> bool:
         r = res[i:i + len(acts)]
         i += len(acts)
         e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + [d for d, ok in zip(done, r) if ok]
+        for d, ok in zip(done, r):
+            if ok and d["act"].get("op") == "runtime":         # biblioteka zainstalowana — zapamiętana na tym komputerze
+                gogfinal.remember_runtime(f"{d['act']['id']}:{d['act']['arch']}")
+                for x in e.get("runtimes") or []:
+                    if x.get("id") == d["act"]["id"] and x.get("arch", d["act"]["arch"]) == d["act"]["arch"]:
+                        x["done"] = True
         e["finalize"]["admin"] = [a for a, ok in zip(acts, r) if not ok]
         if not needs_admin(e["finalize"]["admin"]) and e["state"] == ST_NEEDS_ADMIN:
             e["state"], e["error"] = ST_INSTALLED, ""
@@ -877,7 +883,10 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
             e["launch"] = gogfinal.launch_spec(root, pid)
             # rejestr GOG.com\Games\<id> jak po instalatorze GOG — krok administratora „compat” (gra działa i bez niego)
             fin["admin"] += gogfinal.gog_registry_acts(root, pid, e, e["launch"], fin["saves"], fin["admin"])
-            e["runtimes"] = [{"id": s["id"], "done": False} for s in gogfinal.runtime_steps(root, e.get("dependencies") or [])]
+            # biblioteki (VC++, DirectX), których nie ma w systemie — kroki administratora razem z resztą (jedno okno)
+            rt = gogfinal.runtime_acts(root, e.get("dependencies") or [])
+            fin["admin"] += rt
+            e["runtimes"] = [{"id": a["id"], "arch": a["arch"], "done": False} for a in rt]
     except (gogfinal.FinalizeError, OSError, ValueError) as ex:
         if dlc_only:
             e["error"] = f"Finalizacja DLC nie powiodła się: {ex}"

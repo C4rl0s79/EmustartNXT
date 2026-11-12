@@ -74,6 +74,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(gogfinal, "remove_hkcu", lambda acts: 0)
     monkeypatch.setattr(gogfinal, "_shell_runas", lambda *a, **k: False)   # nigdy prawdziwe okno UAC (fake_reg: zgoda)
     monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)           # wynik nie zależy od uprawnień terminala
+    monkeypatch.setattr(gogfinal, "RUNTIME_CHECK", lambda did, arch: True)  # biblioteki „są” — nie zależy od komputera
     monkeypatch.setattr(gogfinal, "user_documents", lambda: tmp_path / "Dokumenty")
     yield {"root": root, "games": tmp_path / "GOG Games", "regs": regs, "tmp": tmp_path}
     ga.INDEX.update(root="", builds={}, rejected=[], error="", running=False)
@@ -150,11 +151,8 @@ def test_dependencies_and_runtime_steps(env):
     e, target, _ = _install(env)
     assert (target / "__redist" / "MSVC2017" / "vc_redist.x64.exe").exists()
     assert e["dependencies"] == ["MSVC2017"]
-    steps = gogfinal.runtime_steps(target, e["dependencies"])
-    assert steps and steps[0]["args"] == "/install /quiet /norestart"
-    ran = []
-    res = gogfinal.run_runtimes(steps, elevate=lambda exe, args, cwd=None: ran.append((exe, args)) or True)
-    assert res == {"MSVC2017": True} and ran[0][0].endswith("vc_redist.x64.exe")
+    steps = gogfinal.runtime_steps(target, e["dependencies"], check=False)
+    assert steps and steps[0]["args"] == "/install /quiet /norestart" and steps[0]["arch"] == "x64"
 
 
 def test_finalization_actions(env):

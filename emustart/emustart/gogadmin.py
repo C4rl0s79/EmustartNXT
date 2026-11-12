@@ -31,11 +31,12 @@ log = logging.getLogger("emustart.gogadmin")
 REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD = 1, 2, 3, 4
 _TYPES = {"string": REG_SZ, "expandstring": REG_EXPAND_SZ, "binary": REG_BINARY, "dword": REG_DWORD}
 KINDS = ("reg_set", "reg_put", "reg_del", "reg_unset", "sdb_install", "sdb_remove", "sdb_remove_file", "fw_add", "fw_del",
-         "regsvr", "unregsvr", "feature", "exec")
+         "regsvr", "unregsvr", "feature", "exec", "runtime")
 FEATURES = {"DirectPlay"}
 # akcja (gogfinal/gogexec, pole "op") → krok wykonania i krok cofnięcia (None — zostaje)
 _OPS = {"sdb": ("sdb_install", "sdb_remove"), "sdb_file": ("sdb_remove_file", None), "fw": ("fw_add", "fw_del"),
-        "regsvr": ("regsvr", "unregsvr"), "feature": ("feature", None), "exec": ("exec", None)}
+        "regsvr": ("regsvr", "unregsvr"), "feature": ("feature", None), "exec": ("exec", None),
+        "runtime": ("runtime", None)}
 _GUID = re.compile(r"^\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}$|^\{[0-9a-f]{32}\}$")
 
 
@@ -275,6 +276,10 @@ def _check_op(s: dict) -> None:
             raise ValueError(f"nieznany składnik Windows {s.get('name')!r}")
     elif k == "sdb_remove_file":
         _abs_file(s.get("file"), (".sdb",))
+    elif k == "runtime":
+        exe = _abs_file(s.get("exe"), (".exe",))
+        if "__redist" not in [x.lower() for x in exe.parts]:
+            raise ValueError(f"instalator biblioteki spoza __redist: {exe}")
     elif k == "exec":
         exe = _abs_file(s.get("exe"), (".exe", ".cmd", ".bat"))
         root = Path(str(s.get("root") or ""))
@@ -318,6 +323,9 @@ def _do_op(s: dict) -> None:
             ok=(0, 3010))
     elif k == "sdb_remove_file":
         SDBINST(["-q", "-u", s["file"]])
+    elif k == "runtime":
+        from emustart import gogfinal
+        RUN([s["exe"], *str(s.get("args") or "").split()], cwd=str(Path(s["exe"]).parent), ok=gogfinal.RUNTIME_OK)
     elif k == "exec":
         exe = s["exe"]
         cmd = f'"{_system("cmd.exe")}" /c ""{exe}" {s.get("args") or ""}"' if exe.lower().endswith((".cmd", ".bat"))             else f'"{exe}" {s.get("args") or ""}'.strip()

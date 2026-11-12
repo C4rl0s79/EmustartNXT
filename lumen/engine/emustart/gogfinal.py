@@ -603,33 +603,95 @@ RUNTIMES = {
 }
 
 
-def runtime_steps(app: Path, dep_ids: list) -> list:
-    """[{"id", "exe", "args"}] dla zależności, które są znanymi bibliotekami systemowymi (plik w __redist)."""
-    out = []
+RUNTIME_OK = (0, 1638, 1641, 3010)       # 1638: nowsza wersja już jest, 1641/3010: wymaga ponownego uruchomienia
+
+
+def _runtime_arch(did: str, exe: Path) -> str:
+    n = exe.name.lower()
+    if "x64" in n or "amd64" in n:
+        return "x64"
+    if "x86" in n:
+        return "x86"
+    return "x64" if did.lower().endswith("_x64") else "x86"
+
+
+def runtime_installed(did: str, arch: str) -> bool | None:
+    """Biblioteka już jest w systemie (odczyt bez uprawnień)? None — brak reguły wykrywania dla tego id.
+    VC++ 2015–2022: wartość Installed w VisualStudio/14.0/VC/Runtimes/<arch> (wersje zgodne wstecz);
+    VC++ 2010–2013: msvcr1x0.dll; VC++ 2005/2008: WinSxS; DirectX (June 2010): d3dx9_43.dll — na 64-bitowym
+    Windows biblioteki 32-bitowe są w SysWOW64."""
+    root = Path(os.environ.get("SystemRoot", r"C:\Windows"))
+    dll_dir = root / ("SysWOW64" if arch == "x86" and windows_64() else "System32")
+    m = re.match(r"(?i)^MSVC(20\d\d)", did)
+    if m:
+        year = int(m.group(1))
+        if year >= 2015:
+            from emustart import gogadmin
+            view = ("64" if arch == "x64" else "32") if windows_64() else "native"
+            try:
+                cur = gogadmin.REG.get(view, "SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\" + arch, "Installed")
+            except Exception:                         # noqa: BLE001 — brak winreg
+                return None
+            return bool(cur) and cur[1] == 1
+        if year in (2010, 2012, 2013):
+            return (dll_dir / f"msvcr{ {2010: 100, 2012: 110, 2013: 120}[year] }.dll").is_file()
+        if year in (2005, 2008):
+            pre = "amd64_" if arch == "x64" else "x86_"
+            tag = "microsoft.vc80.crt" if year == 2005 else "microsoft.vc90.crt"
+            return any((root / "WinSxS").glob(f"{pre}{tag}_*"))
+    if did.lower() == "directx":
+        return (dll_dir / "d3dx9_43.dll").is_file()
+    return None
+
+
+RUNTIME_CHECK = runtime_installed
+
+
+def _runtimes_file() -> Path:
+    from emustart import paths
+    return paths.DATA / "gog" / "runtimes.json"
+
+
+def remembered_runtimes() -> set:
+    try:
+        return set(json.loads(_runtimes_file().read_text(encoding="utf-8")).get("installed") or [])
+    except (OSError, ValueError):
+        return set()
+
+
+def remember_runtime(key: str) -> None:
+    """Udana instalacja biblioteki na tym komputerze — używane, gdy dla biblioteki nie ma reguły wykrywania."""
+    f = _runtimes_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"installed": sorted(remembered_runtimes() | {key})}), encoding="utf-8")
+
+
+def runtime_steps(app: Path, dep_ids: list, check: bool = True) -> list:
+    """[{"id", "arch", "exe", "args"}] — instalatory znanych bibliotek z __redist, których nie ma w systemie.
+    Instalatory x86 i x64 w jednym folderze — oba (wcześniej tylko pierwszy po sortowaniu)."""
+    out, known = [], remembered_runtimes() if check else set()
     for did in dep_ids:
         for pat, (glob, args) in RUNTIMES.items():
             if not pat.match(did):
                 continue
             base = app / "__redist" / did
-            hits = sorted(base.glob(glob)) if base.is_dir() else []
-            for exe in hits[:1]:
+            for exe in sorted(base.glob(glob)) if base.is_dir() else []:
                 try:
                     safe_join(app, exe.relative_to(app).as_posix())
                 except (UnsafePath, ValueError):
                     continue
-                out.append({"id": did, "exe": str(exe), "args": args})
+                arch = _runtime_arch(did, exe)
+                if check:
+                    have = RUNTIME_CHECK(did, arch)
+                    if have or (have is None and f"{did}:{arch}" in known):
+                        continue
+                out.append({"id": did, "arch": arch, "exe": str(exe), "args": args})
     return out
 
 
-def run_runtimes(steps: list, elevate=None) -> dict:
-    """Instalatory bibliotek — jeden po drugim, każdy z UAC (zgoda użytkownika). {id: ok}."""
-    res = {}
-    for s in steps:
-        ok = (elevate or _shell_runas)(s["exe"], s["args"], str(Path(s["exe"]).parent))
-        # kod 1638 (nowsza wersja już jest) / 3010 (wymaga restartu) _shell_runas traktuje jako błąd — log
-        res[s["id"]] = bool(ok)
-        log.info("GOG: biblioteka %s: %s", s["id"], "OK" if ok else "nie zainstalowano")
-    return res
+def runtime_acts(app: Path, dep_ids: list) -> list:
+    """Brakujące biblioteki jako kroki administratora (jedno okno UAC z resztą kroków gry; gra działa i bez nich)."""
+    return [{"op": "runtime", "compat": True, **s} for s in runtime_steps(app, dep_ids)]
 
 
 # ── uruchamianie ────────────────────────────────────────────────────────────────

@@ -564,20 +564,22 @@ class GogService:
                                                           "albo błąd) — Lumen zapyta przy następnym starcie."}
 
     def install_runtimes(self, pid: str, elevate=None) -> dict:
-        """Biblioteki systemowe z zależności (Visual C++, DirectX) — jawnie, każdy instalator z UAC."""
+        """Biblioteki systemowe z zależności (Visual C++, DirectX), których nie ma w systemie — jednym oknem UAC
+        (Lumen jako administrator: bez okna). Już zainstalowane są pomijane (wykrycie albo zapamiętana instalacja)."""
         pid = _pid(pid)
         e = gi.load_entry(pid)
         if not e or e.get("state") != gi.ST_INSTALLED:
             return {"ok": False, "reason": "Gra nie jest zainstalowana."}
-        steps = gogfinal.runtime_steps(Path(e["install_dir"]), e.get("dependencies") or [])
-        if not steps:
-            return {"ok": True, "message": "Ta gra nie ma bibliotek systemowych do zainstalowania."}
-        res = gogfinal.run_runtimes(steps, elevate)
-        e["runtimes"] = [{"id": k, "done": v} for k, v in res.items()]
-        gi.save_entry(e)
-        bad = [k for k, v in res.items() if not v]
-        return {"ok": not bad, "message": "Biblioteki zainstalowane." if not bad else "",
-                "reason": f"Nie zainstalowano: {', '.join(bad)} (odmowa UAC albo instalator zgłosił błąd / nowszą wersję)." if bad else ""}
+        root = Path(e["install_dir"])
+        pending = {(a.get("id"), a.get("arch")) for a in e["finalize"].get("admin") or [] if a.get("op") == "runtime"}
+        acts = [a for a in gogfinal.runtime_acts(root, e.get("dependencies") or []) if (a["id"], a["arch"]) not in pending]
+        e["finalize"]["admin"] = (e["finalize"].get("admin") or []) + acts
+        if not any(a.get("op") == "runtime" for a in e["finalize"]["admin"]):
+            return {"ok": True, "message": "Biblioteki systemowe tej gry są już zainstalowane."}
+        if gi.apply_admin([e], elevate):
+            return {"ok": True, "message": "Biblioteki zainstalowane."}
+        left = [f"{a['id']} ({a['arch']})" for a in e["finalize"]["admin"] if a.get("op") == "runtime"]
+        return {"ok": False, "reason": f"Nie zainstalowano: {', '.join(left)} (odmowa UAC albo błąd instalatora)."}
 
 
 def _pid(pid) -> str:
