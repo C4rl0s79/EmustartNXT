@@ -267,6 +267,82 @@ def _same(a: Path, b: Path) -> bool:
 _UNINSTALL = re.compile(r"\\Windows\\CurrentVersion\\Uninstall\\", re.I)
 
 
+def _run_local(exe: Path, args: str, cwd: Path) -> None:
+    """Program instalatora bez uprawnień administratora (.bat/.cmd przez cmd.exe); wynik jak w Galaxy — w logu."""
+    is_script = exe.suffix.lower() in (".cmd", ".bat")
+    cmd = f'cmd.exe /c ""{exe}" {args}"' if is_script else f'"{exe}" {args}'.strip()
+    try:
+        r = subprocess.run(cmd if os.name == "nt" else [str(exe), *args.split()], cwd=str(cwd), capture_output=True,
+                           timeout=600, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        if r.returncode:
+            log.warning("GOG: %s zakończył się kodem %d", exe.name, r.returncode)
+    except (OSError, subprocess.TimeoutExpired) as ex:
+        log.warning("GOG: %s: %s", exe.name, ex)
+
+
+RUN_LOCAL = _run_local
+
+
+def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
+    """Akcja Execute (emustart/gogexec.py): znane polecenia skryptów .cmd jako własne kroki (cofane przy
+    odinstalowaniu), reszta — program bez zmian: z runAsAdmin w kroku administratora, bez — od razu."""
+    from emustart import gogexec
+    exe_s = str(args.get("executable") or "")
+    name = exe_s.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    argstr = str(args.get("arguments") or args.get("argument") or "")
+    if not exe_s:
+        res["skipped"].append("Execute bez programu")
+        return
+    if name in gogexec.SKIP:
+        res["skipped"].append(f"Execute {name} (Eksplorator gier Windows)")
+        return
+    if re.match(r"^galaxy_.+\.exe$", name):
+        res["skipped"].append(f"Execute {name} (instalator rejestrujący GOG Galaxy)")
+        return
+    if name == "attrib.exe" and exe_s.lower().startswith("{sys}"):
+        # S.T.A.L.K.E.R.: attrib +r fsgame.ltx — plik w katalogu gry tylko do odczytu
+        m = re.match(r'^\s*\+r\s+"?([^"]+?)"?\s*$', argstr, re.I)
+        base = resolve(args.get("workingDir")) if args.get("workingDir") else app
+        target = base / m.group(1) if m else None
+        if not target or not _inside(target, app) or not target.is_file():
+            raise FinalizeError(f"Execute attrib: {argstr!r}")
+        target.chmod(target.stat().st_mode & ~0o222)
+        res["done"].append(f"attrib +r {target.name}")
+        return
+    exe = resolve(exe_s) if "{" in exe_s else app / exe_s.replace("\\", os.sep)
+    if not _inside(exe, app) or exe.suffix.lower() not in (".exe", ".cmd", ".bat"):
+        raise FinalizeError(f"Execute: program poza katalogiem gry albo nieobsługiwany: {exe_s}")
+    if not exe.is_file():
+        raise FinalizeError(f"Execute: brak pliku {exe_s}")
+    cwd = resolve(args["workingDir"]) if args.get("workingDir") else exe.parent
+    cwd = cwd if _inside(cwd, app) else exe.parent
+    steps = None
+    if exe.suffix.lower() in (".cmd", ".bat"):
+        steps = gogexec.parse_cmd(exe.read_text(encoding="latin-1", errors="replace"), exe.parent)
+    if steps is not None:
+        for st in steps:
+            if "reg" in st:
+                r = st["reg"]
+                a = registry_action({"root": r["root"], "subkey": r["subkey"], "valueName": r["name"],
+                                     "valueData": r["data"], "valueType": r["type"]}, app, pid, sysf)
+                if a["root"] == "HKCU":
+                    hkcu(a)
+                    res["hkcu"].append(a)
+                else:
+                    res["admin"].append(a)
+                continue
+            f = st.get("program") or st.get("file")
+            if f and not _inside(Path(f), app):
+                raise FinalizeError(f"Execute {name}: plik poza katalogiem gry: {f}")
+            res["admin"].append(st)
+        res["done"].append(f"Execute {name} ({len(steps)} kroków)")
+    elif args.get("runAsAdmin"):
+        res["admin"].append({"op": "exec", "exe": str(exe), "args": argstr, "cwd": str(cwd), "root": str(app)})
+    else:
+        RUN_LOCAL(exe, argstr, cwd)
+        res["done"].append(f"Execute {name}")
+
+
 def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known: set | None = None,
                  folders: dict | None = None) -> dict:
     """Akcje instalacyjne `goggame-<pid>.script`. Zwraca {"done", "admin" (kroki HKLM), "skipped", "saves",
@@ -366,6 +442,8 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
                 res["done"].append(f"rejestr HKCU\\{a['subkey']} {a['name']}")
             else:
                 res["admin"].append(a)
+        elif kind in ("Execute", "execute"):
+            _execute(args, app, pid, sysf, res, hkcu, resolve)
         elif kind == "installSDB":
             # baza poprawek zgodności Windows (sdbinst) — krok administratora, cofany przy odinstalowaniu
             f = resolve(args.get("sdbFile"))

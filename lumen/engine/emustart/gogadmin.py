@@ -30,7 +30,12 @@ log = logging.getLogger("emustart.gogadmin")
 # typy wartości rejestru (stałe winreg — bez importu, planowanie działa też poza Windows)
 REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD = 1, 2, 3, 4
 _TYPES = {"string": REG_SZ, "expandstring": REG_EXPAND_SZ, "binary": REG_BINARY, "dword": REG_DWORD}
-KINDS = ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove")
+KINDS = ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove", "sdb_remove_file", "fw_add", "fw_del",
+         "regsvr", "unregsvr", "feature", "exec")
+FEATURES = {"DirectPlay"}
+# akcja (gogfinal/gogexec, pole "op") → krok wykonania i krok cofnięcia (None — zostaje)
+_OPS = {"sdb": ("sdb_install", "sdb_remove"), "sdb_file": ("sdb_remove_file", None), "fw": ("fw_add", "fw_del"),
+        "regsvr": ("regsvr", "unregsvr"), "feature": ("feature", None), "exec": ("exec", None)}
 _GUID = re.compile(r"^\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}$|^\{[0-9a-f]{32}\}$")
 
 
@@ -106,7 +111,7 @@ def capture(acts: list) -> list:
     """[{"act", "prev": {widok: {"t","v"} | None}}] — stan rejestru przed zapisem (odczyt bez uprawnień)."""
     out = []
     for a in acts:
-        if a.get("op") == "sdb":                     # baza zgodności: nic do zapamiętania, cofnięcie = sdbinst -u
+        if a.get("op"):                              # nie rejestr: nic do zapamiętania (cofnięcie wg _OPS)
             out.append({"act": a, "prev": None})
             continue
         prev = {}
@@ -125,8 +130,8 @@ def set_steps(done: list) -> list:
     out = []
     for d in done:
         a = d["act"]
-        if a.get("op") == "sdb":
-            out.append({"kind": "sdb_install", "file": a["file"], "guid": a["guid"]})
+        if a.get("op"):
+            out.append({**{k: v for k, v in a.items() if k != "op"}, "kind": _OPS[a["op"]][0]})
         else:
             out.append({"kind": "reg_set", "subkey": a["subkey"], "name": a["name"], **act_value(a)})
     return out
@@ -142,8 +147,11 @@ def undo_steps(done: list) -> list:
     steps = []
     for d in reversed([_norm(x) for x in done or []]):
         a, prev = d["act"], d.get("prev") or {}
-        if a.get("op") == "sdb":
-            steps.append({"kind": "sdb_remove", "guid": a["guid"]})
+        if a.get("op"):
+            undo = _OPS.get(a["op"], (None, None))[1]
+            if undo:
+                keep = {"fw_del": ("name",), "unregsvr": ("file",), "sdb_remove": ("guid",)}[undo]
+                steps.append({"kind": undo, **{k: a[k] for k in keep}})
             continue
         for view in views():
             p = prev.get(view)
@@ -208,6 +216,9 @@ def run(steps: list, work: Path, elevate=None) -> list:
 def _check(s: dict) -> None:
     if s.get("kind") not in KINDS:
         raise ValueError(f"nieznany krok {s.get('kind')!r}")
+    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove"):
+        _check_op(s)
+        return
     if s["kind"].startswith("sdb_"):
         if not _GUID.match(str(s.get("guid") or "")):
             raise ValueError(f"zły GUID bazy zgodności {s.get('guid')!r}")
@@ -235,9 +246,86 @@ def _sdbinst(args: list) -> None:
 SDBINST = _sdbinst
 
 
+def _abs_file(p, suffixes: tuple) -> Path:
+    f = Path(str(p or ""))
+    if not f.is_absolute() or f.suffix.lower() not in suffixes or not f.is_file():
+        raise ValueError(f"zły plik {p!r}")
+    return f
+
+
+def _check_op(s: dict) -> None:
+    """Kroki spoza rejestru: tylko pliki z katalogu gry GOG (folder z goggame-*.info), nazwy bez cudzysłowów."""
+    k = s["kind"]
+    if k in ("fw_add", "fw_del"):
+        name = str(s.get("name") or "")
+        if not name or any(c in name for c in '"\r\n%'):
+            raise ValueError(f"zła nazwa reguły zapory {name!r}")
+        if k == "fw_add":
+            _abs_file(s.get("program"), (".exe",))
+    elif k in ("regsvr", "unregsvr"):
+        _abs_file(s.get("file"), (".ax", ".dll", ".ocx"))
+    elif k == "feature":
+        if s.get("name") not in FEATURES:
+            raise ValueError(f"nieznany składnik Windows {s.get('name')!r}")
+    elif k == "sdb_remove_file":
+        _abs_file(s.get("file"), (".sdb",))
+    elif k == "exec":
+        exe = _abs_file(s.get("exe"), (".exe", ".cmd", ".bat"))
+        root = Path(str(s.get("root") or ""))
+        if not root.is_absolute() or not any(root.glob("goggame-*.info")):
+            raise ValueError(f"zły katalog gry {root!r}")
+        exe.resolve().relative_to(root.resolve())              # ValueError poza katalogiem gry
+        if any(c in str(s.get("args") or "") for c in "\r\n"):
+            raise ValueError("argumenty z końcem linii")
+
+
+def _system(name: str) -> str:
+    """Program systemowy (pełna ścieżka): 64-bitowy także z 32-bitowego procesu (Sysnative)."""
+    root = Path(os.environ.get("SystemRoot", r"C:\Windows"))
+    native = root / "Sysnative" / name
+    return str(native if native.exists() else root / "System32" / name)
+
+
+def _run(cmd, cwd=None, ok=(0,)) -> None:
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, timeout=600,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    if r.returncode not in ok:
+        raise RuntimeError(f"{cmd if isinstance(cmd, str) else ' '.join(cmd)}: kod {r.returncode}")
+
+
+RUN = _run
+
+
+def _do_op(s: dict) -> None:
+    k = s["kind"]
+    if k == "fw_add":
+        RUN(f'"{_system("netsh.exe")}" advfirewall firewall add rule name="{s["name"]}" dir=in action=allow '
+            f'program="{s["program"]}" enable=yes')
+    elif k == "fw_del":
+        RUN(f'"{_system("netsh.exe")}" advfirewall firewall delete rule name="{s["name"]}"', ok=(0, 1))
+    elif k == "regsvr":
+        RUN([_system("regsvr32.exe"), "/s", s["file"]])
+    elif k == "unregsvr":
+        RUN([_system("regsvr32.exe"), "/s", "/u", s["file"]], ok=(0, 3, 4, 5))   # brak pliku/rejestracji — trudno
+    elif k == "feature":
+        RUN([_system("dism.exe"), "/Online", "/Enable-Feature", f"/FeatureName:{s['name']}", "/All", "/NoRestart"],
+            ok=(0, 3010))
+    elif k == "sdb_remove_file":
+        SDBINST(["-q", "-u", s["file"]])
+    elif k == "exec":
+        exe = s["exe"]
+        cmd = f'"{_system("cmd.exe")}" /c ""{exe}" {s.get("args") or ""}"' if exe.lower().endswith((".cmd", ".bat"))             else f'"{exe}" {s.get("args") or ""}'.strip()
+        try:
+            RUN(cmd, cwd=s.get("cwd") or str(Path(exe).parent))
+        except RuntimeError as ex:                  # program instalatora kończy się różnie — jak Galaxy: dalej
+            log.warning("GOG admin: %s", ex)
+
+
 def do_step(s: dict) -> None:
     _check(s)
-    if s["kind"] == "sdb_install":
+    if s["kind"] not in ("reg_set", "reg_put", "reg_del", "sdb_install", "sdb_remove"):
+        _do_op(s)
+    elif s["kind"] == "sdb_install":
         SDBINST(["-q", s["file"]])
     elif s["kind"] == "sdb_remove":
         SDBINST(["-q", "-u", "-g", s["guid"]])

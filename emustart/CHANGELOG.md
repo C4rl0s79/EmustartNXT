@@ -55,8 +55,8 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 2 | Rejestr `GOG.com\Games\<id>` dla każdej gry (kroki „compat”: gra działa i bez nich, wartości skryptu mają pierwszeństwo); proces z uprawnieniami wykonuje kroki od razu przy instalacji; `gog_admin_pending` / `gog_finish_admin_all` (wszystkie gry jednym oknem UAC) | zrobione (testy); czeka na sprawdzenie na żywo |
 | 2a | Lumen: manifest „administrator”, gry/Steam/emulatory bez uprawnień, autostart przez Harmonogram zadań z opóźnieniem, `gog_finish_admin_all` przy starcie | — |
 | 3 | `installSDB`: krok administratora `sdbinst -q` (pełna ścieżka `System32`), GUID `{{…}` z Inno normalizowany, plik tylko w katalogu gry; odinstalowanie `sdbinst -u -g` — pominięte, gdy tej samej bazy (GUID) używa inna zainstalowana gra (Dungeon Keeper 2 / Vampire, Tomb Raider 4 / 5) | zrobione (testy); czeka na sprawdzenie na żywo |
-| 3a | Następny krok: etap 4 — `Execute`/`execute`, zapora | następny |
-| 4 | `Execute`/`execute` (UAC i bez), zapora + odinstalowanie, `gameux` pominięty | — |
+| 4 | `Execute`: `gogexec` tłumaczy skrypty .cmd na kroki — `REG ADD` (HKLM: krok administratora, HKCU: od razu; cofane), reguły zapory `netsh` (cofane po nazwie), `regsvr32` (cofane `/u`), DirectPlay (DISM, zostaje), `sdbinst -u`; inne skrypty i programy bez zmian (z `runAsAdmin` w kroku administratora, bez — od razu); `gameux` pominięty, `attrib +r` wykonywany sam, `galaxy_*.exe` → etap 5 | zrobione (testy); czeka na sprawdzenie na żywo |
+| 4a | Następny krok: etap 5 — `galaxy_*.exe` (parser `[Registry]` Inno) | następny |
 | 5 | `galaxy_*.exe`: parser `[Registry]` Inno 5.x, wpisy w kroku UAC | — |
 | 6 | Symbole `{documents}`, `{commondocs}`, `{uninstallexe}`, `{code:…}`; `saveToFile`, `delRegistry` | — |
 | 7 | Uruchamianie `.bat` i `.lnk`, komunikat o brakującym pliku gry | — |
