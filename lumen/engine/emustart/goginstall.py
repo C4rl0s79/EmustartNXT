@@ -294,9 +294,15 @@ def _sig(it: dict):
 def support_rel(it: dict, rel: str) -> str:
     """Plik z flagą `support` i ścieżką `app/…` należy do katalogu gry (jak w GOG Galaxy): DOSBox Tex Murphy'ego
     leży w manifeście jako `app\\DOSBOX\\…`, a playTask wskazuje `DOSBOX\\dosbox.exe`. Inne pliki „support”
-    (`1/`, `add/`, `userdocs/`…) zostają w {supportDir} (= katalog gry) — rozkłada je skrypt gry. "" = sam folder `app`."""
-    if "support" in (it.get("flags") or []) and (rel.lower() == "app" or rel.lower().startswith("app/")):
-        return rel[4:]
+    (`1/`, `add/`, `userdocs/`…) zostają w {supportDir} (= katalog gry) — rozkłada je skrypt gry.
+    "" = sam katalog `app` (nic do utworzenia)."""
+    if "support" not in (it.get("flags") or []):
+        return rel
+    pre = gogfinal.SUPPORT_APP
+    if rel.lower().startswith(pre + "/"):
+        return rel[len(pre) + 1:]
+    if rel.lower() == pre and it.get("type") == "DepotDirectory":
+        return ""
     return rel
 
 
@@ -357,7 +363,8 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
             sfc[gi] = (dep["smallFilesContainer"].get("chunks") or [])
         for it in dep.get("items") or []:
             try:
-                rel = support_rel(it, safe_rel(it.get("path")))
+                orig = safe_rel(it.get("path"))
+                rel = support_rel(it, orig)
             except UnsafePath as ex:
                 raise GogError(f"niebezpieczna ścieżka w manifeście: {ex}")
             if not rel:
@@ -374,9 +381,12 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
                         raise GogError(f"zły chunk w manifeście: {rel}")
                 if not ch and it.get("sfcRef") and gi not in sfc:
                     raise GogError(f"plik {rel} wskazuje na kontener SFC, którego depot nie ma")
-                owners.setdefault(rel.lower(), []).append((gi, rel, it))
+                owners.setdefault(rel.lower(), []).append((gi, rel, it, orig))
     files, conflicts, dropped = [], 0, 0
     for key, cands in owners.items():
+        # plik „support” z app/ i zwykły plik gry pod tą samą ścieżką: wygrywa „support” — jak dotąd krok skryptu
+        # {supportDir}/app → {app} (overwrite) nadpisywał plik gry; to nie konflikt wersji językowych
+        cands = [c for c in cands if c[1] != c[3]] or cands
         win = cands[-1]
         if len(cands) > 1 and len({_sig(c[2]) for c in cands}) > 1:
             conflicts += 1
@@ -386,11 +396,12 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
             if win is None:                    # wariant tylko innych języków — przełączyłby język gry
                 dropped += 1
                 continue
-        gi, rel, it = win
+        gi, rel, it, orig = win
         files.append({"path": rel, "size": _size(it), "chunks": list(it.get("chunks") or []),
                       "sfc": [gi, int(it["sfcRef"]["offset"]), int(it["sfcRef"]["size"])]
                       if (it.get("sfcRef") and not it.get("chunks")) else None,
-                      "md5": it.get("md5") or "", "product": groups[gi]["product"]})
+                      "md5": it.get("md5") or "", "product": groups[gi]["product"],
+                      "legacy": orig if orig != rel else None})       # miejsce w instalacjach sprzed support_rel
     files.sort(key=lambda f: f["path"].lower())
     sfc_need = {f["sfc"][0] for f in files if f["sfc"]}
     sfc_tmp = max((sum(int(c.get("size") or 0) for c in sfc[gi]) for gi in sfc_need), default=0)
@@ -648,6 +659,8 @@ def install(source, pid: str, build: str, langs: list, primary: str, dlcs: list,
             e = None
     if not resume and not _empty_or_ours(root, pid):
         raise GogError(f"Katalog {root} nie jest pusty — wybierz inny.")
+    if resume:
+        _adopt_support_layout(root, plan, e)
     done = _still_done(root, plan, e.get("done") if resume else None)
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:
@@ -680,6 +693,57 @@ def _same_choice(e: dict, build: str, plan: dict, root: Path) -> bool:
             and set(e.get("languages") or []) == set(plan["languages"])
             and (e.get("primary") or "") == plan["primary"]
             and set(e.get("dlcs") or []) == set(plan["dlcs"]))
+
+
+def _adopt_support_layout(root: Path, plan: dict, e: dict | None) -> int:
+    """Instalacja sprzed support_rel: pliki „support” z app/ leżą w <gra>/app/…. Przenosi je na miejsca z planu
+    (gdy skrypt gry skopiował je już do katalogu gry — usuwa starą kopię), sprząta puste foldery app/ i poprawia
+    ścieżki w rejestrze, żeby weryfikacja nie uznała gry za uszkodzoną, a odinstalowanie usunęło wszystko."""
+    renames: dict = {}
+    for f in plan["files"]:
+        old = f.get("legacy")
+        if not old:
+            continue
+        try:
+            src, dst = safe_join(root, old), safe_join(root, f["path"])
+        except UnsafePath:
+            continue
+        if not src.is_file() or _has_link(root, src) or _has_link(root, dst):
+            continue
+        try:
+            if dst.exists():
+                src.unlink()
+            else:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(src, dst)
+        except OSError as ex:
+            log.warning("GOG: nie przeniesiono %s → %s: %s", old, f["path"], ex)
+            continue
+        renames[old] = f["path"]
+    if not renames:
+        return 0
+    for d in sorted({p for old in renames for p in Path(old).parents if str(p) != "."}, key=lambda p: -len(p.parts)):
+        try:
+            safe_join(root, d.as_posix()).rmdir()             # tylko puste
+        except (OSError, UnsafePath):
+            pass
+    if e:
+        def fix_files(lst):
+            out, seen = [], set()
+            for p, s in lst or []:
+                p = renames.get(p, p)
+                if p.lower() not in seen:
+                    seen.add(p.lower())
+                    out.append([p, s])
+            return out
+        e["files"] = fix_files(e.get("files"))
+        e["done"] = sorted({renames.get(p, p) for p in e.get("done") or []})
+        if e.get("pending_dlc"):
+            e["pending_dlc"]["files"] = fix_files(e["pending_dlc"].get("files"))
+            e["pending_dlc"]["done"] = sorted({renames.get(p, p) for p in e["pending_dlc"].get("done") or []})
+        save_entry(e)
+    log.info("GOG %s: %d plików „support” przeniesionych z app/ do katalogu gry", plan.get("product_id"), len(renames))
+    return len(renames)
 
 
 def _still_done(root: Path, plan: dict, done_list) -> set:
@@ -852,6 +916,7 @@ def verify(pid: str, deep: bool = True) -> dict:
     bundle = load_bundle(e)
     plan = make_plan(bundle, e["languages"], e["primary"], e["dlcs"])
     root = Path(e["install_dir"])
+    _adopt_support_layout(root, plan, e)
     bad = [(f["path"], why) for f in plan["files"] if (why := verify_file(root, f) if deep else
                                                       ("" if _size_ok(root, f) else "rozmiar"))]
     if bad and e["state"] in (ST_INSTALLED, ST_NEEDS_ADMIN):
@@ -890,6 +955,7 @@ def repair(source, pid: str, cancel=None, on_progress=None, on_phase=None) -> di
                             "Usuń grę i zainstaluj ponownie (zapisy w folderze zapisów zostają).")
     plan = make_plan(bundle, e["languages"], e["primary"], e["dlcs"])
     root = Path(e["install_dir"])
+    _adopt_support_layout(root, plan, e)
     done = _still_done(root, plan, e.get("done"))
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:

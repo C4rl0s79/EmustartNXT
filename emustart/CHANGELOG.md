@@ -12,7 +12,9 @@ Zgłoszenie: Oblivion GOTY i Tex Murphy: Under a Killing Moon kończą instalacj
 - Pliki depotu z flagą `support` i ścieżką `app\…` (147 gier w archiwum, głównie DOSBox/ScummVM) trafiają do
   głównego folderu gry, jak w GOG Galaxy — nie do podfolderu `app\`. Krok skryptu „kopiuj `{supportDir}/app` do
   `{app}`” (Al-Qadim, Prisoner of Ice) jest wtedy wykonany bez kopiowania. Inne pliki `support` (`1\`, `add\`,
-  `save\`…) bez zmian. Wznowienie przerwanej instalacji dociąga pliki we właściwe miejsce.
+  `save\`…) bez zmian. Gry zainstalowane wcześniej (pliki w `app\`): wznowienie, weryfikacja i naprawa przenoszą
+  te pliki na właściwe miejsce i poprawiają rejestr instalacji (bez „uszkodzona”, odinstalowanie usuwa wszystko).
+  Plik „support” z `app\` i zwykły plik gry pod tą samą ścieżką: wygrywa „support” (jak dotąd po kroku skryptu).
 - Finalizacja nie przerywa się, gdy skrypt kopiuje pliki do Dokumentów/AppData na innym dysku niż folder gry
   (`path is on mount 'C:', start on mount 'D:'`).
 

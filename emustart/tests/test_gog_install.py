@@ -4,6 +4,8 @@ uszkodzone dane, miejsce, weryfikacja, uruchamianie bez serwera, usuwanie i cach
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -751,30 +753,76 @@ def test_support_app_step_without_app_folder(tmp_path):
 
 
 def test_support_rel_only_strips_app_of_support_files():
-    assert gi.support_rel({"flags": ["support"]}, "app/DOSBOX/dosbox.exe") == "DOSBOX/dosbox.exe"
-    assert gi.support_rel({"flags": ["support"]}, "app") == ""
-    assert gi.support_rel({"flags": ["support"]}, "application/x.dat") == "application/x.dat"
-    assert gi.support_rel({"flags": ["support"]}, "userdocs/DragonAge.ini") == "userdocs/DragonAge.ini"
-    assert gi.support_rel({}, "app/dosbox.conf") == "app/dosbox.conf"          # zwykły plik gry w folderze app
+    sup = {"flags": ["support"], "type": "DepotFile"}
+    assert gi.support_rel(sup, "app/DOSBOX/dosbox.exe") == "DOSBOX/dosbox.exe"
+    assert gi.support_rel({"flags": ["support"], "type": "DepotDirectory"}, "app") == ""
+    assert gi.support_rel(sup, "app") == "app"                                  # plik o nazwie „app” zostaje
+    assert gi.support_rel(sup, "application/x.dat") == "application/x.dat"
+    assert gi.support_rel(sup, "userdocs/DragonAge.ini") == "userdocs/DragonAge.ini"
+    assert gi.support_rel({"type": "DepotFile"}, "app/dosbox.conf") == "app/dosbox.conf"   # zwykły plik gry w folderze app
 
 
-def test_finalize_copies_to_documents_on_another_drive(env, monkeypatch):
-    """Oblivion: gra na D:, Dokumenty na C: — os.path.relpath między dyskami rzuca ValueError."""
+def test_finalize_copies_to_documents_on_another_drive(tmp_path, monkeypatch):
+    """Oblivion: gra na D:, Dokumenty na C: — os.path.relpath między dyskami rzuca ValueError. Plik gracza, który
+    już był w Dokumentach, nie trafia do „utworzonych przez instalację”."""
+    app, docs = tmp_path / "D" / "Oblivion", tmp_path / "C" / "Dokumenty"
+    (app / "1").mkdir(parents=True)
+    (app / "1" / "Oblivion.ini").write_text("[General]\n")
+    (app / "1" / "Gracza.ini").write_text("nowy\n")
+    (docs / "My Games" / "Oblivion").mkdir(parents=True)
+    (docs / "My Games" / "Oblivion" / "Gracza.ini").write_text("ustawienia gracza\n")
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/1", "target": "{userdocs}/My Games/Oblivion", "type": "folder"}}}]}))
     real = gogfinal.os.path.relpath
-    docs = env["tmp"] / "Dokumenty"
 
     def relpath(p, start=None):
         if str(p).startswith(str(docs)):
             raise ValueError("path is on mount 'C:', start on mount 'D:'")
         return real(p, start) if start is not None else real(p)
-    monkeypatch.setattr(gogfinal.os.path, "relpath", relpath)
-    env["root"] = env["tmp"] / "_d_obl"
-    s = json.loads(json.dumps(SCRIPT))
-    s["actions"].append({"install": {"action": "supportData", "arguments": {
-        "overwrite": True, "source": "{supportDir}/1", "target": "{userdocs}/My Games/Oblivion", "type": "folder"}}})
-    build_archive(env["root"], script=s, extra_files=SUPPORT_APP)
-    e, _target, _ = _install(env)
-    assert e["state"] == gi.ST_INSTALLED
-    assert (docs / "My Games" / "Oblivion" / "Oblivion.ini").is_file()
-    assert str(docs / "My Games" / "Oblivion" / "Oblivion.ini") in e["created_files"]
+    with monkeypatch.context() as m:
+        m.setattr(gogfinal.os.path, "relpath", relpath)
+        r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=docs, folders={}, known={"1/oblivion.ini"})
+    out = docs / "My Games" / "Oblivion"
+    assert (out / "Oblivion.ini").is_file()
+    assert r["created"] == [str(out / "Oblivion.ini")]                       # Gracza.ini był wcześniej
 
+
+def test_script_source_inside_support_app_reads_from_game_folder(tmp_path):
+    """{supportDir}/app/<podfolder> → gdzie indziej: pliki leżą już w {app}/<podfolder>."""
+    app = tmp_path / "g"
+    (app / "DOSBOX").mkdir(parents=True)
+    (app / "DOSBOX" / "dosbox.conf").write_text("[dosbox]\n")
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [
+        {"install": {"action": "supportData", "arguments": {"source": "{supportDir}/app/DOSBOX", "target": "{app}/DOSBOX", "type": "folder"}}},
+        {"install": {"action": "supportData", "arguments": {"source": "{supportDir}/app/DOSBOX", "target": "{userdocs}/Gra", "type": "folder"}}}]}))
+    r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known={"dosbox/dosbox.conf"})
+    assert (tmp_path / "docs" / "Gra" / "dosbox.conf").is_file() and len(r["done"]) == 2
+
+
+def test_support_file_wins_over_game_file_with_same_path(env):
+    env["root"] = env["tmp"] / "_d_col"
+    build_archive(env["root"], extra_files=[("app\\game.cfg", b"support", ["support"]), ("game.cfg", b"zwykly", [])])
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED and (target / "game.cfg").read_bytes() == b"support"
+
+
+def test_old_install_with_support_files_in_app_is_adopted(env):
+    """Gra zainstalowana przed support_rel: pliki w <gra>/app/…. Weryfikacja przenosi je na miejsce (bez „uszkodzona”),
+    stara kopia zrobiona przez skrypt nie zostaje, odinstalowanie usuwa wszystko."""
+    env["root"] = env["tmp"] / "_d_old"
+    build_archive(env["root"], extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    # układ sprzed poprawki: pliki „support” w app/, w rejestrze ścieżki app/…; dosbox.conf skopiowany też przez skrypt
+    (target / "app" / "DOSBOX").mkdir(parents=True)
+    os.replace(target / "DOSBOX" / "dosbox.exe", target / "app" / "DOSBOX" / "dosbox.exe")
+    (target / "DOSBOX").rmdir()
+    shutil.copy2(target / "dosboxTex3.conf", target / "app" / "dosboxTex3.conf")
+    old = {"DOSBOX/dosbox.exe": "app/DOSBOX/dosbox.exe", "dosboxTex3.conf": "app/dosboxTex3.conf"}
+    e = gi.load_entry(PID)
+    e["files"] = [[old.get(p, p), s] for p, s in e["files"]]
+    gi.save_entry(e)
+    assert gi.verify(PID)["ok"]
+    assert (target / "DOSBOX" / "dosbox.exe").is_file() and not (target / "app" / "DOSBOX").exists()
+    assert not (target / "app" / "dosboxTex3.conf").exists()
+    assert "DOSBOX/dosbox.exe" in {p for p, _s in gi.load_entry(PID)["files"]}
+    assert gi.uninstall(PID, remove_hkcu=lambda a: None)["dir_removed"]

@@ -52,10 +52,22 @@ def user_documents() -> Path:
     return Path.home() / "Documents"
 
 
-def _is_app_support(src: Path, dst: Path, app: Path) -> bool:
-    """Źródło = {supportDir}/app, cel = {app} (katalog gry)."""
-    norm = lambda p: os.path.normcase(os.path.abspath(p))  # noqa: E731
-    return norm(src) == norm(Path(app) / "app") and norm(dst) == norm(app)
+# Pliki depotu z flagą „support” i tym przedrostkiem należą do katalogu gry (jak w GOG Galaxy) — instalator zapisuje
+# `app/<reszta>` jako `<reszta>` (goginstall.support_rel), a kroki skryptu ze źródłem {supportDir}/app/… czytają stamtąd.
+SUPPORT_APP = "app"
+
+
+def support_app_target(p: Path, app: Path) -> Path | None:
+    """{supportDir}/app/<reszta> → {app}/<reszta>; None — ścieżka spoza {supportDir}/app."""
+    try:
+        rest = Path(os.path.abspath(p)).relative_to(Path(os.path.abspath(Path(app) / SUPPORT_APP)))
+    except ValueError:
+        return None
+    return Path(app) / rest
+
+
+def same_path(a: Path, b: Path) -> bool:
+    return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
 
 def _inside(p: Path, *roots: Path) -> bool:
@@ -286,8 +298,9 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
         if known is None:
             return not t.exists()
         if not _inside(t, app):
-            # Dokumenty/AppData poza plikami gry; relpath między dyskami (gra na D:, profil na C:) rzuca ValueError
-            return True
+            # Dokumenty/AppData: plik gracza, który już był, nie jest „utworzony przez instalację”;
+            # bez relpath — między dyskami (gra na D:, profil na C:) rzuca ValueError
+            return not t.exists()
         return os.path.relpath(t, app).replace("\\", "/").lower() not in known
 
     for act in data.get("actions") or []:
@@ -307,8 +320,10 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             if not (_inside(src, app) and _inside(dst, app, *user_dirs)):
                 raise FinalizeError(f"supportData poza katalogiem gry: {args.get('source')} → {args.get('target')}")
             typ = str(args.get("type") or "").lower()
-            if typ == "folder" and not src.is_dir() and _is_app_support(src, dst, app):
-                # {supportDir}/app → {app} (Al-Qadim): pliki „support” z app/ instalator zapisał już w katalogu gry
+            if not src.exists() and (moved := support_app_target(src, app)) is not None and moved.exists():
+                src = moved                    # {supportDir}/app/… — pliki „support” instalator zapisał w katalogu gry
+            if typ == "folder" and same_path(src, dst):
+                # {supportDir}/app → {app} (Al-Qadim, Prisoner of Ice): nic do kopiowania
                 res["done"].append("supportData app (pliki już w katalogu gry)")
                 continue
             if typ == "file" and not src.is_file():
