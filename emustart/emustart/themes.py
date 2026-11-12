@@ -285,6 +285,14 @@ def read_zip(data: bytes) -> tuple:
         if len(b) != i.file_size:
             raise ThemeError(f"{rel}: uszkodzony plik w paczce")
         files[rel] = b
+    return check_files(files), files
+
+
+def check_files(files: dict) -> dict:
+    """Zestaw plików motywu ({ścieżka: bajty}) → opis motywu albo ThemeError. To samo sprawdzenie na serwerze
+    (paczka z panelu) i w silniku Lumena (pliki pobrane z serwera, przed zapisem u gracza)."""
+    for rel in files:
+        _rel(rel)
     if "theme.json" not in files or "theme.css" not in files:
         raise ThemeError("w paczce brak theme.json albo theme.css")
     keys = set(files)
@@ -302,7 +310,7 @@ def read_zip(data: bytes) -> tuple:
     for rel, b in files.items():
         if rel.lower().endswith(".svg"):
             check_svg(rel, b)
-    return info, files
+    return info
 
 
 # ── serwer: zapis, lista, usuwanie, pliki ───────────────────────────────────────
@@ -345,27 +353,31 @@ def index() -> dict:
             return rebuild_index()
 
 
+def _write(root: Path, tid: str, files: dict, info: dict) -> None:
+    """Motyw w całości do `root/<id>` (najpierw obok, potem podmiana — nigdy pół starej, pół nowej wersji)."""
+    root.mkdir(parents=True, exist_ok=True)
+    tmp = root / f".{tid}.new"
+    shutil.rmtree(tmp, ignore_errors=True)
+    for rel, b in files.items():
+        p = tmp / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b)
+    (tmp / ".theme-info.json").write_text(json.dumps(info, ensure_ascii=False), encoding="utf-8")
+    dst = root / tid
+    old = root / f".{tid}.old"
+    shutil.rmtree(old, ignore_errors=True)
+    if dst.exists():
+        dst.rename(old)
+    tmp.rename(dst)
+    shutil.rmtree(old, ignore_errors=True)
+
+
 def install(data: bytes) -> dict:
     """Paczka .zip z panelu → `<serwer>/themes/<id>/` (zastępuje poprzednią wersję tego motywu)."""
     info, files = read_zip(data)
     root = themes_dir()
     with _lock:
-        root.mkdir(parents=True, exist_ok=True)
-        tmp = root / f".{info['id']}.new"
-        shutil.rmtree(tmp, ignore_errors=True)
-        for rel, b in files.items():
-            p = tmp / rel
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_bytes(b)
-        (tmp / ".theme-info.json").write_text(json.dumps({**info, "installed": int(time.time())}, ensure_ascii=False),
-                                              encoding="utf-8")
-        dst = root / info["id"]
-        old = root / f".{info['id']}.old"
-        shutil.rmtree(old, ignore_errors=True)
-        if dst.exists():
-            dst.rename(old)
-        tmp.rename(dst)
-        shutil.rmtree(old, ignore_errors=True)
+        _write(root, info["id"], files, {**info, "installed": int(time.time())})
         rebuild_index()
     log.info("motyw TV %s %s wgrany (%d plików)", info["id"], info["version"], len(files))
     return {"ok": True, "id": info["id"], "name": info["name"], "version": info["version"], "files": len(files)}
@@ -393,3 +405,77 @@ def file_path(tid: str, rel: str) -> Path | None:
         return None
     p = themes_dir() / tid / rel
     return p if p.is_file() else None
+
+
+# ── silnik Lumena: motywy z serwera do folderu Lumena ───────────────────────────
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def local_info(d: Path) -> dict | None:
+    try:
+        info = json.loads((d / ".theme-info.json").read_text(encoding="utf-8"))
+        return info if isinstance(info, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def sync(get, dest: Path) -> dict:
+    """Motywy z serwera do `dest` (Lumen: `LumenData/themes`). `get(ścieżka)` → (status HTTP, bajty).
+
+    Pobierane tylko pliki o innym SHA-256 niż u gracza; każdy plik zgodny z indeksem serwera (rozmiar, SHA-256), cały
+    motyw sprawdzony jak na serwerze (check_files), podmieniany w całości. Motyw, którego nie ma już na serwerze,
+    znika; motyw, którego nie dało się pobrać albo nie przeszedł sprawdzenia — zostaje w poprzedniej wersji."""
+    st, body = get("/v1/themes")
+    if st != 200:
+        raise ThemeError(f"serwer: HTTP {st}")
+    idx = json.loads(body)
+    dest.mkdir(parents=True, exist_ok=True)
+    keep: set = set()
+    changed = 0
+    failed: dict = {}
+    for t in idx.get("themes") or []:
+        tid = t.get("id") if isinstance(t, dict) else None
+        if not isinstance(tid, str) or not ID.match(tid) or tid in RESERVED:
+            continue
+        here = dest / tid
+        old = local_info(here)
+        try:
+            want = {}
+            for f in t.get("files") or []:
+                rel = _rel(str(f.get("path")))
+                want[rel] = str(f.get("sha256") or "").lower()
+            if old and old.get("sha") == want:
+                keep.add(tid)
+                continue
+            files = {}
+            for rel, sha in want.items():
+                b = None
+                if old and (old.get("sha") or {}).get(rel) == sha and (here / rel).is_file():
+                    b = (here / rel).read_bytes()
+                    if _sha(b) != sha:
+                        b = None
+                if b is None:
+                    import urllib.parse
+                    code, b = get(f"/v1/themes/{tid}/{urllib.parse.quote(rel)}")
+                    if code != 200:
+                        raise ThemeError(f"{rel}: serwer HTTP {code}")
+                if len(b) > MAX_FILE or _sha(b) != sha:
+                    raise ThemeError(f"{rel}: plik niezgodny z indeksem serwera")
+                files[rel] = b
+            info = check_files(files)
+            if info["id"] != tid:
+                raise ThemeError("id w theme.json inne niż w indeksie serwera")
+            _write(dest, tid, files, {**info, "sha": want, "synced": int(time.time())})
+            changed += 1
+            keep.add(tid)
+        except (ThemeError, OSError, ValueError, TypeError, AttributeError) as ex:
+            failed[tid] = str(ex)
+            log.warning("motyw TV %s: %s", tid, ex)
+            if old:
+                keep.add(tid)
+    for d in dest.iterdir():
+        if d.is_dir() and (d.name.startswith(".") or (ID.match(d.name) and d.name not in keep)):
+            shutil.rmtree(d, ignore_errors=True)
+    return {"ok": True, "themes": sorted(keep), "changed": changed, "failed": failed}

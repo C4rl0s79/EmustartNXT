@@ -1208,3 +1208,30 @@ export interface GogVerifyResult {
   bad?: { path: string; why: string }[]
   error?: string
 }
+
+/**
+ * Motyw trybu TV z paczki pobranej z serwera EmuStart (engine/emustart/themes.py — sprawdzona jak na serwerze).
+ * Pliki: lumen-theme://<id>/<plik> (tylko pliki pakietu).
+ */
+export interface ThemePackage {
+  id: string
+  name: string
+  description: string
+  author: string
+  version: string
+  palette?: { bg: string; text: string; dim: string; accent: string; selText: string; selBg: string; panel: string }
+  games: { layout: 'list' | 'coverflow'; reflection: boolean }
+  logoPlate: boolean
+  consoleBackdrop: boolean
+  ambient: 'none' | 'embers' | 'stars'
+  locks: string[]
+  fonts: { text: string[]; head: string[] }
+  fontFaces: { name: string; file: string }[]
+  /** poziomy animacji, które motyw obsługuje (off, low, med, high) */
+  animations: string[]
+  /** domyślne grafiki kategorii: klucz (rodzina / grupa) → plik z assets/ */
+  categories: Record<string, string>
+  hasLayers: boolean
+  /** zmienia się z każdą wersją plików — do adresów (pamięć przeglądarki) */
+  rev: string
+}

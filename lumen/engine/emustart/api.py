@@ -747,6 +747,22 @@ class Api:
         from emustart import goginstall as gi
         return {"ok": True, "games": self._gog.admin_pending(), "undo": len(gi.pending_undo())}
 
+    def themes_sync(self, dest: str) -> dict:
+        """Lumen: motywy trybu TV z serwera do `dest` (LumenData/themes) — emustart/themes.py: tylko zmienione pliki,
+        każdy zgodny z indeksem serwera, cały motyw sprawdzony jak na serwerze."""
+        from emustart import netsrc, themes
+        ep = netsrc.endpoint(self._cfg)
+        if not ep:
+            return {"ok": False, "reason": "To urządzenie nie jest połączone z serwerem EmuStart."}
+
+        def get(path: str) -> tuple:
+            st, body, _t = netsrc._request(ep, path, timeout=30)
+            return st, body
+        try:
+            return themes.sync(get, Path(dest))
+        except (themes.ThemeError, OSError, ValueError) as ex:
+            return {"ok": False, "reason": str(ex)}
+
     def gog_finish_admin_all(self) -> dict:
         """Zaległe kroki administratora wszystkich gier jednym oknem UAC."""
         return self._gog.finish_admin_all()

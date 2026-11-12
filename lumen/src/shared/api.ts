@@ -2,6 +2,7 @@ import type { GameFacts, OwnArtResult, UserArtGallery } from './types'
 import type { DeckGeometry, DeckGroupOp, DeckLayoutStep } from './deck'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
+  ThemePackage,
   ArtKind, ArtLayout,
   GameRatings,
   ArtOption,
@@ -49,6 +50,12 @@ export interface PickPathOptions extends FsListOptions {
 
 /** The API exposed on window.lumen by the preload script. */
 export interface LumenApi {
+  /** motywy trybu TV z serwera EmuStart (paczki; pobiera silnik, main/themes.ts) */
+  themes: {
+    list(): Promise<ThemePackage[]>
+    sync(): Promise<ActionResult>
+    onChange(cb: (list: ThemePackage[]) => void): () => void
+  }
   library: {
     familyStatus(): Promise<SteamFamilyStatus>
     familyLogin(): Promise<SteamFamilyStatus>
@@ -439,6 +446,9 @@ export const IPC = {
   gogInstallRuntimes: 'gog:installRuntimes',
   gogRefresh: 'gog:refresh',
   gogMessage: 'gog:message',
+  themesList: 'themes:list',
+  themesSync: 'themes:sync',
+  themesChanged: 'themes:changed',
   jobsGet: 'jobs:get',
   jobsCancel: 'jobs:cancel',
   jobsChanged: 'jobs:changed',
@@ -455,4 +465,6 @@ export const IPC = {
 } as const
 
 export const ART_SCHEME = 'lumen-art'
+/** pliki motywów TV z paczek: lumen-theme://<id>/<plik> */
+export const THEME_SCHEME = 'lumen-theme'
 /** EmuStart's fullscreen UI files (engine/web) and its /media, /assets proxied to the engine */

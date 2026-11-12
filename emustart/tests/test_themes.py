@@ -131,6 +131,8 @@ def test_panel_upload_then_device_download_over_http(root, monkeypatch):
     import http.client
 
     from emustart import remote, server, srvadmin
+    if not hasattr(srvadmin, "theme_upload"):
+        pytest.skip("panel serwera — tylko w EmuStart (kopia silnika w Lumenie go nie ma)")
     monkeypatch.setattr(remote, "authorized", lambda handler: (handler.headers.get("Authorization") or "") == "Bearer pc")
     r = srvadmin.theme_upload(None, {"data": base64.b64encode(pack(good())).decode()})
     assert r["ok"], r
@@ -154,3 +156,65 @@ def test_panel_upload_then_device_download_over_http(root, monkeypatch):
     assert get("/v1/themes", auth="Bearer obcy")[0] == 401
     assert srvadmin.theme_delete(None, {"id": "portal-nexus"}) == {"ok": True}
     assert get("/v1/themes/portal-nexus/theme.css")[0] == 404
+
+
+def _server_get(calls: list, tamper: dict | None = None):
+    """get() silnika Lumena — wprost do funkcji serwera (indeks, pliki z indeksu); `tamper`: podmienione bajty."""
+    def get(path):
+        calls.append(path)
+        if path == "/v1/themes":
+            return 200, json.dumps(themes.index()).encode()
+        import urllib.parse
+        parts = urllib.parse.unquote(path).split("/")[3:]
+        rel = "/".join(parts[1:])
+        if tamper and rel in tamper:
+            return 200, tamper[rel]
+        f = themes.file_path(parts[0], rel)
+        return (200, f.read_bytes()) if f else (404, b"")
+    return get
+
+
+def test_sync_downloads_only_changed_files_and_removes_deleted(root, tmp_path):
+    themes.install(pack(good()))
+    dest = tmp_path / "LumenData" / "themes"
+    calls: list = []
+    r = themes.sync(_server_get(calls), dest)
+    assert r == {"ok": True, "themes": ["portal-nexus"], "changed": 1, "failed": {}}
+    assert (dest / "portal-nexus" / "theme.css").read_text() == CSS
+    assert themes.local_info(dest / "portal-nexus")["palette"]["accent"] == "#2de2ff"
+    assert len(calls) == 1 + 7
+    calls.clear()
+    assert themes.sync(_server_get(calls), dest)["changed"] == 0 and calls == ["/v1/themes"]   # bez zmian — sam indeks
+    # nowa wersja: zmieniony tylko CSS → pobrany tylko CSS (i theme.json z nową wersją)
+    themes.install(pack(good(**{"theme.css": CSS + "\n.y{}", "theme.json": json.dumps({**META, "version": "1.1"})})))
+    calls.clear()
+    assert themes.sync(_server_get(calls), dest)["changed"] == 1
+    assert sorted(c.rsplit("/", 1)[-1] for c in calls[1:]) == ["theme.css", "theme.json"]
+    assert themes.local_info(dest / "portal-nexus")["version"] == "1.1"
+    themes.remove("portal-nexus")
+    assert themes.sync(_server_get([]), dest)["themes"] == []
+    assert not (dest / "portal-nexus").exists()
+
+
+def test_sync_rejects_tampered_file_and_keeps_old_version(root, tmp_path):
+    themes.install(pack(good()))
+    dest = tmp_path / "lumen-themes"           # nie folder serwera (tmp_path/themes)
+    themes.sync(_server_get([]), dest)
+    themes.install(pack(good(**{"theme.css": CSS + "\n.z{}", "theme.json": json.dumps({**META, "version": "2"})})))
+    r = themes.sync(_server_get([], tamper={"theme.css": b"@import url(https://evil/x.css);"}), dest)
+    assert "portal-nexus" in r["failed"] and r["themes"] == ["portal-nexus"]
+    assert themes.local_info(dest / "portal-nexus")["version"] == "1.0"
+    assert (dest / "portal-nexus" / "theme.css").read_text() == CSS
+
+
+def test_sync_rechecks_package_like_server(root, tmp_path, monkeypatch):
+    """Serwer z błędem (albo podmieniony) poda indeks z groźną paczką — silnik jej nie zapisze."""
+    themes.install(pack(good()))
+    bad = b"<script>alert(1)</script>"
+    idx = themes.index()
+    for f in idx["themes"][0]["files"]:
+        if f["path"] == "layers.html":
+            f["sha256"] = themes._sha(bad)
+    monkeypatch.setattr(themes, "index", lambda: idx)
+    r = themes.sync(_server_get([], tamper={"layers.html": bad}), tmp_path / "t")
+    assert "<script>" in r["failed"]["portal-nexus"] and r["themes"] == []
