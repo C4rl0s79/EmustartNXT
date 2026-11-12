@@ -17,6 +17,8 @@ export interface Foreground {
 }
 
 type Probe = (own: bigint) => Foreground
+type Raise = (own: bigint) => boolean
+let raise: Raise | null = null
 
 function load(): Probe | null {
   if (process.platform !== 'win32') return null
@@ -32,6 +34,29 @@ function load(): Probe | null {
     // class name into a plain buffer (koffi.pointer's second argument is the pointer depth, not a length)
     const cls = u.func('__stdcall', 'GetClassNameW', 'int32', ['intptr', 'void *', 'int32'])
     const pidOf = u.func('__stdcall', 'GetWindowThreadProcessId', 'uint32', ['intptr', koffi.out(koffi.pointer('uint32'))])
+    const threadOf = u.func('__stdcall', 'GetWindowThreadProcessId', 'uint32', ['intptr', 'void *'])
+    const attach = u.func('__stdcall', 'AttachThreadInput', 'int32', ['uint32', 'uint32', 'int32'])
+    const showWin = u.func('__stdcall', 'ShowWindow', 'int32', ['intptr', 'int32'])
+    const toTop = u.func('__stdcall', 'BringWindowToTop', 'int32', ['intptr'])
+    const setFg = u.func('__stdcall', 'SetForegroundWindow', 'int32', ['intptr'])
+    const curThread = koffi.load('kernel32.dll').func('__stdcall', 'GetCurrentThreadId', 'uint32', [])
+    // Okno na pierwszy plan także z procesu w tle: wątek Lumena podpięty pod wątek okna z pierwszego planu (gra,
+    // Steam) — Windows przepuszcza wtedy SetForegroundWindow, który inaczej tylko miga przyciskiem na pasku.
+    raise = (own) => {
+      const fg = BigInt(getFg() as number | bigint)
+      if (fg === own) return true
+      const me = curThread() as number
+      const other = fg ? (threadOf(fg, null) as number) : 0
+      const joined = !!other && other !== me && !!attach(me, other, 1)
+      try {
+        if (iconic(own)) showWin(own, 9) // SW_RESTORE
+        toTop(own)
+        setFg(own)
+      } finally {
+        if (joined) attach(me, other, 0)
+      }
+      return BigInt(getFg() as number | bigint) === own
+    }
     return (own) => {
       const h = BigInt(getFg() as number | bigint)
       if (h === 0n) return { other: false, desc: 'brak okna' }
@@ -61,6 +86,15 @@ const probe = load()
 export function foreground(own: bigint): Foreground | null {
   try {
     return probe ? probe(own) : null
+  } catch {
+    return null
+  }
+}
+
+/** Okno Lumena (`own`) na pierwszy plan — true, gdy Windows faktycznie je tam postawił; null = niedostępne. */
+export function bringToFront(own: bigint): boolean | null {
+  try {
+    return raise ? raise(own) : null
   } catch {
     return null
   }

@@ -26,7 +26,7 @@ import { PAGE_SIZE as SGDB_PAGE_SIZE, pickBestMatch, pickExactMatch, SgdbAuthErr
 import { LaunchBoxService } from './launchbox/service'
 import { XInputPoller } from './input/xinput'
 import { RawHidPads } from './input/rawhid'
-import { foreground } from './input/foreground'
+import { bringToFront, foreground } from './input/foreground'
 import { editionless, platformForEs, platformForTags } from './launchbox/match'
 import { IMAGE_BASE, LB_TYPES, PICKER_TYPES, regionsOfTags, type LbImage } from './launchbox/images'
 import { ArtworkService } from './art/artwork'
@@ -525,10 +525,24 @@ function restoreAfterGame(what: string): void {
   if (!win || win.isDestroyed()) return
   activateWindow(win)
   if (modes?.mode === 'fullscreen' && !win.isFullScreen()) win.setFullScreen(true)
-  setTimeout(() => {
+  // Electron zgłasza fokus, choć na ekranie zostaje gra / Steam (test na żywo) — liczy się okno z pierwszego planu
+  // według Windows; gdy to nie Lumen — wysunięcie przez wątek tamtego okna (input/foreground.ts), do 3 prób
+  const own = ownHandle()
+  let tries = 0
+  const check = (): void => {
     if (!win || win.isDestroyed()) return
-    log.info('window', `po grze (${what}): na wierzchu=${win.isFocused()}, pełny ekran=${win.isFullScreen()}, zminimalizowane=${win.isMinimized()}`)
-  }, 1000)
+    const fg = foreground(own)
+    const front = !fg || fg.desc === 'Lumen'
+    if (!front && tries < 3) {
+      tries++
+      const ok = bringToFront(own)
+      if (ok) win.webContents.focus()
+      setTimeout(check, 400)
+      return
+    }
+    log.info('window', `po grze (${what}): na pierwszym planie: ${front ? 'Lumen' : fg?.desc}${tries ? ` (wysunięte, prób: ${tries})` : ''}, pełny ekran=${win.isFullScreen()}`)
+  }
+  setTimeout(check, 500)
 }
 
 /** kto uruchomił Lumena (Eksplorator, Harmonogram, skrót z pada…) — diagnoza kopii startujących „same” */
