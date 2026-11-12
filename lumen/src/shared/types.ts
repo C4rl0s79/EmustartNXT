@@ -539,6 +539,9 @@ export interface Settings {
    * theme keeps its look in EmuStart's shared config; here only Lumen's own keys (typefaces).
    */
   tvLooks: Record<string, Record<string, number | string>>
+  /** animacje trybu TV (tło motywu, dekoracje z paczek): wył. / niskie / średnie / wysokie; przy ograniczonym ruchu
+   *  w Windows — wył. bez względu na to ustawienie */
+  tvAnim: TvAnim
   /** the optional desktop interface (shared/deck.ts); off by default */
   deck: DeckSettings
   hasSgdbKey: boolean
@@ -568,6 +571,7 @@ export type SettingsPatch = Partial<
     | 'pythonPath'
     | 'tvTheme'
     | 'tvLooks'
+    | 'tvAnim'
     | 'gogInstallDir'
     | 'gogLanguages'
   >
@@ -1208,3 +1212,33 @@ export interface GogVerifyResult {
   bad?: { path: string; why: string }[]
   error?: string
 }
+
+/**
+ * Motyw trybu TV z paczki pobranej z serwera EmuStart (engine/emustart/themes.py — sprawdzona jak na serwerze).
+ * Pliki: lumen-theme://<id>/<plik> (tylko pliki pakietu).
+ */
+export interface ThemePackage {
+  id: string
+  name: string
+  description: string
+  author: string
+  version: string
+  palette?: { bg: string; text: string; dim: string; accent: string; selText: string; selBg: string; panel: string }
+  games: { layout: 'list' | 'coverflow'; reflection: boolean }
+  logoPlate: boolean
+  consoleBackdrop: boolean
+  ambient: 'none' | 'embers' | 'stars'
+  locks: string[]
+  fonts: { text: string[]; head: string[] }
+  fontFaces: { name: string; file: string }[]
+  /** poziomy animacji, które motyw obsługuje (off, low, med, high) */
+  animations: string[]
+  /** domyślne grafiki kategorii: klucz (rodzina / grupa) → plik z assets/ */
+  categories: Record<string, string>
+  hasLayers: boolean
+  /** zmienia się z każdą wersją plików — do adresów (pamięć przeglądarki) */
+  rev: string
+}
+
+export type TvAnim = 'off' | 'low' | 'med' | 'high'
+export const TV_ANIM_LEVELS: TvAnim[] = ['off', 'low', 'med', 'high']

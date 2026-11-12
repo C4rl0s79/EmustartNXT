@@ -12,6 +12,9 @@ import { loginFlow, logoutFlow } from '../lib/account'
 import { lookStyle, setLook, useEngineLook, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
 import { TvThemes } from './TvThemes'
+import { TvThemeAssets } from './TvThemeAssets'
+import { ThemePkg } from './themeArt'
+import { useThemePackages, useTvAnim } from './usePackages'
 import { DEFAULT_THEME, lookDefaults, lookSpecFor, themeById, themeStyle } from './themes'
 import '@fontsource-variable/cinzel'
 import '@fontsource-variable/alegreya'
@@ -45,7 +48,9 @@ export function TvApp() {
   // the theme in use (Lumen's setting) or, while the chooser is open, the one being looked at
   const savedTheme = useStore((s) => s.settings?.tvTheme)
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
-  const theme = themeById(previewTheme ?? savedTheme)
+  const pkgs = useThemePackages()
+  const anim = useTvAnim()
+  const theme = themeById(previewTheme ?? savedTheme, pkgs)
   // each theme has its own look: the EmuStart theme EmuStart's stored one (+ Lumen's own keys),
   // the others theirs from Lumen's settings — picked whenever the theme changes (the editor, while
   // open, owns the values)
@@ -104,8 +109,10 @@ export function TvApp() {
     if (screen === 'subs' && !group) setScreen('top')
   }, [screen, group])
   return (
-    <div className="tv" data-theme={theme.id} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look, lookDefaults(theme)), ...themeStyle(theme) } as CSSProperties}>
+    <ThemePkg.Provider value={theme.pkg}>
+    <div className="tv" data-theme={theme.id} data-anim={anim} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look, lookDefaults(theme)), ...themeStyle(theme) } as CSSProperties}>
       {theme.ambient && <div className={`tv-ambient tv-ambient--${theme.ambient}`} aria-hidden="true" />}
+      <TvThemeAssets theme={theme} />
       <TvTopBar />
       {screen === 'top' && (
         <TvSystems
@@ -172,7 +179,8 @@ export function TvApp() {
       )}
       {themesOpen && (
         <TvThemes
-          current={themeById(savedTheme).id}
+          current={themeById(savedTheme, pkgs).id}
+          themes={pkgs}
           onPreview={setPreviewTheme}
           onDone={(id) => {
             setThemesOpen(false)
@@ -181,7 +189,7 @@ export function TvApp() {
               void attempt(api().settings.patch({ tvTheme: id })).then((s) => {
                 if (!s) return
                 useStore.getState().setSettings(s)
-                useStore.getState().toast(`Motyw: ${themeById(id).name}`, 'info')
+                useStore.getState().toast(`Motyw: ${themeById(id, pkgs).name}`, 'info')
               })
           }}
         />
@@ -197,6 +205,7 @@ export function TvApp() {
       )}
       <TvHints />
     </div>
+    </ThemePkg.Provider>
   )
 }
 

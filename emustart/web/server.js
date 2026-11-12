@@ -1131,11 +1131,45 @@ Każdy plik zostanie skopiowany i sprawdzony; ` +
   migrPoll = setInterval(migrTick, 700);
 });
 
+// ── motywy trybu TV Lumena (emustart/themes.py) ──
+async function refreshThemes() {
+  const r = await admin("themes_list").catch(() => null);
+  const rows = r?.list ?? [];
+  $("themeRows").innerHTML = rows.length
+    ? rows.map((t) => `<tr><td><b>${esc(t.name)}</b> <span class="muted">${esc(t.id)}${t.author ? " · " + esc(t.author) : ""}</span>` +
+        `${t.description ? `<div class="muted">${esc(t.description)}</div>` : ""}</td><td>${esc(t.version)}</td>` +
+        `<td>${t.layout === "coverflow" ? "wstęga okładek" : "lista"}</td><td class="n">${t.files}</td><td class="n">${fmtBytes(t.size)}</td>` +
+        `<td><button class="danger" data-theme-del="${esc(t.id)}">Usuń</button></td></tr>`).join("")
+    : `<tr><td colspan="6" class="muted">Brak wgranych motywów — Lumen ma wbudowane EmuStart, Kronikę i Horyzont.</td></tr>`;
+  $("themeRows").querySelectorAll("[data-theme-del]").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm(`Usunąć motyw „${b.dataset.themeDel}”? Lumen wróci do wbudowanego motywu na urządzeniach, które go używają.`)) return;
+    const d = await admin("theme_delete", { id: b.dataset.themeDel }).catch(() => null);
+    $("themeMsg").textContent = d?.ok ? "Motyw usunięty." : d?.reason || "Serwer nie odpowiada.";
+    refreshThemes();
+  }));
+}
+$("bThemeUp").addEventListener("click", async () => {
+  const f = $("themeFile").files[0];
+  if (!f) return ($("themeMsg").textContent = "Wybierz plik .zip z motywem.");
+  if (f.size > 64 * 1024 * 1024) return ($("themeMsg").textContent = "Paczka większa niż 64 MB.");
+  $("themeMsg").textContent = "Sprawdzam paczkę…";
+  const data = await new Promise((ok) => {
+    const rd = new FileReader();
+    rd.onload = () => ok(String(rd.result).split(",")[1] || "");
+    rd.readAsDataURL(f);
+  });
+  const r = await admin("theme_upload", { data }).catch(() => null);
+  $("themeMsg").textContent = r?.ok ? `Motyw „${r.name}” ${r.version} wgrany (${r.files} plików).` : `Nie wgrano: ${r?.reason || "serwer nie odpowiada"}`;
+  if (r?.ok) $("themeFile").value = "";
+  refreshThemes();
+});
+
 let startTab = "stan";
 try { startTab = localStorage.getItem("tab") || "stan"; } catch (e) { /* domyślna zakładka */ }
 showTab(document.querySelector(`#tabs button[data-tab="${startTab}"]`) ? startTab : "stan");
 refresh();
 refreshDevices();
+refreshThemes();
 refreshPublic();
 setInterval(refreshPublic, 5000);
 migrTick();

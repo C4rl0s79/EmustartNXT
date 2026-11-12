@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { categoryArt, useThemePkg } from './themeArt'
 import type { EmuSystemInfo } from '@shared/types'
 import { api } from '../store'
 import { useActions } from '../nav/input'
@@ -52,10 +53,19 @@ function useSystemInfo(sys: TvSystem | undefined): EmuSystemInfo | null {
 }
 
 /** The platform's console photo behind the carousel (the theme's tone; bright consoles toned down by lum). */
-function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
+function ConsoleBackdrop({ sys, photos }: { sys: TvSystem; photos: boolean }) {
   const [broken, setBroken] = useState(false)
   const own = useGroupArt(sys)
-  useEffect(() => setBroken(false), [sys.key, sys.consoleRev, own.rev, own.hero])
+  const themed = categoryArt(useThemePkg(), sys, 'hero')
+  useEffect(() => setBroken(false), [sys.key, sys.consoleRev, own.rev, own.hero, themed])
+  // grafika z motywu (etap 14d): po własnej grafice gracza, przed domyślną z serwera i zdjęciem konsoli
+  if (themed && !own.own.hero && !broken)
+    return (
+      <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': 0.5 } as CSSProperties}>
+        <img decoding="async" src={themed} alt="" draggable={false} onError={() => setBroken(true)} />
+      </div>
+    )
+  if (!photos) return null
   if (own.id && own.hero && !broken)
     return (
       <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': 0.5 } as CSSProperties}>
@@ -73,6 +83,7 @@ function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
 function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number; plate: boolean }) {
   const ad = Math.abs(d)
   const own = useGroupArt(sys)
+  const themedLogo = categoryArt(useThemePkg(), sys, 'logo')
   return (
     <div
       className={`tv-syscard ${ad === 0 ? 'is-current' : ''}`}
@@ -90,7 +101,7 @@ function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number
         rev={own.logo ? own.rev : sys.logoRev}
         pixel={sys.logoPixel}
         plate={plate}
-        ownSrc={own.id && own.logo ? api().art.url(own.id, 'logo', own.rev, 'tv') : undefined}
+        ownSrc={themedLogo && !own.own.logo ? themedLogo : own.id && own.logo ? api().art.url(own.id, 'logo', own.rev, 'tv') : undefined}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}
       />
@@ -194,7 +205,7 @@ export function TvSystems({
   const facts = d ? [d.manufacturer, d.release ? (d.end ? `${d.release}–${d.end}` : `premiera ${d.release}`) : '', d.media, d.controllers ? `pady: ${d.controllers}` : ''].filter(Boolean) : []
   return (
     <section className="tv-screen tv-systems">
-      {consoleBackdrop && <ConsoleBackdrop sys={sys} />}
+      <ConsoleBackdrop sys={sys} photos={consoleBackdrop} />
       <div className="tv-carousel">
         {systems.map((s, i) => {
           let dd = i - index

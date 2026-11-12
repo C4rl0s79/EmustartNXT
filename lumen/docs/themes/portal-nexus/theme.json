@@ -1,0 +1,54 @@
+{
+  "id": "portal-nexus",
+  "name": "Portal Nexus",
+  "version": "1.0",
+  "author": "przykład",
+  "description": "Neon i synthwave: mgławice, siatka przy dolnej krawędzi, unoszące się iskry. Wstęga okładek z odbiciem.",
+  "palette": {
+    "bg": "#05010f",
+    "text": "#f4ecff",
+    "dim": "#c5b4eb",
+    "accent": "#2de2ff",
+    "selText": "#05010f",
+    "selBg": "#2de2ff",
+    "panel": "rgba(13, 6, 38, 0.92)"
+  },
+  "games": {
+    "layout": "coverflow",
+    "reflection": true
+  },
+  "logoPlate": true,
+  "consoleBackdrop": true,
+  "ambient": "none",
+  "locks": [
+    "accent",
+    "bg",
+    "row",
+    "list_w",
+    "media_h",
+    "tlogo",
+    "tlogo_w",
+    "games_logo"
+  ],
+  "fonts": {
+    "text": [
+      "exo2",
+      "atkinson",
+      "segoe"
+    ],
+    "head": [
+      "oxanium",
+      "exo2",
+      "atkinson"
+    ]
+  },
+  "animations": [
+    "off",
+    "low",
+    "med",
+    "high"
+  ],
+  "categories": {
+    "grp:pc": "assets/categories/pc.webp"
+  }
+}

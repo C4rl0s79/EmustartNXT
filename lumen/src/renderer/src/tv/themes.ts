@@ -1,4 +1,5 @@
-import { LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from './look'
+import type { ThemePackage } from '@shared/types'
+import { FONTS, LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from './look'
 
 // Themes of the TV layout. A theme is three layers on top of the look editor (look.ts):
 //   1. palette  — colours as CSS variables on the .tv frame (checked for contrast in tests),
@@ -46,6 +47,8 @@ export interface TvTheme {
   locks: string[]
   /** typefaces offered in the look editor: text and headings, the first one is the theme's default */
   fonts: { text: string[]; head: string[] }
+  /** motyw z paczki z serwera (etap 14): pliki przez lumen-theme://<id>/… */
+  pkg?: ThemePackage
 }
 
 /** the theme's own starting look (its typefaces); the player's changes are stored on top of it */
@@ -107,8 +110,49 @@ export const THEMES: TvTheme[] = [
   }
 ]
 
-export function themeById(id: string | undefined): TvTheme {
-  return THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === DEFAULT_THEME)!
+/** czcionka z paczki motywu: klucz w edytorze „Wygląd” → rodzina CSS z @font-face (TvThemeAssets) */
+export const pkgFontFamily = (pkg: ThemePackage, name: string): string => `'lumen-${pkg.id}-${name}'`
+
+/** dołącza czcionki paczki do listy FONTS (edytor „Wygląd”, lookStyle) — wbudowanej nie zastępuje */
+export function registerPkgFonts(pkg: ThemePackage): void {
+  for (const f of pkg.fontFaces) if (!FONTS[f.name]) FONTS[f.name] = [f.name, `${pkgFontFamily(pkg, f.name)}, 'Segoe UI', system-ui, sans-serif`]
+}
+
+const BUILTIN_FONTS = ['segoe', 'atkinson']
+
+/**
+ * Motyw z paczki → motyw TV. Kontrast palety sprawdził już serwer i silnik (te same progi co testy niżej);
+ * czcionki — wbudowane albo z paczki (fontFaces), inne pomijane; bez listy — Segoe UI i Atkinson.
+ */
+export function fromPackage(p: ThemePackage): TvTheme {
+  const own = new Set(p.fontFaces.map((f) => f.name))
+  const ok = (xs: string[]): string[] => {
+    const l = xs.filter((x) => x in FONTS || own.has(x))
+    return l.length ? l : BUILTIN_FONTS
+  }
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || `Motyw z serwera EmuStart${p.author ? ` (${p.author})` : ''}.`,
+    palette: p.palette,
+    games: { layout: p.games.layout, reflection: p.games.reflection },
+    logoPlate: p.logoPlate,
+    consoleBackdrop: p.consoleBackdrop,
+    ambient: p.ambient === 'none' ? undefined : p.ambient,
+    locks: p.locks,
+    fonts: { text: ok(p.fonts.text), head: ok(p.fonts.head) },
+    pkg: p
+  }
+}
+
+/** wbudowane motywy, potem te z serwera (id wbudowanego nie zastąpi — serwer ich nie przyjmuje) */
+export function allThemes(pkgs: ThemePackage[] = []): TvTheme[] {
+  return [...THEMES, ...pkgs.filter((p) => !THEMES.some((t) => t.id === p.id)).map(fromPackage)]
+}
+
+export function themeById(id: string | undefined, pkgs: ThemePackage[] = []): TvTheme {
+  const all = allThemes(pkgs)
+  return all.find((t) => t.id === id) ?? THEMES.find((t) => t.id === DEFAULT_THEME)!
 }
 
 /** CSS variables of the theme's palette (they win over the look editor's colours, which it locks). */

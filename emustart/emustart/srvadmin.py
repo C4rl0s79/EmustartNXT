@@ -306,8 +306,9 @@ def handle(handler, api) -> None:
     name = handler.path.split("?")[0].removeprefix("/admin/")
     fn = (ACTIONS.get(name) or ACTIONS_ARGS.get(name)) if ENABLED else None
     n = int(handler.headers.get("Content-Length") or 0)
-    # wgrane zdjęcie konsoli (base64) ma kilka MB — pozostałe akcje jak dotąd do 64 KB
-    raw = handler.rfile.read(min(n, UPLOAD_MAX if name == "system_console_upload" else 1 << 16)) if n else b""
+    # wgrane zdjęcie konsoli (base64) ma kilka MB, paczka motywu TV do 64 MB — pozostałe akcje jak dotąd do 64 KB
+    limit = THEME_UPLOAD_MAX if name == "theme_upload" else UPLOAD_MAX if name == "system_console_upload" else 1 << 16
+    raw = handler.rfile.read(min(n, limit)) if n else b""
     if not fn:
         return handler.send_error(404)
     try:
@@ -807,6 +808,45 @@ ACTIONS_ARGS.update({"config_set": config_set, "art_start": art_start, "art_keys
                      "account_files": account_files, "account_backup": account_backup,
                      "account_restore": account_restore, "backup_settings": backup_settings})
 ACTIONS.update({"art": art_overview, "art_cancel": art_cancel, "launchbox_update": launchbox_update})
+
+
+# ── motywy trybu TV Lumena (emustart/themes.py) ──
+THEME_UPLOAD_MAX = (64 << 20) * 4 // 3 + (1 << 16)      # paczka .zip ≤ 64 MB jako base64 w JSON
+
+
+def themes_list(_api) -> dict:
+    from emustart import themes
+    out = []
+    for t in themes.index().get("themes", []):
+        out.append({"id": t["id"], "name": t.get("name", ""), "version": t.get("version", ""), "author": t.get("author", ""),
+                    "description": t.get("description", ""), "layout": (t.get("games") or {}).get("layout", "list"),
+                    "files": len(t.get("files", [])), "size": sum(f.get("size", 0) for f in t.get("files", [])),
+                    "installed": t.get("installed", 0)})
+    return {"ok": True, "list": out}
+
+
+def theme_upload(_api, args: dict) -> dict:
+    """Panel: paczka .zip motywu (base64) — sprawdzona i zapisana; urządzenia pobiorą ją przy synchronizacji."""
+    import base64
+    import binascii
+    from emustart import themes
+    try:
+        data = base64.b64decode(str(args.get("data") or ""), validate=True)
+    except (binascii.Error, ValueError):
+        return {"ok": False, "reason": "uszkodzony plik (base64)"}
+    try:
+        return themes.install(data)
+    except themes.ThemeError as ex:
+        return {"ok": False, "reason": str(ex)}
+
+
+def theme_delete(_api, args: dict) -> dict:
+    from emustart import themes
+    return themes.remove(str(args.get("id") or ""))
+
+
+ACTIONS.update({"themes_list": themes_list})
+ACTIONS_ARGS.update({"theme_upload": theme_upload, "theme_delete": theme_delete})
 
 
 # ── emulatory: magazyn serwera (emustart/emustore.py) ──

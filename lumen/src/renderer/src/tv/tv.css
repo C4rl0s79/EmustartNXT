@@ -742,6 +742,36 @@
   overflow: hidden;
 }
 
+/* dekoracje motywu z paczki (layers.html — TvThemeAssets): nad tłem, pod ekranami, bez myszy */
+.tv-layers {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* poziom animacji (Ustawienia → Motyw: lewo / prawo; data-anim na .tv): „wył.” — nic się nie rusza;
+   dekoracje z klasą lv-med / lv-high dopiero od poziomu średniego / wysokiego; „niskie” — tło motywu przygaszone */
+.tv[data-anim='off'] .tv-ambient,
+.tv[data-anim='off'] .tv-ambient::before,
+.tv[data-anim='off'] .tv-ambient::after,
+.tv[data-anim='off'] .tv-layers *,
+.tv[data-anim='off'] .tv-backdrop .art {
+  animation: none !important;
+}
+.tv[data-anim='off'] .tv-layers .lv-low,
+.tv[data-anim='off'] .tv-layers .lv-med,
+.tv[data-anim='off'] .tv-layers .lv-high,
+.tv[data-anim='low'] .tv-layers .lv-med,
+.tv[data-anim='low'] .tv-layers .lv-high,
+.tv[data-anim='med'] .tv-layers .lv-high {
+  display: none;
+}
+.tv[data-anim='low'] .tv-ambient {
+  opacity: 0.5;
+}
+
 /* the platform's console photo behind the system carousel (themes.ts consoleBackdrop): the theme sets
    its tone (--tv-con-filter, --tv-con-op); bright consoles are toned down and dark ones lifted by the
    photo's mean brightness (--con-lum from the server, 0–1): 0.15 → ×1.2, 0.8 → ×0.68 */
@@ -800,6 +830,21 @@
   margin-left: auto;
   font-size: 0.78em;
   opacity: 0.75;
+}
+.tv-themes__from {
+  margin-left: auto;
+  font-size: 0.72em;
+  opacity: 0.6;
+}
+.tv-themes__from + .tv-themes__now {
+  margin-left: 0.8em;
+}
+.tv-themes__anim {
+  margin: 1.2vh 0 0;
+  opacity: 0.85;
+}
+.tv-themes__anim span {
+  opacity: 0.7;
 }
 .tv-themes__desc {
   margin: 1.6vh 0 0;
@@ -1086,6 +1131,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .tv-backdrop .art,
+  .tv-layers *,
   .tv-ambient,
   .tv-ambient::before,
   .tv-ambient::after {

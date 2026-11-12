@@ -67,8 +67,8 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 10 | Deinstalator (silnik): wartość HKCU sprzed instalacji zapamiętana przy zapisie i przywracana (dodane znikają); `gog_uninstall_preview` — pliki skopiowane do Dokumentów/AppData bez folderów zapisów; `gog_uninstall(…, remove_outside)` — usuwa je na wybór gracza (domyślnie zostają, `outside_left` w wyniku) | zrobione (testy, HKCU na tymczasowym kluczu); okno wyboru w Lumenie — etap 11 |
 | 11 | Wydanie Lumena 1.0.58: silnik z etapami 0–10 (bez zmian interfejsu) | wydane 2026-11-12 (PR #25, `lumen-v1.0.58`; podpis i spakowany `EmuStartEngine.exe --gog-admin` sprawdzone) |
 | 12 | Etap 2a — Lumen jako administrator: silnik `unelevated.popen` (emulatory, gry GOG — token powłoki); Lumen: `requireAdministrator`, Steam i linki przez `explorer.exe`, autostart przez Harmonogram (30 s, najwyższe uprawnienia, stary wpis Run usuwany), `gog_finish_admin_all` przy starcie, okno odinstalowania z wyborem plików poza grą, pominięte kroki w szczegółach gry | zrobione — wydanie Lumena 1.0.59. Na żywo (zbudowany Lumen, 2026-11-12): Lumen i silnik z uprawnieniami; DOSBox, RetroArch, PCSX2, Steam i gra Steam bez nich; zadanie autostartu (30 s, najwyższe uprawnienia); okno wyboru przy drugiej kopii (oba wybory). Niesprawdzone na żywo: zaległe kroki przy starcie (żadna gra nie czekała) |
-| 13 | Poprawki po 1.0.59: instalacja dużych gier GOG, powrót Lumena po grze, płynność grafik (plan niżej) | zrobione — sprawdzone na żywo przez gracza (2026-11-12): duża gra GOG startuje od razu i pobiera szybciej, Lumen wraca na wierzch w trybie, z którego uruchomiono grę, siatka pulpitu nie wraca na początek, wstęga bez końca, przewijanie gier Steam płynne, animowane plakaty animowane; czeka na wydanie |
-| 14 | Motywy TV jako pakiety z serwera (plan niżej) — po etapie 13 | plan |
+| 13 | Poprawki po 1.0.59 — **wydane: Lumen 1.0.60** (PR #27, `lumen-v1.0.60`): instalacja dużych gier GOG, powrót Lumena po grze, płynność grafik (plan niżej) | zrobione — sprawdzone na żywo przez gracza (2026-11-12): duża gra GOG startuje od razu i pobiera szybciej, Lumen wraca na wierzch w trybie, z którego uruchomiono grę, siatka pulpitu nie wraca na początek, wstęga bez końca, przewijanie gier Steam płynne, animowane plakaty animowane; czeka na wydanie |
+| 14 | Motywy TV jako pakiety z serwera (plan niżej, kroki 14a–14e) — **wydane: EmuStart 0.64.0, Lumen 1.0.61**; wbudowane motywy w formacie paczek — pominięte (decyzja użytkownika 2026-11-13) | 14a, 14b zrobione (testy: sprawdzanie paczek, zapis, panel → HTTP jak Lumen, synchronizacja silnika — tylko zmienione pliki, podmienione pliki odrzucone, ponowne sprawdzenie paczki; protokół lumen-theme:// tylko z plikami pakietu; na żywo jeszcze nie — wymaga nowej wersji serwera); 14c zrobione (na żywo w Lumenie z profilu testowego: przykład `lumen/docs/themes/portal-nexus` przez kod serwera i silnika → arkusz, paleta, czcionka, dekoracje, poziomy animacji wysokie/niskie; złośliwe `layers.html` — nic się nie wykonało, niedozwolone znaczniki/atrybuty/adresy usunięte); 14d zrobione (klucze kategorii jak w „Grafice grupy”: `pc`, `pc/steam`, `grp:konsole`, `es:<system>`, `@logo`; kolejność: własna gracza → motyw → serwer → zdjęcie konsoli; na żywo: tło grupy PC z przykładu); w toku: 14e |
 
 ### Plan: poprawki po 1.0.59 (etap 13)
 
@@ -136,6 +136,25 @@ Ustalenia z użytkownikiem (2026-11-12): tylko tryb TV Lumena; motywy wgrywane n
 - Wbudowane EmuStart, Kronika, Horyzont w tym samym formacie (kopia w aplikacji).
 - Przełącznik animacji: wył. / niskie / średnie / wysokie (`.tv[data-anim]`); „wył.” przy ograniczonym ruchu.
 - Kontrast palety sprawdzany przy instalacji (jak w testach dziś).
+
+Kroki (każdy osobno sprawdzany):
+- **14a — serwer:** `emustart/themes.py` — sprawdzenie paczki (.zip ≤ 64 MB: tylko `theme.json`, `theme.css`,
+  `layers.html`, `assets/**` z obrazami png/jpg/webp/gif/svg i czcionkami woff2; bez ścieżek wychodzących poza paczkę;
+  CSS bez `@import`, `expression(`, adresów `url()` innych niż `assets/…` i `data:`; `layers.html` tylko z dozwolonych
+  znaczników i atrybutów, `src` wyłącznie z `assets/`), zapis w `<serwer>/themes/<id>/`, `index.json` (id, nazwa,
+  wersja, pliki + SHA-256); panel serwera: sekcja „Motywy TV Lumena” — wgraj .zip, lista, usuń; API dla urządzeń:
+  `GET /v1/themes`, `GET /v1/themes/<id>/<plik>`.
+- **14b — Lumen, proces główny:** synchronizacja do `LumenData	hemes` (tylko zmienione pliki po SHA-256; motyw
+  usunięty z serwera znika z listy), protokół `lumen-theme://<id>/<plik>` (tylko pliki pakietu, ścieżki sprawdzane),
+  lista motywów dla interfejsu; to samo sprawdzenie paczki co na serwerze (Lumen działa jako administrator).
+- **14c — Lumen, tryb TV:** motywy z paczek w wyborze motywu obok wbudowanych; `theme.css` jako `<link>`,
+  `layers.html` w warstwie dekoracji (ponownie oczyszczony), paleta sprawdzana pod kątem kontrastu (jak w testach);
+  przełącznik animacji wył. / niskie / średnie / wysokie (`.tv[data-anim]`; domyślnie średnie, „wył.” przy
+  ograniczonym ruchu w Windows).
+- **14d — domyślne grafiki kategorii:** `theme.json` → `categories` (rodzina platformy / grupa → plik z `assets/`),
+  używane w karuzeli systemów, gdy grupa nie ma własnej grafiki.
+- **14e — wbudowane motywy (EmuStart, Kronika, Horyzont) w tym samym formacie** (paczki w zasobach aplikacji) i
+  krótki przewodnik „jak zrobić motyw” (klasy, zmienne, poziomy animacji, ograniczenia).
 
 Nie dotyka: trybu pulpitu Lumena, EmuStart (Windows, APK — na razie bez motywów).
 
@@ -251,6 +270,33 @@ dokumentacji Lumena, wydanie.
 10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
+## [0.64.0] — 2026-11-13
+
+Zakres: serwer (`themes.py` — nowy, `remote.py`, `srvadmin.py`, panel `web/server.*`), silnik GOG (`goginstall.py`,
+`goglib.py`) i `api.py` (`themes_sync`); te same pliki w kopii silnika Lumena (`lumen/engine/`, Lumen 1.0.61).
+Klient Windows i APK — bez zmian w działaniu (motywy są tylko dla trybu TV Lumena).
+
+### Nowe
+- **Motywy trybu TV Lumena jako paczki .zip** (etap 14): panel serwera „Grafiki i opisy → Motywy TV Lumena” —
+  wgraj, lista, usuń; serwer sprawdza paczkę przed zapisem (tylko `theme.json`, `theme.css`, `layers.html`,
+  `assets/` z obrazami i czcionkami woff2; CSS bez `@import` i adresów spoza paczki; dekoracje bez skryptów i
+  zdarzeń; SVG bez skryptów; paleta czytelna z kanapy ≥ 4.5:1). API dla urządzeń: `GET /v1/themes` (indeks z SHA-256),
+  `GET /v1/themes/<id>/<plik>` (tylko pliki z indeksu). Silnik Lumena: `themes_sync` — tylko zmienione pliki, każdy
+  zgodny z indeksem, cały motyw sprawdzony tym samym kodem co na serwerze. Przewodnik i przykład:
+  `lumen/docs/themes/`.
+
+### Poprawione (silnik GOG — wydane w Lumenie 1.0.60, tu w kopii EmuStart)
+- Duże gry GOG: pliki nie są już rozciągane zerami przed pobraniem (`truncate` na Windows zapisywał zera — minuty
+  czekania i wolny zapis).
+- Instalacja przerwana poza silnikiem (stan „installing” bez zadania) pokazywana jako przerwana — do wznowienia.
+
+**Czego NIE dotyka.** Klient Windows i APK (bez motywów), wbudowane motywy Lumena, wygląd pozostałych sekcji panelu.
+
+**Sprawdzone:** 820 testów EmuStart + 39 testów motywów (zapis, odrzucanie groźnych paczek, panel → HTTP jak Lumen,
+synchronizacja: tylko zmienione pliki, podmieniony plik odrzucony, stara wersja zostaje); silnik Lumena 875; motyw z
+paczki na żywo w Lumenie (z profilu testowego, przez kod serwera i silnika). **Niesprawdzone:** panel serwera na
+żywo (serwer na innym komputerze); bez code review (decyzja użytkownika).
 
 ## [0.63.5] — 2026-11-11
 

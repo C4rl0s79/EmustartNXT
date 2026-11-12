@@ -4,7 +4,8 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, 
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { ART_SCHEME, IPC } from '@shared/api'
+import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
+import { ThemeStore } from './themes'
 import { isModeCombo } from '@shared/pad'
 import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
@@ -70,7 +71,9 @@ const WINDOW_TITLE = 'Lumen'
 protocol.registerSchemesAsPrivileged([
   // corsEnabled + Access-Control-Allow-Origin on every art response: CSS masks (TV themes repaint platform
   // logos through mask-image) are fetched in CORS mode, unlike <img>
-  { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }
+  { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
+  // motywy TV z paczek (main/themes.ts): CSS, czcionki, obrazy, dekoracje — tylko pliki pakietu
+  { scheme: THEME_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
 ])
 
 /** ta kopia Lumena — nowa kopia przekazuje ją działającej (okno wyboru przy innej wersji / innym folderze) */
@@ -151,6 +154,8 @@ const engine = new EmustartEngine({
 })
 const emu = new EmustartProvider(engine, paths.emustartLibrary, () => ({ order: settings.get().regionOrder, choices: prefs.get().versions }))
 const gog = new GogProvider(engine, paths.gogLibrary)
+// motywy trybu TV z serwera (pobiera i sprawdza silnik) — LumenData/themes
+const themeStore = new ThemeStore(path.join(userData, 'themes'), engine)
 const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
 let platformCatalog: PlatformInfo[] = []
 const unified = new UnifiedLibrary(library, emu, gog, { overrides: () => prefs.get().platformOverrides, platforms: () => platformCatalog })
@@ -1642,6 +1647,11 @@ function registerIpc(): void {
     if (!/^https:\/\//.test(url)) throw new Error('Dozwolone są tylko adresy https.')
     await openUnelevated(url) // przeglądarka bez uprawnień administratora, także gdy Lumen je ma
   })
+  handle(IPC.themesList, () => themeStore.list())
+  handle(IPC.themesSync, async (): Promise<ActionResult> => {
+    const r = await themeStore.sync()
+    return r.ok ? { ok: true, message: 'Motywy z serwera aktualne.' } : { ok: false, error: r.reason ?? 'Nie pobrano motywów.' }
+  })
   handle(IPC.appQuit, () => app.quit())
   // TV menu → Wyjdź z Lumen → Schowaj do zasobnika: like closing the window with the Deck on (it keeps running)
   handle(IPC.appHide, () => {
@@ -1810,6 +1820,8 @@ app.whenReady().then(async () => {
   started = true
   if (!process.env.LUMEN_USER_DATA) unregisterRunning = registerRunning(thisInstance, onOtherInstance)
   registerArtProtocol()
+  protocol.handle(THEME_SCHEME, (req) => themeStore.response(req.url))
+  themeStore.on('change', (list) => send(IPC.themesChanged, list))
   watchMainLag()
   registerIpc()
 

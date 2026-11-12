@@ -65,6 +65,11 @@ const api: LumenApi = {
     refresh: () => invoke(IPC.gogRefresh),
     onMessage: (cb) => subscribe(IPC.gogMessage, cb)
   },
+  themes: {
+    list: () => invoke(IPC.themesList),
+    sync: () => invoke(IPC.themesSync),
+    onChange: (cb) => subscribe(IPC.themesChanged, cb)
+  },
   settings: {
     get: () => invoke(IPC.settingsGet),
     patch: (p) => invoke(IPC.settingsPatch, p),

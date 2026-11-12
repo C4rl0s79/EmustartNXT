@@ -1,0 +1,95 @@
+/* Portal Nexus — przykładowy motyw z paczki (etap 14). Wszystko zawężone do .tv[data-theme='portal-nexus'];
+   kolory z palety theme.json (--tv-bg, --tv-text, --tv-dim, --tv-accent, --tv-sel-*, --tv-panel). */
+
+.tv[data-theme='portal-nexus'] {
+  --nx-pink: #ff3fa4;
+  --nx-violet: #8b5cff;
+  --tv-line: rgba(151, 96, 255, 0.28);
+  background:
+    radial-gradient(1100px 760px at 12% 8%, rgba(45, 226, 255, 0.16), transparent 62%),
+    radial-gradient(1000px 720px at 86% 12%, rgba(139, 92, 255, 0.2), transparent 66%),
+    radial-gradient(1300px 850px at 50% 112%, rgba(255, 63, 164, 0.15), transparent 70%),
+    linear-gradient(180deg, var(--tv-bg) 0%, #0b0326 55%, #14032f 100%);
+}
+
+.tv[data-theme='portal-nexus'] .tv-brand b,
+.tv[data-theme='portal-nexus'] .tv-sysinfo h1 {
+  text-shadow: 0 0 14px rgba(45, 226, 255, 0.35), 0 3px 22px rgba(0, 0, 0, 0.85);
+}
+
+.tv[data-theme='portal-nexus'] .tv-row.sel,
+.tv[data-theme='portal-nexus'] .tv-menulist li.sel {
+  background: linear-gradient(90deg, rgba(45, 226, 255, 0.95), rgba(255, 63, 164, 0.85));
+  box-shadow: 0 0 18px rgba(45, 226, 255, 0.25);
+}
+
+.tv[data-theme='portal-nexus'] .tv-panel {
+  border: 1px solid rgba(151, 96, 255, 0.3);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.68), 0 0 40px rgba(45, 226, 255, 0.08);
+}
+
+/* ---- dekoracje (layers.html) ---- */
+.tv[data-theme='portal-nexus'] .nx-aura {
+  position: absolute;
+  inset: -30%;
+  background: conic-gradient(from 120deg at 22% 32%, rgba(45, 226, 255, 0.1), transparent 24%, rgba(139, 92, 255, 0.13), transparent 54%, rgba(255, 63, 164, 0.1), transparent 80%);
+  filter: blur(70px);
+  animation: nx-drift 40s ease-in-out infinite alternate;
+}
+@keyframes nx-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1.05); }
+  to { transform: translate3d(2%, 2%, 0) scale(1.11); }
+}
+
+.tv[data-theme='portal-nexus'] .nx-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42vh;
+  opacity: 0.28;
+  background-image:
+    linear-gradient(to right, rgba(45, 226, 255, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 63, 164, 0.22) 1px, transparent 1px);
+  background-size: 72px 72px;
+  transform: perspective(430px) rotateX(72deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, black 0%, transparent 82%);
+  animation: nx-grid 20s linear infinite;
+}
+@keyframes nx-grid {
+  from { background-position: 0 0; }
+  to { background-position: 0 72px; }
+}
+
+.tv[data-theme='portal-nexus'] .nx-sparks i {
+  position: absolute;
+  bottom: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tv-accent);
+  box-shadow: 0 0 8px var(--tv-accent), 0 0 20px rgba(45, 226, 255, 0.35);
+  opacity: 0;
+  animation: nx-rise linear infinite;
+}
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(3n) {
+  background: var(--nx-pink);
+  box-shadow: 0 0 8px var(--nx-pink);
+}
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(1) { left: 6%; animation-duration: 16s; animation-delay: -2s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(2) { left: 16%; animation-duration: 21s; animation-delay: -7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(3) { left: 27%; animation-duration: 14s; animation-delay: -4s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(4) { left: 38%; animation-duration: 24s; animation-delay: -11s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(5) { left: 49%; animation-duration: 18s; animation-delay: -1s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(6) { left: 58%; animation-duration: 22s; animation-delay: -9s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(7) { left: 67%; animation-duration: 15s; animation-delay: -5s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(8) { left: 76%; animation-duration: 26s; animation-delay: -13s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(9) { left: 85%; animation-duration: 19s; animation-delay: -3s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(10) { left: 93%; animation-duration: 23s; animation-delay: -8s; }
+@keyframes nx-rise {
+  0% { transform: translate3d(0, 0, 0) scale(0.65); opacity: 0; }
+  12% { opacity: 0.75; }
+  85% { opacity: 0.35; }
+  100% { transform: translate3d(6vw, -112vh, 0) scale(1.15); opacity: 0; }
+}
