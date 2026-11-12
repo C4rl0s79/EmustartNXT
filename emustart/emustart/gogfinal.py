@@ -483,7 +483,7 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             res["skipped"].append(f"{kind}: tylko przy zmianie języka / wersji")     # przy instalacji nie ma zmiany
             continue
         if "onlyonce" in conds:
-            okey = hashlib.sha1(json.dumps(act, sort_keys=True).encode("utf-8")).hexdigest()
+            okey = hashlib.sha256(json.dumps(act, sort_keys=True).encode("utf-8")).hexdigest()
             if okey in (once or set()):
                 res["skipped"].append(f"{kind}: już wykonane w tej instalacji (onlyOnce)")
                 continue

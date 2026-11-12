@@ -50,7 +50,8 @@ def _reg_add(toks: list) -> dict | None:
     hive = _ROOTS.get(root.lower())
     if not hive or not sub.lower().startswith("software\\"):
         return None
-    opts, i = {}, 3
+    opts: dict[str, str | bool] = {}
+    i = 3
     while i < len(toks):
         t = toks[i].lower()
         if t in ("/v", "/t", "/d") and i + 1 < len(toks):
@@ -90,7 +91,7 @@ def parse_cmd(text: str, script_dir: Path) -> list | None:
     if re.search(r'(?i)/enable-feature\s+/FeatureName:"?DirectPlay"?', text):
         return [{"op": "feature", "name": "DirectPlay"}]          # directplay.cmd: IF … ELSE z DISM
     env = {"~dp0": str(script_dir).rstrip("\\") + "\\"}
-    out = []
+    out: list[dict] = []
     for raw in text.splitlines():
         line = raw.strip()
         low = line.lower()
