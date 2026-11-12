@@ -14,7 +14,8 @@ META = {"id": "portal-nexus", "name": "Portal Nexus", "version": "1.0", "descrip
         "palette": PAL, "games": {"layout": "coverflow", "reflection": True}, "ambient": "stars",
         "fonts": {"text": ["atkinson", "orbitron"], "head": ["orbitron"]},
         "fontFaces": [{"name": "orbitron", "file": "assets/fonts/orbitron.woff2"}],
-        "animations": ["off", "low", "med", "high"], "categories": {"family:pc": "assets/categories/pc.webp"}}
+        "animations": ["off", "low", "med", "high"],
+        "categories": {"pc/steam": "assets/categories/pc.webp", "grp:konsole@logo": "assets/glow.png", "es:snes": "assets/bg.webp"}}
 CSS = ".tv[data-theme='portal-nexus'] { background: url(assets/bg.webp) } .x { mask: url(#m); }"
 LAYERS = '<div class="nx-particles" aria-hidden="true"><i></i><i></i><img src="assets/glow.png" alt=""></div>'
 
@@ -105,7 +106,10 @@ def test_rejected(root, files, why):
     ({"games": {"layout": "grid"}}, "games.layout"),
     ({"ambient": "fireworks"}, "ambient"),
     ({"fontFaces": [{"name": "x", "file": "assets/fonts/none.woff2"}]}, "fontFaces"),
-    ({"categories": {"family:pc": "assets/categories/none.webp"}}, "categories"),
+    ({"categories": {"pc/steam": "assets/categories/none.webp"}}, "categories"),
+    ({"categories": {"pc steam": "assets/categories/pc.webp"}}, "categories"),
+    ({"categories": {"pc@hero": "assets/categories/pc.webp"}}, "categories"),
+    ({"categories": {"es:snes": "assets/fonts/orbitron.woff2"}}, "categories"),
     ({"animations": ["turbo"]}, "animations"),
 ])
 def test_rejected_meta(root, change, why):

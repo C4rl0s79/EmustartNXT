@@ -13,6 +13,7 @@ import { lookStyle, setLook, useEngineLook, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
 import { TvThemes } from './TvThemes'
 import { TvThemeAssets } from './TvThemeAssets'
+import { ThemePkg } from './themeArt'
 import { useThemePackages, useTvAnim } from './usePackages'
 import { DEFAULT_THEME, lookDefaults, lookSpecFor, themeById, themeStyle } from './themes'
 import '@fontsource-variable/cinzel'
@@ -108,6 +109,7 @@ export function TvApp() {
     if (screen === 'subs' && !group) setScreen('top')
   }, [screen, group])
   return (
+    <ThemePkg.Provider value={theme.pkg}>
     <div className="tv" data-theme={theme.id} data-anim={anim} data-layer inert={selection ? true : undefined} style={{ ...lookStyle(look, lookDefaults(theme)), ...themeStyle(theme) } as CSSProperties}>
       {theme.ambient && <div className={`tv-ambient tv-ambient--${theme.ambient}`} aria-hidden="true" />}
       <TvThemeAssets theme={theme} />
@@ -203,6 +205,7 @@ export function TvApp() {
       )}
       <TvHints />
     </div>
+    </ThemePkg.Provider>
   )
 }
 

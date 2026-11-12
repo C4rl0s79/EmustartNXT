@@ -246,7 +246,8 @@ def check_meta(meta, files: set) -> dict:
         raise ThemeError("theme.json: „categories” — {\"klucz\": \"assets/…\"}")
     out["categories"] = {}
     for k, v in list(cats.items())[:200]:
-        if not isinstance(k, str) or not re.match(r"^[A-Za-z0-9:_-]{1,60}$", k) or v not in files \
+        # klucz: grupa / podgrupa biblioteki („pc”, „pc/steam”, „grp:konsole”), platforma „es:<system>”; „@logo” — logo
+        if not isinstance(k, str) or not re.match(r"^[A-Za-z0-9:_/.-]{1,60}(@logo)?$", k) or v not in files \
                 or PurePosixPath(str(v)).suffix.lower() not in ASSET_EXT - {".woff2"}:
             raise ThemeError(f"theme.json: categories.{k} — obraz z assets/ tej paczki")
         out["categories"][k] = v

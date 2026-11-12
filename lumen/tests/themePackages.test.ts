@@ -68,3 +68,23 @@ describe('motywy z paczek', () => {
     expect(layerSrc(PKG, 'assets/my glow.png')).toBe('lumen-theme://portal-nexus/assets/my%20glow.png?r=0123456789abcdef')
   })
 })
+
+describe('domyślne grafiki kategorii z motywu (14d)', async () => {
+  const { categoryArt, categoryKeys } = await import('../src/renderer/src/tv/themeArt')
+  const pkg: ThemePackage = { ...PKG, categories: { 'pc/steam': 'assets/steam.webp', 'grp:konsole@logo': 'assets/konsole.png', 'es:snes': 'assets/snes.webp' } }
+  const sys = (o: object) => ({ key: 'x', display: 'X', games: [], ready: 0, logo: false, logoRev: 0, consoleRev: 0, logoPixel: 0, ...o }) as never
+
+  it('klucze: platforma es:<system>, podgrupa i grupa jak w „Grafice grupy”', () => {
+    expect(categoryKeys(sys({ es: 'snes' }))).toEqual(['es:snes'])
+    expect(categoryKeys(sys({ sub: { id: 'pc/steam' } }))).toEqual(['pc/steam'])
+    expect(categoryKeys(sys({ group: { id: 'konsole' } }))).toEqual(['grp:konsole'])
+  })
+
+  it('tło i logo z motywu (adres lumen-theme://), brak — undefined; bez motywu z paczki — nic', () => {
+    expect(categoryArt(pkg, sys({ sub: { id: 'pc/steam' } }), 'hero')).toBe('lumen-theme://portal-nexus/assets/steam.webp?r=0123456789abcdef')
+    expect(categoryArt(pkg, sys({ sub: { id: 'pc/steam' } }), 'logo')).toBeUndefined()
+    expect(categoryArt(pkg, sys({ group: { id: 'konsole' } }), 'logo')).toBe('lumen-theme://portal-nexus/assets/konsole.png?r=0123456789abcdef')
+    expect(categoryArt(pkg, sys({ es: 'snes' }), 'hero')).toContain('assets/snes.webp')
+    expect(categoryArt(undefined, sys({ es: 'snes' }), 'hero')).toBeUndefined()
+  })
+})
