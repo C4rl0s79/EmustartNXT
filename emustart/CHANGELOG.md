@@ -96,6 +96,18 @@ Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
 - **Diagnoza:** w logu Lumena przy starcie — kto go uruchomił (proces nadrzędny) i z jakimi argumentami (stary
   Lumen startował „sam” tuż przed wersją testową).
 
+- **Przewijanie (zgłoszenie 2026-11-12):**
+  - pulpit, duża siatka plakatów, przytrzymany „w dół”: po ~3 rzędach powrót na początek. Przyczyna: siatka rysuje
+    tylko widoczne rzędy (+3 zapasu); fokus wyprzedza przewijanie, następnego rzędu nie ma jeszcze na stronie i
+    obsługa krawędzi bierze to za koniec listy (zawinięcie na początek). Zmiana: zawinięcie tylko z naprawdę
+    ostatniego rzędu; inaczej siatka przewija się do następnego rzędu i fokus trafia do niego;
+  - TV, Horyzont (wstęga): na końcu krótkiej listy przeskok na początek, jeden plakat stoi. Ma być przewijanie bez
+    końca, także dla jednego plakatu. Przyczyna: pozycja wstęgi liczona modulo długości listy — przy zawinięciu
+    okładki dostają nowe klucze (rysowane od nowa, bez animacji), a przy jednej grze indeks się nie zmienia. Zmiana:
+    pozycja wstęgi bez modulo (rośnie / maleje z każdym krokiem), gra = pozycja modulo długość;
+  - TV, przytrzymany kierunek: przewijanie staje co kilkanaście plakatów — przyczyna do zmierzenia (profil
+    Chromium), dopiero potem zmiana.
+
 Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”
 (nadal decyduje, czy Lumen wraca), uruchamiania z Decka (tam Lumen nadal nie wraca).
 

@@ -450,6 +450,11 @@ function createWindow(): void {
   })
   win.webContents.on('before-input-event', (_e, input) => hotkeys(input, win!.webContents))
   win.webContents.on('render-process-gone', (_e, d) => log.error('app', `renderer gone: ${d.reason}`))
+  // czujnik zacięć interfejsu (lib/perf.ts) — jego komunikaty „[perf] …” do logu Lumena
+  win.webContents.on('console-message', (e: unknown, ...rest: unknown[]) => {
+    const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
+    if (msg.startsWith('[perf] ')) log.info('perf', msg.slice(7))
+  })
 
   if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
@@ -570,11 +575,26 @@ const ENGINE_SETTLE_MS = 15_000
 const ENGINE_RETRY_MS = 1500
 let engineReadyAt = 0
 
+/** czujnik zacięć procesu głównego: pętla zdarzeń spóźniona o > 150 ms (blokuje IPC — pad, szczegóły gier, grafiki) */
+let artInFlight = 0
+let artLast = ''
+function watchMainLag(): void {
+  let last = performance.now()
+  setInterval(() => {
+    const now = performance.now()
+    const lag = now - last - 100
+    last = now
+    if (lag > 150) log.info('perf', `proces główny zablokowany ${Math.round(lag)} ms (grafik w toku: ${artInFlight}, ostatnia: ${decodeURIComponent(artLast)})`)
+  }, 100).unref()
+}
+
 function registerArtProtocol(): void {
   protocol.handle(ART_SCHEME, async (req) => {
     const t0 = Date.now()
     const where = new URL(req.url).pathname
-    let res = await artResponse(req)
+    artInFlight++
+    artLast = where
+    let res = await artResponse(req).finally(() => artInFlight--)
     // asked again a couple of times while the engine settles — a missing picture stayed a name for the session
     for (let i = 0; i < 2 && res.status !== 200 && FROM_ENGINE.test(where) && engineReadyAt && Date.now() - engineReadyAt < ENGINE_SETTLE_MS; i++) {
       await new Promise((r) => setTimeout(r, ENGINE_RETRY_MS))
@@ -1789,6 +1809,7 @@ app.whenReady().then(async () => {
   started = true
   if (!process.env.LUMEN_USER_DATA) unregisterRunning = registerRunning(thisInstance, onOtherInstance)
   registerArtProtocol()
+  watchMainLag()
   registerIpc()
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
@@ -1886,15 +1907,27 @@ app.whenReady().then(async () => {
   // pads that are not XInput devices (PlayStation, Nintendo, Bluetooth HID): passive Raw Input on the same window
   if (win && process.env.LUMEN_NO_PAD !== '1' && settings.get().gamepadBackend === 'xinput') hidPads.attach(win)
   let combo = false
+  // czujnik: odczyt pada wstrzymany na chwilę (< 1 s) — interfejs dostaje wtedy „pad pusty” (przytrzymany kierunek
+  // kasowany); w logu: która część warunku zawiodła
+  let pollOff = 0
+  let pollWhy = ''
   pads.start(
-    () =>
+    () => {
       // LUMEN_NO_PAD=1: automated UI tests ignore controllers connected to this PC
-      process.env.LUMEN_NO_PAD !== '1' &&
-      settings.get().gamepadBackend === 'xinput' &&
-      !!win &&
-      !win.isDestroyed() &&
-      !win.isMinimized() &&
-      (win.isFocused() || padWithoutFocus()),
+      const base = process.env.LUMEN_NO_PAD !== '1' && settings.get().gamepadBackend === 'xinput' && !!win && !win.isDestroyed()
+      const minimized = !!win && !win.isDestroyed() && win.isMinimized()
+      const focused = !!win && !win.isDestroyed() && win.isFocused()
+      const ok = base && !minimized && (focused || padWithoutFocus())
+      const now = Date.now()
+      if (!ok && base && !pollOff) {
+        pollOff = now
+        pollWhy = minimized ? 'zminimalizowane' : `bez fokusu, z przodu: ${foreground(ownHandle())?.desc ?? '?'}`
+      } else if (ok && pollOff) {
+        if (now - pollOff < 1000) log.info('perf', `pad: odczyt wstrzymany na ${now - pollOff} ms (${pollWhy})`)
+        pollOff = 0
+      }
+      return ok
+    },
     (state) => {
       // focus taken by something invisible (Lumen still on top): the pad brings it back
       if (win && !win.isDestroyed() && !win.isFocused() && state.some((p) => p.buttons || Math.abs(p.lx) > 16000 || Math.abs(p.ly) > 16000))

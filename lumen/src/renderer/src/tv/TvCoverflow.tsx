@@ -82,11 +82,14 @@ export function flowWindow(n: number, idx: number): { i: number; d: number; copy
   return out
 }
 
-export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[]; idx: number; onPick: (i: number) => void; reflection: boolean }) {
+export function TvCoverflow({ games, pos, onPick, reflection }: { games: Game[]; pos: number; onPick: (i: number) => void; reflection: boolean }) {
   useRatios()
   const n = games.length
   // the ribbon goes round: SIDE covers on each side always, a short list repeats its covers to fill the screen
-  const items = flowWindow(n, idx)
+  // pozycja bez modulo (TvGames): klucz okładki = gra + które powtórzenie listy — przy przejściu przez koniec listy
+  // okładki zostają tymi samymi elementami (animacja przesunięcia), zamiast rysować się od nowa (przeskok)
+  const items = flowWindow(n, pos)
+  const idx = ((pos % n) + n) % n
   // shape of a cover not loaded yet: the usual one in this list (SNES boxes, PS1 cases, posters…)
   const usual = median(games.slice(Math.max(0, idx - 30), idx + 30).map((g) => ratios.get(g.id)).filter((r): r is number => !!r)) ?? 2 / 3
   const boxes = items.map((it) => coverBox(ratios.get(games[it.i].id) ?? usual))
@@ -98,7 +101,7 @@ export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[];
     <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''}`}>
       <div className="tv-flow__stage">
         {items.map((it, k) => (
-          <FlowItem key={n > SIDE * 2 ? games[it.i].id : `${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} onPick={() => onPick(it.i)} />
+          <FlowItem key={`${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} onPick={() => onPick(it.i)} />
         ))}
       </div>
     </div>

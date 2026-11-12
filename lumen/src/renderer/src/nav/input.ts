@@ -385,8 +385,21 @@ export function installXInputGamepad(): () => void {
   const process = createPadProcessor()
   let active = new Set<Action>()
   let seen = false
+  // czujnik: kierunek „puszczony” i znów wciśnięty w < 250 ms — mignięcie stanu pada (przytrzymanie zaczyna się
+  // wtedy od nowa, z opóźnieniem pierwszego powtórzenia: przewijanie staje)
+  const gone = new Map<Action, number>()
   const off = window.lumen.app.onPadState((pads) => {
-    active = xinputActions(pads)
+    const now = performance.now()
+    const next = xinputActions(pads)
+    for (const a of active) if (REPEATABLE.has(a) && !next.has(a)) gone.set(a, now)
+    for (const a of next) {
+      const t = gone.get(a)
+      if (t !== undefined && !active.has(a)) {
+        gone.delete(a)
+        if (now - t < 250) console.warn(`[perf] pad: „${a}” zniknął na ${Math.round(now - t)} ms (pustych padów: ${pads.length ? 'nie' : 'tak'})`)
+      }
+    }
+    active = next
     if (pads.length && !seen) {
       seen = true
       useStore.getState().setInputMode('gamepad')

@@ -92,6 +92,22 @@ export function TvGames({
   // the game selected on the desktop, found in the list as shown (filters and order applied)
   const [idx, setIdx] = useState(() => Math.max(0, games.findIndex((g) => g.id === opened)))
   const sel = games[Math.min(idx, games.length - 1)]
+  // wstęga (Horyzont): pozycja bez modulo — rośnie / maleje z każdym krokiem, więc wstęga kręci się bez końca, bez
+  // przeskoku na początek, także przy jednej grze; gra = pozycja modulo długość listy (flowWindow)
+  const [pos, setPos] = useState(idx)
+  useEffect(() => {
+    // wybór inaczej niż krokiem (skok o stronę, litera, kliknięcie, filtr): najkrótszą drogą do tej gry
+    const n = games.length
+    if (!n) return
+    setPos((p) => {
+      const m = ((p % n) + n) % n
+      if (m === idx) return p
+      let d = idx - m
+      if (d > n / 2) d -= n
+      if (d < -n / 2) d += n
+      return p + d
+    })
+  }, [idx, games.length])
   const { primary, busy } = usePrimaryAction(sel)
   const d = useDetails(sel)
   const asLogo = useGamesLogo()
@@ -134,7 +150,9 @@ export function TvGames({
   }
   // one step goes round the list: past the last game to the first and back
   const step = (d: 1 | -1): boolean => {
-    if (games.length) setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
+    if (!games.length) return true
+    if (flow) setPos((p) => p + d)
+    setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
     return true
   }
   const jumpLetter = (dir: 1 | -1): boolean => {
@@ -263,7 +281,7 @@ export function TvGames({
         {sel && <TvBackdrop key={sel.id} game={sel} />}
         {head}
         {games.length ? (
-          <TvCoverflow games={games} idx={Math.min(idx, games.length - 1)} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
+          <TvCoverflow games={games} pos={pos} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
         ) : (
           <div className="tv-flow">{empty}</div>
         )}

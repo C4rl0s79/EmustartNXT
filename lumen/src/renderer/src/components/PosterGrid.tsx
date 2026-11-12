@@ -64,6 +64,21 @@ export function VirtualPosterGrid({ games, favs, onOpen, navGroup, autofocusFirs
       }
       if (games.length <= cols) return false
       const col = inRow.indexOf(cur)
+      const ri = Number((row as HTMLElement).dataset.row)
+      if (ri < Math.ceil(games.length / cols) - 1) {
+        // nie ostatni rząd — następnego nie ma jeszcze na stronie (przytrzymany kierunek wyprzedza przewijanie):
+        // do niego, nie na początek listy
+        v.scrollToIndex(ri + 1, { align: 'auto' })
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const next = el.querySelector<HTMLElement>(`.grid__row[data-row="${ri + 1}"]`)
+            const items = next ? [...next.querySelectorAll<HTMLElement>('[data-nav]')] : []
+            const t = items[Math.min(Math.max(col, 0), items.length - 1)]
+            if (t) focusEl(t, false)
+          })
+        )
+        return true
+      }
       el.scrollTop = 0
       v.scrollToIndex(0)
       requestAnimationFrame(() =>
@@ -85,6 +100,7 @@ export function VirtualPosterGrid({ games, favs, onOpen, navGroup, autofocusFirs
           <div
             key={r.key}
             className="grid__row"
+            data-row={r.index}
             style={{ transform: `translateY(${r.start}px)`, gridTemplateColumns: `repeat(${cols}, ${itemW}px)`, gap: GRID_GAP }}
           >
             {games.slice(r.index * cols, r.index * cols + cols).map((g, i) => (
