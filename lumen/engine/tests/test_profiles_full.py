@@ -4,6 +4,7 @@ RetroAchievements (RetroArch, DuckStation, PCSX2), ochrona dysku przy grafikach.
 from __future__ import annotations
 
 import io
+import itertools
 import json
 import os
 from pathlib import Path
@@ -684,9 +685,9 @@ def test_partial_parallel_resume_and_demand_read(tmp_path, monkeypatch):
     cancel = threading.Event()
     prog = cache.Progress(len(data), 1)
     orig = p._fetch
-    def stop_after(i, f, count=1, _n=[0]):
-        _n[0] += 1
-        if _n[0] > 10:
+    calls = itertools.count(1)
+    def stop_after(i, f, count=1):
+        if next(calls) > 10:
             cancel.set()
         return orig(i, f, count)
     p._fetch = stop_after

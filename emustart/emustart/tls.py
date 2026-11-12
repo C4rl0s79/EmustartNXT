@@ -32,7 +32,7 @@ log = logging.getLogger("emustart.tls")
 
 CERT = "tls-cert.pem"
 KEY = "tls-key.pem"
-PASS = "tls-key.pass"
+PASS = "tls-key.pass"  # skipcq: SCT-A000 — nazwa pliku z hasłem, nie hasło
 MOVE = "przeniesienie.emustart"
 
 # stan klucza (panel serwera): ok | locked (folder przeniesiony z innego komputera — potrzebne

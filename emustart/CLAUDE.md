@@ -9,6 +9,16 @@
   zapytaj przed zrobieniem, z konkretnym przykładem, jak to będzie wyglądać.
 - Ustalenia z użytkownikiem są wiążące — przed zmianą sprawdź je w CHANGELOG i rozmowie.
 
+## Błędy typów przy okazji zmian
+- Wyjątek od „bez przy okazji”: w funkcjach, które i tak zmieniasz, popraw błędy typów zgłaszane przez mypy
+  (DeepSource: TYP-…), jeśli da się to zrobić bez zmiany działania — adnotacja, obsłużenie `None`, właściwy typ
+  wartości domyślnej. Sprawdzenie: `python -m mypy --ignore-missing-imports <zmienione pliki>` przed zmianą i po
+  niej; liczba błędów w tych plikach nie może wzrosnąć.
+- Nie poprawiaj typów w plikach, których zmiana nie dotyczy, i nie zmieniaj logiki tylko po to, żeby uciszyć mypy.
+  Fałszywy alarm: `# type: ignore[kod]` z krótkim powodem w komentarzu.
+- Ta sama poprawka w drugiej kopii pakietu (`emustart/emustart` ↔ `lumen/engine/emustart`), jeśli plik tam jest.
+  Poprawki typów wymień w opisie PR osobno.
+
 ## Sprawdzanie przed PR
 - `python -m pytest -q` — porównaj liczbę niepowodzeń z `main` (na Linuksie część testów
   jest tylko pod Windows).

@@ -884,7 +884,7 @@ class RetroArch(Adapter):
         except OSError:
             log.exception("RetroArch: profil pada HID")
         cur = {k: v.strip('"') for k, v in _cfg_map(self.home / "retroarch.cfg").items()}
-        cur.update({k: v for k, v in self.policy.items()})
+        cur.update(self.policy)
         for ln in lines:
             m = re.match(r"\s*([^=\s]+)\s*=\s*\"?(.*?)\"?\s*$", ln)
             if m:

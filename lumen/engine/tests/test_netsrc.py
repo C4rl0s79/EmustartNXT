@@ -88,7 +88,7 @@ def test_size_mismatch_falls_back_to_smb(srv):
     g = _game(roms, b"x" * 5000)
     g["files"] = [(r, s + 1 if r.endswith(".bin") else s, m) for r, s, m in g["files"]]
     srcs = netsrc.sources(cfg, g)
-    assert [r for r in srcs] == ["Cue Game (USA).cue"]                # .bin: inny rozmiar — SMB
+    assert list(srcs) == ["Cue Game (USA).cue"]                # .bin: inny rozmiar — SMB
 
 
 def test_reader_reconnects_after_close(srv):

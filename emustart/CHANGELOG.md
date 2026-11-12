@@ -6,10 +6,32 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Ustawienia DeepSource (issues #14, #16) — plan
+
+- Nowy `.deepsource.toml` w głównym folderze repozytorium: wzorce testów, wykluczenia (dane testowe, `openwiki/`,
+  `graphify-out/`), długość linii 120, wyższe progi złożoności (Python `high`, JS `very-high`).
+- #16: `# skipcq: SCT-A000` przy `tls.PASS` (nazwa pliku) i `webportal.GOOGLE_TOKEN` (publiczny adres OAuth) —
+  w `emustart/` i `lumen/engine/`; same komentarze, kod bez zmian.
+
+Nie dotyka: działania programu, listy gier, sterowania, menu, API, zapisów, APK, CI.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);
 jedno zapytanie przygotowujące grę — po pomiarach kroków z prawdziwych startów.
+
+### Zgłoszenia DeepSource (issues #11, #12, #15, #17, #20) — plan
+
+Zmiana w `emustart/` i w kopii silnika Lumena `lumen/engine/` (te same pliki):
+- UPnP (#15): adres opisu routera (`LOCATION` z odpowiedzi SSDP, zapamiętany adres) i adres sterowania z jego
+  opisu muszą być `http`/`https` na prywatny adres IP — inaczej router jest pomijany (urządzenie w sieci nie
+  podsunie `file://` ani adresu w internecie). Routery w sieci lokalnej działają jak dotąd.
+- Porządki bez zmiany działania: `path in (…)` w `webportal.py` (#11), `list()`/`dict()` zamiast zbędnych list
+  składanych (#12), licznik bez zmiennego argumentu domyślnego w teście (#17), usunięte nieużywane importy w
+  testach (#20).
+
+Nie dotyka: listy gier, sterowania, menu, API `/v1/…`, zapisów, APK, pozostałych wywołań `urlopen` (stałe
+adresy `https://`).
 
 ### Do zrobienia (zgłoszone 2026-11-09)
 

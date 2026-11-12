@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import re
+import ipaddress
 import socket
 import urllib.error
 import urllib.parse
@@ -36,6 +37,19 @@ class UpnpError(Exception):
     def __init__(self, msg: str, code: int = 0):
         super().__init__(msg)
         self.code = code
+
+
+def _lan_url(url: str) -> str:
+    """Adres podany przez urządzenie w sieci (LOCATION z SSDP, controlURL z opisu routera) albo zapamiętany:
+    tylko http(s) na prywatny adres IP. urlopen otworzyłby też file:// i adresy w internecie."""
+    u = urllib.parse.urlsplit(url)
+    try:
+        ip = ipaddress.ip_address(u.hostname or "")
+    except ValueError:
+        ip = None
+    if u.scheme not in ("http", "https") or ip is None or not ip.is_private:
+        raise UpnpError(f"pominięty adres urządzenia UPnP (nie http(s) w sieci lokalnej): {url[:200]}")
+    return url
 
 
 def lan_addresses() -> list:
@@ -119,7 +133,7 @@ class Gateway:
 
     @classmethod
     def from_location(cls, location: str, timeout: float = 5) -> "Gateway":
-        with urllib.request.urlopen(location, timeout=timeout) as r:
+        with urllib.request.urlopen(_lan_url(location), timeout=timeout) as r:
             root = ET.fromstring(r.read())
         base = location
         for el in root.iter():
@@ -137,7 +151,7 @@ class Gateway:
                     best = cand
         if not best:
             raise UpnpError("router nie udostępnia przekierowań portów (brak usługi WAN*Connection)")
-        u = urllib.parse.urlsplit(best[1])
+        u = urllib.parse.urlsplit(_lan_url(best[1]))
         return cls(best[1], best[0], _local_ip_towards(u.hostname or "", u.port or 80), location)
 
     def _soap(self, action: str, args: dict, timeout: float = 8) -> dict:

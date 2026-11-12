@@ -1,0 +1,42 @@
+version = 1
+
+# Testy: DeepSource traktuje je łagodniej (mniej fałszywych alarmów w kodzie testowym).
+test_patterns = [
+  "emustart/tests/**",
+  "lumen/engine/tests/**",
+  "lumen/tests/**",
+]
+
+# Dane testowe, wygenerowana dokumentacja i pliki narzędzi — nie są kodem programu.
+exclude_patterns = [
+  "lumen/tests/fixtures/**",
+  "openwiki/**",
+  "**/graphify-out/**",
+  "**/node_modules/**",
+  "lumen/out/**",
+  "lumen/dist/**",
+]
+
+[[analyzers]]
+name = "python"
+enabled = true
+
+  [analyzers.meta]
+  runtime_version = "3.x.x"
+  # kod używa długich linii (komentarze po polsku obok kodu); 88 dawałoby setki zgłoszeń
+  max_line_length = 120
+  # złożoność: zgłaszaj tylko funkcje wyraźnie zbyt złożone (domyślnie "medium")
+  cyclomatic_complexity_threshold = "high"
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  # emustart/web i lumen/engine/web: zwykłe skrypty przeglądarki; lumen: Electron + React (TypeScript)
+  environment = ["nodejs", "browser", "vitest"]
+  plugins = ["react"]
+  dialect = "typescript"
+  dependency_file_paths = ["lumen"]
+  # domyślnie "high" → 618 zgłoszeń (issue #14, liczone podwójnie: web/ jest w emustart i lumen/engine)
+  cyclomatic_complexity_threshold = "very-high"
