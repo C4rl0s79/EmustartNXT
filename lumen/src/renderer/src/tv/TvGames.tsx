@@ -2,6 +2,7 @@ import { useGameJob } from '../components/Jobs'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
 import { api, askText, attempt, useStore } from '../store'
+import { readyArt } from '../lib/artCache'
 import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
 import { Icon } from '../components/Icon'
@@ -92,6 +93,13 @@ export function TvGames({
   // the game selected on the desktop, found in the list as shown (filters and order applied)
   const [idx, setIdx] = useState(() => Math.max(0, games.findIndex((g) => g.id === opened)))
   const sel = games[Math.min(idx, games.length - 1)]
+  // tło całego ekranu (wstęga): dopiero gdy wybór stanie na ~350 ms — przy przytrzymanym kierunku nie wczytuje się
+  // tło każdej mijanej gry (pliki po kilka MB zatrzymywały przewijanie gier Steam; ślad z sesji gracza)
+  const [backdrop, setBackdrop] = useState(sel)
+  useEffect(() => {
+    const t = setTimeout(() => setBackdrop(sel), 350)
+    return () => clearTimeout(t)
+  }, [sel?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   // wstęga (Horyzont): pozycja bez modulo — rośnie / maleje z każdym krokiem, więc wstęga kręci się bez końca, bez
   // przeskoku na początek, także przy jednej grze; gra = pozycja modulo długość listy (flowWindow)
   const [pos, setPos] = useState(idx)
@@ -278,7 +286,7 @@ export function TvGames({
   if (flow)
     return (
       <section className="tv-screen tv-games tv-games--flow">
-        {sel && <TvBackdrop key={sel.id} game={sel} />}
+        {backdrop && <TvBackdrop key={backdrop.id} game={backdrop} />}
         {head}
         {games.length ? (
           <TvCoverflow games={games} pos={pos} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
@@ -371,12 +379,23 @@ function useGamesLogo(): boolean {
 /** The game's logo instead of its title; the title stays until the logo has loaded (and when there is none). */
 function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
   const [ok, setOk] = useState(false)
+  // logo (mała kopia) — znane z pamięci od razu, nowe dopiero gdy wybór stanie na ~350 ms: przy przytrzymanym
+  // kierunku nie wczytuje się logo każdej mijanej gry (pomiar: logo przy każdym kroku, pełne pliki)
+  const rev = useStore((s) => s.artRev[game.id] ?? 0)
+  const [show, setShow] = useState(() => !!readyArt(api().art.url(game.id, 'logo', rev, 'tv', true)))
+  useEffect(() => {
+    if (show) return
+    const t = setTimeout(() => setShow(true), 350)
+    return () => clearTimeout(t)
+  }, [show])
   return (
     <>
       {!ok && text}
-      <span className={`tv-logo ${ok ? '' : 'is-wait'}`}>
-        <Art gameId={game.id} name={game.name} kind="logo" className="tv-logo__img" fallback="none" eager layout="tv" onState={setOk} />
-      </span>
+      {show && (
+        <span className={`tv-logo ${ok ? '' : 'is-wait'}`}>
+          <Art gameId={game.id} name={game.name} kind="logo" className="tv-logo__img" fallback="none" eager layout="tv" thumb onState={setOk} />
+        </span>
+      )}
     </>
   )
 }
@@ -508,7 +527,7 @@ function TvDesc({ game, details: dr, className }: { game: Game; details: Details
 function TvBackdrop({ game }: { game: Game }) {
   return (
     <div className="tv-backdrop" aria-hidden="true">
-      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager layout="tv" />
+      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager layout="tv" thumb />
     </div>
   )
 }

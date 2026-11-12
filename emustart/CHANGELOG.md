@@ -110,6 +110,14 @@ Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
     (dekodowanie / rysowanie obrazów) — wstęga Horyzontu brała okładki w pełnym rozmiarze (PNG ze SteamGridDB,
     śr. ~0,9 MB, z odbiciem). Zmiana: wstęga bierze małe kopie jak plakaty pulpitu (`thumb`; animowane — jak są).
     Czujnik zacięć zostaje (wpisy `[perf]` tylko przy zacięciu > 150 ms / mignięciu pada).
+    Dalszy pomiar (ślad Chromium + ruch obrazów w sesji gracza, 20 s przewijania): 921 MB obrazów — animowane
+    okładki w całości (do 46 MB; Lumen omijał próg silnika dla list), logo i tło wybranej gry przy każdym kroku w
+    pełnym rozmiarze; wątek interfejsu obrabiał je kawałek po kawałku (23 s). Zmiany: pamięć obrazów w interfejsie
+    (`lib/artCache.ts`: cały plik przez fetch → blob → dekodowanie w tle → na ekran; do 256 MB, ponowne pojawienie
+    się bez wczytywania i dekodowania; CSP: `connect-src lumen-art:`, `img-src blob:`); animowane na listach w ruchu
+    do 3 MB (próg silnika), większe — pierwsza klatka, animacja w szczegółach; tło (720 px) i logo (mała kopia)
+    wybranej gry dopiero po ~350 ms bez ruchu. Wynik: 2. przejście bez przerw > 200 ms, 67 KB wczytanych,
+    wszystkie okładki widoczne.
 
 Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”
 (nadal decyduje, czy Lumen wraca), uruchamiania z Decka (tam Lumen nadal nie wraca).

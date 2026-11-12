@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from "react";
+import { forgetArt, loadArt, readyArt } from "../lib/artCache";
 import type { ArtKind, ArtLayout } from "@shared/types";
 import { api, useStore } from "../store";
 import { hueOf } from "../lib/format";
@@ -27,6 +28,49 @@ interface Props {
  * them, so they appear at once — no empty frame and no fade-in when the list changes back.
  */
 const shown = new Map<string, boolean>();
+
+/**
+ * Obraz z pamięci obrazów (lib/artCache.ts): pobrany w całości i zdekodowany w tle, zanim trafi do <img> — wątek
+ * interfejsu nie obrabia pliku kawałek po kawałku, a plakat widziany wcześniej wraca od razu.
+ */
+function useArtBlob(src: string): { blob?: string; failed: boolean; retry: () => boolean } {
+  const [st, setSt] = useState<{ src: string; blob?: string; failed: boolean; retried: boolean }>(() => ({
+    src,
+    blob: readyArt(src),
+    failed: false,
+    retried: false,
+  }));
+  let cur = st;
+  if (st.src !== src) {
+    cur = { src, blob: readyArt(src), failed: false, retried: false };
+    setSt(cur);
+  }
+  const [attempt, setAttempt] = useState(0);
+  const missing = !cur.blob && !cur.failed;
+  useEffect(() => {
+    if (!missing) return;
+    let alive = true;
+    loadArt(src).then(
+      (blob) => alive && setSt((p) => (p.src === src ? { ...p, blob, failed: false } : p)),
+      () => alive && setSt((p) => (p.src === src ? { ...p, failed: true } : p)),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [src, attempt, missing]);
+  return {
+    blob: cur.blob,
+    failed: cur.failed,
+    // <img> nie wyświetlił obrazu z pamięci (np. wyrzuconego w międzyczasie): raz od nowa z serwera / dysku
+    retry: () => {
+      if (cur.retried) return false;
+      forgetArt(src);
+      setSt({ src, failed: false, retried: true });
+      setAttempt((a) => a + 1);
+      return true;
+    },
+  };
+}
 
 /** Image served by the main process (lumen-art://) with a tasteful generated placeholder. */
 export const Art = memo(function Art({
@@ -61,10 +105,7 @@ export const Art = memo(function Art({
       return;
     }
     let alive = true;
-    const next = new Image();
-    next.src = wanted;
-    void next
-      .decode()
+    void loadArt(wanted)
       .catch(() => undefined)
       .finally(() => alive && setCur({ slot, src: wanted }));
     return () => {
@@ -90,8 +131,15 @@ export const Art = memo(function Art({
     if (shown.has(src)) onState?.(true);
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const art = useArtBlob(src);
+  // brak obrazu (404, błąd): jak dotąd błąd <img> — rodzic pokazuje zamiast niego np. nazwę
+  useEffect(() => {
+    if (!art.failed) return;
+    shown.delete(src);
+    onState?.(false);
+  }, [art.failed, src]); // eslint-disable-line react-hooks/exhaustive-deps
   const hue = hueOf(name);
-  if (state === "error") {
+  if (state === "error" || art.failed) {
     if (fallback === "none") return null;
     if (fallback === "title")
       return <div className={`art-title ${className ?? ""}`}>{name}</div>;
@@ -110,7 +158,7 @@ export const Art = memo(function Art({
       {fit && (
         <img decoding="async"
           className="art-fit__bg"
-          src={src}
+          src={art.blob}
           alt=""
           aria-hidden
           draggable={false}
@@ -119,7 +167,7 @@ export const Art = memo(function Art({
       <img
         key={src}
         className={`art art--${kind} ${state === "ok" ? "is-loaded" : ""} ${fit ? "art--fit" : ""} ${className ?? ""}`}
-        src={src}
+        src={art.blob}
         alt=""
         draggable={false}
         loading={eager ? "eager" : "lazy"}
@@ -136,6 +184,7 @@ export const Art = memo(function Art({
           onState?.(true);
         }}
         onError={() => {
+          if (art.retry()) return;
           shown.delete(src);
           setState("error");
           onState?.(false);
