@@ -105,8 +105,11 @@ Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
     końca, także dla jednego plakatu. Przyczyna: pozycja wstęgi liczona modulo długości listy — przy zawinięciu
     okładki dostają nowe klucze (rysowane od nowa, bez animacji), a przy jednej grze indeks się nie zmienia. Zmiana:
     pozycja wstęgi bez modulo (rośnie / maleje z każdym krokiem), gra = pozycja modulo długość;
-  - TV, przytrzymany kierunek: przewijanie staje co kilkanaście plakatów — przyczyna do zmierzenia (profil
-    Chromium), dopiero potem zmiana.
+  - TV, przytrzymany kierunek: przewijanie staje — przy grach Steam, przy GOG płynnie. Pomiar (czujnik zacięć w
+    logu, profil CPU na danych gracza): pad bez przerw; wątek interfejsu stał do 6,5 s, głównie praca natywna
+    (dekodowanie / rysowanie obrazów) — wstęga Horyzontu brała okładki w pełnym rozmiarze (PNG ze SteamGridDB,
+    śr. ~0,9 MB, z odbiciem). Zmiana: wstęga bierze małe kopie jak plakaty pulpitu (`thumb`; animowane — jak są).
+    Czujnik zacięć zostaje (wpisy `[perf]` tylko przy zacięciu > 150 ms / mignięciu pada).
 
 Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”
 (nadal decyduje, czy Lumen wraca), uruchamiania z Decka (tam Lumen nadal nie wraca).

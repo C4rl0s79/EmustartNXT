@@ -130,7 +130,9 @@ const FlowItem = memo(function FlowItem({ game, d, x, box, onPick }: { game: Gam
         <span className="tv-flow__name" aria-hidden="true">
           {game.name}
         </span>
-        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" onRatio={(r) => setRatio(game.id, r)} />
+        {/* mała kopia jak na plakatach pulpitu (thumb; animowane — tak jak są): pełne PNG ze SteamGridDB (~1 MB) dekodowane
+            przy każdym kroku zatrzymywały przewijanie wstęgi przy grach Steam (pomiar na danych gracza) */}
+        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim onRatio={(r) => setRatio(game.id, r)} />
       </div>
     </div>
   )
