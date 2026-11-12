@@ -695,31 +695,42 @@ def _same_choice(e: dict, build: str, plan: dict, root: Path) -> bool:
             and set(e.get("dlcs") or []) == set(plan["dlcs"]))
 
 
+def _move_legacy(root: Path, old: str, new: str) -> bool:
+    """<gra>/<old> → <gra>/<new>; gdy <new> już jest (kopia skryptu gry) — usuwa starą. True = wykonano."""
+    try:
+        src, dst = safe_join(root, old), safe_join(root, new)
+    except UnsafePath:
+        return False
+    if not src.is_file() or _has_link(root, src) or _has_link(root, dst):
+        return False
+    try:
+        if dst.exists():
+            src.unlink()
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(src, dst)
+    except OSError as ex:
+        log.warning("GOG: nie przeniesiono %s → %s: %s", old, new, ex)
+        return False
+    return True
+
+
+def _renamed_files(lst, renames: dict) -> list:
+    out, seen = [], set()
+    for p, s in lst or []:
+        p = renames.get(p, p)
+        if p.lower() not in seen:
+            seen.add(p.lower())
+            out.append([p, s])
+    return out
+
+
 def _adopt_support_layout(root: Path, plan: dict, e: dict | None) -> int:
     """Instalacja sprzed support_rel: pliki „support” z app/ leżą w <gra>/app/…. Przenosi je na miejsca z planu
     (gdy skrypt gry skopiował je już do katalogu gry — usuwa starą kopię), sprząta puste foldery app/ i poprawia
     ścieżki w rejestrze, żeby weryfikacja nie uznała gry za uszkodzoną, a odinstalowanie usunęło wszystko."""
-    renames: dict = {}
-    for f in plan["files"]:
-        old = f.get("legacy")
-        if not old:
-            continue
-        try:
-            src, dst = safe_join(root, old), safe_join(root, f["path"])
-        except UnsafePath:
-            continue
-        if not src.is_file() or _has_link(root, src) or _has_link(root, dst):
-            continue
-        try:
-            if dst.exists():
-                src.unlink()
-            else:
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(src, dst)
-        except OSError as ex:
-            log.warning("GOG: nie przeniesiono %s → %s: %s", old, f["path"], ex)
-            continue
-        renames[old] = f["path"]
+    renames = {f["legacy"]: f["path"] for f in plan["files"]
+               if f.get("legacy") and _move_legacy(root, f["legacy"], f["path"])}
     if not renames:
         return 0
     for d in sorted({p for old in renames for p in Path(old).parents if str(p) != "."}, key=lambda p: -len(p.parts)):
@@ -728,19 +739,10 @@ def _adopt_support_layout(root: Path, plan: dict, e: dict | None) -> int:
         except (OSError, UnsafePath):
             pass
     if e:
-        def fix_files(lst):
-            out, seen = [], set()
-            for p, s in lst or []:
-                p = renames.get(p, p)
-                if p.lower() not in seen:
-                    seen.add(p.lower())
-                    out.append([p, s])
-            return out
-        e["files"] = fix_files(e.get("files"))
-        e["done"] = sorted({renames.get(p, p) for p in e.get("done") or []})
-        if e.get("pending_dlc"):
-            e["pending_dlc"]["files"] = fix_files(e["pending_dlc"].get("files"))
-            e["pending_dlc"]["done"] = sorted({renames.get(p, p) for p in e["pending_dlc"].get("done") or []})
+        for part in (e, e.get("pending_dlc")):
+            if part:
+                part["files"] = _renamed_files(part.get("files"), renames)
+                part["done"] = sorted({renames.get(p, p) for p in part.get("done") or []})
         save_entry(e)
     log.info("GOG %s: %d plików „support” przeniesionych z app/ do katalogu gry", plan.get("product_id"), len(renames))
     return len(renames)
