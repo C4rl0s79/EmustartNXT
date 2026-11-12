@@ -282,7 +282,7 @@ def handle(handler) -> None:
     try:
         if parts == ["info"]:
             from emustart import gogarchive
-            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
+            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock", "themes"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
                 + (["gog"] if gogarchive.INDEX["builds"] else [])
             return _json(handler, {"name": socket.gethostname(), "version": __version__, "api": 1,
                                    "features": feats + ["admin"], "nas_id": NAS_ID, "endpoints": endpoints(),
@@ -380,6 +380,8 @@ def handle(handler) -> None:
             return userart_call(handler, "GET", parts[1:])
         if parts and parts[0] == "gog":
             return _gog(handler, parts[1:])
+        if parts and parts[0] == "themes":
+            return _themes(handler, parts[1:])
         return _json(handler, {"error": "nieznany adres"}, 404)
     except (BrokenPipeError, ConnectionResetError):
         pass
@@ -389,6 +391,33 @@ def handle(handler) -> None:
             _json(handler, {"error": "błąd serwera (szczegóły w logu serwera)"}, 500)
         except OSError:
             pass
+
+
+_THEME_TYPES = {".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
+                ".html": "text/html; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml", ".woff2": "font/woff2"}
+
+
+def _themes(handler, p: list) -> None:
+    """Motywy trybu TV Lumena (emustart/themes.py — paczki wgrane w panelu serwera).
+
+        GET themes                 indeks: motywy, wersje, pliki z SHA-256
+        GET themes/<id>/<plik>     plik motywu (tylko z indeksu)"""
+    from emustart import themes
+    if not p:
+        return _json(handler, themes.index())
+    f = themes.file_path(p[0], "/".join(p[1:])) if len(p) >= 2 else None
+    if not f:
+        return _json(handler, {"error": "nie ma takiego pliku motywu"}, 404)
+    data = f.read_bytes()
+    handler.send_response(200)
+    handler.send_header("Content-Type", _THEME_TYPES.get(f.suffix.lower(), "application/octet-stream"))
+    handler.send_header("Content-Length", str(len(data)))
+    handler.send_header("X-Content-Type-Options", "nosniff")
+    handler.send_header("Cache-Control", "no-cache")
+    handler.end_headers()
+    handler.wfile.write(data)
+    return None
 
 
 def find_nas_root(cfg: dict) -> Path | None:

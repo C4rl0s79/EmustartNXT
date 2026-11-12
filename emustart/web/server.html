@@ -177,6 +177,14 @@
       <div class="row"><input id="kTgdb" placeholder="TheGamesDB — klucz API"><button id="bKeys" class="primary">Zapisz klucze</button></div>
       <div class="row"><input id="kFilePath" placeholder="Ścieżka do klucze-grafik.emustart (puste = folder serwera)"><input id="kFilePw" type="password" placeholder="Hasło pliku"><button id="bKeysFile">Importuj z pliku</button><button id="bKeysPy">Importuj z PyLinks</button></div></div>
   </section>
+  <section data-in="art">
+    <h2>Motywy TV Lumena</h2>
+    <div class="muted">Paczka .zip: <code>theme.json</code>, <code>theme.css</code>, opcjonalnie <code>layers.html</code> i folder <code>assets/</code> (obrazy, czcionki woff2). Serwer sprawdza paczkę przed zapisem. Lumen pobierze nowy lub zmieniony motyw przy najbliższym połączeniu, a gracz wybierze go w trybie TV → Wygląd.</div>
+    <div class="row" style="margin-top:8px"><input type="file" id="themeFile" accept=".zip,application/zip"><button id="bThemeUp" class="primary">Wgraj motyw</button></div>
+    <div id="themeMsg" class="muted" style="margin-top:6px"></div>
+    <table style="margin-top:8px"><thead><tr><th>Motyw</th><th>Wersja</th><th>Układ listy</th><th class="n">Pliki</th><th class="n">Rozmiar</th><th></th></tr></thead>
+      <tbody id="themeRows"></tbody></table>
+  </section>
   <section data-in="stan" id="tlsAlert" data-show="0" hidden style="border-color:var(--warn)">
     <h2 style="color:var(--warn)">Serwer przeniesiony — port szyfrowany wyłączony</h2>
     <div>Klucz certyfikatu pochodzi z innego komputera. Konfiguracja → <b>Przeniesienie serwera</b> → podaj
