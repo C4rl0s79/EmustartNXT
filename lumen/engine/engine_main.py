@@ -32,7 +32,7 @@ _GOG_ADMIN = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--gog-a
 if _GOG_ADMIN:
     # kroki administratora instalacji gry GOG (emustart/gogadmin.py) — proces z okna UAC, bez okna i serwera
     from emustart import gogadmin
-    sys.exit(gogadmin.main(_GOG_ADMIN))
+    sys.exit(gogadmin.main(_GOG_ADMIN, next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--gog-admin-sha=")), "")))
 
 DIAG = "--diag-controllers" in sys.argv
 if DIAG and not os.environ.get("EMUSTART_HOME"):

@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 from emustart import gogadmin, gogfinal, goginstall as gi, goglib
-from gogadminhelp import fake_reg, steps_file  # noqa: F401  (fixture)
+from gogadminhelp import fake_reg, run_main, steps_file  # noqa: F401  (fixture)
 from goghelp import PID
 from test_gog_install import _install, env  # noqa: F401  (fixture)
 
@@ -90,4 +90,4 @@ def test_elevated_process_rejects_runtime_outside_redist(fake_reg, monkeypatch, 
     runs = []
     monkeypatch.setattr(gogadmin, "RUN", lambda *a, **k: runs.append(a))
     p = steps_file(fake_reg["dir"], [{"kind": "runtime", "exe": str(exe), "args": "/q"}])
-    assert gogadmin.main(str(p)) == 1 and runs == []
+    assert run_main((p)) == 1 and runs == []

@@ -144,14 +144,6 @@ _TABLE = """CREATE TABLE IF NOT EXISTS {name}(
         PRIMARY KEY(profile_id, platform, game, slot, emu, core, kind))"""
 
 
-def forget_game(plat: str, gid: str) -> int:
-    """Stan synchronizacji gry na tym urządzeniu (wszystkie profile) — po odinstalowaniu / przed nową instalacją
-    pierwsza synchronizacja porównuje pliki z serwerem od zera (bez starego stanu: nic nie wygląda na „zmianę
-    tutaj”, więc pliki zapisane przez instalator nie trafią na serwer jako nowsze)."""
-    with _db() as c:
-        return c.execute("DELETE FROM save_sync WHERE platform=? AND game=?", (plat, str(gid))).rowcount
-
-
 def _db():
     c = library.db()
     if _schema.get(id(c)) is not c:

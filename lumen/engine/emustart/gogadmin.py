@@ -17,6 +17,7 @@ przywraca je albo usuwa wartości dodane przez instalację (`undo_steps`).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -30,6 +31,12 @@ log = logging.getLogger("emustart.gogadmin")
 # typy wartości rejestru (stałe winreg — bez importu, planowanie działa też poza Windows)
 REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD = 1, 2, 3, 4
 _TYPES = {"string": REG_SZ, "expandstring": REG_EXPAND_SZ, "binary": REG_BINARY, "dword": REG_DWORD}
+# klucze, przez które da się uruchomić program przy starcie / w cudzym procesie albo zmienić zasady systemu —
+# żaden skrypt gry GOG ich nie potrzebuje; proces z uprawnieniami ich nie zapisze
+_DENY_KEY = re.compile(r"(?i)^software\\(wow6432node\\)?(classes|policies)(\\|$)|\\(image file execution options|"
+                       r"silentprocessexit|winlogon|run|runonce|runonceex|runservices|runservicesonce|lsa|"
+                       r"credential providers|shellserviceobjects?|shellserviceobjectdelayload|"
+                       r"browser helper objects|appcertdlls|knowndlls)(\\|$)")
 KINDS = ("reg_set", "reg_put", "reg_del", "reg_unset", "sdb_install", "sdb_remove", "sdb_remove_file", "fw_add", "fw_del",
          "regsvr", "unregsvr", "feature", "exec", "runtime")
 FEATURES = {"DirectPlay"}
@@ -210,8 +217,11 @@ def run(steps: list, work: Path, elevate=None) -> list:
     work.mkdir(parents=True, exist_ok=True)
     path, res = work / "steps.json", work / "steps.result.json"
     res.unlink(missing_ok=True)
-    path.write_text(json.dumps({"steps": steps}, ensure_ascii=False), encoding="utf-8")
-    cmd = self_cmd() + [f"--gog-admin={path}"]
+    data = json.dumps({"steps": steps}, ensure_ascii=False).encode("utf-8")
+    path.write_bytes(data)
+    # plik leży w folderze użytkownika — skrót w wierszu poleceń (nie do zmiany po uruchomieniu) chroni przed
+    # podmianą kroków między zapisem a zgodą w oknie UAC
+    cmd = self_cmd() + [f"--gog-admin={path}", f"--gog-admin-sha={hashlib.sha256(data).hexdigest()}"]
     (elevate or gogfinal._shell_runas)(cmd[0], subprocess.list2cmdline(cmd[1:]), str(work))
     try:
         got = json.loads(res.read_text(encoding="utf-8")).get("ok") or []
@@ -237,6 +247,8 @@ def _check(s: dict) -> None:
     sub = str(s.get("subkey") or "").replace("/", "\\")
     if not sub.lower().startswith("software\\") or ".." in sub.split("\\"):
         raise ValueError(f"klucz poza HKLM\\Software: {sub!r}")
+    if _DENY_KEY.search(sub) or str(s.get("name") or "").lower() in ("appinit_dlls", "loadappinit_dlls"):
+        raise ValueError(f"klucz systemowy poza zakresem instalacji gry: {sub!r}")
     if s["kind"] in ("reg_put", "reg_del") and s.get("view") not in views():
         raise ValueError(f"zły widok rejestru {s.get('view')!r}")
 
@@ -288,6 +300,8 @@ def _check_op(s: dict) -> None:
         exe.resolve().relative_to(root.resolve())              # ValueError poza katalogiem gry
         if any(c in str(s.get("args") or "") for c in "\r\n"):
             raise ValueError("argumenty z końcem linii")
+        if exe.suffix.lower() in (".cmd", ".bat") and any(c in str(s.get("args") or "") for c in '&|<>^%"'):
+            raise ValueError("argumenty skryptu ze znakami cmd.exe")
 
 
 def _system(name: str) -> str:
@@ -357,14 +371,19 @@ def do_step(s: dict) -> None:
         REG.delete(s["view"], s["subkey"], s["name"])
 
 
-def main(path: str) -> int:
-    """Proces podniesiony (`--gog-admin=<plik>`): wykonuje kroki, wynik każdego w `<plik>.result.json`."""
+def main(path: str, sha: str = "") -> int:
+    """Proces podniesiony (`--gog-admin=<plik> --gog-admin-sha=<sha256>`): wykonuje kroki, wynik każdego
+    w `<plik>.result.json`. Plik o innym skrócie niż podany przy uruchomieniu (podmieniony) — żaden krok."""
     p = Path(path)
     try:
-        steps = json.loads(p.read_text(encoding="utf-8")).get("steps") or []
+        data = p.read_bytes()
+        if not sha or hashlib.sha256(data).hexdigest() != sha.lower():
+            raise ValueError("skrót pliku kroków nie zgadza się z poleceniem uruchomienia")
+        steps = json.loads(data.decode("utf-8")).get("steps") or []
     except (OSError, ValueError) as ex:
         log.error("GOG admin: plik kroków %s: %s", p, ex)
-        steps = []
+        p.with_suffix(".result.json").write_text(json.dumps({"ok": []}), encoding="utf-8")
+        return 1
     ok = run_here(steps)
     p.with_suffix(".result.json").write_text(json.dumps({"ok": ok}), encoding="utf-8")
     return 0 if all(ok) else 1

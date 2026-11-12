@@ -64,24 +64,16 @@ def test_config_sync_on_by_default():
     assert gogsaves.settings("1999999999")["config"] is True
 
 
-def test_install_and_uninstall_forget_sync_state(env, monkeypatch):
-    calls = []
-    monkeypatch.setattr(syncclient, "forget_game", lambda plat, gid: calls.append((plat, gid)))
-    e, _t, _ = _install(env)
-    assert calls == [("gog", PID)] and e["fresh_sync"] is True
-    gi.uninstall(PID, remove_hkcu=lambda a: None)
-    assert calls == [("gog", PID), ("gog", PID)]
-
-
-def test_forget_game_deletes_rows_of_that_game_only():
+def test_uninstall_keeps_sync_state_so_offline_saves_are_not_overwritten(env):
+    """Zapisy zostają na dysku po odinstalowaniu — stan synchronizacji też: po ponownej instalacji nowsze lokalne
+    zapisy (gra offline) są porównywane z serwerem, a nie zastępowane bez pytania („świeża instalacja” tylko bez stanu)."""
     with syncclient._db() as c:
-        for g in ("1", "2"):
-            c.execute("INSERT OR REPLACE INTO save_sync(profile_id, platform, game, slot, emu, core, kind) "
-                      "VALUES(1, 'gog', ?, 1, 'gog', 's', 'saves')", (g,))
-    assert syncclient.forget_game("gog", "1") == 1
-    left = [r[0] for r in syncclient._db().execute("SELECT game FROM save_sync WHERE platform='gog'")]
-    assert left == ["2"]
-    syncclient.forget_game("gog", "2")
+        c.execute("INSERT OR REPLACE INTO save_sync(profile_id, platform, game, slot, emu, core, kind) "
+                  "VALUES(1, 'gog', ?, 1, 'gog', 's', 'saves')", (PID,))
+    e, _t, _ = _install(env)
+    assert e["fresh_sync"] is True
+    gi.uninstall(PID, remove_hkcu=lambda a: None)
+    assert [r[0] for r in syncclient._db().execute("SELECT game FROM save_sync WHERE game=?", (PID,))] == [PID]
 
 
 def test_fresh_install_takes_server_files_without_conflict(monkeypatch):

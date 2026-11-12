@@ -563,9 +563,10 @@ class GogService:
         busy = set(self.running_ids()) | ({self._job["pid"]} if self._job else set())
         es = [gi.load_entry(pid) for pid in self.admin_pending() if pid not in busy]
         es = [e for e in es if e]
+        undo_ok = gi.run_pending_undo(elevate)        # odinstalowane gry: wpisy, których nie cofnięto (odmowa UAC)
         if not es:
-            return {"ok": True, "games": 0, "message": "Brak zaległych kroków administratora."}
-        if gi.apply_admin(es, elevate):
+            return {"ok": undo_ok, "games": 0, "message": "Brak zaległych kroków administratora."}
+        if gi.apply_admin(es, elevate) and undo_ok:
             return {"ok": True, "games": len(es), "message": f"Wpisy rejestru zapisane ({len(es)} gier)."}
         return {"ok": False, "games": len(es), "reason": "Kroków administratora nie wykonano (odmowa w oknie UAC "
                                                           "albo błąd) — Lumen zapyta przy następnym starcie."}

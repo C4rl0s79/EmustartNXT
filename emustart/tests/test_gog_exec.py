@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from emustart import gogadmin, gogexec, gogfinal, goginstall as gi, goglib
-from gogadminhelp import fake_reg, steps_file  # noqa: F401  (fixture)
+from gogadminhelp import fake_reg, run_main, steps_file  # noqa: F401  (fixture)
 from goghelp import PID, SCRIPT, build_archive
 from test_gog_install import _install, env  # noqa: F401  (fixture)
 
@@ -92,12 +92,16 @@ def test_unknown_script_runs_now_or_in_admin_step(tmp_path, monkeypatch):
                            "root": str(app)}]
 
 
-def test_execute_outside_game_or_missing_file_fails(tmp_path):
+def test_execute_outside_game_or_missing_file_is_skipped_not_run(tmp_path, monkeypatch):
+    """Poza grą, brak pliku, nie program — nic nie jest uruchamiane, akcja pominięta z opisem (bez błędu instalacji)."""
     app = tmp_path / "g"
     app.mkdir()
+    ran = []
+    monkeypatch.setattr(gogfinal, "RUN_LOCAL", lambda *a: ran.append(a))
     for a in ({"executable": "{app}/../poza.exe"}, {"executable": "{app}/brak.cmd"}, {"executable": "{app}/x.dll"}):
-        with pytest.raises(gogfinal.FinalizeError):
-            _apply(app, a)
+        r = _apply(app, a)
+        assert r["admin"] == [] and r["skipped"][0].startswith("Execute:")
+    assert ran == []
 
 
 def test_firewall_rule_added_in_admin_step_and_removed_by_name(env, fake_reg, monkeypatch):
@@ -127,7 +131,7 @@ def test_elevated_process_validates_other_steps(fake_reg, monkeypatch, step):
     runs = []
     monkeypatch.setattr(gogadmin, "RUN", lambda *a, **k: runs.append(a))
     p = steps_file(fake_reg["dir"], [step])
-    assert gogadmin.main(str(p)) == 1 and runs == []
+    assert run_main((p)) == 1 and runs == []
 
 
 # ── etap 5: galaxy_*.exe — wpisy [Registry] z nagłówka Inno, bez uruchamiania ──

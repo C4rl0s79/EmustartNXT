@@ -111,12 +111,16 @@ def registry_entries(header: bytes) -> list:
 _SKIP = re.compile(r"(?i)^software\\(wow6432node\\)?(gog\.com\\|microsoft\\windows\\currentversion\\uninstall\\)")
 
 
-def game_registry(path: Path, windows64: bool = True) -> list:
+def game_registry(path: Path, windows64: bool = True, language: str = "") -> list:
     """Wpisy rejestru galaxy_*.exe do odtworzenia: [{"root", "subkey", "name", "type", "data"}] — wartości
     z symbolami Inno ({app} zostaje do podstawienia), bez zadań i bez warunków Check innych niż Is32bit/Is64bit
-    (te liczymy sami; reszta dotyczy Galaxy i parametrów jego wywołania)."""
+    (te liczymy sami; reszta dotyczy Galaxy i parametrów jego wywołania). `language` — nazwa języka Inno
+    (english, polish): wpis tylko dla innych języków jest pomijany; bez niej — tylko wpisy bez ograniczenia języka."""
     out = []
     for e in registry_entries(read_header(path)):
+        langs = {x.strip().lower() for x in e["languages"].split() if x.strip()}
+        if langs and language.lower() not in langs:
+            continue
         check = e["check"].strip().lower()
         if check in ("is32bit", "is64bit"):
             if (check == "is64bit") != windows64:

@@ -66,9 +66,21 @@ def _reg_add(toks: list) -> dict | None:
         return None
     data = str(opts.get("/d", "")).replace("\\\\", "\\")       # "%locpath%\\" → jeden ukośnik, jak w REG.exe
     if typ == "dword":
-        data = str(int(data, 0) if data.lower().startswith("0x") else int(data or 0))
+        try:
+            data = str(int(data, 0) if data.lower().startswith("0x") else int(data or 0))
+        except ValueError:
+            return None                                  # np. %NIEZNANA% — skrypt uruchamiany bez zmian
+    return _reg_result(hive, sub, opts, typ, data)
+
+
+def _reg_result(hive: str, sub: str, opts: dict, typ: str, data: str) -> dict:
     return {"root": hive, "subkey": sub, "name": "" if "/ve" in opts else str(opts.get("/v", "")),
             "type": typ, "data": data}
+
+
+def _in_dir(script_dir: Path, f: str) -> str:
+    """Ścieżka ze skryptu: względna — od folderu skryptu (cmd.exe GOG Galaxy startuje w nim), nie od katalogu silnika."""
+    return os.path.normpath(os.path.join(str(script_dir), f))
 
 
 def parse_cmd(text: str, script_dir: Path) -> list | None:
@@ -100,17 +112,17 @@ def parse_cmd(text: str, script_dir: Path) -> list | None:
             kv = dict(re.findall(r'(\w+)=("[^"]*"|\S+)', line))
             if not kv.get("name") or not kv.get("program"):
                 return None
-            out.append({"op": "fw", "name": _unq(kv["name"]), "program": os.path.normpath(_unq(kv["program"]))})
+            out.append({"op": "fw", "name": _unq(kv["name"]), "program": _in_dir(script_dir, _unq(kv["program"]))})
         elif cmd in ("regsvr32", "regsvr32.exe"):
             files = [_unq(t) for t in toks[1:] if not t.startswith("/")]
             if len(files) != 1:
                 return None
-            out.append({"op": "regsvr", "file": os.path.normpath(files[0])})
+            out.append({"op": "regsvr", "file": _in_dir(script_dir, files[0])})
         elif cmd in ("sdbinst", "sdbinst.exe") and "-u" in [t.lower() for t in toks]:
             files = [_unq(t) for t in toks[1:] if not t.startswith("-")]
             if len(files) != 1:
                 return None
-            out.append({"op": "sdb_file", "file": os.path.normpath(files[0])})
+            out.append({"op": "sdb_file", "file": _in_dir(script_dir, files[0])})
         else:
             return None
     return out

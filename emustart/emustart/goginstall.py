@@ -661,8 +661,6 @@ def install(source, pid: str, build: str, langs: list, primary: str, dlcs: list,
         raise GogError(f"Katalog {root} nie jest pusty — wybierz inny.")
     if resume:
         _adopt_support_layout(root, plan, e)
-    else:
-        _forget_sync(pid)                 # nowa instalacja: stan synchronizacji poprzedniej nie obowiązuje
     done = _still_done(root, plan, e.get("done") if resume else None)
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:
@@ -818,6 +816,9 @@ def _dlc_names(bundle: dict) -> dict:
     return {str(d["id"]): d.get("name") or d["id"] for d in bundle.get("dlcs") or []}
 
 
+ADMIN_TRIES = 3
+
+
 def apply_admin(es: list, elevate=None) -> bool:
     """Kroki administratora kilku gier w jednym procesie z uprawnieniami (jedno okno UAC; Lumen „jako administrator”
     — bez okna). Wynik rozdzielony na gry; stan rejestru sprzed zapisu zapamiętany (deinstalator go przywraca);
@@ -840,7 +841,18 @@ def apply_admin(es: list, elevate=None) -> bool:
                 for x in e.get("runtimes") or []:
                     if x.get("id") == d["act"]["id"] and x.get("arch", d["act"]["arch"]) == d["act"]["arch"]:
                         x["done"] = True
-        e["finalize"]["admin"] = [a for a, ok in zip(acts, r) if not ok]
+        left = []
+        for a, ok in zip(acts, r):
+            if ok:
+                continue
+            a["tries"] = int(a.get("tries") or 0) + 1
+            if a.get("compat") and a["tries"] >= ADMIN_TRIES:
+                # krok „compat”, który ciągle się nie udaje (np. instalator biblioteki z kodem błędu), nie wraca
+                # z oknem UAC przy każdym starcie — zostaje w admin_failed (informacja w szczegółach gry)
+                e["finalize"].setdefault("admin_failed", []).append(a)
+            else:
+                left.append(a)
+        e["finalize"]["admin"] = left
         if not needs_admin(e["finalize"]["admin"]) and e["state"] == ST_NEEDS_ADMIN:
             e["state"], e["error"] = ST_INSTALLED, ""
         all_ok = all_ok and all(r)
@@ -871,7 +883,8 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
         known = {str(p).lower() for p, _s in e.get("files") or []} | {f["path"].lower() for f in plan["files"]}
         once = set((e.get("finalize") or {}).get("once") or [])        # akcje onlyOnce wykonane w tej instalacji
         for prod in ([pid] if not dlc_only else []) + list(plan["dlcs"]):
-            r = gogfinal.apply_script(root, prod, known=known, once=once, **({"hkcu": hkcu} if hkcu else {}))
+            r = gogfinal.apply_script(root, prod, known=known, once=once, lang=e.get("primary") or "",
+                                      **({"hkcu": hkcu} if hkcu else {}))
             for k in fin:
                 fin[k] += r[k]
         fin["once"] = sorted(once | set(fin["once"]))
@@ -1036,12 +1049,13 @@ def uninstall(pid: str, remove_hkcu=None, elevate=None, remove_outside: bool = F
     if not e:
         raise GogError("Ta gra nie jest zainstalowana.")
     root = Path(e["install_dir"])
+    # najpierw kroki administratora — regsvr32 /u potrzebuje jeszcze plików gry
+    admin_left = _undo_admin(e, elevate)
     removed, left, kept_errors = _remove_managed(e)
     if kept_errors:
         e["error"] = f"Nie usunięto {len(kept_errors)} plików (np. {kept_errors[0]}) — zamknij grę i spróbuj ponownie."
         save_entry(e)
         raise GogError(e["error"])
-    admin_left = _undo_admin(e, elevate)
     outside = outside_files(e)
     if remove_outside:                    # wybór gracza w oknie odinstalowania; zapisy zostają zawsze
         for f in list(outside):
@@ -1061,11 +1075,11 @@ def discard(pid: str, remove_hkcu=None, elevate=None) -> None:
     e = load_entry(pid)
     if not e:
         return
+    _undo_admin(e, elevate)
     _removed, _left, errors = _remove_managed(e)
     if errors:
         raise GogError(f"Nie usunięto plików przerwanej instalacji ({len(errors)}, np. {errors[0]}) — "
                        "zamknij programy, które ich używają, i spróbuj ponownie.")
-    _undo_admin(e, elevate)
     _forget(e, remove_hkcu)
 
 
@@ -1080,24 +1094,55 @@ def _undo_admin(e: dict, elevate=None) -> int:
     steps = [s for s in steps if not (s["kind"] == "sdb_remove" and s["guid"] in shared)]
     if not steps:
         return 0
-    left = gogadmin.run(steps, gog_dir() / "admin" / str(e["product_id"]), elevate).count(False)
-    if left:
-        log.warning("GOG %s: nie cofnięto %d kroków administratora (rejestr HKLM)", e["product_id"], left)
-    return left
+    res = gogadmin.run(steps, gog_dir() / "admin" / str(e["product_id"]), elevate)
+    failed = [s for s, ok in zip(steps, res) if not ok]
+    # cofnięte nie są cofane drugi raz (np. po nieudanym usunięciu plików)
+    e["finalize"]["admin_done"] = []
+    save_entry(e)
+    if failed:
+        log.warning("GOG %s: nie cofnięto %d kroków administratora — ponowienie przy kolejnym oknie UAC",
+                    e["product_id"], len(failed))
+        add_pending_undo(failed)
+    return len(failed)
 
 
-def _forget_sync(pid: str) -> None:
+def _pending_undo_path() -> Path:
+    return gog_dir() / "admin" / "pending-undo.json"
+
+
+def pending_undo() -> list:
+    """Kroki cofania gier już odinstalowanych (odmowa UAC przy odinstalowaniu) — ponawiane z zaległymi krokami."""
     try:
-        from emustart import gogsaves, syncclient
-        syncclient.forget_game(gogsaves.PLATFORM, str(pid))
-    except Exception:                    # noqa: BLE001 — brak bazy biblioteki nie blokuje instalacji ani usuwania
-        log.exception("GOG %s: stan synchronizacji", pid)
+        return json.loads(_pending_undo_path().read_text(encoding="utf-8")).get("steps") or []
+    except (OSError, ValueError):
+        return []
+
+
+def add_pending_undo(steps: list) -> None:
+    p = _pending_undo_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    keep = [s for s in pending_undo() + list(steps) if s.get("kind") != "unregsvr"]   # bez plików gry — niewykonalne
+    p.write_text(json.dumps({"steps": keep}, ensure_ascii=False), encoding="utf-8")
+
+
+def run_pending_undo(elevate=None) -> bool:
+    steps = pending_undo()
+    if not steps:
+        return True
+    res = gogadmin.run(steps, gog_dir() / "admin" / "_undo", elevate)
+    left = [s for s, ok in zip(steps, res) if not ok]
+    p = _pending_undo_path()
+    if left:
+        p.write_text(json.dumps({"steps": left}, ensure_ascii=False), encoding="utf-8")
+    else:
+        p.unlink(missing_ok=True)
+    return not left
 
 
 def _forget(e: dict, remove_hkcu=None) -> None:
-    # wartości rejestru HKCU ustawione przez finalizację tej gry
+    # wartości rejestru HKCU ustawione przez finalizację tej gry; stan synchronizacji zapisów zostaje — zapisy
+    # zostają na dysku, a po ponownej instalacji porównanie z nim chroni nowsze lokalne zapisy (np. gra offline)
     (remove_hkcu or gogfinal.remove_hkcu)((e.get("finalize") or {}).get("hkcu") or [])
-    _forget_sync(e["product_id"])
     try:
         _entry_path(e["product_id"]).unlink()
     except FileNotFoundError:

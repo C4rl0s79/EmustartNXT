@@ -744,7 +744,8 @@ class Api:
 
     def gog_admin_pending(self) -> dict:
         """Gry z zaległymi krokami administratora (Lumen: okno UAC przy starcie, gdy lista nie jest pusta)."""
-        return {"ok": True, "games": self._gog.admin_pending()}
+        from emustart import goginstall as gi
+        return {"ok": True, "games": self._gog.admin_pending(), "undo": len(gi.pending_undo())}
 
     def gog_finish_admin_all(self) -> dict:
         """Zaległe kroki administratora wszystkich gier jednym oknem UAC."""

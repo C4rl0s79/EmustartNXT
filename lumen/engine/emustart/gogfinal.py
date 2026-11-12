@@ -244,6 +244,12 @@ _LANG_NAMES = {"en": "english", "pl": "polish", "de": "german", "fr": "french", 
                "sv": "swedish", "da": "danish", "fi": "finnish", "no": "norwegian", "ro": "romanian"}
 
 
+def lang_name(code: str) -> str:
+    """Kod języka (en, pl-PL) → nazwa jak w instalatorze GOG / Inno (english, polish)."""
+    c = str(code or "").lower().replace("_", "-")
+    return "brazilian" if c == "pt-br" else _LANG_NAMES.get(c.split("-")[0], c)
+
+
 def gog_registry_acts(app: Path, pid: str, e: dict, launch: dict, saves: list, script_admin: list) -> list:
     """Wartości `HKLM\\Software\\GOG.com\\Games\\<id>`, które zapisuje instalator GOG (nie skrypt gry) — szukają ich
     łatki, narzędzia GOG (GOGDOSConfig) i menedżery modów. Nazwy jak w instalatorze offline (Quake II, galaxy_*.exe).
@@ -252,9 +258,7 @@ def gog_registry_acts(app: Path, pid: str, e: dict, launch: dict, saves: list, s
     sub = f"Software\\GOG.com\\Games\\{pid}"
     have = {(str(a.get("subkey") or "").lower(), str(a.get("name") or "").lower()) for a in script_admin}
     exe, args = str(launch.get("exe") or ""), str(launch.get("args") or "")
-    lang = str(e.get("primary") or (e.get("languages") or [""])[0])
-    code = lang.lower().replace("_", "-")
-    name = "brazilian" if code == "pt-br" else _LANG_NAMES.get(code.split("-")[0], code)
+    name = lang_name(str(e.get("primary") or (e.get("languages") or [""])[0]))
     vals = [("PATH", str(app)), ("EXE", exe), ("EXEFILE", Path(exe).name if exe else ""),
             ("WORKINGDIR", str(launch.get("cwd") or app).rstrip("\\") + "\\"), ("LAUNCHCOMMAND", f"{exe} {args}"),
             ("LAUNCHPARAM", args), ("GAMENAME", str(e.get("title") or pid)), ("gameID", str(pid)),
@@ -345,7 +349,8 @@ def _del_registry(act: dict, args: dict, app: Path, pid: str, sysf: dict, res: d
         res["skipped"].append(f"delRegistry HKLM\\{a['subkey']} (cały klucz — pominięte)")
 
 
-def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
+def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve,
+                     lang: str = "") -> None:
     """galaxy_<gra>.exe nie jest uruchamiany (pobiera/rejestruje GOG Galaxy, skróty, deinstalator Inno) — wpisy
     rejestru z jego nagłówka Inno (emustart/goginno.py): flagi zgodności AppCompatFlags\\Layers, klucze gry.
     Rejestr GOG.com\\Games\\<id> zapisuje osobny krok (gog_registry_acts)."""
@@ -354,7 +359,7 @@ def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res
     if not _inside(exe, app) or not exe.is_file():
         raise FinalizeError(f"Execute: brak pliku {exe_s}")
     try:
-        entries = goginno.game_registry(exe, windows_64())
+        entries = goginno.game_registry(exe, windows_64(), lang_name(lang) if lang else "")
     except (goginno.InnoError, OSError, ValueError) as ex:
         res["skipped"].append(f"Execute {name}: nie odczytano wpisów rejestru ({ex})")
         return
@@ -374,7 +379,7 @@ def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res
     res["done"].append(f"Execute {name}: {n} wpisów rejestru (bez uruchamiania)")
 
 
-def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
+def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve, lang: str = "") -> None:
     """Akcja Execute (emustart/gogexec.py): znane polecenia skryptów .cmd jako własne kroki (cofane przy
     odinstalowaniu), reszta — program bez zmian: z runAsAdmin w kroku administratora, bez — od razu."""
     from emustart import gogexec
@@ -388,7 +393,7 @@ def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resol
         res["skipped"].append(f"Execute {name} (Eksplorator gier Windows)")
         return
     if re.match(r"^galaxy_.+\.exe$", name):
-        _galaxy_registry(exe_s, name, app, pid, sysf, res, hkcu, resolve)
+        _galaxy_registry(exe_s, name, app, pid, sysf, res, hkcu, resolve, lang)
         return
     if name == "attrib.exe" and exe_s.lower().startswith("{sys}"):
         # S.T.A.L.K.E.R.: attrib +r fsgame.ltx — plik w katalogu gry tylko do odczytu
@@ -435,7 +440,7 @@ def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resol
 
 
 def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known: set | None = None,
-                 folders: dict | None = None, once: set | None = None) -> dict:
+                 folders: dict | None = None, once: set | None = None, lang: str = "") -> dict:
     """Akcje instalacyjne `goggame-<pid>.script`. Zwraca {"done", "admin" (kroki HKLM), "skipped", "saves",
     "created" (pliki utworzone kopią — do odinstalowania), "dirs" (puste foldery utworzone przez skrypt)}; błąd akcji,
     która musi się udać → FinalizeError. `known` — pliki gry z manifestu (małe litery, względne): kopia poza nimi
@@ -452,7 +457,8 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
         folders = gogsaves.system_folders()
     sysf = {**folders, "winDocuments": str(docs_dir)}
     # poza katalogiem gry skrypt może pisać tylko w folderach użytkownika (Dokumenty, AppData, ProgramData)
-    user_dirs = [docs_dir] + [Path(sysf[k]) for k in ("winAppData", "winLocalAppData", "winProgramData") if sysf.get(k)]
+    user_dirs = [docs_dir] + [Path(sysf[k]) for k in ("winAppData", "winLocalAppData", "winProgramData", "winPublicDocuments")
+                              if sysf.get(k)]
 
     def resolve(s: str | None) -> Path:
         s = _symbols(s or "", app, pid, sysf)
@@ -568,7 +574,12 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
         elif kind == "delRegistry":
             _del_registry(act, args, app, pid, sysf, res)
         elif kind in ("Execute", "execute"):
-            _execute(args, app, pid, sysf, res, hkcu, resolve)
+            try:
+                _execute(args, app, pid, sysf, res, hkcu, resolve, lang)
+            except FinalizeError as ex:
+                # przed obsługą Execute akcja była tylko pomijana — program, którego nie umiemy wykonać ({sys}, .msi,
+                # poza grą), nie może teraz zablokować instalacji
+                res["skipped"].append(f"Execute: {ex}")
         elif kind == "installSDB":
             # baza poprawek zgodności Windows (sdbinst) — krok administratora, cofany przy odinstalowaniu
             f = resolve(args.get("sdbFile"))
@@ -701,6 +712,8 @@ def runtime_steps(app: Path, dep_ids: list, check: bool = True) -> list:
                 except (UnsafePath, ValueError):
                     continue
                 arch = _runtime_arch(did, exe)
+                if arch == "x64" and not windows_64():
+                    continue                              # 64-bitowy instalator na 32-bitowym Windows nie zadziała
                 if check:
                     have = RUNTIME_CHECK(did, arch)
                     if have or (have is None and f"{did}:{arch}" in known):

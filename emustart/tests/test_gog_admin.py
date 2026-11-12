@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from emustart import gogadmin, gogfinal, goginstall as gi, goglib
-from gogadminhelp import fake_reg, steps_file  # noqa: F401  (fixture)
+from gogadminhelp import fake_reg, run_main, steps_file  # noqa: F401  (fixture)
 from goghelp import PID, SCRIPT, build_archive
 from test_gog_install import FakeServer, _install, env  # noqa: F401  (fixture)
 
@@ -104,7 +104,7 @@ def test_dlc_admin_step_keeps_base_game_steps(env, fake_reg):
 def test_elevated_process_rejects_unknown_steps_and_keys(fake_reg, step):
     """Plik kroków pisze proces bez uprawnień — podniesiony przyjmuje tylko znane kroki pod HKLM\\Software."""
     p = steps_file(fake_reg["dir"], [step])
-    assert gogadmin.main(str(p)) == 1
+    assert run_main((p)) == 1
     assert json.loads(p.with_suffix(".result.json").read_text())["ok"] == [False]
     assert fake_reg["reg"].data == {}
 
@@ -228,4 +228,4 @@ def test_shared_sdb_guid_stays_while_another_game_uses_it(env, fake_reg, sdb_cal
 ])
 def test_elevated_process_validates_sdb_steps(fake_reg, sdb_calls, step):
     p = steps_file(fake_reg["dir"], [step])
-    assert gogadmin.main(str(p)) == 1 and sdb_calls == []
+    assert run_main((p)) == 1 and sdb_calls == []

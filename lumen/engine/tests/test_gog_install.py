@@ -15,7 +15,7 @@ import pytest
 
 from emustart import gogadmin, gogarchive as ga, gogfinal, goginstall as gi, goglib, paths
 from goghelp import BIG, BUILD, DLC_FILES, DLC_META, GAME_EXE, PID, SCRIPT, build_archive
-from gogadminhelp import fake_reg, steps_file  # noqa: F401  (fixture)
+from gogadminhelp import fake_reg, run_main, steps_file  # noqa: F401  (fixture)
 from test_three_devices import srv  # noqa: F401  (fixture)
 
 
@@ -431,7 +431,7 @@ def test_uninstall_removes_whole_folder_when_nothing_of_the_player_is_left(env):
 def test_hklm_is_written_to_both_registry_views(fake_reg):
     """gry GOG to zwykle programy 32-bitowe — na 64-bitowym Windows wartość w obu widokach"""
     a = {"root": "HKLM", "subkey": "Software\\GOG.com\\Games\\1001", "name": "path", "type": "string", "data": "C:\\G"}
-    gogadmin.main(str(steps_file(fake_reg["dir"], gogadmin.set_steps(gogadmin.capture([a])))))
+    run_main((steps_file(fake_reg["dir"], gogadmin.set_steps(gogadmin.capture([a])))))
     assert fake_reg["reg"].data[("64", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
     assert fake_reg["reg"].data[("32", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
 
