@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
@@ -9,6 +10,7 @@ import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
+import { TASKLIST } from './systemTools'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
@@ -527,6 +529,15 @@ function restoreAfterGame(what: string): void {
     if (!win || win.isDestroyed()) return
     log.info('window', `po grze (${what}): na wierzchu=${win.isFocused()}, pełny ekran=${win.isFullScreen()}, zminimalizowane=${win.isMinimized()}`)
   }, 1000)
+}
+
+/** kto uruchomił Lumena (Eksplorator, Harmonogram, skrót z pada…) — diagnoza kopii startujących „same” */
+function logParent(): void {
+  if (process.platform !== 'win32') return
+  execFile(TASKLIST, ['/FI', `PID eq ${process.ppid}`, '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (e, out) => {
+    const name = !e && /^"([^"]+)"/.exec(String(out).trim())?.[1]
+    log.info('app', `uruchomiony przez: ${name || '?'} (PID ${process.ppid}), argumenty: ${process.argv.slice(1).join(' ') || '—'}`)
+  })
 }
 
 function restoreWindow(): void {
@@ -1755,6 +1766,7 @@ let started = false // set once the app is ready: a second instance quitting at 
 app.whenReady().then(async () => {
   log.info('app', `Lumen ${app.getVersion()} starting (electron ${process.versions.electron}, packaged=${app.isPackaged})`)
   log.info('app', `data folder: ${userData}`)
+  logParent()
   if (dataChoice.warning) log.warn('app', dataChoice.warning)
   if (migrated.length) log.info('app', `copied from ${legacyDataDir} (left unchanged): ${migrated.join(', ')}`)
   await Promise.all([settings.init(), prefs.init(), emu.init(), gog.init(), family.init()])

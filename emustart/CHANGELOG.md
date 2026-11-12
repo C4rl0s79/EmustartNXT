@@ -89,6 +89,13 @@ Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
   `decoding="async"` wszędzie. Przyczyna zacięć nie jest zmierzona — jeśli zostaną, następny krok to pomiar w
   narzędziach Chromium (który element blokuje klatki).
 
+- **Instalacja przerwana poza silnikiem (zamknięty Lumen, awaria) — nie da się jej ani przerwać, ani wznowić.**
+  Test na żywo: Control w stanie „installing” po zamknięciu starego Lumena; przycisk A (TV) / główna akcja
+  „Przerwij instalację” → „Brak zadania tej gry”. Zmiana (silnik, obie kopie `goglib.py`): „installing” bez zadania
+  w kolejce / w toku pokazywane jako „przerwana” — główna akcja „Wznów instalację”.
+- **Diagnoza:** w logu Lumena przy starcie — kto go uruchomił (proces nadrzędny) i z jakimi argumentami (stary
+  Lumen startował „sam” tuż przed wersją testową).
+
 Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”
 (nadal decyduje, czy Lumen wraca), uruchamiania z Decka (tam Lumen nadal nie wraca).
 
