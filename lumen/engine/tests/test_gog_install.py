@@ -336,7 +336,11 @@ def test_unsafe_launch_path(tmp_path):
     (tmp_path / "goggame-1.info").write_text(json.dumps({"playTasks": [
         {"category": "game", "isPrimary": True, "path": "run.bat", "type": "FileTask"}]}))
     (tmp_path / "run.bat").write_text("@echo off")
-    with pytest.raises(gogfinal.FinalizeError, match=".exe"):
+    assert gogfinal.launch_spec(tmp_path, "1")["exe"] == str(tmp_path / "run.bat")      # .bat przez cmd.exe /c
+    (tmp_path / "goggame-1.info").write_text(json.dumps({"playTasks": [
+        {"category": "game", "isPrimary": True, "path": "manual.pdf", "type": "FileTask"}]}))
+    (tmp_path / "manual.pdf").write_text("%PDF")
+    with pytest.raises(gogfinal.FinalizeError, match="zadania uruchamiania"):
         gogfinal.launch_spec(tmp_path, "1")
 
 

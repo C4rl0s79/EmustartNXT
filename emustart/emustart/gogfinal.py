@@ -637,11 +637,41 @@ def _info(app: Path, pid: str) -> dict:
         raise FinalizeError(f"brak opisu uruchamiania (goggame-{pid}.info): {ex}")
 
 
+RUNNABLE = (".exe", ".bat", ".cmd")
+
+
+def _lnk_target(app: Path, pid: str, t: dict) -> dict:
+    """Zadanie „Launch <gra>.lnk”, którego nie ma w plikach gry (skrót tworzy instalator galaxy_*.exe, którego nie
+    uruchamiamy) → cel z wpisów rejestru GOG tego instalatora: EXE, LAUNCHPARAM, WORKINGDIR (emustart/goginno.py)."""
+    if not str(t.get("path") or "").lower().endswith(".lnk"):
+        return t
+    from emustart import goginno
+    for helper in sorted(app.glob("galaxy_*.exe")):
+        try:
+            entries = goginno.registry_entries(goginno.read_header(helper))
+        except (goginno.InnoError, OSError, ValueError):
+            continue
+        vals = {e["name"].lower(): e["data"] for e in entries
+                if e["subkey"].lower().rstrip("\\").endswith(f"gog.com\\games\\{pid}") and not e["check"]}
+        exe = vals.get("exe") or ""
+        if exe.lower().startswith("{app}\\"):
+            wd = vals.get("workingdir") or ""
+            wd = wd[5:].strip("\\") if wd.lower().startswith("{app}") else ""
+            return {**t, "path": exe[6:], "arguments": (vals.get("launchparam") or "").strip() or t.get("arguments"),
+                    "workingDir": wd or None, "lnk": t["path"]}
+    return t
+
+
+def _file_tasks(app: Path, pid: str, data: dict) -> list:
+    return [_lnk_target(app, pid, t) for t in data.get("playTasks") or []
+            if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
+
+
 def play_tasks(app: Path, pid: str) -> list:
     """Zadania uruchamiania gry (np. launcher i obie części Wing Commandera) do wyboru w interfejsie:
-    [{"index", "name", "category", "default"}] — tylko pliki .exe wewnątrz katalogu gry."""
+    [{"index", "name", "category", "default"}] — tylko programy (.exe, .bat, .cmd) wewnątrz katalogu gry."""
     data = _info(app, pid)
-    tasks = [t for t in data.get("playTasks") or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
+    tasks = _file_tasks(app, pid, data)
     best = pick_play_task(tasks)
     out = []
     for i, t in enumerate(tasks):
@@ -649,7 +679,7 @@ def play_tasks(app: Path, pid: str) -> list:
             exe = safe_join(app, t["path"])
         except UnsafePath:
             continue
-        if exe.suffix.lower() == ".exe" and exe.is_file() and not t.get("isHidden"):
+        if exe.suffix.lower() in RUNNABLE and exe.is_file() and not t.get("isHidden"):
             out.append({"index": i, "name": str(t.get("name") or exe.stem), "category": str(t.get("category") or ""),
                         "default": t is best})
     return out
@@ -670,7 +700,7 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
     """{"exe", "args", "cwd", "name"} z goggame-<pid>.info — ścieżki tylko wewnątrz katalogu gry, tylko .exe.
     `task` — numer zadania z play_tasks (domyślnie zadanie gry przed launcherem)."""
     data = _info(app, pid)
-    tasks = [t for t in data.get("playTasks") or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
+    tasks = _file_tasks(app, pid, data)
     if task is not None and task >= 0:
         if task >= len(tasks):
             raise FinalizeError("nie ma takiego zadania uruchamiania")
@@ -681,7 +711,12 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
                 return safe_join(app, x["path"]).is_file()
             except UnsafePath:
                 return True                  # niebezpieczna ścieżka — błąd niżej, nie cicha zamiana zadania
-        t = pick_play_task([x for x in tasks if on_disk(x)])
+        t = pick_play_task([x for x in tasks if on_disk(x) and x["path"].lower().endswith(RUNNABLE)])
+        want = pick_play_task(tasks)
+        is_game = lambda x: bool(x) and (str(x.get("category") or "").lower() == "game" or bool(x.get("isPrimary")))  # noqa: E731
+        if want and is_game(want) and not on_disk(want) and not (t and str(t.get("category") or "").lower() == "game"):
+            # zadania gry nie ma na dysku — nie zgadujemy innego programu (Tex Murphy: Manual.pdf, Disciples: Config.exe)
+            raise FinalizeError(f"brak pliku gry: {want.get('lnk') or want['path']}")
     if not t:
         raise FinalizeError("goggame-*.info nie ma zadania uruchamiania gry")
     try:
@@ -689,8 +724,8 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
         cwd = safe_join(app, t["workingDir"]) if t.get("workingDir") else exe.parent
     except UnsafePath as ex:
         raise FinalizeError(f"ścieżka uruchamiania poza katalogiem gry: {ex}")
-    if exe.suffix.lower() != ".exe":
-        raise FinalizeError(f"plik uruchamiania nie jest programem .exe: {t['path']}")
+    if exe.suffix.lower() not in RUNNABLE:
+        raise FinalizeError(f"plik uruchamiania nie jest programem (.exe, .bat, .cmd): {t['path']}")
     if not exe.is_file():
         raise FinalizeError(f"brak pliku gry: {t['path']}")
     args = str(t.get("arguments") or "")
@@ -703,8 +738,11 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
 
 
 def start(spec: dict) -> subprocess.Popen:
-    """Gra jako osobny proces (bez powłoki): linia poleceń = "exe" + argumenty z playTask, jak GOG Galaxy."""
+    """Gra jako osobny proces: linia poleceń = "exe" + argumenty z playTask, jak GOG Galaxy; zadanie .bat/.cmd
+    (GMDX, The Town of Light) przez cmd.exe /c."""
     cmd = f'"{spec["exe"]}" {spec["args"]}'.strip()
+    if spec["exe"].lower().endswith((".bat", ".cmd")):
+        cmd = f'cmd.exe /c "{cmd}"'
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
     return subprocess.Popen(cmd if os.name == "nt" else [spec["exe"], *spec["args"].split()], cwd=spec["cwd"],
                             close_fds=True, creationflags=flags)
