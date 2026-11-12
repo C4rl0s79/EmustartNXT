@@ -283,6 +283,35 @@ def _run_local(exe: Path, args: str, cwd: Path) -> None:
 RUN_LOCAL = _run_local
 
 
+def _galaxy_registry(exe_s: str, name: str, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
+    """galaxy_<gra>.exe nie jest uruchamiany (pobiera/rejestruje GOG Galaxy, skróty, deinstalator Inno) — wpisy
+    rejestru z jego nagłówka Inno (emustart/goginno.py): flagi zgodności AppCompatFlags\\Layers, klucze gry.
+    Rejestr GOG.com\\Games\\<id> zapisuje osobny krok (gog_registry_acts)."""
+    from emustart import goginno
+    exe = resolve(exe_s) if "{" in exe_s else app / exe_s.replace("\\", os.sep)
+    if not _inside(exe, app) or not exe.is_file():
+        raise FinalizeError(f"Execute: brak pliku {exe_s}")
+    try:
+        entries = goginno.game_registry(exe, windows_64())
+    except (goginno.InnoError, OSError, ValueError) as ex:
+        res["skipped"].append(f"Execute {name}: nie odczytano wpisów rejestru ({ex})")
+        return
+    n = 0
+    for en in entries:
+        nm, data = _symbols(en["name"], app, pid, sysf), _symbols(en["data"], app, pid, sysf)
+        if "{" in nm or "{" in data:
+            continue                                      # {code:…}, {commonprograms} — tylko dla instalatora Inno
+        a = registry_action({"root": en["root"], "subkey": en["subkey"], "valueName": nm, "valueData": data,
+                             "valueType": en["type"]}, app, pid, sysf)
+        if a["root"] == "HKCU":
+            hkcu(a)
+            res["hkcu"].append(a)
+        else:
+            res["admin"].append(a)
+        n += 1
+    res["done"].append(f"Execute {name}: {n} wpisów rejestru (bez uruchamiania)")
+
+
 def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resolve) -> None:
     """Akcja Execute (emustart/gogexec.py): znane polecenia skryptów .cmd jako własne kroki (cofane przy
     odinstalowaniu), reszta — program bez zmian: z runAsAdmin w kroku administratora, bez — od razu."""
@@ -297,7 +326,7 @@ def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resol
         res["skipped"].append(f"Execute {name} (Eksplorator gier Windows)")
         return
     if re.match(r"^galaxy_.+\.exe$", name):
-        res["skipped"].append(f"Execute {name} (instalator rejestrujący GOG Galaxy)")
+        _galaxy_registry(exe_s, name, app, pid, sysf, res, hkcu, resolve)
         return
     if name == "attrib.exe" and exe_s.lower().startswith("{sys}"):
         # S.T.A.L.K.E.R.: attrib +r fsgame.ltx — plik w katalogu gry tylko do odczytu

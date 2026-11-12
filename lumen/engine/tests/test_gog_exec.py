@@ -55,14 +55,13 @@ def _apply(app: Path, *actions, hkcu=None):
     return gogfinal.apply_script(app, "1", hkcu=hkcu or (lambda a: None), docs=app.parent / "docs", folders={}, known=set())
 
 
-def test_execute_skips_gameux_and_galaxy_and_does_attrib(tmp_path):
+def test_execute_skips_gameux_and_does_attrib(tmp_path):
     app = tmp_path / "g"
     app.mkdir()
     (app / "fsgame.ltx").write_text("x")
     r = _apply(app, {"executable": "{supportDir}/add/gameux.cmd", "runAsAdmin": True},
-               {"executable": "galaxy_spelunky_2.1.0.9.exe", "runAsAdmin": True},
                {"executable": "{sys}/attrib.exe", "argument": "+r fsgame.ltx", "workingDir": "{app}"})
-    assert len(r["skipped"]) == 2 and r["admin"] == [] and "attrib +r fsgame.ltx" in r["done"]
+    assert len(r["skipped"]) == 1 and r["admin"] == [] and "attrib +r fsgame.ltx" in r["done"]
     assert not (app / "fsgame.ltx").stat().st_mode & stat.S_IWRITE
 
 
@@ -129,3 +128,73 @@ def test_elevated_process_validates_other_steps(fake_reg, monkeypatch, step):
     monkeypatch.setattr(gogadmin, "RUN", lambda *a, **k: runs.append(a))
     p = steps_file(fake_reg["dir"], [step])
     assert gogadmin.main(str(p)) == 1 and runs == []
+
+
+# ── etap 5: galaxy_*.exe — wpisy [Registry] z nagłówka Inno, bez uruchamiania ──
+
+def _inno_str(s: str) -> bytes:
+    b = s.encode("utf-16-le")
+    return len(b).to_bytes(4, "little") + b
+
+
+def _inno_reg(root: int, subkey: str, name: str, data: str, typ: int = 1, check: str = "", tasks: str = "") -> bytes:
+    strs = [subkey, name, data, "Component0", tasks, "", check, "", ""]
+    return (b"".join(_inno_str(x) for x in strs) + bytes(20) + (root | 0x80000000).to_bytes(4, "little")
+            + (-1).to_bytes(2, "little", signed=True) + bytes([typ]) + b"\x00\x00")
+
+
+def fake_inno_exe(path: Path, entries: list) -> Path:
+    """Instalator Inno 5.5.0 (unicode) w formacie galaxy_*.exe: tabela SetupLdr → setup.0 (LZMA w blokach z CRC)."""
+    import lzma
+    import struct
+    import zlib
+    from emustart import goginno
+    header = b"\x00" * 64 + b"".join(entries) + b"\x00" * 64
+    lc, lp, pb, dsz = 3, 0, 2, 1 << 16
+    comp = bytes([(pb * 5 + lp) * 9 + lc]) + struct.pack("<I", dsz) + lzma.compress(
+        header, format=lzma.FORMAT_RAW, filters=[{"id": lzma.FILTER_LZMA1, "dict_size": dsz, "lc": lc, "lp": lp, "pb": pb}])
+    chunks = b"".join(struct.pack("<I", zlib.crc32(comp[i:i + 4096]) & 0xFFFFFFFF) + comp[i:i + 4096]
+                      for i in range(0, len(comp), 4096))
+    hdr = struct.pack("<IB", len(chunks), 1)
+    setup0 = goginno._DATA.ljust(64, b"\x00") + struct.pack("<I", zlib.crc32(hdr) & 0xFFFFFFFF) + hdr + chunks
+    pre = b"MZ" + b"\x00" * 1000
+    off0 = len(pre) + 12 + 32
+    path.write_bytes(pre + goginno._LDR_ID + struct.pack("<8I", 1, 0, 0, 0, 0, off0, 0, 0) + setup0)
+    return path
+
+
+LAYERS = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers"
+
+
+def test_galaxy_exe_registry_is_read_not_run(tmp_path, monkeypatch):
+    app = tmp_path / "g"
+    app.mkdir()
+    fake_inno_exe(app / "galaxy_test_2.1.0.9.exe", [
+        _inno_reg(2, "SOFTWARE\\GOG.com\\Games\\1", "PATH", "{app}"),                         # robi to etap rejestru GOG
+        _inno_reg(1, LAYERS, "{app}\\Game.exe", "HIGHDPIAWARE"),
+        _inno_reg(2, LAYERS, "{app}\\Game.exe", "HIGHDPIAWARE", check="Is32bit"),           # tylko 32-bitowy Windows
+        _inno_reg(2, LAYERS, "{app}\\setup.exe", "RUNASADMIN"),
+        _inno_reg(2, "SOFTWARE\\GOG.com\\GalaxyClient", "x", "{code:FullGalaxyPath|}"),
+        _inno_reg(1, "SOFTWARE\\Gra", "Klucz", "", typ=0),                                  # sam klucz
+        _inno_reg(1, "SOFTWARE\\Gra", "Skrot", "1", tasks="desktopicon"),
+        _inno_reg(1, "SOFTWARE\\Gra", "Galaxy", "1", check="isGalaxyPresent()"),
+        _inno_reg(1, "SOFTWARE\\Gra", "Data", "{code:GetCurrentDate}"),
+    ])
+    ran = []
+    monkeypatch.setattr(gogfinal, "RUN_LOCAL", lambda *a: ran.append(a))
+    monkeypatch.setattr(gogfinal, "windows_64", lambda: True)
+    hk = []
+    r = _apply(app, {"executable": "galaxy_test_2.1.0.9.exe", "runAsAdmin": True}, hkcu=hk.append)
+    assert ran == [] and [a["name"] for a in hk] == [f"{app}\\Game.exe"] and hk[0]["data"] == "HIGHDPIAWARE"
+    assert [(a["root"], a["name"], a["data"]) for a in r["admin"]] == [("HKLM", f"{app}\\setup.exe", "RUNASADMIN")]
+    monkeypatch.setattr(gogfinal, "windows_64", lambda: False)
+    r32 = _apply(app, {"executable": "galaxy_test_2.1.0.9.exe", "runAsAdmin": True}, hkcu=lambda a: None)
+    assert len(r32["admin"]) == 2                                   # Is32bit na 32-bitowym Windows
+
+
+def test_galaxy_exe_that_is_not_inno_is_skipped(tmp_path):
+    app = tmp_path / "g"
+    app.mkdir()
+    (app / "galaxy_x_1.0.exe").write_bytes(b"MZ to nie Inno")
+    r = _apply(app, {"executable": "galaxy_x_1.0.exe", "runAsAdmin": True})
+    assert r["admin"] == [] and "nie odczytano" in r["skipped"][0]
