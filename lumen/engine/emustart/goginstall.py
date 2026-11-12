@@ -816,6 +816,36 @@ def _dlc_names(bundle: dict) -> dict:
     return {str(d["id"]): d.get("name") or d["id"] for d in bundle.get("dlcs") or []}
 
 
+def apply_admin(es: list, elevate=None) -> bool:
+    """Kroki administratora kilku gier w jednym procesie z uprawnieniami (jedno okno UAC; Lumen „jako administrator”
+    — bez okna). Wynik rozdzielony na gry; stan rejestru sprzed zapisu zapamiętany (deinstalator go przywraca);
+    admin_done dopisywane — krok DLC nie gubi kroków gry podstawowej."""
+    parts = []
+    for e in es:
+        acts = e["finalize"]["admin"]
+        parts.append((e, acts, gogadmin.capture(acts)))
+    steps = [s for _e, _a, done in parts for s in gogadmin.set_steps(done)]
+    work = gog_dir() / "admin" / (es[0]["product_id"] if len(es) == 1 else "_all")
+    res = gogadmin.run(steps, work, elevate)
+    i, all_ok = 0, True
+    for e, acts, done in parts:
+        r = res[i:i + len(acts)]
+        i += len(acts)
+        e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + [d for d, ok in zip(done, r) if ok]
+        e["finalize"]["admin"] = [a for a, ok in zip(acts, r) if not ok]
+        if not needs_admin(e["finalize"]["admin"]) and e["state"] == ST_NEEDS_ADMIN:
+            e["state"], e["error"] = ST_INSTALLED, ""
+        all_ok = all_ok and all(r)
+        save_entry(e)
+    return all_ok
+
+
+def needs_admin(acts: list) -> bool:
+    """Krok administratora blokuje grę tylko wtedy, gdy wymaga go skrypt gry; wpisy „compat” (rejestr GOG jak po
+    instalatorze GOG) czekają na okno UAC przy starcie Lumena, a gra działa bez nich."""
+    return any(not a.get("compat") for a in acts or [])
+
+
 def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=None) -> dict:
     """Kroki po zapisie plików: opis DLC bez plików, akcje skryptów, uruchamianie. Stan „installed” dopiero
     po wszystkich obowiązkowych krokach; HKLM → „needs_admin”."""
@@ -841,6 +871,8 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
             if not (root / f"goggame-{pid}.info").exists():
                 raise gogfinal.FinalizeError(f"build nie ma goggame-{pid}.info — brak opisu uruchamiania")
             e["launch"] = gogfinal.launch_spec(root, pid)
+            # rejestr GOG.com\Games\<id> jak po instalatorze GOG — krok administratora „compat” (gra działa i bez niego)
+            fin["admin"] += gogfinal.gog_registry_acts(root, pid, e, e["launch"], fin["saves"], fin["admin"])
             e["runtimes"] = [{"id": s["id"], "done": False} for s in gogfinal.runtime_steps(root, e.get("dependencies") or [])]
     except (gogfinal.FinalizeError, OSError, ValueError) as ex:
         if dlc_only:
@@ -860,15 +892,17 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
         e["finalize"].setdefault("admin", [])
         e["finalize"]["admin"] += fin["admin"]
         e["finalize"]["hkcu"] = (e["finalize"].get("hkcu") or []) + fin["hkcu"]
-        if fin["admin"]:
+        if needs_admin(fin["admin"]):
             e["state"] = ST_NEEDS_ADMIN
     else:
         e["finalize"] = fin
-        e["state"] = ST_NEEDS_ADMIN if fin["admin"] else ST_INSTALLED
+        e["state"] = ST_NEEDS_ADMIN if needs_admin(fin["admin"]) else ST_INSTALLED
         e["done"] = []
         e["installed_at"] = time.time()
     e["error"] = ""
     save_entry(e)
+    if e["finalize"].get("admin") and gogadmin.is_elevated():
+        apply_admin([e])                     # Lumen „jako administrator”: kroki od razu, bez okna i bez czekania
     log.info("GOG %s: %s (%s)", pid, e["state"], root)
     return e
 

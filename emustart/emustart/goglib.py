@@ -16,7 +16,7 @@ import time
 from collections import deque
 from pathlib import Path
 
-from emustart import config, gogadmin, gogfinal, goginstall as gi
+from emustart import config, gogfinal, goginstall as gi
 from emustart.gogarchive import BUILD_ID, PRODUCT_ID, UnsafePath, safe_rel
 
 log = logging.getLogger("emustart.goglib")
@@ -81,6 +81,7 @@ class GogService:
                 "install_dir": e.get("install_dir"), "languages": e.get("languages") or [],
                 "primary": e.get("primary") or "", "dlcs": e.get("dlcs") or [], "error": e.get("error") or "",
                 "admin_steps": len((e.get("finalize") or {}).get("admin") or []),
+                "admin_pending": bool((e.get("finalize") or {}).get("admin")),
                 "runtimes": e.get("runtimes") or [], "pending_dlc": (e.get("pending_dlc") or {}).get("dlcs") or [],
                 "installed_at": e.get("installed_at") or 0, "last_played": e.get("last_played") or 0,
                 "launch": (e.get("launch") or {}).get("name") or "", "running": pid in running}
@@ -532,27 +533,32 @@ class GogService:
         return {"ok": True, "message": msg, **r}
 
     def finish_admin(self, pid: str, elevate=None) -> dict:
-        """Kroki HKLM z prośbą o uprawnienia administratora (okno UAC) — tylko na wyraźne żądanie gracza."""
+        """Kroki administratora jednej gry (HKLM) jednym oknem UAC — na wyraźne żądanie gracza."""
         pid = _pid(pid)
         e = gi.load_entry(pid)
-        if not e or e.get("state") != gi.ST_NEEDS_ADMIN:
+        if not e or not (e.get("finalize") or {}).get("admin") or e.get("state") not in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED):
             return {"ok": False, "reason": "Ta gra nie czeka na krok administratora."}
-        acts = (e.get("finalize") or {}).get("admin") or []
-        done = gogadmin.capture(acts)        # stan rejestru sprzed zapisu — deinstalator go przywraca
-        res = gogadmin.run(gogadmin.set_steps(done), gi.gog_dir() / "admin" / pid, elevate)
-        if not all(res):
-            # część kroków mogła się wykonać — zapamiętane do cofnięcia; reszta czeka na ponowienie
-            e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + [d for d, ok in zip(done, res) if ok]
-            e["finalize"]["admin"] = [a for a, ok in zip(acts, res) if not ok]
-            gi.save_entry(e)
+        if not gi.apply_admin([e], elevate):
             return {"ok": False, "reason": "Kroku administratora nie wykonano (odmowa w oknie UAC albo błąd)."}
-        # dopisane, nie zastąpione — po kroku dla DLC zostają też kroki gry podstawowej (do cofnięcia)
-        e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + done
-        e["finalize"]["admin"] = []
-        e["state"] = gi.ST_INSTALLED
-        e["error"] = ""
-        gi.save_entry(e)
         return {"ok": True, "message": "Instalacja ukończona."}
+
+    def admin_pending(self) -> list:
+        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG)."""
+        return [e["product_id"] for e in gi.entries()
+                if e.get("state") in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED) and (e.get("finalize") or {}).get("admin")]
+
+    def finish_admin_all(self, elevate=None) -> dict:
+        """Zaległe kroki administratora wszystkich gier jednym oknem UAC (Lumen: przy starcie, gdy gracz jest
+        jeszcze przy myszy/klawiaturze — okna UAC nie da się obsłużyć padem)."""
+        busy = set(self.running_ids()) | ({self._job["pid"]} if self._job else set())
+        es = [gi.load_entry(pid) for pid in self.admin_pending() if pid not in busy]
+        es = [e for e in es if e]
+        if not es:
+            return {"ok": True, "games": 0, "message": "Brak zaległych kroków administratora."}
+        if gi.apply_admin(es, elevate):
+            return {"ok": True, "games": len(es), "message": f"Wpisy rejestru zapisane ({len(es)} gier)."}
+        return {"ok": False, "games": len(es), "reason": "Kroków administratora nie wykonano (odmowa w oknie UAC "
+                                                          "albo błąd) — Lumen zapyta przy następnym starcie."}
 
     def install_runtimes(self, pid: str, elevate=None) -> dict:
         """Biblioteki systemowe z zależności (Visual C++, DirectX) — jawnie, każdy instalator z UAC."""

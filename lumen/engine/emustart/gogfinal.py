@@ -215,6 +215,34 @@ def remove_hkcu(actions: list) -> int:
     return n
 
 
+# język gry w rejestrze GOG (instalator GOG: LANGUAGE = nazwa angielska, małymi literami)
+_LANG_NAMES = {"en": "english", "pl": "polish", "de": "german", "fr": "french", "es": "spanish", "it": "italian",
+               "ru": "russian", "pt": "portuguese", "br": "brazilian", "cs": "czech", "hu": "hungarian",
+               "nl": "dutch", "ja": "japanese", "ko": "korean", "zh": "chinese", "tr": "turkish", "uk": "ukrainian",
+               "sv": "swedish", "da": "danish", "fi": "finnish", "no": "norwegian", "ro": "romanian"}
+
+
+def gog_registry_acts(app: Path, pid: str, e: dict, launch: dict, saves: list, script_admin: list) -> list:
+    """Wartości `HKLM\\Software\\GOG.com\\Games\\<id>`, które zapisuje instalator GOG (nie skrypt gry) — szukają ich
+    łatki, narzędzia GOG (GOGDOSConfig) i menedżery modów. Nazwy jak w instalatorze offline (Quake II, galaxy_*.exe).
+    Wartość, którą zapisuje sam skrypt gry, ma pierwszeństwo (pomijana tutaj). Kroki „compat”: gra działa i bez nich."""
+    import time as _time
+    sub = f"Software\\GOG.com\\Games\\{pid}"
+    have = {(str(a.get("subkey") or "").lower(), str(a.get("name") or "").lower()) for a in script_admin}
+    exe, args = str(launch.get("exe") or ""), str(launch.get("args") or "")
+    lang = str(e.get("primary") or (e.get("languages") or [""])[0])
+    code = lang.lower().replace("_", "-")
+    name = "brazilian" if code == "pt-br" else _LANG_NAMES.get(code.split("-")[0], code)
+    vals = [("PATH", str(app)), ("EXE", exe), ("EXEFILE", Path(exe).name if exe else ""),
+            ("WORKINGDIR", str(launch.get("cwd") or app).rstrip("\\") + "\\"), ("LAUNCHCOMMAND", f"{exe} {args}"),
+            ("LAUNCHPARAM", args), ("GAMENAME", str(e.get("title") or pid)), ("gameID", str(pid)),
+            ("productID", str(pid)), ("VER", str(e.get("version") or "")), ("BUILDID", str(e.get("build_id") or "")),
+            ("LANGUAGE", name), ("INSTALLDATE", _time.strftime("%Y-%m-%d %H:%M:%S")),
+            ("SAVEGAMEFOLDER", str(saves[0]) if saves else str(app).rstrip("\\") + "\\")]
+    return [{"root": "HKLM", "subkey": sub, "name": n, "type": "string", "data": v, "compat": True}
+            for n, v in vals if (sub.lower(), n.lower()) not in have]
+
+
 def windows_64() -> bool:
     """64-bitowy Windows: HKLM\\Software ma osobny widok dla programów 32-bitowych (WOW6432Node)."""
     import platform

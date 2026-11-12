@@ -73,6 +73,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(gogfinal, "set_hkcu", regs.append)        # nigdy prawdziwy rejestr w testach
     monkeypatch.setattr(gogfinal, "remove_hkcu", lambda acts: 0)
     monkeypatch.setattr(gogfinal, "_shell_runas", lambda *a, **k: False)   # nigdy prawdziwe okno UAC (fake_reg: zgoda)
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)           # wynik nie zależy od uprawnień terminala
     monkeypatch.setattr(gogfinal, "user_documents", lambda: tmp_path / "Dokumenty")
     yield {"root": root, "games": tmp_path / "GOG Games", "regs": regs, "tmp": tmp_path}
     ga.INDEX.update(root="", builds={}, rejected=[], error="", running=False)

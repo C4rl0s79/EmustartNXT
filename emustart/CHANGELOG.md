@@ -11,8 +11,12 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 Podstawa: skan 549 gier archiwum `Z:\gog` (2026-11-12) — 87 gier miało akcję, symbol albo zadanie uruchamiania,
 których finalizacja nie obsługiwała; instalator offline Quake II i `galaxy_*.exe` (Spelunky, Mount & Blade) odczytane
 z nagłówka Inno (bez uruchamiania). Ustalenia z użytkownikiem (2026-11-12):
-- **Jedno okno UAC na instalację**: wszystkie kroki administratora gry (HKLM, SDB, `Execute` z `runAsAdmin`, zapora)
-  w jednym pliku wsadowym; każdy krok zapisany, żeby deinstalator mógł go cofnąć.
+- **Lumen uruchamiany jako administrator** (jedno okno UAC przy starcie Lumena): silnik i kroki instalacji mają
+  uprawnienia, kroki administratora gry (HKLM, SDB, `Execute` z `runAsAdmin`, zapora) wykonują się od razu, bez
+  kolejnych okien; każdy krok zapisany, żeby deinstalator mógł go cofnąć. **Gry, Steam i emulatory uruchamiane bez
+  uprawnień administratora.** **Autostart przez Harmonogram zadań** („najwyższe uprawnienia”, z opóźnieniem po
+  zalogowaniu — Tailscale zdąży się połączyć) zamiast wpisu Run. Bez uprawnień (np. kod źródłowy): zaległe kroki
+  wszystkich gier jednym oknem UAC (`gog_finish_admin_all`).
 - **Rejestr `HKLM\SOFTWARE\GOG.com\Games\<id>` zawsze** (jak instalator GOG): `PATH`, `EXE`, `EXEFILE`, `WORKINGDIR`,
   `LAUNCHCOMMAND`, `LAUNCHPARAM`, `GAMENAME`, `gameID`, `VER`, `BUILD`, `LANGUAGE`, `INSTALLDATE`; wartości ze
   skryptu gry mają pierwszeństwo. Bez `uninstallCommand`, menu Start, `GOGGAMEDLL`, `GUID`.
@@ -48,8 +52,9 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 |---|---|---|
 | 0 | Pliki „support” z `app\`, finalizacja z Dokumentami na innym dysku, migracja starych instalacji (PR #25) | zrobione (testy); czeka na sprawdzenie na żywo |
 | 1 | Wspólny krok administratora: `gogadmin` — ten sam program silnika z `--gog-admin=<plik>` w jednym oknie UAC (zamiast regedit/`.reg`), tylko znane kroki pod `HKLM\Software`; stan rejestru sprzed instalacji zapamiętany; odinstalowanie/porzucenie cofa kroki (przywraca albo usuwa, oba widoki); `admin_done` dopisywane (DLC) | zrobione (testy: 11 nowych, `main.py`/`engine_main.py --gog-admin` uruchomione bez UAC); czeka na sprawdzenie na żywo z UAC |
-| 1a | Następny krok: etap 2 — wartości `GOG.com\Games\<id>` dopisywane do kroków administratora każdej gry | następny |
-| 2 | Rejestr `GOG.com\Games\<id>` zawsze (punkt 9) | — |
+| 2 | Rejestr `GOG.com\Games\<id>` dla każdej gry (kroki „compat”: gra działa i bez nich, wartości skryptu mają pierwszeństwo); proces z uprawnieniami wykonuje kroki od razu przy instalacji; `gog_admin_pending` / `gog_finish_admin_all` (wszystkie gry jednym oknem UAC) | zrobione (testy); czeka na sprawdzenie na żywo |
+| 2a | Lumen: manifest „administrator”, gry/Steam/emulatory bez uprawnień, autostart przez Harmonogram zadań z opóźnieniem, `gog_finish_admin_all` przy starcie | — |
+| 2b | Następny krok: etap 3 — `installSDB` | następny |
 | 3 | `installSDB` + odinstalowanie | — |
 | 4 | `Execute`/`execute` (UAC i bez), zapora + odinstalowanie, `gameux` pominięty | — |
 | 5 | `galaxy_*.exe`: parser `[Registry]` Inno 5.x, wpisy w kroku UAC | — |

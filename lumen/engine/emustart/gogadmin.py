@@ -145,11 +145,35 @@ def self_cmd() -> list:
     return [sys.executable, str(Path(__file__).resolve().parent.parent / "main.py")]
 
 
+def is_elevated() -> bool:
+    """Proces ma już uprawnienia administratora (np. Lumen uruchomiony „jako administrator”) — kroki bez okna UAC."""
+    try:
+        import ctypes
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except (AttributeError, OSError):
+        return False
+
+
+def run_here(steps: list) -> list:
+    """Kroki w tym procesie (ma uprawnienia administratora) — te same zasady co proces z okna UAC."""
+    out = []
+    for s in steps:
+        try:
+            do_step(s)
+            out.append(True)
+        except Exception as ex:                     # noqa: BLE001 — każdy krok osobno
+            log.error("GOG admin: krok %s: %s", s, ex)
+            out.append(False)
+    return out
+
+
 def run(steps: list, work: Path, elevate=None) -> list:
-    """Kroki w jednym podniesionym procesie (jedno okno UAC). Wynik: [bool] dla każdego kroku; odmowa w oknie UAC
-    albo błąd uruchomienia — same False."""
+    """Kroki w jednym podniesionym procesie (jedno okno UAC); proces z uprawnieniami — od razu, bez okna. Wynik:
+    [bool] dla każdego kroku; odmowa w oknie UAC albo błąd uruchomienia — same False."""
     if not steps:
         return []
+    if elevate is None and is_elevated():
+        return run_here(steps)
     from emustart import gogfinal
     work = Path(work)
     work.mkdir(parents=True, exist_ok=True)
@@ -191,18 +215,11 @@ def do_step(s: dict) -> None:
 def main(path: str) -> int:
     """Proces podniesiony (`--gog-admin=<plik>`): wykonuje kroki, wynik każdego w `<plik>.result.json`."""
     p = Path(path)
-    ok = []
     try:
         steps = json.loads(p.read_text(encoding="utf-8")).get("steps") or []
     except (OSError, ValueError) as ex:
         log.error("GOG admin: plik kroków %s: %s", p, ex)
         steps = []
-    for s in steps:
-        try:
-            do_step(s)
-            ok.append(True)
-        except Exception as ex:                     # noqa: BLE001 — każdy krok osobno, reszta się wykonuje
-            log.error("GOG admin: krok %s: %s", s, ex)
-            ok.append(False)
+    ok = run_here(steps)
     p.with_suffix(".result.json").write_text(json.dumps({"ok": ok}), encoding="utf-8")
     return 0 if all(ok) else 1

@@ -736,6 +736,14 @@ class Api:
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 
+    def gog_admin_pending(self) -> dict:
+        """Gry z zaległymi krokami administratora (Lumen: okno UAC przy starcie, gdy lista nie jest pusta)."""
+        return {"ok": True, "games": self._gog.admin_pending()}
+
+    def gog_finish_admin_all(self) -> dict:
+        """Zaległe kroki administratora wszystkich gier jednym oknem UAC."""
+        return self._gog.finish_admin_all()
+
     def gog_install_runtimes(self, pid: str) -> dict:
         try:
             return self._gog.install_runtimes(pid)

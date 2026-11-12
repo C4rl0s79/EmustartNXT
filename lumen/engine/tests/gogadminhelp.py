@@ -38,6 +38,7 @@ def fake_reg(tmp_path, monkeypatch):
     reg = FakeRegistry()
     monkeypatch.setattr(gogadmin, "REG", reg)
     monkeypatch.setattr(gogadmin, "views", lambda: ["64", "32"])
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)
     calls = []
 
     def accept(exe, params, cwd=None):
