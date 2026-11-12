@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -11,6 +11,7 @@ import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOpt
 import { initLogger, log } from './logger'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
+import { asInstance, conflictMessage, handOffToRunning, isOtherCopy, launchInstance, registerRunning, type LumenInstance } from './instances'
 import { listDir } from './fsBrowse'
 import { Limiter } from './net'
 import { detectFlavor, Updater } from './updater'
@@ -70,6 +71,12 @@ protocol.registerSchemesAsPrivileged([
   { scheme: ART_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }
 ])
 
+/** ta kopia Lumena — nowa kopia przekazuje ją działającej (okno wyboru przy innej wersji / innym folderze) */
+const thisInstance: LumenInstance = { version: app.getVersion(), exe: process.execPath, args: process.argv.slice(1) }
+// Działa już Lumen (ta sama albo inna kopia): prośba do niego, zanim ta kopia ruszy folder danych (instances.ts).
+// Osobny profil (LUMEN_USER_DATA — testy, rozwój) nie oddaje startu zwykłemu Lumenowi.
+if (!process.env.LUMEN_USER_DATA && handOffToRunning(thisInstance)) process.exit(0)
+
 // Data folder: LumenData next to the exe in packaged builds (installer and portable) — settings,
 // caches, EmuStart data with the game cache, emulators and BIOS files, temp files (dataDir.ts).
 // LUMEN_USER_DATA=<dir>: separate profile for tests/development.
@@ -91,7 +98,7 @@ app.setPath('temp', tempDir)
 process.env.TEMP = tempDir
 process.env.TMP = tempDir
 
-if (!app.requestSingleInstanceLock()) {
+if (!app.requestSingleInstanceLock(thisInstance)) {
   app.quit()
 }
 
@@ -1702,7 +1709,27 @@ async function emustartDefaults(): Promise<void> {
 
 // ---------------- lifecycle ----------------
 
-app.on('second-instance', () => restoreWindow())
+/** wybrana w oknie „dwie kopie” — uruchamiana po zamknięciu tej (silnik i dane zwolnione) */
+let switchTo: LumenInstance | null = null
+let conflictOpen = false
+let unregisterRunning: () => void = () => undefined
+function onOtherInstance(other: LumenInstance | null): void {
+  restoreWindow()
+  if (!other || !isOtherCopy(thisInstance, other) || conflictOpen || shutDown) return
+  conflictOpen = true
+  const m = conflictMessage(thisInstance, other)
+  log.info('app', `druga kopia: Lumen ${other.version} (${other.exe})`)
+  const opts = { type: 'question' as const, title: 'Lumen', message: m.message, detail: m.detail, buttons: m.buttons, defaultId: 0, cancelId: 0, noLink: true }
+  void (win && !win.isDestroyed() ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts))
+    .then(({ response }) => {
+      if (response !== 1) return log.info('app', 'druga kopia: zostaje działająca')
+      log.info('app', `druga kopia: przełączam na ${other.exe}`)
+      switchTo = other
+      app.quit()
+    })
+    .finally(() => (conflictOpen = false))
+}
+app.on('second-instance', (_e, _argv, _cwd, data) => onOtherInstance(asInstance(data)))
 
 let started = false // set once the app is ready: a second instance quitting at once has nothing to stop
 app.whenReady().then(async () => {
@@ -1714,6 +1741,7 @@ app.whenReady().then(async () => {
   family.on('change', () => library.setFamily(family.games(library.current.steam.activeSteamId)))
   platformCatalog = await platformsFile.load()
   started = true
+  if (!process.env.LUMEN_USER_DATA) unregisterRunning = registerRunning(thisInstance, onOtherInstance)
   registerArtProtocol()
   registerIpc()
 
@@ -1854,7 +1882,19 @@ app.on('before-quit', (e) => {
   if (shutDown || !started) return
   e.preventDefault()
   shutDown = true
-  void shutdown().finally(() => app.quit())
+  void shutdown().finally(() => {
+    unregisterRunning()
+    if (switchTo) {
+      // blokada jednej kopii zwolniona dopiero po zamknięciu silnika — wybrana kopia startuje na wolnych danych
+      app.releaseSingleInstanceLock()
+      try {
+        launchInstance(switchTo)
+      } catch (e) {
+        log.error('app', `druga kopia: nie udało się uruchomić ${switchTo.exe}`, e)
+      }
+    }
+    app.quit()
+  })
 })
 
 async function shutdown(): Promise<void> {

@@ -84,6 +84,16 @@ autostart przez Harmonogram zadań z opóźnieniem (np. Tailscale zdąży się p
 - Lumen przy starcie: `gog_finish_admin_all` (zaległe kroki gier i niecofnięte kroki odinstalowanych — bez okna).
 - Lumen: okno odinstalowania gry GOG z listą plików w Dokumentach/AppData i wyborem „usuń / zostaw”
   (`gog_uninstall_preview`, `remove_outside`); w szczegółach gry — pominięte kroki instalatora.
+- Lumen: druga kopia Lumena z **innego folderu lub w innej wersji** (np. wersja testowa przy zainstalowanej,
+  schowanej w zasobniku) — działająca kopia pokazuje okno z wersją i folderem obu i pyta, która ma zostać:
+  „zostaw działającą” albo „przełącz na nową” (działająca zwalnia blokadę, uruchamia nową z jej argumentami
+  i się zamyka). Ta sama kopia uruchomiona ponownie — jak dotąd tylko przywraca okno. Działa, gdy uruchomiona
+  wcześniej kopia ma już tę zmianę (starsze wersje nadal po cichu przejmują start).
+  (Uwaga z testu na żywo 2026-11-12: wersja testowa „znikała”, bo stara 1.0.57 była schowana w zasobniku.)
+  Mechanizm: pliki w `%LOCALAPPDATA%\Lumen` (`running.json` działającej kopii, prośba `second-instance.json`
+  nowej, odebrana w ≤ 4 s — inaczej nowa startuje jak dotąd), sprawdzane przed wyborem folderu danych. Blokada
+  Electrona nie wystarcza (test na żywo): rozpoznaje kopie po ścieżce folderu danych, a jej komunikat od procesu
+  bez uprawnień do Lumena z uprawnieniami Windows odrzuca — nowa kopia znikała bez śladu.
 
 Nie dotyka: klienta EmuStart (bez uprawnień — zachowanie bez zmian), serwera, APK, listy gier, sterowania, menu
 (poza oknem odinstalowania gry GOG i informacją w jej szczegółach).
