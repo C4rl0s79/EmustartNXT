@@ -65,8 +65,28 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 8b | Poprawki z code review całego PR (10 uwag): skrót SHA-256 pliku kroków w wierszu poleceń procesu z uprawnieniami (podmiana przed UAC odrzucona), zablokowane klucze systemowe (IFEO, Run, Winlogon, Classes, Policies, AppInit_DLLs…) i znaki cmd w argumentach skryptów; cofanie kroków przed usunięciem plików (`regsvr32 /u`), niecofnięte kroki zapamiętane (`pending-undo.json`) i ponawiane; `Execute`, którego nie umiemy wykonać — pominięty, nie błąd; ścieżki względne w .cmd od folderu skryptu; `{commondocs}` dozwolonym celem; DWORD `%ZMIENNA%`; kroki „compat” po 3 nieudanych próbach przestają wracać; x64 nie na 32-bitowym Windows; wpisy Inno dla innych języków pominięte | zrobione (testy; skrót sprawdzony na prawdziwych punktach wejścia) |
 | 9 | Biblioteki (VC++ 2005–2022, DirectX): wykrywanie bez uprawnień (rejestr VC 14.0, `msvcr1x0.dll`, WinSxS, `d3dx9_43.dll`; x86 w SysWOW64), zapamiętanie udanej instalacji (`gog/runtimes.json`, gdy brak reguły), brakujące jako kroki administratora razem z resztą (jedno okno; Lumen jako administrator — bez okna), kody 0/1638/1641/3010 = sukces, instalatory x86 i x64 w jednym folderze — oba; przycisk „Biblioteki systemowe” pomija zainstalowane | zrobione (testy; wykrywanie sprawdzone na tym komputerze); czeka na sprawdzenie na żywo |
 | 10 | Deinstalator (silnik): wartość HKCU sprzed instalacji zapamiętana przy zapisie i przywracana (dodane znikają); `gog_uninstall_preview` — pliki skopiowane do Dokumentów/AppData bez folderów zapisów; `gog_uninstall(…, remove_outside)` — usuwa je na wybór gracza (domyślnie zostają, `outside_left` w wyniku) | zrobione (testy, HKCU na tymczasowym kluczu); okno wyboru w Lumenie — etap 11 |
-| 10a | Następny krok: etap 11 — wydanie Lumena 1.0.58 z silnikiem (etapy 0–10); Lumen jako administrator (2a) — osobne wydanie | następny |
-| 11 | Wydanie Lumena 1.0.58: silnik z etapami 0–10 (bez zmian interfejsu); okno odinstalowania z wyborem plików i pominięte kroki w szczegółach gry — razem z 2a | w toku |
+| 11 | Wydanie Lumena 1.0.58: silnik z etapami 0–10 (bez zmian interfejsu) | wydane 2026-11-12 (PR #25, `lumen-v1.0.58`; podpis i spakowany `EmuStartEngine.exe --gog-admin` sprawdzone) |
+| 12 | Etap 2a — Lumen jako administrator (plan niżej, osobne wydanie) | w toku |
+
+### Plan: Lumen jako administrator (etap 2a, osobne wydanie Lumena)
+
+Ustalenia z użytkownikiem (2026-11-12): Lumen startuje „jako administrator” (jedno okno UAC przy starcie), więc
+kroki instalacji gier nie pytają już o zgodę; gry, Steam i emulatory uruchamiane **bez** uprawnień administratora;
+autostart przez Harmonogram zadań z opóźnieniem (np. Tailscale zdąży się połączyć).
+- Silnik: nowy `unelevated.popen` — gdy proces ma uprawnienia administratora, program gracza (emulator, gra GOG)
+  startuje z tokenem powłoki (`explorer.exe`, `CreateProcessWithTokenW`) i silnik dalej śledzi jego proces; bez
+  uprawnień (klient EmuStart, Lumen z kodu źródłowego) — zwykły `subprocess.Popen` jak dotąd. Miejsca:
+  `launcher.py` (emulatory, oba tryby), `gogfinal.start` (gry GOG).
+- Lumen: `steam://…` i linki — z uprawnieniami przez `explorer.exe <adres>` (powłoka uruchamia je bez uprawnień).
+- Lumen: `electron-builder.yml` → `requestedExecutionLevel: requireAdministrator`.
+- Lumen: autostart — zadanie Harmonogramu „najwyższe uprawnienia”, przy logowaniu, z opóźnieniem (domyślnie 30 s);
+  stary wpis Run usuwany.
+- Lumen przy starcie: `gog_finish_admin_all` (zaległe kroki gier i niecofnięte kroki odinstalowanych — bez okna).
+- Lumen: okno odinstalowania gry GOG z listą plików w Dokumentach/AppData i wyborem „usuń / zostaw”
+  (`gog_uninstall_preview`, `remove_outside`); w szczegółach gry — pominięte kroki instalatora.
+
+Nie dotyka: klienta EmuStart (bez uprawnień — zachowanie bez zmian), serwera, APK, listy gier, sterowania, menu
+(poza oknem odinstalowania gry GOG i informacją w jej szczegółach).
 
 ### Instalacja gier GOG: pliki „support” i foldery na innym dysku (etap 0)
 
