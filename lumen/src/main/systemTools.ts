@@ -9,6 +9,7 @@ export const SYSTEM32 = path.join(WINDOWS, 'System32')
 export const POWERSHELL = path.join(SYSTEM32, 'WindowsPowerShell', 'v1.0', 'powershell.exe')
 export const SCHTASKS = path.join(SYSTEM32, 'schtasks.exe')
 export const REG_EXE = path.join(SYSTEM32, 'reg.exe')
+export const TASKLIST = path.join(SYSTEM32, 'tasklist.exe')
 /** zwraca 0 tylko w procesie z uprawnieniami administratora — sprawdzenie, czy Lumen działa „jako administrator” */
 export const FLTMC = path.join(SYSTEM32, 'fltmc.exe')
 /** powłoka Windows: `explorer.exe <adres>` przekazuje adres działającej powłoce — program startuje bez uprawnień */

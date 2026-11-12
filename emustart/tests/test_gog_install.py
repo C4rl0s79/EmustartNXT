@@ -215,6 +215,29 @@ def test_bounded_buffer(env):
     assert 1 < src.max_concurrent <= gi.WORKERS * gi.INFLIGHT
 
 
+def test_no_zero_filled_preallocation(env):
+    """Pliki nie są rozciągane do pełnego rozmiaru przed pobraniem (na Windows = zapis zer: duża gra czekała
+    minuty na pierwszy chunk). Zanim wróci pierwszy chunk, pliki z chunkami są puste; po instalacji — pełne."""
+    src = FakeServer(env["root"])
+    sizes: list = []
+    scanned = threading.Event()
+
+    def first(n, md5):
+        if n == 1:
+            target = env["games"] / "Testowa Gra"
+            sizes.extend(p.stat().st_size for p in target.rglob("*") if p.is_file())
+            scanned.set()
+        else:
+            scanned.wait(5)                     # żaden chunk nie trafia do pliku przed sprawdzeniem
+        return None
+
+    src.on_chunk = first
+    e, _target, _src = _install(env, src=src)
+    assert e["state"] == gi.ST_INSTALLED, e
+    assert sizes and all(n == 0 for n in sizes), sizes
+    assert gi.verify(PID)["ok"]
+
+
 def test_cancel_and_resume_after_restart(env):
     cancel = threading.Event()
     src = FakeServer(env["root"])

@@ -124,7 +124,7 @@ export function SystemOptions({ es, onClose }: { es: string; onClose: () => void
                     load()
                   }}
                 >
-                  {l.thumb ? <img src={l.thumb} alt="" /> : <span className="thumb__tag">{l.label ?? l.source}</span>}
+                  {l.thumb ? <img decoding="async" src={l.thumb} alt="" /> : <span className="thumb__tag">{l.label ?? l.source}</span>}
                   <span className="thumb__tag">{l.source}</span>
                 </button>
               ))}

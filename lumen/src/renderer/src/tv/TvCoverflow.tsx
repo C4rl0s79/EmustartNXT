@@ -82,11 +82,15 @@ export function flowWindow(n: number, idx: number): { i: number; d: number; copy
   return out
 }
 
-export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[]; idx: number; onPick: (i: number) => void; reflection: boolean }) {
+/** `animate`: wybór stoi (~350 ms bez ruchu) — animowane okładki w ruchu; w trakcie przewijania pierwsza klatka */
+export function TvCoverflow({ games, pos, onPick, reflection, animate }: { games: Game[]; pos: number; onPick: (i: number) => void; reflection: boolean; animate: boolean }) {
   useRatios()
   const n = games.length
   // the ribbon goes round: SIDE covers on each side always, a short list repeats its covers to fill the screen
-  const items = flowWindow(n, idx)
+  // pozycja bez modulo (TvGames): klucz okładki = gra + które powtórzenie listy — przy przejściu przez koniec listy
+  // okładki zostają tymi samymi elementami (animacja przesunięcia), zamiast rysować się od nowa (przeskok)
+  const items = flowWindow(n, pos)
+  const idx = ((pos % n) + n) % n
   // shape of a cover not loaded yet: the usual one in this list (SNES boxes, PS1 cases, posters…)
   const usual = median(games.slice(Math.max(0, idx - 30), idx + 30).map((g) => ratios.get(g.id)).filter((r): r is number => !!r)) ?? 2 / 3
   const boxes = items.map((it) => coverBox(ratios.get(games[it.i].id) ?? usual))
@@ -98,14 +102,14 @@ export function TvCoverflow({ games, idx, onPick, reflection }: { games: Game[];
     <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''}`}>
       <div className="tv-flow__stage">
         {items.map((it, k) => (
-          <FlowItem key={n > SIDE * 2 ? games[it.i].id : `${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} onPick={() => onPick(it.i)} />
+          <FlowItem key={`${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} animate={animate} onPick={() => onPick(it.i)} />
         ))}
       </div>
     </div>
   )
 }
 
-const FlowItem = memo(function FlowItem({ game, d, x, box, onPick }: { game: Game; d: number; x: number; box: [number, number]; onPick: () => void }) {
+const FlowItem = memo(function FlowItem({ game, d, x, box, animate, onPick }: { game: Game; d: number; x: number; box: [number, number]; animate: boolean; onPick: () => void }) {
   const a = Math.abs(d)
   const turn = d === 0 ? 0 : -Math.sign(d) * 58
   return (
@@ -127,7 +131,11 @@ const FlowItem = memo(function FlowItem({ game, d, x, box, onPick }: { game: Gam
         <span className="tv-flow__name" aria-hidden="true">
           {game.name}
         </span>
-        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" onRatio={(r) => setRatio(game.id, r)} />
+        {/* mała kopia jak na plakatach pulpitu: pełne PNG ze SteamGridDB (~1 MB) przy każdym kroku zatrzymywały przewijanie
+            gier Steam (pomiar na danych gracza). Animowane — w ruchu, gdy wybór stoi (ustalenie z graczem: animowane cały
+            czas, mogą stanąć tylko podczas przewijania); animowana wersja wczytuje się w tle, do tego czasu pierwsza
+            klatka (components/Art.tsx: stary obraz zostaje do gotowości nowego), potem z pamięci od razu */}
+        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim={animate} onRatio={(r) => setRatio(game.id, r)} />
       </div>
     </div>
   )

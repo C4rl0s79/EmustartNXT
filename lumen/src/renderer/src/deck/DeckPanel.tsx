@@ -97,7 +97,7 @@ export function DeckPanel({
                 <div key={g.id} className="deck-tile" style={{ width: m.tileW }} title={g.name} onDoubleClick={() => onLaunch(g)}>
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     {/* list copy, but an animated poster moves (anim=1: its original — shown as chosen) */}
-                    <img src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />
+                    <img decoding="async" src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />
                   </div>
                   {showLabels && <div className="deck-tile-name">{g.name}</div>}
                 </div>

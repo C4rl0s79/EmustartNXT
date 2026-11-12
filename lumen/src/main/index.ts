@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
@@ -9,6 +10,7 @@ import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
+import { TASKLIST } from './systemTools'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
@@ -24,7 +26,7 @@ import { PAGE_SIZE as SGDB_PAGE_SIZE, pickBestMatch, pickExactMatch, SgdbAuthErr
 import { LaunchBoxService } from './launchbox/service'
 import { XInputPoller } from './input/xinput'
 import { RawHidPads } from './input/rawhid'
-import { foreground } from './input/foreground'
+import { bringToFront, foreground } from './input/foreground'
 import { editionless, platformForEs, platformForTags } from './launchbox/match'
 import { IMAGE_BASE, LB_TYPES, PICKER_TYPES, regionsOfTags, type LbImage } from './launchbox/images'
 import { ArtworkService } from './art/artwork'
@@ -448,6 +450,11 @@ function createWindow(): void {
   })
   win.webContents.on('before-input-event', (_e, input) => hotkeys(input, win!.webContents))
   win.webContents.on('render-process-gone', (_e, d) => log.error('app', `renderer gone: ${d.reason}`))
+  // czujnik zacięć interfejsu (lib/perf.ts) — jego komunikaty „[perf] …” do logu Lumena
+  win.webContents.on('console-message', (e: unknown, ...rest: unknown[]) => {
+    const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
+    if (msg.startsWith('[perf] ')) log.info('perf', msg.slice(7))
+  })
 
   if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
@@ -514,6 +521,44 @@ function refocus(): void {
   activateWindow(win)
 }
 
+/**
+ * Powrót po grze (GOG, Steam): jak przy starcie — Windows nie oddaje pierwszego planu oknu procesu w tle (samo
+ * focus() zostawiało Lumena za Steamem / pulpitem), a Electron w trybie pełnoekranowym przywraca okno bez
+ * zdarzenia „restore”. Tryb pełnoekranowy wraca, gdy był włączony; stan okna w logu (diagnoza).
+ */
+function restoreAfterGame(what: string): void {
+  if (!win || win.isDestroyed()) return
+  activateWindow(win)
+  if (modes?.mode === 'fullscreen' && !win.isFullScreen()) win.setFullScreen(true)
+  // Electron zgłasza fokus, choć na ekranie zostaje gra / Steam (test na żywo) — liczy się okno z pierwszego planu
+  // według Windows; gdy to nie Lumen — wysunięcie przez wątek tamtego okna (input/foreground.ts), do 3 prób
+  const own = ownHandle()
+  let tries = 0
+  const check = (): void => {
+    if (!win || win.isDestroyed()) return
+    const fg = foreground(own)
+    const front = !fg || fg.desc === 'Lumen'
+    if (!front && tries < 3) {
+      tries++
+      const ok = bringToFront(own)
+      if (ok) win.webContents.focus()
+      setTimeout(check, 400)
+      return
+    }
+    log.info('window', `po grze (${what}): na pierwszym planie: ${front ? 'Lumen' : fg?.desc}${tries ? ` (wysunięte, prób: ${tries})` : ''}, pełny ekran=${win.isFullScreen()}`)
+  }
+  setTimeout(check, 500)
+}
+
+/** kto uruchomił Lumena (Eksplorator, Harmonogram, skrót z pada…) — diagnoza kopii startujących „same” */
+function logParent(): void {
+  if (process.platform !== 'win32') return
+  execFile(TASKLIST, ['/FI', `PID eq ${process.ppid}`, '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (e, out) => {
+    const name = !e && /^"([^"]+)"/.exec(String(out).trim())?.[1]
+    log.info('app', `uruchomiony przez: ${name || '?'} (PID ${process.ppid}), argumenty: ${process.argv.slice(1).join(' ') || '—'}`)
+  })
+}
+
 function restoreWindow(): void {
   if (!win) return
   if (win.isMinimized()) win.restore()
@@ -530,11 +575,26 @@ const ENGINE_SETTLE_MS = 15_000
 const ENGINE_RETRY_MS = 1500
 let engineReadyAt = 0
 
+/** czujnik zacięć procesu głównego: pętla zdarzeń spóźniona o > 150 ms (blokuje IPC — pad, szczegóły gier, grafiki) */
+let artInFlight = 0
+let artLast = ''
+function watchMainLag(): void {
+  let last = performance.now()
+  setInterval(() => {
+    const now = performance.now()
+    const lag = now - last - 100
+    last = now
+    if (lag > 150) log.info('perf', `proces główny zablokowany ${Math.round(lag)} ms (grafik w toku: ${artInFlight}, ostatnia: ${decodeURIComponent(artLast)})`)
+  }, 100).unref()
+}
+
 function registerArtProtocol(): void {
   protocol.handle(ART_SCHEME, async (req) => {
     const t0 = Date.now()
     const where = new URL(req.url).pathname
-    let res = await artResponse(req)
+    artInFlight++
+    artLast = where
+    let res = await artResponse(req).finally(() => artInFlight--)
     // asked again a couple of times while the engine settles — a missing picture stayed a name for the session
     for (let i = 0; i < 2 && res.status !== 200 && FROM_ENGINE.test(where) && engineReadyAt && Date.now() - engineReadyAt < ENGINE_SETTLE_MS; i++) {
       await new Promise((r) => setTimeout(r, ENGINE_RETRY_MS))
@@ -553,13 +613,14 @@ function registerArtProtocol(): void {
 // Posters on lists come as small copies: a full file arrives in many chunks and the page re-processes the image on
 // every one — seconds of stutter on a long list, measured with a trace. Made once by the engine (Pillow), kept on disk.
 const thumbLimiter = new Limiter(3, 'art-thumb', true)
-async function artThumb(file: string): Promise<string> {
+/** `height`: 540 — plakaty na listach; 720 — tło całego ekranu (tło wstęgi: oryginały 3840 px ze SteamGridDB, kilka MB) */
+async function artThumb(file: string, height = 540): Promise<string> {
   if (engine.state !== 'ready' || /\.(gif|webm|mp4)$/i.test(file)) return file
   const st = await fs.stat(file).catch(() => null)
   if (!st || st.size < 150_000) return file
-  const dst = path.join(paths.artCache, 'thumbs', `${createHash('sha1').update(`${file}|${st.mtimeMs}`).digest('hex')}.webp`)
+  const dst = path.join(paths.artCache, 'thumbs', `${createHash('sha1').update(`${file}|${st.mtimeMs}${height === 540 ? '' : `|${height}`}`).digest('hex')}.webp`)
   if (await fs.stat(dst).catch(() => null)) return dst
-  const r = await thumbLimiter.run(() => engine.call<{ ok?: boolean }>('art_thumb', [file, dst, 540], 20_000)).catch(() => null)
+  const r = await thumbLimiter.run(() => engine.call<{ ok?: boolean }>('art_thumb', [file, dst, height], 20_000)).catch(() => null)
   return r?.ok ? dst : file
 }
 
@@ -626,7 +687,7 @@ async function artResponse(req: Request): Promise<Response> {
     const thumb = u.searchParams.get('thumb') === '1'
     const keepMoving =
       thumb && u.searchParams.get('anim') === '1' && /\.(png|apng|webp)$/i.test(file) && ((await fs.stat(file).catch(() => null))?.size ?? 0) >= 150_000 && (await isAnimated(file))
-    const served = thumb && !keepMoving ? await artThumb(file) : file
+    const served = thumb && !keepMoving ? await artThumb(file, kind === 'hero' ? 720 : 540) : file
     const res = await net.fetch(pathToFileURL(served).toString())
     const headers = new Headers(res.headers)
     headers.set('Cache-Control', 'max-age=31536000')
@@ -1740,6 +1801,7 @@ let started = false // set once the app is ready: a second instance quitting at 
 app.whenReady().then(async () => {
   log.info('app', `Lumen ${app.getVersion()} starting (electron ${process.versions.electron}, packaged=${app.isPackaged})`)
   log.info('app', `data folder: ${userData}`)
+  logParent()
   if (dataChoice.warning) log.warn('app', dataChoice.warning)
   if (migrated.length) log.info('app', `copied from ${legacyDataDir} (left unchanged): ${migrated.join(', ')}`)
   await Promise.all([settings.init(), prefs.init(), emu.init(), gog.init(), family.init()])
@@ -1748,6 +1810,7 @@ app.whenReady().then(async () => {
   started = true
   if (!process.env.LUMEN_USER_DATA) unregisterRunning = registerRunning(thisInstance, onOtherInstance)
   registerArtProtocol()
+  watchMainLag()
   registerIpc()
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
@@ -1792,9 +1855,10 @@ app.whenReady().then(async () => {
   gog.on('status', (st: { running: string[] }) => {
     // the GOG game started from Lumen ended (its process tree is gone): back to Lumen, like Steam games
     if (launchedGog && !st.running.includes(launchedGog.slice(4))) {
-      log.info('app', `GOG game ${launchedGog} ended`)
+      const ended = launchedGog
+      log.info('app', `GOG game ${ended} ended`)
       launchedGog = undefined
-      if (settings.get().restoreAfterGame && !gogViaDeck) restoreWindow()
+      if (settings.get().restoreAfterGame && !gogViaDeck) restoreAfterGame(ended)
       gogViaDeck = false
     }
   })
@@ -1812,7 +1876,7 @@ app.whenReady().then(async () => {
   library.on('gameStarted', (appId: number) => log.info('app', `game ${appId} started (per Steam registry)`))
   library.on('gameExited', (appId: number) => {
     log.info('app', `game ${appId} exited (per Steam registry)`)
-    if (launchedAppId === appId && settings.get().restoreAfterGame && !steamViaDeck) restoreWindow()
+    if (launchedAppId === appId && settings.get().restoreAfterGame && !steamViaDeck) restoreAfterGame(`Steam ${appId}`)
     if (launchedAppId === appId) steamViaDeck = false
     launchedAppId = undefined
     if (hiddenForAppId === appId) void showControllers()
@@ -1844,15 +1908,27 @@ app.whenReady().then(async () => {
   // pads that are not XInput devices (PlayStation, Nintendo, Bluetooth HID): passive Raw Input on the same window
   if (win && process.env.LUMEN_NO_PAD !== '1' && settings.get().gamepadBackend === 'xinput') hidPads.attach(win)
   let combo = false
+  // czujnik: odczyt pada wstrzymany na chwilę (< 1 s) — interfejs dostaje wtedy „pad pusty” (przytrzymany kierunek
+  // kasowany); w logu: która część warunku zawiodła
+  let pollOff = 0
+  let pollWhy = ''
   pads.start(
-    () =>
+    () => {
       // LUMEN_NO_PAD=1: automated UI tests ignore controllers connected to this PC
-      process.env.LUMEN_NO_PAD !== '1' &&
-      settings.get().gamepadBackend === 'xinput' &&
-      !!win &&
-      !win.isDestroyed() &&
-      !win.isMinimized() &&
-      (win.isFocused() || padWithoutFocus()),
+      const base = process.env.LUMEN_NO_PAD !== '1' && settings.get().gamepadBackend === 'xinput' && !!win && !win.isDestroyed()
+      const minimized = !!win && !win.isDestroyed() && win.isMinimized()
+      const focused = !!win && !win.isDestroyed() && win.isFocused()
+      const ok = base && !minimized && (focused || padWithoutFocus())
+      const now = Date.now()
+      if (!ok && base && !pollOff) {
+        pollOff = now
+        pollWhy = minimized ? 'zminimalizowane' : `bez fokusu, z przodu: ${foreground(ownHandle())?.desc ?? '?'}`
+      } else if (ok && pollOff) {
+        if (now - pollOff < 1000) log.info('perf', `pad: odczyt wstrzymany na ${now - pollOff} ms (${pollWhy})`)
+        pollOff = 0
+      }
+      return ok
+    },
     (state) => {
       // focus taken by something invisible (Lumen still on top): the pad brings it back
       if (win && !win.isDestroyed() && !win.isFocused() && state.some((p) => p.buttons || Math.abs(p.lx) > 16000 || Math.abs(p.ly) > 16000))

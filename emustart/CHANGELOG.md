@@ -67,6 +67,77 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 10 | Deinstalator (silnik): wartość HKCU sprzed instalacji zapamiętana przy zapisie i przywracana (dodane znikają); `gog_uninstall_preview` — pliki skopiowane do Dokumentów/AppData bez folderów zapisów; `gog_uninstall(…, remove_outside)` — usuwa je na wybór gracza (domyślnie zostają, `outside_left` w wyniku) | zrobione (testy, HKCU na tymczasowym kluczu); okno wyboru w Lumenie — etap 11 |
 | 11 | Wydanie Lumena 1.0.58: silnik z etapami 0–10 (bez zmian interfejsu) | wydane 2026-11-12 (PR #25, `lumen-v1.0.58`; podpis i spakowany `EmuStartEngine.exe --gog-admin` sprawdzone) |
 | 12 | Etap 2a — Lumen jako administrator: silnik `unelevated.popen` (emulatory, gry GOG — token powłoki); Lumen: `requireAdministrator`, Steam i linki przez `explorer.exe`, autostart przez Harmonogram (30 s, najwyższe uprawnienia, stary wpis Run usuwany), `gog_finish_admin_all` przy starcie, okno odinstalowania z wyborem plików poza grą, pominięte kroki w szczegółach gry | zrobione — wydanie Lumena 1.0.59. Na żywo (zbudowany Lumen, 2026-11-12): Lumen i silnik z uprawnieniami; DOSBox, RetroArch, PCSX2, Steam i gra Steam bez nich; zadanie autostartu (30 s, najwyższe uprawnienia); okno wyboru przy drugiej kopii (oba wybory). Niesprawdzone na żywo: zaległe kroki przy starcie (żadna gra nie czekała) |
+| 13 | Poprawki po 1.0.59: instalacja dużych gier GOG, powrót Lumena po grze, płynność grafik (plan niżej) | zrobione — sprawdzone na żywo przez gracza (2026-11-12): duża gra GOG startuje od razu i pobiera szybciej, Lumen wraca na wierzch w trybie, z którego uruchomiono grę, siatka pulpitu nie wraca na początek, wstęga bez końca, przewijanie gier Steam płynne, animowane plakaty animowane; czeka na wydanie |
+| 14 | Motywy TV jako pakiety z serwera (plan niżej) — po etapie 13 | plan |
+
+### Plan: poprawki po 1.0.59 (etap 13)
+
+Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
+- **Duże gry GOG (≥ 50 GB): długo nie startują, potem 15–20 MB/s zamiast ~80.** Pomiar: manifest Cyberpunka 2,2 s,
+  pierwszy chunk 0,9 s, serwer + sieć ~61 MB/s skompresowanych (4 i 8 wątków tak samo) — serwer i sieć nie są
+  przyczyną. Przyczyna: `write_files` przed pobieraniem rozciąga każdy plik do pełnego rozmiaru (`truncate`), a
+  Python na Windows robi to, **zapisując zera** (12 GB = 12 s; Cyberpunk ~70 GB zer przed pierwszym chunkiem).
+  Potem dysk (bufor SLC zapełniony zerami) zapisuje prawdziwe dane wolno. Zmiana (silnik, obie kopie
+  `goginstall.py`): pliki tworzone puste, chunki zapisywane pod swoim przesunięciem (plik rośnie sam; pomiar:
+  1 GB w 0,34 s przy przemieszanej kolejności chunków). Sprawdzanie miejsca przed instalacją bez zmian.
+- **Po grze (GOG i Steam) Lumen nie wraca na pierwszy plan.** Pomiar: Electron w trybie pełnoekranowym przywraca
+  okno bez zdarzenia `restore`, a samo `focus()` z procesu w tle Windows blokuje — okno wraca za Steam/pulpit.
+  Zmiana (Lumen): po grze ta sama procedura co przy starcie (`activateWindow` — przywrócenie, na wierzch, fokus),
+  tryb pełnoekranowy przywracany, gdy był włączony; wpis w logu ze stanem okna po grze.
+- **Zacięcia przy grafikach.** Obrazy dekodowane synchronicznie (bez `decoding="async"`): tło okładki
+  (`art-fit__bg`, z rozmyciem), duże tło systemu w trybie TV, logo systemów, Deck, miniatury zapisów. Zmiana:
+  `decoding="async"` wszędzie. Przyczyna zacięć nie jest zmierzona — jeśli zostaną, następny krok to pomiar w
+  narzędziach Chromium (który element blokuje klatki).
+
+- **Instalacja przerwana poza silnikiem (zamknięty Lumen, awaria) — nie da się jej ani przerwać, ani wznowić.**
+  Test na żywo: Control w stanie „installing” po zamknięciu starego Lumena; przycisk A (TV) / główna akcja
+  „Przerwij instalację” → „Brak zadania tej gry”. Zmiana (silnik, obie kopie `goglib.py`): „installing” bez zadania
+  w kolejce / w toku pokazywane jako „przerwana” — główna akcja „Wznów instalację”.
+- **Diagnoza:** w logu Lumena przy starcie — kto go uruchomił (proces nadrzędny) i z jakimi argumentami (stary
+  Lumen startował „sam” tuż przed wersją testową).
+
+- **Przewijanie (zgłoszenie 2026-11-12):**
+  - pulpit, duża siatka plakatów, przytrzymany „w dół”: po ~3 rzędach powrót na początek. Przyczyna: siatka rysuje
+    tylko widoczne rzędy (+3 zapasu); fokus wyprzedza przewijanie, następnego rzędu nie ma jeszcze na stronie i
+    obsługa krawędzi bierze to za koniec listy (zawinięcie na początek). Zmiana: zawinięcie tylko z naprawdę
+    ostatniego rzędu; inaczej siatka przewija się do następnego rzędu i fokus trafia do niego;
+  - TV, Horyzont (wstęga): na końcu krótkiej listy przeskok na początek, jeden plakat stoi. Ma być przewijanie bez
+    końca, także dla jednego plakatu. Przyczyna: pozycja wstęgi liczona modulo długości listy — przy zawinięciu
+    okładki dostają nowe klucze (rysowane od nowa, bez animacji), a przy jednej grze indeks się nie zmienia. Zmiana:
+    pozycja wstęgi bez modulo (rośnie / maleje z każdym krokiem), gra = pozycja modulo długość;
+  - TV, przytrzymany kierunek: przewijanie staje — przy grach Steam, przy GOG płynnie. Pomiar (czujnik zacięć w
+    logu, profil CPU na danych gracza): pad bez przerw; wątek interfejsu stał do 6,5 s, głównie praca natywna
+    (dekodowanie / rysowanie obrazów) — wstęga Horyzontu brała okładki w pełnym rozmiarze (PNG ze SteamGridDB,
+    śr. ~0,9 MB, z odbiciem). Zmiana: wstęga bierze małe kopie jak plakaty pulpitu (`thumb`; animowane — jak są).
+    Czujnik zacięć zostaje (wpisy `[perf]` tylko przy zacięciu > 150 ms / mignięciu pada).
+    Dalszy pomiar (ślad Chromium + ruch obrazów w sesji gracza, 20 s przewijania): 921 MB obrazów — animowane
+    okładki w całości (do 46 MB; Lumen omijał próg silnika dla list), logo i tło wybranej gry przy każdym kroku w
+    pełnym rozmiarze; wątek interfejsu obrabiał je kawałek po kawałku (23 s). Zmiany: pamięć obrazów w interfejsie
+    (`lib/artCache.ts`: cały plik przez fetch → blob → dekodowanie w tle → na ekran; do 256 MB, ponowne pojawienie
+    się bez wczytywania i dekodowania; CSP: `connect-src lumen-art:`, `img-src blob:`); wstęga: animowane okładki
+    w ruchu, gdy wybór stoi (~350 ms), w trakcie przewijania pierwsza klatka — **ustalenie z graczem: animowane plakaty
+    animowane cały czas, wolno im stanąć tylko podczas przewijania** (próg 3 MB z pierwszej wersji tej zmiany cofnięty,
+    na pulpicie i w Decku bez zmian); tło (720 px) i logo (mała kopia) wybranej gry dopiero po ~350 ms bez ruchu. Wynik: 2. przejście bez przerw > 200 ms, 67 KB wczytanych,
+    wszystkie okładki widoczne.
+
+Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”
+(nadal decyduje, czy Lumen wraca), uruchamiania z Decka (tam Lumen nadal nie wraca).
+
+### Plan: motywy TV jako pakiety z serwera (etap 14)
+
+Ustalenia z użytkownikiem (2026-11-12): tylko tryb TV Lumena; motywy wgrywane na serwer jako paczka .zip.
+- Pakiet: `theme.json` (nazwa, opis, paleta, układ listy, czcionki, blokady edytora „Wygląd”, poziomy animacji,
+  minimalna wersja Lumena), `theme.css` (zawężony do `.tv[data-theme="<id>"]`), opcjonalnie `layers.html`
+  (dekoracje — tylko `div/span/i/svg/img` z klasami, bez skryptów, `on…`, `iframe`, linków: Lumen działa jako
+  administrator), `assets/` (grafiki, w tym domyślne dla kategorii, czcionki).
+- Serwer: wgrywanie .zip w panelu (sprawdzenie zawartości), `themes/index.json` z wersjami i SHA-256 plików,
+  API `/v1/themes`. Lumen: synchronizacja do `LumenData\themes` (tylko zmienione pliki), praca bez sieci z kopii,
+  wczytywanie przez własny protokół (tylko pliki pakietu, bez zasobów z internetu).
+- Wbudowane EmuStart, Kronika, Horyzont w tym samym formacie (kopia w aplikacji).
+- Przełącznik animacji: wył. / niskie / średnie / wysokie (`.tv[data-anim]`); „wył.” przy ograniczonym ruchu.
+- Kontrast palety sprawdzany przy instalacji (jak w testach dziś).
+
+Nie dotyka: trybu pulpitu Lumena, EmuStart (Windows, APK — na razie bez motywów).
 
 ### Plan: Lumen jako administrator (etap 2a, osobne wydanie Lumena)
 

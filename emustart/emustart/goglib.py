@@ -76,7 +76,12 @@ class GogService:
     def summary(self, e: dict, running=None) -> dict:
         pid = e["product_id"]
         running = set(self.running_ids()) if running is None else running
-        return {"product_id": pid, "title": e.get("title") or pid, "state": e.get("state"),
+        state = e.get("state")
+        if state == gi.ST_INSTALLING and not self._has_job(pid):
+            # instalacja przerwana poza tym silnikiem (zamknięty Lumen, awaria): bez zadania „przerwij” nie zadziała —
+            # pokazywana jako przerwana, z „wznów” (wznowienie przyjmuje stan „installing”)
+            state = gi.ST_CANCELLED
+        return {"product_id": pid, "title": e.get("title") or pid, "state": state,
                 "build_id": e.get("build_id"), "version": e.get("version") or "", "hash": e.get("hash"),
                 "install_dir": e.get("install_dir"), "languages": e.get("languages") or [],
                 "primary": e.get("primary") or "", "dlcs": e.get("dlcs") or [], "error": e.get("error") or "",
@@ -236,6 +241,11 @@ class GogService:
                 self._worker = threading.Thread(target=self._loop, daemon=True, name="gog-zadania")
                 self._worker.start()
         return {"ok": True}
+
+    def _has_job(self, pid: str) -> bool:
+        """Instalacja / naprawa tej gry czeka w kolejce albo trwa."""
+        with self._lock:
+            return any(j["pid"] == pid for j in list(self._queue) + ([self._job] if self._job else []))
 
     def cancel(self, pid: str) -> dict:
         pid = _pid(pid)

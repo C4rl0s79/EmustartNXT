@@ -535,8 +535,10 @@ def write_files(root: Path, plan: dict, source, done: set, cancel: threading.Eve
         dest.parent.mkdir(parents=True, exist_ok=True)
         if dest.is_symlink():
             raise GogError(f"{f['path']}: w katalogu gry jest dowiązanie zamiast pliku")
-        with open(dest, "wb") as fh:
-            fh.truncate(f["size"])
+        # pusty plik — chunki zapisywane pod swoim przesunięciem, plik rośnie sam. Bez truncate(rozmiar): Python na
+        # Windows rozciąga plik, zapisując zera (12 GB = 12 s; duża gra — minuty zer przed pierwszym chunkiem, a
+        # potem dysk z buforem zapełnionym zerami zapisuje dane wolno)
+        open(dest, "wb").close()
         if not f["chunks"]:
             finished(f["path"])
             continue

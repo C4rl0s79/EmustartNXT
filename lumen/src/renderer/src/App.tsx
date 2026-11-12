@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { playFromDeck } from './lib/deckPlay'
+import { installPerfWatch } from './lib/perf'
 import { api, useStore, type Tab } from './store'
 import { installGamepad, installKeyboard, installXInputGamepad, useActions } from './nav/input'
 import { focusFirst } from './nav/engine'
@@ -107,6 +108,9 @@ export function App() {
       clearInterval(every)
     }
   }, [engineReady])
+
+  // czujnik zacięć (lib/perf.ts): raz na okno
+  useEffect(() => installPerfWatch(), [])
 
   // controller backend: XInput from the main process (default) or the Chromium Gamepad API
   const backend = useStore((s) => (s.settings?.gamepadBackend === 'chromium' || s.settings?.xinputAvailable === false ? 'chromium' : s.settings ? 'xinput' : null))
