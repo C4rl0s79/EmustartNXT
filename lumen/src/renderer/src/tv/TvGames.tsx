@@ -289,7 +289,7 @@ export function TvGames({
         {backdrop && <TvBackdrop key={backdrop.id} game={backdrop} />}
         {head}
         {games.length ? (
-          <TvCoverflow games={games} pos={pos} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
+          <TvCoverflow games={games} pos={pos} animate={backdrop?.id === sel?.id} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
         ) : (
           <div className="tv-flow">{empty}</div>
         )}

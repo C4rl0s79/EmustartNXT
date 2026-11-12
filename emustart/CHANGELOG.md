@@ -114,9 +114,10 @@ Zgłoszenia użytkownika (2026-11-12) i pomiary na tym komputerze:
     okładki w całości (do 46 MB; Lumen omijał próg silnika dla list), logo i tło wybranej gry przy każdym kroku w
     pełnym rozmiarze; wątek interfejsu obrabiał je kawałek po kawałku (23 s). Zmiany: pamięć obrazów w interfejsie
     (`lib/artCache.ts`: cały plik przez fetch → blob → dekodowanie w tle → na ekran; do 256 MB, ponowne pojawienie
-    się bez wczytywania i dekodowania; CSP: `connect-src lumen-art:`, `img-src blob:`); animowane na listach w ruchu
-    do 3 MB (próg silnika), większe — pierwsza klatka, animacja w szczegółach; tło (720 px) i logo (mała kopia)
-    wybranej gry dopiero po ~350 ms bez ruchu. Wynik: 2. przejście bez przerw > 200 ms, 67 KB wczytanych,
+    się bez wczytywania i dekodowania; CSP: `connect-src lumen-art:`, `img-src blob:`); wstęga: animowane okładki
+    w ruchu, gdy wybór stoi (~350 ms), w trakcie przewijania pierwsza klatka — **ustalenie z graczem: animowane plakaty
+    animowane cały czas, wolno im stanąć tylko podczas przewijania** (próg 3 MB z pierwszej wersji tej zmiany cofnięty,
+    na pulpicie i w Decku bez zmian); tło (720 px) i logo (mała kopia) wybranej gry dopiero po ~350 ms bez ruchu. Wynik: 2. przejście bez przerw > 200 ms, 67 KB wczytanych,
     wszystkie okładki widoczne.
 
 Nie dotyka: serwera, sieci i liczby wątków pobierania, wyglądu interfejsu, ustawienia „Przywracaj po grze”

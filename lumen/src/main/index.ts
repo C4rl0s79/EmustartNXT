@@ -613,8 +613,6 @@ function registerArtProtocol(): void {
 // Posters on lists come as small copies: a full file arrives in many chunks and the page re-processes the image on
 // every one — seconds of stutter on a long list, measured with a trace. Made once by the engine (Pillow), kept on disk.
 const thumbLimiter = new Limiter(3, 'art-thumb', true)
-/** animowany plik większy niż to — na listach pierwsza klatka (ten sam próg co w silniku: api.ANIMATED_ON_LIST_MAX) */
-const ANIMATED_ON_LIST_MAX = 3 << 20
 /** `height`: 540 — plakaty na listach; 720 — tło całego ekranu (tło wstęgi: oryginały 3840 px ze SteamGridDB, kilka MB) */
 async function artThumb(file: string, height = 540): Promise<string> {
   if (engine.state !== 'ready' || /\.(gif|webm|mp4)$/i.test(file)) return file
@@ -686,11 +684,9 @@ async function artResponse(req: Request): Promise<Response> {
     // anim=1 (Deck tiles, desktop lists — the player wants animated posters to move): an animated poster as
     // it is, not its list copy (first frame). Looked at only where a list copy would be made of a file that
     // can be animated: PNG / WebP of 150 KB or more (a JPEG never is; GIF / video get no list copy anyway)
-    // …do 3 MB (próg silnika ANIMATED_ON_LIST_MAX): większy animowany plik na liście — pierwsza klatka (mała kopia),
-    // animacja w szczegółach. Pomiar w sesji gracza: 46 MB APNG przy każdym pojawieniu się okładki na wstędze
     const thumb = u.searchParams.get('thumb') === '1'
-    const animSize = thumb && u.searchParams.get('anim') === '1' && /\.(png|apng|webp)$/i.test(file) ? ((await fs.stat(file).catch(() => null))?.size ?? 0) : 0
-    const keepMoving = animSize >= 150_000 && animSize < ANIMATED_ON_LIST_MAX && (await isAnimated(file))
+    const keepMoving =
+      thumb && u.searchParams.get('anim') === '1' && /\.(png|apng|webp)$/i.test(file) && ((await fs.stat(file).catch(() => null))?.size ?? 0) >= 150_000 && (await isAnimated(file))
     const served = thumb && !keepMoving ? await artThumb(file, kind === 'hero' ? 720 : 540) : file
     const res = await net.fetch(pathToFileURL(served).toString())
     const headers = new Headers(res.headers)
