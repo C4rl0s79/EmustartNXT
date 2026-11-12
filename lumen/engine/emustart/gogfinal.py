@@ -853,7 +853,8 @@ def start(spec: dict) -> subprocess.Popen:
     if spec["exe"].lower().endswith((".bat", ".cmd")):
         cmd = f'cmd.exe /c "{cmd}"'
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    return subprocess.Popen(cmd if os.name == "nt" else [spec["exe"], *spec["args"].split()], cwd=spec["cwd"],
+    from emustart import unelevated                    # Lumen jako administrator — gra bez uprawnień
+    return unelevated.popen(cmd if os.name == "nt" else [spec["exe"], *spec["args"].split()], cwd=spec["cwd"],
                             close_fds=True, creationflags=flags)
 
 
