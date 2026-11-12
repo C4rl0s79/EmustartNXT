@@ -192,19 +192,39 @@ def _reg_value(a: dict):
 
 
 def set_hkcu(a: dict) -> None:
+    """Wartość HKCU; poprzednia (jeśli była) zapamiętana w akcji (`prev`) — odinstalowanie ją przywraca."""
     import winreg
+    if "prev" not in a:
+        from emustart import gogadmin
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, a["subkey"], 0, winreg.KEY_READ) as k:
+                v, t = winreg.QueryValueEx(k, a["name"])
+            a["prev"] = gogadmin._enc(t, v)
+        except OSError:
+            a["prev"] = None
     typ, val = _reg_value(a)
     with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, a["subkey"], 0, winreg.KEY_SET_VALUE) as k:
         winreg.SetValueEx(k, a["name"], 0, typ, val)
 
 
 def remove_hkcu(actions: list) -> int:
-    """Odinstalowanie: wartości HKCU ustawione przez finalizację (tylko te; klucz znika, gdy jest pusty)."""
+    """Odinstalowanie: wartości HKCU ustawione przez finalizację — wartość sprzed instalacji wraca, dodana przez nas
+    znika (klucz też, gdy zostaje pusty)."""
     if os.name != "nt":
         return 0
     import winreg
+    from emustart import gogadmin
     n = 0
-    for a in actions:
+    for a in reversed(actions):
+        if a.get("prev"):
+            try:
+                t, v = gogadmin._dec(a["prev"])
+                with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, a["subkey"], 0, winreg.KEY_SET_VALUE) as k:
+                    winreg.SetValueEx(k, a["name"], 0, t, v)
+                n += 1
+            except OSError:
+                pass
+            continue
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, a["subkey"], 0, winreg.KEY_SET_VALUE | winreg.KEY_READ) as k:
                 winreg.DeleteValue(k, a["name"])

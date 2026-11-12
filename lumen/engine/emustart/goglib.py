@@ -518,14 +518,21 @@ class GogService:
             return {"ok": False, "reason": str(ex)}
         return {"ok": True, **r}
 
-    def uninstall(self, pid: str) -> dict:
+    def uninstall_preview(self, pid: str) -> dict:
+        """Do okna odinstalowania: pliki poza katalogiem gry (Dokumenty/AppData; do wyboru) i foldery zapisów."""
+        e = gi.load_entry(_pid(pid))
+        if not e:
+            return {"ok": False, "reason": "Ta gra nie jest zainstalowana."}
+        return {"ok": True, "outside": gi.outside_files(e), "saves": (e.get("finalize") or {}).get("saves") or []}
+
+    def uninstall(self, pid: str, remove_outside: bool = False) -> dict:
         pid = _pid(pid)
         if pid in self.running_ids():
             return {"ok": False, "reason": "Zamknij grę przed usunięciem."}
         if self._job and self._job["pid"] == pid:
             return {"ok": False, "reason": "Gra ma zadanie w toku — przerwij je najpierw."}
         try:
-            r = gi.uninstall(pid)
+            r = gi.uninstall(pid, remove_outside=remove_outside)
         except gi.GogError as ex:
             return {"ok": False, "reason": str(ex)}
         self._last.pop(pid, None)

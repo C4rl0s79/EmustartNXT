@@ -4,6 +4,7 @@ cofanie przy odinstalowaniu, DLC, odmowa UAC, walidacja pliku kroków."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -111,7 +112,7 @@ def test_elevated_process_rejects_unknown_steps_and_keys(fake_reg, step):
 def test_self_cmd_points_to_entry_with_gog_admin():
     cmd = gogadmin.self_cmd()
     assert cmd[-1].endswith("main.py")
-    src = open(cmd[-1], encoding="utf-8").read()
+    src = Path(cmd[-1]).read_text(encoding="utf-8")
     assert "--gog-admin=" in src and "gogadmin.main" in src
 
 

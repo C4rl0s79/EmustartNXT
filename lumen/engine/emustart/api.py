@@ -724,9 +724,15 @@ class Api:
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 
-    def gog_uninstall(self, pid: str) -> dict:
+    def gog_uninstall_preview(self, pid: str) -> dict:
         try:
-            return self._gog.uninstall(pid)
+            return self._gog.uninstall_preview(pid)
+        except ValueError as ex:
+            return {"ok": False, "reason": str(ex)}
+
+    def gog_uninstall(self, pid: str, remove_outside: bool = False) -> dict:
+        try:
+            return self._gog.uninstall(pid, remove_outside=bool(remove_outside))
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 

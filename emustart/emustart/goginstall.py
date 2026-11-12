@@ -1014,7 +1014,20 @@ def repair(source, pid: str, cancel=None, on_progress=None, on_phase=None) -> di
     return _run(source, e, plan, bundle, done, cancel, on_progress, phase, mode="repair")
 
 
-def uninstall(pid: str, remove_hkcu=None, elevate=None) -> dict:
+def outside_files(e: dict) -> list:
+    """Pliki skopiowane przez instalację poza katalog gry (Dokumenty, AppData) — bez folderów zapisów."""
+    root = Path(e["install_dir"])
+    saves = [Path(os.path.abspath(s)) for s in (e.get("finalize") or {}).get("saves") or []]
+    out = []
+    for c in e.get("created_files") or []:
+        p = Path(os.path.abspath(c))
+        if _is_inside(p, root) or any(_is_inside(p, s) for s in saves) or not p.is_file():
+            continue
+        out.append(str(p))
+    return out
+
+
+def uninstall(pid: str, remove_hkcu=None, elevate=None, remove_outside: bool = False) -> dict:
     """Usuwa tylko pliki zarządzane przez EmuStart (z manifestu i utworzone przy finalizacji), puste katalogi
     z manifestu i pusty katalog gry; cofa kroki administratora (HKLM — jedno okno UAC; odmowa nie wstrzymuje
     usuwania plików, wynik w `admin_left`). Zapisy (savePath), pliki dodane przez grę lub gracza i wszystko poza
@@ -1029,9 +1042,18 @@ def uninstall(pid: str, remove_hkcu=None, elevate=None) -> dict:
         save_entry(e)
         raise GogError(e["error"])
     admin_left = _undo_admin(e, elevate)
+    outside = outside_files(e)
+    if remove_outside:                    # wybór gracza w oknie odinstalowania; zapisy zostają zawsze
+        for f in list(outside):
+            try:
+                Path(f).unlink()
+                outside.remove(f)
+                removed += 1
+            except OSError:
+                pass
     _forget(e, remove_hkcu)
     return {"removed": removed, "left": left, "dir": str(root), "dir_removed": not root.exists(),
-            "admin_left": admin_left}
+            "admin_left": admin_left, "outside_left": outside}
 
 
 def discard(pid: str, remove_hkcu=None, elevate=None) -> None:
