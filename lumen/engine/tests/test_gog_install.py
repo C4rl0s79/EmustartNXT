@@ -4,6 +4,8 @@ uszkodzone dane, miejsce, weryfikacja, uruchamianie bez serwera, usuwanie i cach
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -11,8 +13,9 @@ from pathlib import Path
 import keyhelp
 import pytest
 
-from emustart import gogarchive as ga, gogfinal, goginstall as gi, goglib, paths
+from emustart import gogadmin, gogarchive as ga, gogfinal, goginstall as gi, goglib, paths
 from goghelp import BIG, BUILD, DLC_FILES, DLC_META, GAME_EXE, PID, SCRIPT, build_archive
+from gogadminhelp import fake_reg, run_main, steps_file  # noqa: F401  (fixture)
 from test_three_devices import srv  # noqa: F401  (fixture)
 
 
@@ -69,6 +72,9 @@ def env(tmp_path, monkeypatch):
     regs = []
     monkeypatch.setattr(gogfinal, "set_hkcu", regs.append)        # nigdy prawdziwy rejestr w testach
     monkeypatch.setattr(gogfinal, "remove_hkcu", lambda acts: 0)
+    monkeypatch.setattr(gogfinal, "_shell_runas", lambda *a, **k: False)   # nigdy prawdziwe okno UAC (fake_reg: zgoda)
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)           # wynik nie zależy od uprawnień terminala
+    monkeypatch.setattr(gogfinal, "RUNTIME_CHECK", lambda did, arch: True)  # biblioteki „są” — nie zależy od komputera
     monkeypatch.setattr(gogfinal, "user_documents", lambda: tmp_path / "Dokumenty")
     yield {"root": root, "games": tmp_path / "GOG Games", "regs": regs, "tmp": tmp_path}
     ga.INDEX.update(root="", builds={}, rejected=[], error="", running=False)
@@ -145,11 +151,8 @@ def test_dependencies_and_runtime_steps(env):
     e, target, _ = _install(env)
     assert (target / "__redist" / "MSVC2017" / "vc_redist.x64.exe").exists()
     assert e["dependencies"] == ["MSVC2017"]
-    steps = gogfinal.runtime_steps(target, e["dependencies"])
-    assert steps and steps[0]["args"] == "/install /quiet /norestart"
-    ran = []
-    res = gogfinal.run_runtimes(steps, elevate=lambda exe, args, cwd=None: ran.append((exe, args)) or True)
-    assert res == {"MSVC2017": True} and ran[0][0].endswith("vc_redist.x64.exe")
+    steps = gogfinal.runtime_steps(target, e["dependencies"], check=False)
+    assert steps and steps[0]["args"] == "/install /quiet /norestart" and steps[0]["arch"] == "x64"
 
 
 def test_finalization_actions(env):
@@ -172,7 +175,7 @@ def test_hklm_needs_admin_and_is_not_installed(env):
     assert not svc.launch(PID)["ok"]
     assert not svc.finish_admin(PID, elevate=lambda *a, **k: False)["ok"]       # odmowa UAC
     assert gi.load_entry(PID)["state"] == gi.ST_NEEDS_ADMIN
-    assert "[HKEY_LOCAL_MACHINE\\Software\\Test]" in gogfinal.reg_file(e["finalize"]["admin"])
+    assert gogadmin.set_steps(gogadmin.capture(e["finalize"]["admin"]))[0]["subkey"] == "Software\\Test"
 
 
 def test_finalization_error_leaves_install_unfinished(env):
@@ -331,7 +334,11 @@ def test_unsafe_launch_path(tmp_path):
     (tmp_path / "goggame-1.info").write_text(json.dumps({"playTasks": [
         {"category": "game", "isPrimary": True, "path": "run.bat", "type": "FileTask"}]}))
     (tmp_path / "run.bat").write_text("@echo off")
-    with pytest.raises(gogfinal.FinalizeError, match=".exe"):
+    assert gogfinal.launch_spec(tmp_path, "1")["exe"] == str(tmp_path / "run.bat")      # .bat przez cmd.exe /c
+    (tmp_path / "goggame-1.info").write_text(json.dumps({"playTasks": [
+        {"category": "game", "isPrimary": True, "path": "manual.pdf", "type": "FileTask"}]}))
+    (tmp_path / "manual.pdf").write_text("%PDF")
+    with pytest.raises(gogfinal.FinalizeError, match="zadania uruchamiania"):
         gogfinal.launch_spec(tmp_path, "1")
 
 
@@ -421,21 +428,18 @@ def test_uninstall_removes_whole_folder_when_nothing_of_the_player_is_left(env):
 
 # ── poprawki z przeglądu kodu ──
 
-def test_hklm_is_written_to_both_registry_views():
-    acts = [{"root": "HKLM", "subkey": "Software\\GOG.com\\Games\\1001", "name": "path", "type": "string", "data": "C:\\G"}]
-    reg64 = gogfinal.reg_file(acts, wow64=True)
-    assert "[HKEY_LOCAL_MACHINE\\Software\\GOG.com\\Games\\1001]" in reg64
-    assert "[HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\GOG.com\\Games\\1001]" in reg64    # gry 32-bitowe
-    reg32 = gogfinal.reg_file(acts, wow64=False)
-    assert "WOW6432Node" not in reg32
+def test_hklm_is_written_to_both_registry_views(fake_reg):
+    """gry GOG to zwykle programy 32-bitowe — na 64-bitowym Windows wartość w obu widokach"""
+    a = {"root": "HKLM", "subkey": "Software\\GOG.com\\Games\\1001", "name": "path", "type": "string", "data": "C:\\G"}
+    run_main((steps_file(fake_reg["dir"], gogadmin.set_steps(gogadmin.capture([a])))))
+    assert fake_reg["reg"].data[("64", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
+    assert fake_reg["reg"].data[("32", a["subkey"], "path")] == (gogadmin.REG_SZ, "C:\\G")
 
 
-def test_expandstring_and_dword_in_reg_file():
-    acts = [{"root": "HKLM", "subkey": "Software\\T", "name": "p", "type": "expandstring", "data": "%A%"},
-            {"root": "HKLM", "subkey": "Software\\T", "name": "n", "type": "dword", "data": "0001"}]
-    reg = gogfinal.reg_file(acts, wow64=False)
-    assert '"p"=hex(2):25,00,41,00,25,00,00,00' in reg            # REG_EXPAND_SZ, nie REG_SZ
-    assert '"n"=dword:00000001' in reg
+def test_expandstring_dword_and_binary_values():
+    assert gogadmin.act_value({"type": "expandstring", "data": "%A%"}) == {"t": gogadmin.REG_EXPAND_SZ, "v": "%A%"}
+    assert gogadmin.act_value({"type": "dword", "data": "0001"}) == {"t": gogadmin.REG_DWORD, "v": 1}
+    assert gogadmin.act_value({"type": "binary", "data": "AAEC"}) == {"t": gogadmin.REG_BINARY, "v": {"hex": "000102"}}
 
 
 @pytest.mark.parametrize("typ,data,ok", [("dword", "0001", "1"), ("dword", "0x10", "16"), ("dword", "abc", None),
@@ -570,7 +574,7 @@ def test_launch_waits_for_conflict_decision_and_uploads_after_game(env, monkeypa
     monkeypatch.setattr(gogsaves, "rules", lambda pid, src=None, refresh=False: {
         "source": "ludusavi", "files": [{"path": "<base>/saves", "tags": ["save"], "when": []}]})
     seen = []
-    monkeypatch.setattr(gogsaves, "before", lambda cfg, prof, pid, b: seen.append(b[0].key) or
+    monkeypatch.setattr(gogsaves, "before", lambda cfg, prof, pid, b, fresh=False: seen.append(b[0].key) or
                         syncclient.Result(conflicts=[syncclient.Conflict(b[0], {"revision": 3})]))
     resolved = []
     monkeypatch.setattr(gogsaves, "resolve", lambda cfg, prof, pid, c, choice: resolved.append(choice))
@@ -703,3 +707,124 @@ def test_more_script_forms_from_the_archive(tmp_path):
 def test_guid_without_dashes_in_registry_key(tmp_path):
     k = "SOFTWARE\\Microsoft\\DirectPlay\\Services\\{5146ab8cb6b1ce11920c00aa006c4972}"
     assert gogfinal.registry_action({"root": "HKEY_CURRENT_USER", "subkey": k, "valueName": "a", "valueData": "b"}, tmp_path, "1")["subkey"] == k
+
+
+# ── pliki „support” z app/ i finalizacja na innym dysku (Tex Murphy, Al-Qadim, Oblivion) ──
+
+SUPPORT_APP = [("app\\DOSBOX\\dosbox.exe", b"MZdosbox", ["executable", "support"]),
+               ("app\\dosboxTex3.conf", b"[dosbox]\n", ["support"]),
+               ("1\\Oblivion.ini", b"[General]\n", ["support"])]
+
+
+def test_support_files_from_app_go_to_game_folder(env):
+    """Tex Murphy: DOSBox w manifeście jako app\\DOSBOX\\… z flagą support, playTask wskazuje DOSBOX\\dosbox.exe."""
+    env["root"] = env["tmp"] / "_d_sup"
+    build_archive(env["root"], extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED
+    assert (target / "DOSBOX" / "dosbox.exe").read_bytes() == b"MZdosbox"
+    assert (target / "dosboxTex3.conf").is_file() and not (target / "app" / "DOSBOX").exists()
+    assert (target / "1" / "Oblivion.ini").is_file()                 # inne pliki „support” — {supportDir}/1 jak dotąd
+    assert gi.uninstall(PID, remove_hkcu=lambda a: None)["dir_removed"]
+
+
+def test_script_copying_support_app_into_game_folder_is_done(env):
+    """Al-Qadim / Prisoner of Ice: supportData {supportDir}/app → {app} — pliki już są w katalogu gry."""
+    env["root"] = env["tmp"] / "_d_alq"
+    s = json.loads(json.dumps(SCRIPT))
+    s["actions"].append({"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/app", "target": "{app}", "type": "folder"}}})
+    build_archive(env["root"], script=s, extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED and (target / "DOSBOX" / "dosbox.exe").is_file()
+
+
+def test_support_app_step_without_app_folder(tmp_path):
+    """Folderu app/ nie ma (pliki „support” są już w katalogu gry) — krok wykonany, nie „brak źródła”."""
+    app = tmp_path / "g"
+    app.mkdir()
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/app", "target": "{app}", "type": "folder"}}}]}))
+    r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known=set())
+    assert r["done"] == ["supportData app (pliki już w katalogu gry)"] and r["created"] == []
+    # inne źródło, którego nie ma — nadal błąd
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "source": "{supportDir}/add", "target": "{app}", "type": "folder"}}}]}))
+    with pytest.raises(gogfinal.FinalizeError):
+        gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known=set())
+
+
+def test_support_rel_only_strips_app_of_support_files():
+    sup = {"flags": ["support"], "type": "DepotFile"}
+    assert gi.support_rel(sup, "app/DOSBOX/dosbox.exe") == "DOSBOX/dosbox.exe"
+    assert gi.support_rel({"flags": ["support"], "type": "DepotDirectory"}, "app") == ""
+    assert gi.support_rel(sup, "app") == "app"                                  # plik o nazwie „app” zostaje
+    assert gi.support_rel(sup, "application/x.dat") == "application/x.dat"
+    assert gi.support_rel(sup, "userdocs/DragonAge.ini") == "userdocs/DragonAge.ini"
+    assert gi.support_rel({"type": "DepotFile"}, "app/dosbox.conf") == "app/dosbox.conf"   # zwykły plik gry w folderze app
+
+
+def test_finalize_copies_to_documents_on_another_drive(tmp_path, monkeypatch):
+    """Oblivion: gra na D:, Dokumenty na C: — os.path.relpath między dyskami rzuca ValueError. Plik gracza, który
+    już był w Dokumentach, nie trafia do „utworzonych przez instalację”."""
+    app, docs = tmp_path / "D" / "Oblivion", tmp_path / "C" / "Dokumenty"
+    (app / "1").mkdir(parents=True)
+    (app / "1" / "Oblivion.ini").write_text("[General]\n")
+    (app / "1" / "Gracza.ini").write_text("nowy\n")
+    (docs / "My Games" / "Oblivion").mkdir(parents=True)
+    (docs / "My Games" / "Oblivion" / "Gracza.ini").write_text("ustawienia gracza\n")
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [{"install": {"action": "supportData", "arguments": {
+        "overwrite": True, "source": "{supportDir}/1", "target": "{userdocs}/My Games/Oblivion", "type": "folder"}}}]}))
+    real = gogfinal.os.path.relpath
+
+    def relpath(p, start=None):
+        if str(p).startswith(str(docs)):
+            raise ValueError("path is on mount 'C:', start on mount 'D:'")
+        return real(p, start) if start is not None else real(p)
+    with monkeypatch.context() as m:
+        m.setattr(gogfinal.os.path, "relpath", relpath)
+        r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=docs, folders={}, known={"1/oblivion.ini"})
+    out = docs / "My Games" / "Oblivion"
+    assert (out / "Oblivion.ini").is_file()
+    assert r["created"] == [str(out / "Oblivion.ini")]                       # Gracza.ini był wcześniej
+
+
+def test_script_source_inside_support_app_reads_from_game_folder(tmp_path):
+    """{supportDir}/app/<podfolder> → gdzie indziej: pliki leżą już w {app}/<podfolder>."""
+    app = tmp_path / "g"
+    (app / "DOSBOX").mkdir(parents=True)
+    (app / "DOSBOX" / "dosbox.conf").write_text("[dosbox]\n")
+    (app / "goggame-1.script").write_text(json.dumps({"actions": [
+        {"install": {"action": "supportData", "arguments": {"source": "{supportDir}/app/DOSBOX", "target": "{app}/DOSBOX", "type": "folder"}}},
+        {"install": {"action": "supportData", "arguments": {"source": "{supportDir}/app/DOSBOX", "target": "{userdocs}/Gra", "type": "folder"}}}]}))
+    r = gogfinal.apply_script(app, "1", hkcu=lambda a: None, docs=tmp_path / "docs", folders={}, known={"dosbox/dosbox.conf"})
+    assert (tmp_path / "docs" / "Gra" / "dosbox.conf").is_file() and len(r["done"]) == 2
+
+
+def test_support_file_wins_over_game_file_with_same_path(env):
+    env["root"] = env["tmp"] / "_d_col"
+    build_archive(env["root"], extra_files=[("app\\game.cfg", b"support", ["support"]), ("game.cfg", b"zwykly", [])])
+    e, target, _ = _install(env)
+    assert e["state"] == gi.ST_INSTALLED and (target / "game.cfg").read_bytes() == b"support"
+
+
+def test_old_install_with_support_files_in_app_is_adopted(env):
+    """Gra zainstalowana przed support_rel: pliki w <gra>/app/…. Weryfikacja przenosi je na miejsce (bez „uszkodzona”),
+    stara kopia zrobiona przez skrypt nie zostaje, odinstalowanie usuwa wszystko."""
+    env["root"] = env["tmp"] / "_d_old"
+    build_archive(env["root"], extra_files=SUPPORT_APP)
+    e, target, _ = _install(env)
+    # układ sprzed poprawki: pliki „support” w app/, w rejestrze ścieżki app/…; dosbox.conf skopiowany też przez skrypt
+    (target / "app" / "DOSBOX").mkdir(parents=True)
+    os.replace(target / "DOSBOX" / "dosbox.exe", target / "app" / "DOSBOX" / "dosbox.exe")
+    (target / "DOSBOX").rmdir()
+    shutil.copy2(target / "dosboxTex3.conf", target / "app" / "dosboxTex3.conf")
+    old = {"DOSBOX/dosbox.exe": "app/DOSBOX/dosbox.exe", "dosboxTex3.conf": "app/dosboxTex3.conf"}
+    e = gi.load_entry(PID)
+    e["files"] = [[old.get(p, p), s] for p, s in e["files"]]
+    gi.save_entry(e)
+    assert gi.verify(PID)["ok"]
+    assert (target / "DOSBOX" / "dosbox.exe").is_file() and not (target / "app" / "DOSBOX").exists()
+    assert not (target / "app" / "dosboxTex3.conf").exists()
+    assert "DOSBOX/dosbox.exe" in {p for p, _s in gi.load_entry(PID)["files"]}
+    assert gi.uninstall(PID, remove_hkcu=lambda a: None)["dir_removed"]

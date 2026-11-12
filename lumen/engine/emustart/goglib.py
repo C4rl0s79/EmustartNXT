@@ -81,6 +81,7 @@ class GogService:
                 "install_dir": e.get("install_dir"), "languages": e.get("languages") or [],
                 "primary": e.get("primary") or "", "dlcs": e.get("dlcs") or [], "error": e.get("error") or "",
                 "admin_steps": len((e.get("finalize") or {}).get("admin") or []),
+                "admin_pending": bool((e.get("finalize") or {}).get("admin")),
                 "runtimes": e.get("runtimes") or [], "pending_dlc": (e.get("pending_dlc") or {}).get("dlcs") or [],
                 "installed_at": e.get("installed_at") or 0, "last_played": e.get("last_played") or 0,
                 "launch": (e.get("launch") or {}).get("name") or "", "running": pid in running}
@@ -383,7 +384,10 @@ class GogService:
         if not st["enabled"] or not prof or not pl["sets"]:
             return {}
         bundles = pl["sets"]
-        res = gogsaves.before(self._cfg(), prof, pid, bundles)
+        res = gogsaves.before(self._cfg(), prof, pid, bundles, fresh=bool(e.get("fresh_sync")))
+        if e.get("fresh_sync") and not res.offline:
+            e["fresh_sync"] = False                   # pierwsza synchronizacja po instalacji za nami
+            gi.save_entry(e)
         skip = set()
         if res.conflicts:
             if choice not in ("local", "remote", "both", "skip"):
@@ -514,53 +518,76 @@ class GogService:
             return {"ok": False, "reason": str(ex)}
         return {"ok": True, **r}
 
-    def uninstall(self, pid: str) -> dict:
+    def uninstall_preview(self, pid: str) -> dict:
+        """Do okna odinstalowania: pliki poza katalogiem gry (Dokumenty/AppData; do wyboru) i foldery zapisów."""
+        e = gi.load_entry(_pid(pid))
+        if not e:
+            return {"ok": False, "reason": "Ta gra nie jest zainstalowana."}
+        return {"ok": True, "outside": gi.outside_files(e), "saves": (e.get("finalize") or {}).get("saves") or []}
+
+    def uninstall(self, pid: str, remove_outside: bool = False) -> dict:
         pid = _pid(pid)
         if pid in self.running_ids():
             return {"ok": False, "reason": "Zamknij grę przed usunięciem."}
         if self._job and self._job["pid"] == pid:
             return {"ok": False, "reason": "Gra ma zadanie w toku — przerwij je najpierw."}
         try:
-            r = gi.uninstall(pid)
+            r = gi.uninstall(pid, remove_outside=remove_outside)
         except gi.GogError as ex:
             return {"ok": False, "reason": str(ex)}
         self._last.pop(pid, None)
         msg = "Usunięto grę." if r["dir_removed"] else \
             f"Usunięto pliki gry. Zostało {r['left']} plików (zapisy / pliki gracza) w {r['dir']}."
+        if r.get("admin_left"):
+            msg += f" Nie usunięto {r['admin_left']} wpisów rejestru (brak zgody administratora)."
         return {"ok": True, "message": msg, **r}
 
     def finish_admin(self, pid: str, elevate=None) -> dict:
-        """Kroki HKLM z prośbą o uprawnienia administratora (okno UAC) — tylko na wyraźne żądanie gracza."""
+        """Kroki administratora jednej gry (HKLM) jednym oknem UAC — na wyraźne żądanie gracza."""
         pid = _pid(pid)
         e = gi.load_entry(pid)
-        if not e or e.get("state") != gi.ST_NEEDS_ADMIN:
+        if not e or not (e.get("finalize") or {}).get("admin") or e.get("state") not in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED):
             return {"ok": False, "reason": "Ta gra nie czeka na krok administratora."}
-        acts = (e.get("finalize") or {}).get("admin") or []
-        ok = gogfinal.run_admin_registry(acts, gi.gog_dir() / "admin" / pid, elevate)
-        if not ok:
+        if not gi.apply_admin([e], elevate):
             return {"ok": False, "reason": "Kroku administratora nie wykonano (odmowa w oknie UAC albo błąd)."}
-        e["finalize"]["admin_done"] = acts
-        e["finalize"]["admin"] = []
-        e["state"] = gi.ST_INSTALLED
-        e["error"] = ""
-        gi.save_entry(e)
         return {"ok": True, "message": "Instalacja ukończona."}
 
+    def admin_pending(self) -> list:
+        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG)."""
+        return [e["product_id"] for e in gi.entries()
+                if e.get("state") in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED) and (e.get("finalize") or {}).get("admin")]
+
+    def finish_admin_all(self, elevate=None) -> dict:
+        """Zaległe kroki administratora wszystkich gier jednym oknem UAC (Lumen: przy starcie, gdy gracz jest
+        jeszcze przy myszy/klawiaturze — okna UAC nie da się obsłużyć padem)."""
+        busy = set(self.running_ids()) | ({self._job["pid"]} if self._job else set())
+        es = [gi.load_entry(pid) for pid in self.admin_pending() if pid not in busy]
+        es = [e for e in es if e]
+        undo_ok = gi.run_pending_undo(elevate)        # odinstalowane gry: wpisy, których nie cofnięto (odmowa UAC)
+        if not es:
+            return {"ok": undo_ok, "games": 0, "message": "Brak zaległych kroków administratora."}
+        if gi.apply_admin(es, elevate) and undo_ok:
+            return {"ok": True, "games": len(es), "message": f"Wpisy rejestru zapisane ({len(es)} gier)."}
+        return {"ok": False, "games": len(es), "reason": "Kroków administratora nie wykonano (odmowa w oknie UAC "
+                                                          "albo błąd) — Lumen zapyta przy następnym starcie."}
+
     def install_runtimes(self, pid: str, elevate=None) -> dict:
-        """Biblioteki systemowe z zależności (Visual C++, DirectX) — jawnie, każdy instalator z UAC."""
+        """Biblioteki systemowe z zależności (Visual C++, DirectX), których nie ma w systemie — jednym oknem UAC
+        (Lumen jako administrator: bez okna). Już zainstalowane są pomijane (wykrycie albo zapamiętana instalacja)."""
         pid = _pid(pid)
         e = gi.load_entry(pid)
         if not e or e.get("state") != gi.ST_INSTALLED:
             return {"ok": False, "reason": "Gra nie jest zainstalowana."}
-        steps = gogfinal.runtime_steps(Path(e["install_dir"]), e.get("dependencies") or [])
-        if not steps:
-            return {"ok": True, "message": "Ta gra nie ma bibliotek systemowych do zainstalowania."}
-        res = gogfinal.run_runtimes(steps, elevate)
-        e["runtimes"] = [{"id": k, "done": v} for k, v in res.items()]
-        gi.save_entry(e)
-        bad = [k for k, v in res.items() if not v]
-        return {"ok": not bad, "message": "Biblioteki zainstalowane." if not bad else "",
-                "reason": f"Nie zainstalowano: {', '.join(bad)} (odmowa UAC albo instalator zgłosił błąd / nowszą wersję)." if bad else ""}
+        root = Path(e["install_dir"])
+        pending = {(a.get("id"), a.get("arch")) for a in e["finalize"].get("admin") or [] if a.get("op") == "runtime"}
+        acts = [a for a in gogfinal.runtime_acts(root, e.get("dependencies") or []) if (a["id"], a["arch"]) not in pending]
+        e["finalize"]["admin"] = (e["finalize"].get("admin") or []) + acts
+        if not any(a.get("op") == "runtime" for a in e["finalize"]["admin"]):
+            return {"ok": True, "message": "Biblioteki systemowe tej gry są już zainstalowane."}
+        if gi.apply_admin([e], elevate):
+            return {"ok": True, "message": "Biblioteki zainstalowane."}
+        left = [f"{a['id']} ({a['arch']})" for a in e["finalize"]["admin"] if a.get("op") == "runtime"]
+        return {"ok": False, "reason": f"Nie zainstalowano: {', '.join(left)} (odmowa UAC albo błąd instalatora)."}
 
 
 def _pid(pid) -> str:

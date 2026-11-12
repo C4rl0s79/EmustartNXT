@@ -33,7 +33,7 @@ import zlib
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
-from emustart import gogfinal, paths
+from emustart import gogadmin, gogfinal, paths
 from emustart.gogarchive import (BUILD_ID, HEX32, PRODUCT_ID, UnsafePath, depot_langs, norm_lang, safe_join,
                                  safe_rel)
 
@@ -291,6 +291,21 @@ def _sig(it: dict):
     return it.get("md5") or tuple((c.get("md5"), c.get("size")) for c in it.get("chunks") or []) or None
 
 
+def support_rel(it: dict, rel: str) -> str:
+    """Plik z flagą `support` i ścieżką `app/…` należy do katalogu gry (jak w GOG Galaxy): DOSBox Tex Murphy'ego
+    leży w manifeście jako `app\\DOSBOX\\…`, a playTask wskazuje `DOSBOX\\dosbox.exe`. Inne pliki „support”
+    (`1/`, `add/`, `userdocs/`…) zostają w {supportDir} (= katalog gry) — rozkłada je skrypt gry.
+    "" = sam katalog `app` (nic do utworzenia)."""
+    if "support" not in (it.get("flags") or []):
+        return rel
+    pre = gogfinal.SUPPORT_APP
+    if rel.lower().startswith(pre + "/"):
+        return rel[len(pre) + 1:]
+    if rel.lower() == pre and it.get("type") == "DepotDirectory":
+        return ""
+    return rel
+
+
 def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool = True, deps: bool = True) -> dict:
     """Plan instalacji z manifestu buildu i wyboru. Języki i DLC tylko z dostępnych na serwerze — bez
     cichej zamiany na angielski. `base=False` — tylko DLC (dogrywanie do istniejącej instalacji)."""
@@ -348,9 +363,12 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
             sfc[gi] = (dep["smallFilesContainer"].get("chunks") or [])
         for it in dep.get("items") or []:
             try:
-                rel = safe_rel(it.get("path"))
+                orig = safe_rel(it.get("path"))
+                rel = support_rel(it, orig)
             except UnsafePath as ex:
                 raise GogError(f"niebezpieczna ścieżka w manifeście: {ex}")
+            if not rel:
+                continue
             t = it.get("type")
             if t == "DepotDirectory":
                 dirs.add(rel)
@@ -363,9 +381,12 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
                         raise GogError(f"zły chunk w manifeście: {rel}")
                 if not ch and it.get("sfcRef") and gi not in sfc:
                     raise GogError(f"plik {rel} wskazuje na kontener SFC, którego depot nie ma")
-                owners.setdefault(rel.lower(), []).append((gi, rel, it))
+                owners.setdefault(rel.lower(), []).append((gi, rel, it, orig))
     files, conflicts, dropped = [], 0, 0
     for key, cands in owners.items():
+        # plik „support” z app/ i zwykły plik gry pod tą samą ścieżką: wygrywa „support” — jak dotąd krok skryptu
+        # {supportDir}/app → {app} (overwrite) nadpisywał plik gry; to nie konflikt wersji językowych
+        cands = [c for c in cands if c[1] != c[3]] or cands
         win = cands[-1]
         if len(cands) > 1 and len({_sig(c[2]) for c in cands}) > 1:
             conflicts += 1
@@ -375,11 +396,12 @@ def make_plan(bundle: dict, langs: list, primary: str = "", dlcs=(), base: bool 
             if win is None:                    # wariant tylko innych języków — przełączyłby język gry
                 dropped += 1
                 continue
-        gi, rel, it = win
+        gi, rel, it, orig = win
         files.append({"path": rel, "size": _size(it), "chunks": list(it.get("chunks") or []),
                       "sfc": [gi, int(it["sfcRef"]["offset"]), int(it["sfcRef"]["size"])]
                       if (it.get("sfcRef") and not it.get("chunks")) else None,
-                      "md5": it.get("md5") or "", "product": groups[gi]["product"]})
+                      "md5": it.get("md5") or "", "product": groups[gi]["product"],
+                      "legacy": orig if orig != rel else None})       # miejsce w instalacjach sprzed support_rel
     files.sort(key=lambda f: f["path"].lower())
     sfc_need = {f["sfc"][0] for f in files if f["sfc"]}
     sfc_tmp = max((sum(int(c.get("size") or 0) for c in sfc[gi]) for gi in sfc_need), default=0)
@@ -637,6 +659,8 @@ def install(source, pid: str, build: str, langs: list, primary: str, dlcs: list,
             e = None
     if not resume and not _empty_or_ours(root, pid):
         raise GogError(f"Katalog {root} nie jest pusty — wybierz inny.")
+    if resume:
+        _adopt_support_layout(root, plan, e)
     done = _still_done(root, plan, e.get("done") if resume else None)
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:
@@ -669,6 +693,59 @@ def _same_choice(e: dict, build: str, plan: dict, root: Path) -> bool:
             and set(e.get("languages") or []) == set(plan["languages"])
             and (e.get("primary") or "") == plan["primary"]
             and set(e.get("dlcs") or []) == set(plan["dlcs"]))
+
+
+def _move_legacy(root: Path, old: str, new: str) -> bool:
+    """<gra>/<old> → <gra>/<new>; gdy <new> już jest (kopia skryptu gry) — usuwa starą. True = wykonano."""
+    try:
+        src, dst = safe_join(root, old), safe_join(root, new)
+    except UnsafePath:
+        return False
+    if not src.is_file() or _has_link(root, src) or _has_link(root, dst):
+        return False
+    try:
+        if dst.exists():
+            src.unlink()
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(src, dst)
+    except OSError as ex:
+        log.warning("GOG: nie przeniesiono %s → %s: %s", old, new, ex)
+        return False
+    return True
+
+
+def _renamed_files(lst, renames: dict) -> list:
+    out, seen = [], set()
+    for p, s in lst or []:
+        p = renames.get(p, p)
+        if p.lower() not in seen:
+            seen.add(p.lower())
+            out.append([p, s])
+    return out
+
+
+def _adopt_support_layout(root: Path, plan: dict, e: dict | None) -> int:
+    """Instalacja sprzed support_rel: pliki „support” z app/ leżą w <gra>/app/…. Przenosi je na miejsca z planu
+    (gdy skrypt gry skopiował je już do katalogu gry — usuwa starą kopię), sprząta puste foldery app/ i poprawia
+    ścieżki w rejestrze, żeby weryfikacja nie uznała gry za uszkodzoną, a odinstalowanie usunęło wszystko."""
+    renames = {f["legacy"]: f["path"] for f in plan["files"]
+               if f.get("legacy") and _move_legacy(root, f["legacy"], f["path"])}
+    if not renames:
+        return 0
+    for d in sorted({p for old in renames for p in Path(old).parents if str(p) != "."}, key=lambda p: -len(p.parts)):
+        try:
+            safe_join(root, d.as_posix()).rmdir()             # tylko puste
+        except (OSError, UnsafePath):
+            pass
+    if e:
+        for part in (e, e.get("pending_dlc")):
+            if part:
+                part["files"] = _renamed_files(part.get("files"), renames)
+                part["done"] = sorted({renames.get(p, p) for p in part.get("done") or []})
+        save_entry(e)
+    log.info("GOG %s: %d plików „support” przeniesionych z app/ do katalogu gry", plan.get("product_id"), len(renames))
+    return len(renames)
 
 
 def _still_done(root: Path, plan: dict, done_list) -> set:
@@ -739,6 +816,56 @@ def _dlc_names(bundle: dict) -> dict:
     return {str(d["id"]): d.get("name") or d["id"] for d in bundle.get("dlcs") or []}
 
 
+ADMIN_TRIES = 3
+
+
+def apply_admin(es: list, elevate=None) -> bool:
+    """Kroki administratora kilku gier w jednym procesie z uprawnieniami (jedno okno UAC; Lumen „jako administrator”
+    — bez okna). Wynik rozdzielony na gry; stan rejestru sprzed zapisu zapamiętany (deinstalator go przywraca);
+    admin_done dopisywane — krok DLC nie gubi kroków gry podstawowej."""
+    parts = []
+    for e in es:
+        acts = e["finalize"]["admin"]
+        parts.append((e, acts, gogadmin.capture(acts)))
+    steps = [s for _e, _a, done in parts for s in gogadmin.set_steps(done)]
+    work = gog_dir() / "admin" / (es[0]["product_id"] if len(es) == 1 else "_all")
+    res = gogadmin.run(steps, work, elevate)
+    i, all_ok = 0, True
+    for e, acts, done in parts:
+        r = res[i:i + len(acts)]
+        i += len(acts)
+        e["finalize"]["admin_done"] = (e["finalize"].get("admin_done") or []) + [d for d, ok in zip(done, r) if ok]
+        for d, ok in zip(done, r):
+            if ok and d["act"].get("op") == "runtime":         # biblioteka zainstalowana — zapamiętana na tym komputerze
+                gogfinal.remember_runtime(f"{d['act']['id']}:{d['act']['arch']}")
+                for x in e.get("runtimes") or []:
+                    if x.get("id") == d["act"]["id"] and x.get("arch", d["act"]["arch"]) == d["act"]["arch"]:
+                        x["done"] = True
+        left = []
+        for a, ok in zip(acts, r):
+            if ok:
+                continue
+            a["tries"] = int(a.get("tries") or 0) + 1
+            if a.get("compat") and a["tries"] >= ADMIN_TRIES:
+                # krok „compat”, który ciągle się nie udaje (np. instalator biblioteki z kodem błędu), nie wraca
+                # z oknem UAC przy każdym starcie — zostaje w admin_failed (informacja w szczegółach gry)
+                e["finalize"].setdefault("admin_failed", []).append(a)
+            else:
+                left.append(a)
+        e["finalize"]["admin"] = left
+        if not needs_admin(e["finalize"]["admin"]) and e["state"] == ST_NEEDS_ADMIN:
+            e["state"], e["error"] = ST_INSTALLED, ""
+        all_ok = all_ok and all(r)
+        save_entry(e)
+    return all_ok
+
+
+def needs_admin(acts: list) -> bool:
+    """Krok administratora blokuje grę tylko wtedy, gdy wymaga go skrypt gry; wpisy „compat” (rejestr GOG jak po
+    instalatorze GOG) czekają na okno UAC przy starcie Lumena, a gra działa bez nich."""
+    return any(not a.get("compat") for a in acts or [])
+
+
 def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=None) -> dict:
     """Kroki po zapisie plików: opis DLC bez plików, akcje skryptów, uruchamianie. Stan „installed” dopiero
     po wszystkich obowiązkowych krokach; HKLM → „needs_admin”."""
@@ -752,19 +879,27 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
                 info.write_text(json.dumps({"gameId": did, "rootGameId": pid, "name": names.get(did, did),
                                             "buildId": e["build_id"], "playTasks": []}, indent=2), encoding="utf-8")
                 e.setdefault("created_files", []).append(str(info))
-        fin = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": []}
+        fin = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": [], "once": []}
         known = {str(p).lower() for p, _s in e.get("files") or []} | {f["path"].lower() for f in plan["files"]}
+        once = set((e.get("finalize") or {}).get("once") or [])        # akcje onlyOnce wykonane w tej instalacji
         for prod in ([pid] if not dlc_only else []) + list(plan["dlcs"]):
-            r = gogfinal.apply_script(root, prod, known=known, **({"hkcu": hkcu} if hkcu else {}))
+            r = gogfinal.apply_script(root, prod, known=known, once=once, lang=e.get("primary") or "",
+                                      **({"hkcu": hkcu} if hkcu else {}))
             for k in fin:
                 fin[k] += r[k]
+        fin["once"] = sorted(once | set(fin["once"]))
         e["created_files"] = sorted(set(e.get("created_files") or []) | set(fin.pop("created")))
         e["dirs"] = sorted(set(e.get("dirs") or []) | set(fin.pop("dirs")))
         if not dlc_only:
             if not (root / f"goggame-{pid}.info").exists():
                 raise gogfinal.FinalizeError(f"build nie ma goggame-{pid}.info — brak opisu uruchamiania")
             e["launch"] = gogfinal.launch_spec(root, pid)
-            e["runtimes"] = [{"id": s["id"], "done": False} for s in gogfinal.runtime_steps(root, e.get("dependencies") or [])]
+            # rejestr GOG.com\Games\<id> jak po instalatorze GOG — krok administratora „compat” (gra działa i bez niego)
+            fin["admin"] += gogfinal.gog_registry_acts(root, pid, e, e["launch"], fin["saves"], fin["admin"])
+            # biblioteki (VC++, DirectX), których nie ma w systemie — kroki administratora razem z resztą (jedno okno)
+            rt = gogfinal.runtime_acts(root, e.get("dependencies") or [])
+            fin["admin"] += rt
+            e["runtimes"] = [{"id": a["id"], "arch": a["arch"], "done": False} for a in rt]
     except (gogfinal.FinalizeError, OSError, ValueError) as ex:
         if dlc_only:
             e["error"] = f"Finalizacja DLC nie powiodła się: {ex}"
@@ -783,15 +918,19 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
         e["finalize"].setdefault("admin", [])
         e["finalize"]["admin"] += fin["admin"]
         e["finalize"]["hkcu"] = (e["finalize"].get("hkcu") or []) + fin["hkcu"]
-        if fin["admin"]:
+        e["finalize"]["once"] = fin["once"]
+        if needs_admin(fin["admin"]):
             e["state"] = ST_NEEDS_ADMIN
     else:
         e["finalize"] = fin
-        e["state"] = ST_NEEDS_ADMIN if fin["admin"] else ST_INSTALLED
+        e["state"] = ST_NEEDS_ADMIN if needs_admin(fin["admin"]) else ST_INSTALLED
         e["done"] = []
         e["installed_at"] = time.time()
+        e["fresh_sync"] = True            # pierwsza synchronizacja: pliki z serwera zastępują wgrane przez instalator
     e["error"] = ""
     save_entry(e)
+    if e["finalize"].get("admin") and gogadmin.is_elevated():
+        apply_admin([e])                     # Lumen „jako administrator”: kroki od razu, bez okna i bez czekania
     log.info("GOG %s: %s (%s)", pid, e["state"], root)
     return e
 
@@ -841,6 +980,7 @@ def verify(pid: str, deep: bool = True) -> dict:
     bundle = load_bundle(e)
     plan = make_plan(bundle, e["languages"], e["primary"], e["dlcs"])
     root = Path(e["install_dir"])
+    _adopt_support_layout(root, plan, e)
     bad = [(f["path"], why) for f in plan["files"] if (why := verify_file(root, f) if deep else
                                                       ("" if _size_ok(root, f) else "rozmiar"))]
     if bad and e["state"] in (ST_INSTALLED, ST_NEEDS_ADMIN):
@@ -879,6 +1019,7 @@ def repair(source, pid: str, cancel=None, on_progress=None, on_phase=None) -> di
                             "Usuń grę i zainstaluj ponownie (zapisy w folderze zapisów zostają).")
     plan = make_plan(bundle, e["languages"], e["primary"], e["dlcs"])
     root = Path(e["install_dir"])
+    _adopt_support_layout(root, plan, e)
     done = _still_done(root, plan, e.get("done"))
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:
@@ -886,28 +1027,55 @@ def repair(source, pid: str, cancel=None, on_progress=None, on_phase=None) -> di
     return _run(source, e, plan, bundle, done, cancel, on_progress, phase, mode="repair")
 
 
-def uninstall(pid: str, remove_hkcu=None) -> dict:
+def outside_files(e: dict) -> list:
+    """Pliki skopiowane przez instalację poza katalog gry (Dokumenty, AppData) — bez folderów zapisów."""
+    root = Path(e["install_dir"])
+    saves = [Path(os.path.abspath(s)) for s in (e.get("finalize") or {}).get("saves") or []]
+    out = []
+    for c in e.get("created_files") or []:
+        p = Path(os.path.abspath(c))
+        if _is_inside(p, root) or any(_is_inside(p, s) for s in saves) or not p.is_file():
+            continue
+        out.append(str(p))
+    return out
+
+
+def uninstall(pid: str, remove_hkcu=None, elevate=None, remove_outside: bool = False) -> dict:
     """Usuwa tylko pliki zarządzane przez EmuStart (z manifestu i utworzone przy finalizacji), puste katalogi
-    z manifestu i pusty katalog gry. Zapisy (savePath), pliki dodane przez grę lub gracza i wszystko poza
+    z manifestu i pusty katalog gry; cofa kroki administratora (HKLM — jedno okno UAC; odmowa nie wstrzymuje
+    usuwania plików, wynik w `admin_left`). Zapisy (savePath), pliki dodane przez grę lub gracza i wszystko poza
     katalogiem gry zostają. Archiwum na serwerze nie jest dotykane."""
     e = load_entry(pid)
     if not e:
         raise GogError("Ta gra nie jest zainstalowana.")
     root = Path(e["install_dir"])
+    # najpierw kroki administratora — regsvr32 /u potrzebuje jeszcze plików gry
+    admin_left = _undo_admin(e, elevate)
     removed, left, kept_errors = _remove_managed(e)
     if kept_errors:
         e["error"] = f"Nie usunięto {len(kept_errors)} plików (np. {kept_errors[0]}) — zamknij grę i spróbuj ponownie."
         save_entry(e)
         raise GogError(e["error"])
+    outside = outside_files(e)
+    if remove_outside:                    # wybór gracza w oknie odinstalowania; zapisy zostają zawsze
+        for f in list(outside):
+            try:
+                Path(f).unlink()
+                outside.remove(f)
+                removed += 1
+            except OSError:
+                pass
     _forget(e, remove_hkcu)
-    return {"removed": removed, "left": left, "dir": str(root), "dir_removed": not root.exists()}
+    return {"removed": removed, "left": left, "dir": str(root), "dir_removed": not root.exists(),
+            "admin_left": admin_left, "outside_left": outside}
 
 
-def discard(pid: str, remove_hkcu=None) -> None:
+def discard(pid: str, remove_hkcu=None, elevate=None) -> None:
     """Porzucenie przerwanej instalacji (przed instalacją z innym wyborem): jej pliki jak przy odinstalowaniu."""
     e = load_entry(pid)
     if not e:
         return
+    _undo_admin(e, elevate)
     _removed, _left, errors = _remove_managed(e)
     if errors:
         raise GogError(f"Nie usunięto plików przerwanej instalacji ({len(errors)}, np. {errors[0]}) — "
@@ -915,14 +1083,72 @@ def discard(pid: str, remove_hkcu=None) -> None:
     _forget(e, remove_hkcu)
 
 
+def _undo_admin(e: dict, elevate=None) -> int:
+    """Kroki administratora tej gry (HKLM: wartości sprzed instalacji wracają, dodane znikają) — jedno okno UAC.
+    Zwraca liczbę kroków, których nie cofnięto (odmowa w oknie UAC, błąd)."""
+    steps = gogadmin.undo_steps((e.get("finalize") or {}).get("admin_done") or [])
+    # ta sama baza zgodności (GUID) bywa w kilku grach (Dungeon Keeper 2 i Vampire, Tomb Raider 4 i 5) —
+    # zostaje, dopóki używa jej inna zainstalowana gra
+    shared = {d["act"]["guid"] for o in entries() if o.get("product_id") != e["product_id"]
+              for d in map(gogadmin._norm, (o.get("finalize") or {}).get("admin_done") or []) if d["act"].get("op") == "sdb"}
+    steps = [s for s in steps if not (s["kind"] == "sdb_remove" and s["guid"] in shared)]
+    if not steps:
+        return 0
+    res = gogadmin.run(steps, gog_dir() / "admin" / str(e["product_id"]), elevate)
+    failed = [s for s, ok in zip(steps, res) if not ok]
+    # cofnięte nie są cofane drugi raz (np. po nieudanym usunięciu plików)
+    e["finalize"]["admin_done"] = []
+    save_entry(e)
+    if failed:
+        log.warning("GOG %s: nie cofnięto %d kroków administratora — ponowienie przy kolejnym oknie UAC",
+                    e["product_id"], len(failed))
+        add_pending_undo(failed)
+    return len(failed)
+
+
+def _pending_undo_path() -> Path:
+    return gog_dir() / "admin" / "pending-undo.json"
+
+
+def pending_undo() -> list:
+    """Kroki cofania gier już odinstalowanych (odmowa UAC przy odinstalowaniu) — ponawiane z zaległymi krokami."""
+    try:
+        return json.loads(_pending_undo_path().read_text(encoding="utf-8")).get("steps") or []
+    except (OSError, ValueError):
+        return []
+
+
+def add_pending_undo(steps: list) -> None:
+    p = _pending_undo_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    keep = [s for s in pending_undo() + list(steps) if s.get("kind") != "unregsvr"]   # bez plików gry — niewykonalne
+    p.write_text(json.dumps({"steps": keep}, ensure_ascii=False), encoding="utf-8")
+
+
+def run_pending_undo(elevate=None) -> bool:
+    steps = pending_undo()
+    if not steps:
+        return True
+    res = gogadmin.run(steps, gog_dir() / "admin" / "_undo", elevate)
+    left = [s for s, ok in zip(steps, res) if not ok]
+    p = _pending_undo_path()
+    if left:
+        p.write_text(json.dumps({"steps": left}, ensure_ascii=False), encoding="utf-8")
+    else:
+        p.unlink(missing_ok=True)
+    return not left
+
+
 def _forget(e: dict, remove_hkcu=None) -> None:
-    # wartości rejestru HKCU ustawione przez finalizację tej gry
+    # wartości rejestru HKCU ustawione przez finalizację tej gry; stan synchronizacji zapisów zostaje — zapisy
+    # zostają na dysku, a po ponownej instalacji porównanie z nim chroni nowsze lokalne zapisy (np. gra offline)
     (remove_hkcu or gogfinal.remove_hkcu)((e.get("finalize") or {}).get("hkcu") or [])
     try:
         _entry_path(e["product_id"]).unlink()
     except FileNotFoundError:
         pass
     shutil.rmtree(gog_dir() / "manifests" / str(e["product_id"]), ignore_errors=True)
+    shutil.rmtree(gog_dir() / "admin" / str(e["product_id"]), ignore_errors=True)
 
 
 def _remove_managed(e: dict) -> tuple:

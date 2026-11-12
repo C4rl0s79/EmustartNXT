@@ -50,6 +50,7 @@ _KNOWN = {
     "winLocalAppDataLow": "{A520A1A4-1780-4FF6-BD18-167343C5AF16}",
     "winDocuments": "{FDD39AD0-238F-46AF-ADB4-6C85480369C7}",
     "winPublic": "{DFDF76A2-C82A-4D63-906A-5644AC457385}",
+    "winPublicDocuments": "{ED4824AF-DCE4-45A8-81E2-FC7965083634}",
     "winProgramData": "{62AB5D82-FDC1-4DC3-A9DD-070D1D495D97}",
     "winDir": "{F38BF404-1D43-42F2-9305-67DE0B28FC23}",
 }
@@ -108,12 +109,12 @@ def _cache_path(pid: str) -> Path:
 
 def settings(pid: str) -> dict:
     """Ustawienia synchronizacji gry na tym urządzeniu: enabled (zapisy, domyślnie tak), config (ustawienia,
-    domyślnie nie), rules (ręczne reguły gracza albo None), pick (tytuł wybrany z niejednoznacznych)."""
+    domyślnie tak — od 2026-11, ustalenie z użytkownikiem), rules (ręczne reguły gracza albo None), pick (tytuł wybrany z niejednoznacznych)."""
     try:
         d = json.loads(_cfg_path(pid).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         d = {}
-    return {"enabled": bool(d.get("enabled", True)), "config": bool(d.get("config", False)),
+    return {"enabled": bool(d.get("enabled", True)), "config": bool(d.get("config", True)),
             "rules": d.get("rules") if isinstance(d.get("rules"), dict) else None, "pick": str(d.get("pick") or "")}
 
 
@@ -421,8 +422,10 @@ def plan(pid: str, install_dir: str, r: dict, with_config: bool, folders: dict |
 
 # ── synchronizacja (syncclient: te same wersje, konflikty i kopie co gry emulowane) ──
 
-def before(cfg: dict, profile: int, pid: str, bundles: list):
-    """Przed grą: pobranie nowszych zapisów / wysłanie niewysłanych / konflikty (decyzja gracza)."""
+def before(cfg: dict, profile: int, pid: str, bundles: list, fresh: bool = False):
+    """Przed grą: pobranie nowszych zapisów / wysłanie niewysłanych / konflikty (decyzja gracza).
+    `fresh` — pierwsza gra po instalacji: lokalne pliki zapisał instalator (domyślne ustawienia, puste zapisy), więc
+    paczka z serwera je zastępuje bez pytania (bieżące trafiają do kopii zapasowej — syncclient._apply)."""
     from emustart import syncclient as sc
     res = sc.Result()
     if not bundles:
@@ -438,7 +441,12 @@ def before(cfg: dict, profile: int, pid: str, bundles: list):
             if b.error:
                 continue
             try:
-                sc._before_one(cl, profile, PLATFORM, pid, b, sc._server_bundle(man, b, 1), res, 1)
+                srv = sc._server_bundle(man, b, 1)
+                if fresh and int(srv.get("revision") or 0) and srv.get("download_url")                         and sc._state(profile, PLATFORM, pid, b, 1) is None:
+                    sc._download(cl, profile, PLATFORM, pid, b, srv, 1)
+                    res.downloaded += 1
+                    continue
+                sc._before_one(cl, profile, PLATFORM, pid, b, srv, res, 1)
             except sc.Offline as ex:
                 res.offline = str(ex)
             except (OSError, ValueError) as ex:

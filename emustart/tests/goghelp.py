@@ -106,8 +106,10 @@ def info(lang: str) -> bytes:
                             "workingDir": "bin", "type": "FileTask"}]}).encode()
 
 
-def build_archive(root: Path, state: str = "complete", script: dict | None = None, extra_items: list | None = None) -> dict:
-    """Archiwum z jedną grą; zwraca słownik z hashami i oczekiwaną zawartością."""
+def build_archive(root: Path, state: str = "complete", script: dict | None = None, extra_items: list | None = None,
+                  extra_files: list | None = None) -> dict:
+    """Archiwum z jedną grą; zwraca słownik z hashami i oczekiwaną zawartością. `extra_files` — [(ścieżka, dane,
+    flagi)] dopisane do głównego depotu (np. pliki „support”)."""
     b = Builder(root)
     a_items = [
         b.file_item("bin/game.exe", GAME_EXE, parts=2, flags=["executable"]),
@@ -117,6 +119,7 @@ def build_archive(root: Path, state: str = "complete", script: dict | None = Non
         b.file_item("app/dosbox.conf", b"[dosbox]\nmemsize=16\n"),
         {"type": "DepotDirectory", "path": "saves"},
         *(extra_items or []),
+        *(b.file_item(path, data, flags=flags) for path, data, flags in extra_files or []),
     ]
     sfc = [(f"small/s{i}.txt", f"maly plik {i}\n".encode()) for i in range(5)]
     sfc_only = [("small/tylko_kontener.txt", b"tylko w kontenerze SFC\n")]
