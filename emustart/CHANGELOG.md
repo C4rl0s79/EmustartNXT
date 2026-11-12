@@ -6,6 +6,15 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Ustawienia DeepSource (issues #14, #16) — plan
+
+- Nowy `.deepsource.toml` w głównym folderze repozytorium: wzorce testów, wykluczenia (dane testowe, `openwiki/`,
+  `graphify-out/`), długość linii 120, wyższe progi złożoności (Python `high`, JS `very-high`).
+- #16: `# skipcq: SCT-A000` przy `tls.PASS` (nazwa pliku) i `webportal.GOOGLE_TOKEN` (publiczny adres OAuth) —
+  w `emustart/` i `lumen/engine/`; same komentarze, kod bez zmian.
+
+Nie dotyka: działania programu, listy gier, sterowania, menu, API, zapisów, APK, CI.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);

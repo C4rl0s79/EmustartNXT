@@ -50,7 +50,7 @@ SESSION_TTL = 12 * 3600
 FLOW_TTL = 600
 COOKIE, FLOW_COOKIE = "es_portal", "es_oauth"
 GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth"
-GOOGLE_TOKEN = "https://oauth2.googleapis.com/token"
+GOOGLE_TOKEN = "https://oauth2.googleapis.com/token"  # skipcq: SCT-A000 — publiczny adres OAuth Google
 ISSUERS = ("accounts.google.com", "https://accounts.google.com")
 MAX_SESSIONS, MAX_FLOWS = 500, 200
 # opisy programów na stronie (pliki — emustart/clientdist.py; zrzuty — web/portal/shots)
