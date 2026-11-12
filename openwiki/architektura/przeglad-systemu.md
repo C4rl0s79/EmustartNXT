@@ -21,7 +21,7 @@ sources:
     resource: repo://lumen/src/main/emustart/engine.ts
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-11T20:26:15.897Z" }
+generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
 ---
 
 # Przegląd systemu: serwer, klienci i Lumen

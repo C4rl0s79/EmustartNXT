@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d07bca6da751595cbcae0597d0cc0818dcce13870d802429ff91ab3923284f1",
+  "pageVersion": "sha256:47744e46b6c9d8a4d45a14f1dbdbf47f01d63c16bb4b977ed258ac7dff781be0",
   "claims": [
     {
       "id": "claim_9173fb4ee5df47cc9e0e312f8ddb4a47",
@@ -68,7 +68,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openwiki-update.yml",
-          "version": "repo-file-v1:sha256:bd58aea1df172178dae71605ec261db816cafa24947b59d9e0b0d1df7c5a6941"
+          "version": "repo-file-v1:sha256:1ac91753db71d60ad2b28bc5595a1499fcb57f9dc1cb17564c6713d64ad89ae0"
         }
       ]
     },
@@ -84,17 +84,37 @@
     },
     {
       "id": "claim_7720a014445d4b79aa5cd3a4a4bf220f",
-      "statement": "Wydanie Lumena w C4rl0s79/EmustartNXT z tagiem lumen-v<wersja> zawiera portable.zip i setup.exe oraz ich pliki .sig.",
+      "statement": "Wydanie Lumena w C4rl0s79/EmustartNXT z tagiem lumen-v<wersja> zawiera portable.zip i setup.exe oraz ich pliki .sig; powstaje z adnotowanego tagu na commicie scalenia.",
       "evidence": [
         {
-          "resource": "repo://lumen/README.md#L95-L109",
-          "version": "repo-lines-v1:sha256:11f585701bbbae65061e4b5d2821c4c048e3a5a1e9a383de9f9c04a6a874b0d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZTY1ZjljNTI4ZDdmZjk1NzkwNWI0NDA5ZjQ0ZWYyZmNkMGJmN2QzZDdjNTEwYzQzZjQ5MDZlNzUyYzEwMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZjA0YWVhZDFjMTFmNWMxZTcxMmZlOGVlN2JjYzE0N2I3MTgzMDU5YTJkYmExMWEzOGMzZjU4ODQwOWFlNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZDlkNWUwNGFjZGY1ZTIyYzllZjc1NjA4MTdiZDA2OTFiMjY3Y2Q4MDFjNDRhNTYzMGZiZGNkMjQ1ZmE0NWYifQ"
+          "resource": "repo://lumen/README.md#L95-L120",
+          "version": "repo-lines-v1:sha256:eb422d13bec8e0a06f28295aaab0f2391a7be4d2441af69ab79738b3ce07d10a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiNDBhNmZlZWU4ZWRiNTI1ZTdhODcxMTIyYzM1MWJiYzBmYWMxN2I0YzczODhlMTUyYTU5MDA0NGZkNGJmM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NjQyNGY1ODgwNGNjMmJjMzk2OGRmYTljOGEwMzlmZGQyNjZlNjc5NDQ3YzU1NGE3MDg4NjQxMmUzZmM2MDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZjA0YWVhZDFjMTFmNWMxZTcxMmZlOGVlN2JjYzE0N2I3MTgzMDU5YTJkYmExMWEzOGMzZjU4ODQwOWFlNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkMzhhMjYwYjAyNzU3OGQ3ZWVkNGRkYjQ3NDU1NTg3ODBlZTE5ZjY3ZmJhYzllNjJhNTUyODk3YTU3NjBiNTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_194c26c6f6174c948a21373b66005734",
+      "statement": "Workflow Lumen uruchamia typecheck, vitest i pytest silnika przy PR i pushu na main (zmiany w lumen/), a przy tagu lumen-v* lub ręcznie buduje silnik i Lumena bez publikacji przez electron-builder.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/lumen.yml",
+          "version": "repo-file-v1:sha256:281abb37a59d4be6755f63e41d18fff077c97a77eaac4bb60625bc133ee30174"
+        }
+      ]
+    },
+    {
+      "id": "claim_2e123a77012b41f1a33dc0799aba070a",
+      "statement": "Przy tagu lumen-v* workflow sprawdza zgodność tagu z wersją w package.json, podpisuje pliki kluczem z sekretu LUMEN_SIGNING_KEY i zakłada wydanie z opisem z adnotowanego tagu.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/lumen.yml",
+          "version": "repo-file-v1:sha256:281abb37a59d4be6755f63e41d18fff077c97a77eaac4bb60625bc133ee30174"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:46:08.589Z"
+    "at": "2026-11-11T20:54:21.084Z"
   }
 }
