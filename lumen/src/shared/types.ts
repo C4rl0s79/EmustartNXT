@@ -539,6 +539,9 @@ export interface Settings {
    * theme keeps its look in EmuStart's shared config; here only Lumen's own keys (typefaces).
    */
   tvLooks: Record<string, Record<string, number | string>>
+  /** animacje trybu TV (tło motywu, dekoracje z paczek): wył. / niskie / średnie / wysokie; przy ograniczonym ruchu
+   *  w Windows — wył. bez względu na to ustawienie */
+  tvAnim: TvAnim
   /** the optional desktop interface (shared/deck.ts); off by default */
   deck: DeckSettings
   hasSgdbKey: boolean
@@ -568,6 +571,7 @@ export type SettingsPatch = Partial<
     | 'pythonPath'
     | 'tvTheme'
     | 'tvLooks'
+    | 'tvAnim'
     | 'gogInstallDir'
     | 'gogLanguages'
   >
@@ -1235,3 +1239,6 @@ export interface ThemePackage {
   /** zmienia się z każdą wersją plików — do adresów (pamięć przeglądarki) */
   rev: string
 }
+
+export type TvAnim = 'off' | 'low' | 'med' | 'high'
+export const TV_ANIM_LEVELS: TvAnim[] = ['off', 'low', 'med', 'high']

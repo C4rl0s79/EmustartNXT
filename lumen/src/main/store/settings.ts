@@ -25,6 +25,7 @@ const defaults = (): StoredSettings => ({
   language: 'polish',
   tvTheme: 'emustart',
   tvLooks: {},
+  tvAnim: 'med',
   gogInstallDir: defaultGogDir(),
   gogLanguages: ['pl', 'en'],
   deck: defaultDeckSettings()
@@ -94,6 +95,7 @@ function migrate(raw: unknown): StoredSettings {
     pythonPath: cleanPath(r.pythonPath),
     tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart',
     tvLooks: cleanLooks(r.tvLooks),
+    tvAnim: r.tvAnim === 'off' || r.tvAnim === 'low' || r.tvAnim === 'high' ? r.tvAnim : 'med',
     gogInstallDir: cleanAbsDir(r.gogInstallDir) ?? d.gogInstallDir,
     gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages),
     deck: cleanDeckSettings(r.deck)
