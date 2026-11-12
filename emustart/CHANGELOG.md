@@ -11,6 +11,19 @@ nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te sa
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);
 jedno zapytanie przygotowujące grę — po pomiarach kroków z prawdziwych startów.
 
+### Zgłoszenia DeepSource (issues #11, #12, #15, #17, #20) — plan
+
+Zmiana w `emustart/` i w kopii silnika Lumena `lumen/engine/` (te same pliki):
+- UPnP (#15): adres opisu routera (`LOCATION` z odpowiedzi SSDP, zapamiętany adres) i adres sterowania z jego
+  opisu muszą być `http`/`https` na prywatny adres IP — inaczej router jest pomijany (urządzenie w sieci nie
+  podsunie `file://` ani adresu w internecie). Routery w sieci lokalnej działają jak dotąd.
+- Porządki bez zmiany działania: `path in (…)` w `webportal.py` (#11), `list()`/`dict()` zamiast zbędnych list
+  składanych (#12), licznik bez zmiennego argumentu domyślnego w teście (#17), usunięte nieużywane importy w
+  testach (#20).
+
+Nie dotyka: listy gier, sterowania, menu, API `/v1/…`, zapisów, APK, pozostałych wywołań `urlopen` (stałe
+adresy `https://`).
+
 ### Do zrobienia (zgłoszone 2026-11-09)
 
 Stan: zrobione lokalnie (bez wydania): 1, 5, 6, 7, 9, 10, 11. Grafiki grup (2): panel gotowy (0.61.0), czekają na pliki.

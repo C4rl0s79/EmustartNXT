@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 
-from emustart import config, emulators, nasfs, paths, profiles
+from emustart import config, emulators, nasfs, paths
 
 
 def test_new_install_has_no_paths_but_emulators_next_to_program(monkeypatch):

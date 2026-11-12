@@ -357,7 +357,7 @@ class GogBundle:
 
     def local_path(self, arc: str) -> Path:
         """Plik z paczki serwera → ścieżka w tym zbiorze; nic poza folderem zbioru i nic przez dowiązania."""
-        parts = [p for p in str(arc).replace("\\", "/").split("/")]
+        parts = str(arc).replace("\\", "/").split("/")
         if not parts or any(p in ("", ".", "..") or ":" in p for p in parts) or str(arc).startswith(("/", "\\")):
             raise ValueError(f"niedozwolona nazwa w paczce: {arc!r}")
         if self.parts and not self._match_prefix(parts):
