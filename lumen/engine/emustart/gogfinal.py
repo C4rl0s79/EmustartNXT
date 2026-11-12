@@ -20,6 +20,7 @@ który uruchamia grę i kończy się, nie kończy sesji).
 from __future__ import annotations
 
 import getpass
+import hashlib
 import json
 import logging
 import os
@@ -414,12 +415,13 @@ def _execute(args: dict, app: Path, pid: str, sysf: dict, res: dict, hkcu, resol
 
 
 def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known: set | None = None,
-                 folders: dict | None = None) -> dict:
+                 folders: dict | None = None, once: set | None = None) -> dict:
     """Akcje instalacyjne `goggame-<pid>.script`. Zwraca {"done", "admin" (kroki HKLM), "skipped", "saves",
     "created" (pliki utworzone kopią — do odinstalowania), "dirs" (puste foldery utworzone przez skrypt)}; błąd akcji,
     która musi się udać → FinalizeError. `known` — pliki gry z manifestu (małe litery, względne): kopia poza nimi
     należy do instalacji także wtedy, gdy powstała w przerwanej wcześniej finalizacji."""
-    res: dict[str, list] = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": []}
+    res: dict[str, list] = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": [],
+                            "once": []}
     hkcu = hkcu or set_hkcu
     data = read_script(app, pid)
     if not data:
@@ -450,6 +452,18 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
     for act in data.get("actions") or []:
         ins = (act or {}).get("install") or {}
         kind, args = ins.get("action"), ins.get("arguments") or {}
+        conds = _conditions(act, args)
+        if conds & {"onlanguagechange", "onversionchange"}:
+            res["skipped"].append(f"{kind}: tylko przy zmianie języka / wersji")     # przy instalacji nie ma zmiany
+            continue
+        if "onlyonce" in conds:
+            okey = hashlib.sha1(json.dumps(act, sort_keys=True).encode("utf-8")).hexdigest()
+            if okey in (once or set()):
+                res["skipped"].append(f"{kind}: już wykonane w tej instalacji (onlyOnce)")
+                continue
+            res["once"].append(okey)
+        # nie nadpisuj tego, co już jest (ustawienia / zapisy gracza przy ponownej finalizacji)
+        keep = args.get("overwrite") is False or bool(args.get("saveGameData"))
         if kind == "supportData" and not args.get("source"):
             # bez źródła: instalator tworzy pusty folder (np. {app}/cloud_saves)
             dst = resolve(args.get("target"))
@@ -478,7 +492,7 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
                     if f.is_file():
                         t = dst / f.relative_to(src)
                         t.parent.mkdir(parents=True, exist_ok=True)
-                        if _same(f, t):
+                        if (keep and t.exists()) or _same(f, t):
                             continue
                         if is_new(t):
                             res["created"].append(str(t))
@@ -486,7 +500,7 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             elif typ == "file" and src.is_file():
                 t = (dst / src.name) if (dst.is_dir() or not dst.suffix) else dst
                 t.parent.mkdir(parents=True, exist_ok=True)
-                if not _same(src, t):
+                if not (keep and t.exists()) and not _same(src, t):
                     if is_new(t):
                         res["created"].append(str(t))
                     shutil.copy2(src, t)

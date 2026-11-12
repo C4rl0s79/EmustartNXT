@@ -576,7 +576,7 @@ def test_launch_waits_for_conflict_decision_and_uploads_after_game(env, monkeypa
     monkeypatch.setattr(gogsaves, "rules", lambda pid, src=None, refresh=False: {
         "source": "ludusavi", "files": [{"path": "<base>/saves", "tags": ["save"], "when": []}]})
     seen = []
-    monkeypatch.setattr(gogsaves, "before", lambda cfg, prof, pid, b: seen.append(b[0].key) or
+    monkeypatch.setattr(gogsaves, "before", lambda cfg, prof, pid, b, fresh=False: seen.append(b[0].key) or
                         syncclient.Result(conflicts=[syncclient.Conflict(b[0], {"revision": 3})]))
     resolved = []
     monkeypatch.setattr(gogsaves, "resolve", lambda cfg, prof, pid, c, choice: resolved.append(choice))

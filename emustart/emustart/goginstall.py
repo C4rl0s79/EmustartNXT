@@ -661,6 +661,8 @@ def install(source, pid: str, build: str, langs: list, primary: str, dlcs: list,
         raise GogError(f"Katalog {root} nie jest pusty — wybierz inny.")
     if resume:
         _adopt_support_layout(root, plan, e)
+    else:
+        _forget_sync(pid)                 # nowa instalacja: stan synchronizacji poprzedniej nie obowiązuje
     done = _still_done(root, plan, e.get("done") if resume else None)
     need, free = space_needed(plan, done), free_bytes(root)
     if free is not None and free < need:
@@ -859,12 +861,14 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
                 info.write_text(json.dumps({"gameId": did, "rootGameId": pid, "name": names.get(did, did),
                                             "buildId": e["build_id"], "playTasks": []}, indent=2), encoding="utf-8")
                 e.setdefault("created_files", []).append(str(info))
-        fin = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": []}
+        fin = {"done": [], "admin": [], "skipped": [], "saves": [], "created": [], "hkcu": [], "dirs": [], "once": []}
         known = {str(p).lower() for p, _s in e.get("files") or []} | {f["path"].lower() for f in plan["files"]}
+        once = set((e.get("finalize") or {}).get("once") or [])        # akcje onlyOnce wykonane w tej instalacji
         for prod in ([pid] if not dlc_only else []) + list(plan["dlcs"]):
-            r = gogfinal.apply_script(root, prod, known=known, **({"hkcu": hkcu} if hkcu else {}))
+            r = gogfinal.apply_script(root, prod, known=known, once=once, **({"hkcu": hkcu} if hkcu else {}))
             for k in fin:
                 fin[k] += r[k]
+        fin["once"] = sorted(once | set(fin["once"]))
         e["created_files"] = sorted(set(e.get("created_files") or []) | set(fin.pop("created")))
         e["dirs"] = sorted(set(e.get("dirs") or []) | set(fin.pop("dirs")))
         if not dlc_only:
@@ -892,6 +896,7 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
         e["finalize"].setdefault("admin", [])
         e["finalize"]["admin"] += fin["admin"]
         e["finalize"]["hkcu"] = (e["finalize"].get("hkcu") or []) + fin["hkcu"]
+        e["finalize"]["once"] = fin["once"]
         if needs_admin(fin["admin"]):
             e["state"] = ST_NEEDS_ADMIN
     else:
@@ -899,6 +904,7 @@ def finalize(e: dict, plan: dict, bundle: dict, dlc_only: bool = False, hkcu=Non
         e["state"] = ST_NEEDS_ADMIN if needs_admin(fin["admin"]) else ST_INSTALLED
         e["done"] = []
         e["installed_at"] = time.time()
+        e["fresh_sync"] = True            # pierwsza synchronizacja: pliki z serwera zastępują wgrane przez instalator
     e["error"] = ""
     save_entry(e)
     if e["finalize"].get("admin") and gogadmin.is_elevated():
@@ -1049,9 +1055,18 @@ def _undo_admin(e: dict, elevate=None) -> int:
     return left
 
 
+def _forget_sync(pid: str) -> None:
+    try:
+        from emustart import gogsaves, syncclient
+        syncclient.forget_game(gogsaves.PLATFORM, str(pid))
+    except Exception:                    # noqa: BLE001 — brak bazy biblioteki nie blokuje instalacji ani usuwania
+        log.exception("GOG %s: stan synchronizacji", pid)
+
+
 def _forget(e: dict, remove_hkcu=None) -> None:
     # wartości rejestru HKCU ustawione przez finalizację tej gry
     (remove_hkcu or gogfinal.remove_hkcu)((e.get("finalize") or {}).get("hkcu") or [])
+    _forget_sync(e["product_id"])
     try:
         _entry_path(e["product_id"]).unlink()
     except FileNotFoundError:

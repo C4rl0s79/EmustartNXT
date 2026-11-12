@@ -384,7 +384,10 @@ class GogService:
         if not st["enabled"] or not prof or not pl["sets"]:
             return {}
         bundles = pl["sets"]
-        res = gogsaves.before(self._cfg(), prof, pid, bundles)
+        res = gogsaves.before(self._cfg(), prof, pid, bundles, fresh=bool(e.get("fresh_sync")))
+        if e.get("fresh_sync") and not res.offline:
+            e["fresh_sync"] = False                   # pierwsza synchronizacja po instalacji za nami
+            gi.save_entry(e)
         skip = set()
         if res.conflicts:
             if choice not in ("local", "remote", "both", "skip"):
