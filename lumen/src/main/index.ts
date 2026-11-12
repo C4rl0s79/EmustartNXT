@@ -514,6 +514,21 @@ function refocus(): void {
   activateWindow(win)
 }
 
+/**
+ * Powrót po grze (GOG, Steam): jak przy starcie — Windows nie oddaje pierwszego planu oknu procesu w tle (samo
+ * focus() zostawiało Lumena za Steamem / pulpitem), a Electron w trybie pełnoekranowym przywraca okno bez
+ * zdarzenia „restore”. Tryb pełnoekranowy wraca, gdy był włączony; stan okna w logu (diagnoza).
+ */
+function restoreAfterGame(what: string): void {
+  if (!win || win.isDestroyed()) return
+  activateWindow(win)
+  if (modes?.mode === 'fullscreen' && !win.isFullScreen()) win.setFullScreen(true)
+  setTimeout(() => {
+    if (!win || win.isDestroyed()) return
+    log.info('window', `po grze (${what}): na wierzchu=${win.isFocused()}, pełny ekran=${win.isFullScreen()}, zminimalizowane=${win.isMinimized()}`)
+  }, 1000)
+}
+
 function restoreWindow(): void {
   if (!win) return
   if (win.isMinimized()) win.restore()
@@ -1792,9 +1807,10 @@ app.whenReady().then(async () => {
   gog.on('status', (st: { running: string[] }) => {
     // the GOG game started from Lumen ended (its process tree is gone): back to Lumen, like Steam games
     if (launchedGog && !st.running.includes(launchedGog.slice(4))) {
-      log.info('app', `GOG game ${launchedGog} ended`)
+      const ended = launchedGog
+      log.info('app', `GOG game ${ended} ended`)
       launchedGog = undefined
-      if (settings.get().restoreAfterGame && !gogViaDeck) restoreWindow()
+      if (settings.get().restoreAfterGame && !gogViaDeck) restoreAfterGame(ended)
       gogViaDeck = false
     }
   })
@@ -1812,7 +1828,7 @@ app.whenReady().then(async () => {
   library.on('gameStarted', (appId: number) => log.info('app', `game ${appId} started (per Steam registry)`))
   library.on('gameExited', (appId: number) => {
     log.info('app', `game ${appId} exited (per Steam registry)`)
-    if (launchedAppId === appId && settings.get().restoreAfterGame && !steamViaDeck) restoreWindow()
+    if (launchedAppId === appId && settings.get().restoreAfterGame && !steamViaDeck) restoreAfterGame(`Steam ${appId}`)
     if (launchedAppId === appId) steamViaDeck = false
     launchedAppId = undefined
     if (hiddenForAppId === appId) void showControllers()

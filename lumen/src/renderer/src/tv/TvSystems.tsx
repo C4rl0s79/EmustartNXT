@@ -59,13 +59,13 @@ function ConsoleBackdrop({ sys }: { sys: TvSystem }) {
   if (own.id && own.hero && !broken)
     return (
       <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': 0.5 } as CSSProperties}>
-        <img src={api().art.url(own.id, 'hero', own.rev, 'tv')} alt="" draggable={false} onError={() => setBroken(true)} />
+        <img decoding="async" src={api().art.url(own.id, 'hero', own.rev, 'tv')} alt="" draggable={false} onError={() => setBroken(true)} />
       </div>
     )
   if (!sys.console || broken) return null
   return (
     <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': sys.console.lum } as CSSProperties}>
-      <img src={api().art.url(`emusys:${sys.key}`, 'hero', sys.consoleRev)} alt="" draggable={false} onError={() => setBroken(true)} />
+      <img decoding="async" src={api().art.url(`emusys:${sys.key}`, 'hero', sys.consoleRev)} alt="" draggable={false} onError={() => setBroken(true)} />
     </div>
   )
 }

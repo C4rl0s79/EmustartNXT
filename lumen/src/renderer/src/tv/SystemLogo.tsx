@@ -62,7 +62,7 @@ function PixelLogo({ src, block, onError }: { src: string; block: number; onErro
   }, [src, block])
   return (
     <span ref={area} className="sys-pixel">
-      <img
+      <img decoding="async"
         ref={img}
         src={src}
         alt=""
@@ -110,7 +110,7 @@ export function SystemLogo({
   if (ownSrc && !broken)
     logo = (
       <span className={`sys-logo ${className ?? ''}`} role="img" aria-label={display}>
-        <img src={ownSrc} alt="" draggable={false} onError={() => setBroken(true)} />
+        <img decoding="async" src={ownSrc} alt="" draggable={false} onError={() => setBroken(true)} />
       </span>
     )
   else if (sysKey === STEAM) logo = <SteamLogo className={className} />
@@ -121,7 +121,7 @@ export function SystemLogo({
         {pixel > 0 ? (
           <PixelLogo src={src} block={pixel} onError={() => setBroken(true)} />
         ) : (
-          <img src={src} alt="" draggable={false} onError={() => setBroken(true)} />
+          <img decoding="async" src={src} alt="" draggable={false} onError={() => setBroken(true)} />
         )}
       </span>
     )

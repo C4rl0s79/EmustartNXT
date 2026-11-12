@@ -108,7 +108,7 @@ export const Art = memo(function Art({
   return (
     <>
       {fit && (
-        <img
+        <img decoding="async"
           className="art-fit__bg"
           src={src}
           alt=""

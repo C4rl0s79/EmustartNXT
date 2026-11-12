@@ -227,7 +227,7 @@ export function EmuSaves({ game, onClose }: { game: Game; onClose: () => void })
                   setEditing(st)
                 }}
               >
-                {st.thumb ? <img className="saves__thumb" src={st.thumb} alt="" /> : <span className="saves__thumb saves__thumb--none" />}
+                {st.thumb ? <img decoding="async" className="saves__thumb" src={st.thumb} alt="" /> : <span className="saves__thumb saves__thumb--none" />}
                 <span className="saves__text">
                   <strong>
                     {st.otherCore ? '✗ ' : ''}
@@ -259,7 +259,7 @@ export function EmuSaves({ game, onClose }: { game: Game; onClose: () => void })
               <div className="saves__list" data-nav-group="saves-trash">
                 {trash.map((it, i) => (
                   <button key={it.name} className="saves__row" data-nav data-autofocus={i === 0 || undefined} disabled={busy} onClick={() => void restore(it)}>
-                    {it.thumb ? <img className="saves__thumb" src={it.thumb} alt="" /> : <span className="saves__thumb saves__thumb--none" />}
+                    {it.thumb ? <img decoding="async" className="saves__thumb" src={it.thumb} alt="" /> : <span className="saves__thumb saves__thumb--none" />}
                     <span className="saves__text">
                       <strong>{it.label}</strong>
                       <small>zapisany {when(it.time)}</small>
