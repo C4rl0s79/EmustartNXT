@@ -1,5 +1,6 @@
 import type { GameFacts, OwnArtResult, UserArtGallery } from './types'
 import type { DeckGeometry, DeckGroupOp, DeckLayoutStep } from './deck'
+import type { SeriesPref } from './series'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ThemePackage,
@@ -92,6 +93,8 @@ export interface LumenApi {
     /** pin a library subgroup (e.g. 'console/emu:ps2', 'pc/gog') for quick access in both layouts */
     setGroupPinned(id: string, pinned: boolean): Promise<Prefs>
     moveGroupPin(id: string, delta: number): Promise<Prefs>
+    /** game series corrected by the player: per game a choice, or null — recognised from the title again */
+    setSeries(changes: Record<string, SeriesPref | null>): Promise<Prefs>
     onChange(cb: (p: Prefs) => void): () => void
   }
   /** GOG games from the EmuStart server — every action runs in the EmuStart engine (engine/emustart/goglib.py) */
@@ -282,6 +285,13 @@ export interface LumenApi {
     /** Deck page: where the dock and the panel are in its window */
     onGeometry(cb: (g: DeckGeometry) => void): () => void
     getGeometry(): Promise<DeckGeometry | null>
+    /**
+     * Deck page: the panel's bottom edge dragged — its largest height on this screen (px); `commit` on release
+     * stores it (the same field as "Wymiary", per screen), before that the window only follows the drag
+     */
+    resizePanel(height: number, commit: boolean): void
+    /** Deck page: the mouse has left the dock and the panel (checked by the main process, whose timers never sleep) */
+    onCollapse(cb: () => void): () => void
     /** Deck page: start this game (the main window runs its main action — lib/deckPlay.ts) */
     play(gameId: string): void
     /** main window: a game to start from the Deck */
@@ -369,6 +379,8 @@ export const IPC = {
   deckExpand: 'deck:expand',
   deckGeometry: 'deck:geometry',
   deckGetGeometry: 'deck:getGeometry',
+  deckResizePanel: 'deck:resizePanel',
+  deckCollapse: 'deck:collapse',
   deckPlay: 'deck:play',
   deckPlayRequest: 'deck:playRequest',
   deckReveal: 'deck:reveal',

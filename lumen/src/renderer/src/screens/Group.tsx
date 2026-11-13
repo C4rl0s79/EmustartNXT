@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Game } from '@shared/types'
 import { compareText } from '@shared/libraryNav'
+import { arrangeSeries } from '@shared/series'
 import { useStore } from '../store'
 import { useActions } from '../nav/input'
 import { focusEl, focusFirst } from '../nav/engine'
@@ -126,12 +127,12 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
     if (more.sort !== 'title') return list
     const byName = (a: Game, b: Game): number => compareText(a.sortName, b.sortName)
     const sorted = [...list]
-    if (sort === 'name') sorted.sort(byName)
+    if (sort === 'name') return arrangeSeries(sorted.sort(byName), prefs.series)
     if (sort === 'recent') sorted.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || byName(a, b))
     if (sort === 'added') sorted.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0) || byName(a, b))
     if (sort === 'playtime') sorted.sort((a, b) => (b.playtimeMinutes ?? -1) - (a.playtimeMinutes ?? -1) || byName(a, b))
     return sorted
-  }, [known, effectiveFilter, query, sort, more, prefs.favorites, ratings])
+  }, [known, effectiveFilter, query, sort, more, prefs.favorites, prefs.series, ratings])
 
   const favs = useMemo(() => new Set(prefs.favorites), [prefs.favorites])
 

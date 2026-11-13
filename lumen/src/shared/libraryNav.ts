@@ -1,4 +1,5 @@
 import type { Category, EmuSystem, Game, GamePlatform, PlatformFamily, PlatformInfo, Prefs, SteamCollection } from './types'
+import { arrangeSeries } from './series'
 
 // One navigation model for both layouts (desktop tabs + chips, TV carousels):
 //   PC → Wszystkie / Steam / GOG / Skróty
@@ -136,20 +137,21 @@ export function buildNav(games: Game[], prefs: Prefs, collections: SteamCollecti
     const subs = fam.get(f)
     if (!subs?.size) continue
     const list = [...subs.values()]
-    for (const s of list) s.games.sort(byName)
+    // po tytule, a gry jednej serii razem, w kolejności wydania (shared/series.ts)
+    for (const s of list) s.games = arrangeSeries(s.games.sort(byName), prefs.series)
     if (f === 'pc') list.sort((a, b) => PC_ORDER.indexOf(a.id.slice(3)) - PC_ORDER.indexOf(b.id.slice(3)))
     else list.sort((a, b) => compareText(a.label, b.label))
-    const all = list.flatMap((s) => s.games).sort(byName)
+    const all = arrangeSeries(list.flatMap((s) => s.games).sort(byName), prefs.series)
     out.push({ id: f, label: FAMILY_LABEL[f], games: all, subs: [{ id: `${f}/all`, label: 'Wszystkie', games: all }, ...list] })
   }
   const cols = [...prefs.categories]
     .filter((c) => c.kind === 'custom' || c.kind === 'steam')
     .sort((a, b) => a.order - b.order)
-    .map((c) => ({ id: `col/${c.id}`, label: c.name, games: collectionGames(c, games, prefs, collections).sort(byName) }))
+    .map((c) => ({ id: `col/${c.id}`, label: c.name, games: arrangeSeries(collectionGames(c, games, prefs, collections).sort(byName), prefs.series) }))
     .filter((s) => s.games.length)
   if (cols.length) out.push({ id: 'col', label: 'Kolekcje', subs: cols, games: [] })
   const favIds = new Set(prefs.favorites)
-  const favs = games.filter((g) => favIds.has(g.id)).sort(byName)
+  const favs = arrangeSeries(games.filter((g) => favIds.has(g.id)).sort(byName), prefs.series)
   out.push({ id: 'fav', label: 'Ulubione', subs: [{ id: 'fav/all', label: 'Ulubione', games: favs }], games: favs })
   const recent = games.filter((g) => g.lastPlayed).sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0)).slice(0, recentLimit)
   if (recent.length) out.push({ id: 'recent', label: 'Ostatnio grane', subs: [{ id: 'recent/all', label: 'Ostatnio grane', games: recent }], games: recent })

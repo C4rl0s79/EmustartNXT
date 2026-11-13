@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { ArtChoice, ArtKind, ArtLayout, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
+import { cleanSeriesPrefs, type SeriesPref } from '@shared/series'
 import { JsonFile } from './jsonFile'
 
 // User library preferences: categories, favourites, artwork choices.
@@ -18,7 +19,7 @@ const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {} }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
 }
 
 export function migratePrefs(raw: unknown): Prefs {
@@ -56,7 +57,8 @@ export function migratePrefs(raw: unknown): Prefs {
       ? Object.fromEntries(Object.entries(r.platformOverrides).filter((e): e is [string, string] => typeof e[1] === 'string' && validOverride(e[1])))
       : {},
     pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : [],
-    lbTitles: cleanLbTitles(r.lbTitles)
+    lbTitles: cleanLbTitles(r.lbTitles),
+    series: cleanSeriesPrefs(r.series)
   }
   if ((r.version ?? 1) < 4) {
     // v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces
@@ -266,6 +268,18 @@ export const ops = {
       platformOverrides[gameId] = value
     } else delete platformOverrides[gameId]
     return { ...p, platformOverrides }
+  },
+
+  /** Game series corrected by the player: per game a new choice, or null — automatic again (shared/series.ts). */
+  setSeries(p: Prefs, changes: Record<string, SeriesPref | null>): Prefs {
+    const series = { ...p.series }
+    for (const [id, v] of Object.entries(changes && typeof changes === 'object' ? changes : {}).slice(0, 1000)) {
+      if (typeof id !== 'string' || !id || id.length > 200) continue
+      const clean = v ? cleanSeriesPrefs({ [id]: v })[id] : undefined
+      if (clean) series[id] = clean
+      else delete series[id]
+    }
+    return { ...p, series }
   },
 
   /** Pin / unpin a library subgroup (quick access in the top bar and the TV carousel). */

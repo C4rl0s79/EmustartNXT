@@ -257,6 +257,27 @@ export function setDeckLayout(s: DeckSettings, step: DeckLayoutStep): Record<str
   return { ...rest, [step.key]: { ...cur, [step.field]: v, label: step.label } }
 }
 
+/** the panel's largest height the player can drag it to (fraction of the work area's height) — as cleanLayout keeps */
+export const DECK_PANEL_H_MIN = 0.1
+export const DECK_PANEL_H_MAX = 1
+
+/** the panel closes this long after the mouse left the dock and the panel (deck_app._hide_timer) */
+export const DECK_HIDE_MS = 450
+
+/** A dragged panel height in px → the stored fraction of the work area's height (2 decimals, within range). */
+export function panelHeightFraction(px: number, areaHeight: number): number {
+  const f = areaHeight > 0 && Number.isFinite(px) ? px / areaHeight : DECK_PANEL_H_MAX
+  return Math.round(Math.max(DECK_PANEL_H_MIN, Math.min(DECK_PANEL_H_MAX, f)) * 1000) / 1000
+}
+
+/** The screens map with the panel's largest height set on one screen (the edited screen moves to the end). */
+export function setDeckPanelHeight(s: DeckSettings, key: string, label: string, fraction: number): Record<string, DeckScreenLayout> {
+  const cur = layoutFor(s, key, label)
+  const rest = { ...s.screens }
+  delete rest[key]
+  return { ...rest, [key]: { ...cur, panelHeight: Math.max(DECK_PANEL_H_MIN, Math.min(DECK_PANEL_H_MAX, fraction)), label } }
+}
+
 /** One change of the tab list (Settings: show / hide / order; the panel: columns) — applied by the main process. */
 export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 } | { id: string; cols: number } | { id: string; aspect: DeckAspect }
 

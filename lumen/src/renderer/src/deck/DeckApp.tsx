@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DECK_DEFAULT_COLS, activeGroup, clampCols, deckCandidates, onThisPc, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
+import { DECK_DEFAULT_COLS, DECK_HIDE_MS, activeGroup, clampCols, deckCandidates, onThisPc, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
 import { api, useStore } from '../store'
 import { findSub, useNav } from '../lib/nav'
 import { subItem } from '../tv/data'
@@ -13,7 +13,7 @@ import { DeckPanel, tileMetrics } from './DeckPanel'
 // (deckGeometry), this page draws them where it says.
 
 /** the panel closes this long after the mouse left the dock and the panel (deck_app._hide_timer) */
-const HIDE_MS = 450
+const HIDE_MS = DECK_HIDE_MS
 /** zwijanie panelu z animacją (deck.css .deck-panelwrap.is-closing) — okno maleje dopiero po niej */
 const CLOSE_MS = 170
 
@@ -40,6 +40,12 @@ export function DeckApp() {
   const outside = useRef(false)
   /** columns changed with Ctrl + wheel, shown before the stored value comes back */
   const [localCols, setLocalCols] = useState<{ id: string; cols: number } | null>(null)
+  /** columns are stored once the wheel stops — each stored change went to both windows and the settings file */
+  const colsTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /** the panel's bottom edge is being dragged: leaving the panel then is not leaving it */
+  const dragging = useRef<{ startY: number; startH: number; h: number; raf: number } | null>(null)
+  /** the newest close(), for the main process's "the mouse has left" */
+  const closeRef = useRef<() => void>(() => undefined)
 
   useEffect(() => {
     const s = useStore.getState()
@@ -53,11 +59,13 @@ export function DeckApp() {
       a.prefs.onChange(s.setPrefs),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),
-      a.deck.onGeometry(setGeo)
+      a.deck.onGeometry(setGeo),
+      a.deck.onCollapse(() => closeRef.current())
     ]
     return () => {
       offs.forEach((off) => off())
       clearTimeout(saveTimer.current)
+      clearTimeout(colsTimer.current)
       clearTimeout(hideTimer.current)
       clearTimeout(closeTimer.current)
     }
@@ -125,14 +133,17 @@ export function DeckApp() {
       setClosing(false)
     }, CLOSE_MS)
   }
+  closeRef.current = () => {
+    if (!dragging.current) close()
+  }
   const hideSoon = (): void => {
     clearTimeout(hideTimer.current)
-    if (deck?.autoHide === false) return
+    if (deck?.autoHide === false || dragging.current) return
     hideTimer.current = setTimeout(close, HIDE_MS)
   }
   // mysz w oknie Decka, ale poza dockiem i panelem (np. wyjazd bokiem w przezroczysty pas okna) — jak wyjście z okna
   const onMove = (e: React.MouseEvent): void => {
-    if (!geo) return
+    if (!geo || dragging.current) return
     const inRect = (r: { x: number; y: number; width: number; height: number }): boolean =>
       e.clientX >= r.x && e.clientX < r.x + r.width && e.clientY >= r.y && e.clientY < r.y + r.height
     const inside = inRect(geo.dock) || (open && geo.expanded && inRect(geo.panel))
@@ -148,8 +159,10 @@ export function DeckApp() {
     (n: number) => {
       if (!group) return
       const c = clampCols(n)
-      setLocalCols({ id: group.id, cols: c })
-      void api().deck.group({ id: group.id, cols: c })
+      const id = group.id
+      setLocalCols({ id, cols: c })
+      clearTimeout(colsTimer.current)
+      colsTimer.current = setTimeout(() => void api().deck.group({ id, cols: c }), SAVE_MS)
     },
     [group]
   )
@@ -160,6 +173,33 @@ export function DeckApp() {
     lastStep.current = e.timeStamp
     const i = Math.max(0, visible.findIndex((g) => g.id === active?.id))
     choose(visible[(i + (e.deltaY > 0 ? 1 : visible.length - 1)) % visible.length].id, SAVE_MS)
+  }
+
+  // the panel's bottom edge: dragged, it sets the panel's largest height on this screen (stored on release)
+  const onEdgeDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!geo || e.button !== 0) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    clearTimeout(hideTimer.current)
+    dragging.current = { startY: e.screenY, startH: geo.panel.height, h: geo.panel.height, raf: 0 }
+  }
+  const onEdgeMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    const d = dragging.current
+    if (!d) return
+    d.h = Math.max(40, d.startH + e.screenY - d.startY)
+    if (!d.raf)
+      d.raf = requestAnimationFrame(() => {
+        d.raf = 0
+        if (dragging.current === d) api().deck.resizePanel(d.h, false)
+      })
+  }
+  const onEdgeUp = (e: React.PointerEvent<HTMLDivElement>): void => {
+    const d = dragging.current
+    if (!d) return
+    cancelAnimationFrame(d.raf)
+    dragging.current = null
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    api().deck.resizePanel(d.h, true)
   }
 
   const dock = geo?.dock
@@ -216,6 +256,14 @@ export function DeckApp() {
               api().deck.play(g.id)
               close() // the panel folds away behind the starting game (deck_app._on_launched)
             }}
+          />
+          <div
+            className="deck-resize"
+            title="Przeciągnij, żeby zmienić wysokość panelu"
+            onPointerDown={onEdgeDown}
+            onPointerMove={onEdgeMove}
+            onPointerUp={onEdgeUp}
+            onPointerCancel={onEdgeUp}
           />
         </div>
       )}

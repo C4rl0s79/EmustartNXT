@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EmuGameOptions, EmuMetaField, EmuSettingsChange, Game } from '@shared/types'
 import { api, askChoice, attempt, useStore } from '../store'
 import { focusFirst } from '../nav/engine'
@@ -10,9 +10,10 @@ import { OnScreenKeyboard } from './TextField'
 import { ArtPicker } from '../modals/ArtPicker'
 import { GogSaves } from './GogSaves'
 import { GogExtras } from './GogExtras'
-import { gogRemovable, uninstallGog } from './GogDetails'
+import { chooseGogTask, gogRemovable, uninstallGog } from './GogDetails'
 import { Controllers } from './Controllers'
 import { CategoryPicker } from '../modals/CategoryPicker'
+import { SeriesEditor, seriesSummary } from '../modals/SeriesEditor'
 
 // "Opcje gry" — one window for every game and both layouts (TV: Y on the list, desktop: the details'
 // "Opcje gry"). EmuStart games get EmuStart's pages: version (translation), emulator, emulator
@@ -57,13 +58,21 @@ function syncValue(o: EmuGameOptions): string {
   return `${slot ? `slot ${slot.slot} · ` : ''}${o.states ? `${o.states} ${plural(o.states, 'stan', 'stany', 'stanów')} · ` : ''}${st}`
 }
 
+/** „Seria” w opcjach gry: nazwa i miejsce w serii (przeliczane, gdy zmienia się biblioteka albo wybór gracza). */
+function useSeriesValue(game: Game): string {
+  const series = useStore((s) => s.prefs?.series)
+  const all = useStore((s) => s.snapshot?.games)
+  return useMemo(() => seriesSummary(game, all ?? [game], series), [game, all, series])
+}
+
 export function GameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
   return game.emu ? <EmuGameOptions game={game} onClose={onClose} /> : <LibraryGameOptions game={game} onClose={onClose} />
 }
 
 /** Steam games and non-Steam shortcuts: the same window and rows as an EmuStart game's options. */
 function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
-  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | 'gogsaves' | 'gogextras' | null>(null)
+  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | 'gogsaves' | 'gogextras' | 'series' | null>(null)
+  const series = useSeriesValue(game)
   const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
   const cats = useStore((s) => s.prefs?.gameCategories[game.id]?.length ?? 0)
   const engineReady = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
@@ -90,8 +99,13 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
       },
       disabled: !primary?.run || primary.disabled || busy
     },
+    // gra GOG: inne zadania z goggame-*.info (ustawienia grafiki DOSBoxa, launcher, druga część) — jak „Uruchom…” na pulpicie
+    ...(game.gog?.state === 'installed' && engineReady
+      ? [{ label: 'Uruchom…', value: 'zadania gry: ustawienia, launcher, inne części', act: () => void chooseGogTask(game, onClose) }]
+      : []),
     { label: isFav ? '★ W ulubionych' : '☆ Do ulubionych', act: () => void attempt(api().prefs.toggleFavorite(game.id)) },
     { label: 'Kategorie', value: cats ? `${cats} ${plural(cats, 'kategoria', 'kategorie', 'kategorii')}` : 'przypisz do grup', act: () => setSub('categories') },
+    { label: 'Seria', value: series, act: () => setSub('series') },
     { label: 'Grafiki', value: 'plakat, tło, logo · SteamGridDB', act: () => setSub('art') },
     ...(game.gog?.extras?.length && engineReady ? [{ label: 'Dodatki', value: `${game.gog.extras.length} · wybierz, co pobrać`, act: () => setSub('gogextras') }] : []),
     ...(game.gog && engineReady && ['installed', 'needs_admin', 'damaged'].includes(game.gog.state)
@@ -157,6 +171,7 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
         </div>
       </Modal>
       {sub === 'categories' && <CategoryPicker gameId={game.id} onClose={() => setSub(null)} />}
+      {sub === 'series' && <SeriesEditor game={game} onClose={() => setSub(null)} />}
       {sub === 'gogsaves' && <GogSaves game={game} onClose={() => setSub(null)} />}
       {sub === 'gogextras' && <GogExtras game={game} onClose={() => setSub(null)} />}
       {sub === 'art' && <ArtPicker game={game} onClose={() => setSub(null)} />}
@@ -171,7 +186,8 @@ function EmuGameOptions({ game, onClose }: { game: Game; onClose: () => void }) 
   const [page, setPage] = useState<Page>('main')
   const [hist, setHist] = useState<EmuSettingsChange[] | null>(null)
   const [confirm, setConfirm] = useState<string | null>(null)
-  const [sub, setSub] = useState<'saves' | 'art' | 'pads' | null>(null)
+  const [sub, setSub] = useState<'saves' | 'art' | 'pads' | 'series' | null>(null)
+  const series = useSeriesValue(game)
   const [edit, setEdit] = useState<EmuMetaField | null>(null)
   const [readDesc, setReadDesc] = useState(false)
   const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
@@ -239,6 +255,7 @@ function EmuGameOptions({ game, onClose }: { game: Game; onClose: () => void }) 
         { label: 'Wczytaj zapis', value: syncValue(o), act: () => setSub('saves') },
         { label: 'Kontrolery', value: 'kolejność graczy, ukryte w tej grze', act: () => setSub('pads') },
         { label: 'Metadane i opis', value: [o.meta.developer, o.meta.year].filter(Boolean).join(' · '), act: () => setPage('meta') },
+        { label: 'Seria', value: series, act: () => setSub('series') },
         { label: 'Grafiki', value: o.admin ? 'plakat, tło, logo · serwer EmuStart' : 'plakat, tło, logo', act: () => setSub('art') },
         { label: isFav ? '★ W ulubionych' : '☆ Do ulubionych', act: () => void attempt(api().prefs.toggleFavorite(game.id)) },
         {
@@ -387,6 +404,7 @@ function EmuGameOptions({ game, onClose }: { game: Game; onClose: () => void }) 
       {sub === 'saves' && <EmuSaves game={game} onClose={() => (setSub(null), load())} />}
       {sub === 'art' && <ArtPicker game={game} admin={!!o?.admin} onClose={() => setSub(null)} />}
       {sub === 'pads' && <Controllers game={{ id: game.id, name: game.name }} onClose={() => setSub(null)} />}
+      {sub === 'series' && <SeriesEditor game={game} onClose={() => setSub(null)} />}
       {edit && o && (
         <OnScreenKeyboard
           label={META.find(([k]) => k === edit)![1]}
