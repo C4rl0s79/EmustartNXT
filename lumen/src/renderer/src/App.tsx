@@ -11,7 +11,7 @@ import { HomeScreen } from './screens/Home'
 import { NavGroupScreen, NavPinnedScreen } from './screens/Nav'
 import { findSub, useNav, usePinned } from './lib/nav'
 import { GogInstallDialog } from './components/GogInstall'
-import { SettingsScreen } from './screens/Settings'
+import { openSettingsPage, SettingsScreen } from './screens/Settings'
 import { DetailsScreen } from './screens/Details'
 import { EmuLaunchOverlay, JobsPanel } from './components/Jobs'
 import { PathPicker } from './modals/PathPicker'
@@ -111,6 +111,9 @@ export function App() {
 
   // czujnik zacięć (lib/perf.ts): raz na okno
   useEffect(() => installPerfWatch(), [])
+
+  // menu Decka → „Wszystkie ustawienia Decka…”
+  useEffect(() => api().ui.onOpenSettings(openSettingsPage), [])
 
   // controller backend: XInput from the main process (default) or the Chromium Gamepad API
   const backend = useStore((s) => (s.settings?.gamepadBackend === 'chromium' || s.settings?.xinputAvailable === false ? 'chromium' : s.settings ? 'xinput' : null))

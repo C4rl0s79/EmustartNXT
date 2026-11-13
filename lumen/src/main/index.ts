@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell, type MenuItemConstructorOptions } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -47,7 +47,7 @@ import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
 import { isAnimated } from './art/animated'
-import { deckCandidates, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep } from '@shared/deck'
+import { deckCandidates, layoutFor, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -321,6 +321,94 @@ function hidesToTray(): boolean {
 }
 
 /** library subgroups that can be Deck tabs, from the library as it is now */
+/**
+ * Ustawienia Decka w jego menu (prawy klik, zasobnik) — jak w PyLinksDeck: aktywna grupa (kształt kafli, kolumny,
+ * ukrycie, kolejność), widoczność grup, wymiary na tym ekranie, wyświetlanie. Te same ustawienia co w Ustawieniach
+ * Lumena (jedna kopia — patchSettings / moveDeckGroup).
+ */
+function deckSettingsMenu(): MenuItemConstructorOptions[] {
+  const d = settings.get().deck
+  const cands = currentDeckCandidates()
+  const label = new Map(cands.map((c) => [c.id, c.label]))
+  const groups = syncGroups(d.groups, cands)
+  const shown = groups.filter((g) => label.has(g.id))
+  const act = groups.find((g) => g.id === d.activeGroup && !g.hidden) ?? shown.find((g) => !g.hidden)
+  const op = (o: DeckGroupOp): void => {
+    const cur = settings.get().deck
+    const next = moveDeckGroup(syncGroups(cur.groups, currentDeckCandidates()), o)
+    if (next !== cur.groups) void patchSettings({ deck: { groups: next } }).then(() => deck?.refreshMenu())
+  }
+  const set = (patch: Partial<DeckSettings>): void => void patchSettings({ deck: patch }).then(() => deck?.refreshMenu())
+  const scr = deckScreen()
+  const lay = layoutFor(d, scr.key, scr.label)
+  const widths = (field: 'dockWidth' | 'panelWidth'): MenuItemConstructorOptions[] =>
+    [40, 50, 60, 70, 80, 90, 95, 100].map((p) => ({
+      label: `${p}% ekranu`,
+      type: 'radio' as const,
+      checked: Math.round(lay[field] * 100) === p,
+      click: () =>
+        void patchSettings({ deck: { screens: setDeckLayout(settings.get().deck, { key: scr.key, label: scr.label, field, delta: p / 100 - layoutFor(settings.get().deck, scr.key, scr.label)[field] }) } })
+    }))
+  const items: MenuItemConstructorOptions[] = []
+  if (act) {
+    const i = shown.findIndex((g) => g.id === act.id)
+    items.push({
+      label: `Grupa: ${label.get(act.id) ?? act.id}`,
+      submenu: [
+        { label: 'Kafle 2:3 (okładka)', type: 'radio', checked: act.aspect !== 'square', click: () => op({ id: act.id, aspect: 'portrait' }) },
+        { label: 'Kafle kwadratowe', type: 'radio', checked: act.aspect === 'square', click: () => op({ id: act.id, aspect: 'square' }) },
+        { type: 'separator' },
+        {
+          label: `Kolumny: ${act.cols}`,
+          submenu: [4, 5, 6, 7, 8, 9, 10, 12, 14, 16].map((n) => ({ label: String(n), type: 'radio' as const, checked: act.cols === n, click: () => op({ id: act.id, cols: n }) }))
+        },
+        { type: 'separator' },
+        { label: 'Przesuń w lewo', enabled: i > 0, click: () => op({ id: act.id, move: -1 }) },
+        { label: 'Przesuń w prawo', enabled: i >= 0 && i < shown.length - 1, click: () => op({ id: act.id, move: 1 }) },
+        { label: 'Ukryj tę grupę', click: () => op({ id: act.id, hidden: true }) }
+      ]
+    })
+  }
+  items.push(
+    {
+      label: 'Grupy',
+      submenu: shown.length
+        ? shown.map((g) => ({ label: label.get(g.id) ?? g.id, type: 'checkbox' as const, checked: !g.hidden, click: () => op({ id: g.id, hidden: !g.hidden }) }))
+        : [{ label: 'Brak grup z grami na tym komputerze', enabled: false }]
+    },
+    {
+      label: `Wymiary (${scr.label})`,
+      submenu: [
+        { label: 'Szerokość Decka', submenu: widths('dockWidth') },
+        { label: 'Szerokość panelu z grami', submenu: widths('panelWidth') }
+      ]
+    },
+    {
+      label: 'Wyświetlanie',
+      submenu: [
+        { label: 'Nazwy gier pod kaflami', type: 'checkbox', checked: d.showLabels, click: (m) => set({ showLabels: m.checked }) },
+        { label: 'Logotypy platform zamiast nazw', type: 'checkbox', checked: d.showLogos, click: (m) => set({ showLogos: m.checked }) },
+        { label: 'Animacje', type: 'checkbox', checked: d.animations, click: (m) => set({ animations: m.checked }) },
+        { label: 'Zwijaj po zjechaniu myszą', type: 'checkbox', checked: d.autoHide, click: (m) => set({ autoHide: m.checked }) },
+        {
+          label: 'Przezroczystość',
+          submenu: [1, 0.96, 0.9, 0.8, 0.7].map((o) => ({ label: o === 1 ? 'bez' : `${Math.round((1 - o) * 100)}%`, type: 'radio' as const, checked: Math.abs(d.opacity - o) < 0.005, click: () => set({ opacity: o }) }))
+        }
+      ]
+    },
+    { label: 'Wszystkie ustawienia Decka…', click: () => openDeckSettings() }
+  )
+  return items
+}
+
+/** główne okno Lumena na Ustawieniach (sekcja Decka) */
+function openDeckSettings(): void {
+  restoreWindow()
+  // ustawienia są w układzie pulpitu (tryb TV ma własny ekran) — najpierw pulpit
+  if (modes?.mode === 'fullscreen') modes.setMode('desktop')
+  send(IPC.uiOpenSettings, 'deck')
+}
+
 function currentDeckCandidates(): ReturnType<typeof deckCandidates> {
   const s = unified.current
   return deckCandidates(buildNav(s.games, prefs.get(), s.collections))
@@ -1211,7 +1299,7 @@ async function installSteam(gameId: string): Promise<ActionResult> {
   return { ok: true, message: 'Steam otworzy okno instalacji — potwierdź tam lokalizację. Instalacją zarządza klient Steam.' }
 }
 
-async function openInSteam(gameId: string, view: 'details' | 'store' | 'downloads'): Promise<ActionResult> {
+async function openInSteam(gameId: string, view: 'details' | 'store' | 'downloads' | 'uninstall'): Promise<ActionResult> {
   const game = findGame(gameId)
   if (view === 'downloads') {
     await openSteam('downloads')
@@ -1350,7 +1438,9 @@ function registerIpc(): void {
 
   handle(IPC.gamePlay, (gameId: string) => playSteam(gameId))
   handle(IPC.gameInstall, (gameId: string) => installSteam(gameId))
-  handle(IPC.gameOpen, (gameId: string, view: 'details' | 'store' | 'downloads') => openInSteam(gameId, view))
+  handle(IPC.gameOpen, (gameId: string, view: 'details' | 'store' | 'downloads' | 'uninstall') =>
+    openInSteam(gameId, view === 'store' || view === 'downloads' || view === 'uninstall' ? view : 'details')
+  )
 
   handle(IPC.gameDetails, async (gameId: string, force?: boolean) => {
     const game = findGame(gameId)
@@ -1909,6 +1999,7 @@ app.whenReady().then(async () => {
     geometry: (w, g) => w.webContents.send(IPC.deckGeometry, g),
     autostart: getAutostart,
     setAutostart,
+    settingsMenu: deckSettingsMenu,
     // the built program's own icon (Lumen.exe); from sources the icon file the build uses
     // ('normal' = 32 px: the tray scales it down — a 16 px one is blurry with display scaling)
     icon: () => (app.isPackaged ? app.getFileIcon(process.execPath, { size: 'normal' }) : Promise.resolve(nativeImage.createFromPath(path.join(app.getAppPath(), 'resources', 'icon.png'))))

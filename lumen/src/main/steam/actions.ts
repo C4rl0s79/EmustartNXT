@@ -5,7 +5,7 @@ import { log } from '../logger'
 // (https://developer.valvesoftware.com/wiki/Steam_browser_protocol). Steam itself shows any
 // confirmation dialogs (install location, EULA, cloud conflicts…). We never pass credentials.
 
-export type SteamUriAction = 'run' | 'install' | 'details' | 'store' | 'downloads' | 'library' | 'validate'
+export type SteamUriAction = 'run' | 'install' | 'uninstall' | 'details' | 'store' | 'downloads' | 'library' | 'validate'
 
 export function steamUri(action: SteamUriAction, appId?: number): string {
   const id = appId !== undefined ? Math.trunc(appId) : undefined
@@ -18,6 +18,9 @@ export function steamUri(action: SteamUriAction, appId?: number): string {
       return `steam://rungameid/${need()}`
     case 'install':
       return `steam://install/${need()}`
+    case 'uninstall':
+      // okno odinstalowania klienta Steam (pytanie i usuwanie robi Steam — Lumen plików Steam nie rusza)
+      return `steam://uninstall/${need()}`
     case 'details':
       return `steam://nav/games/details/${need()}`
     case 'store':

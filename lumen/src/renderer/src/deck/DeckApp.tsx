@@ -14,6 +14,8 @@ import { DeckPanel, tileMetrics } from './DeckPanel'
 
 /** the panel closes this long after the mouse left the dock and the panel (deck_app._hide_timer) */
 const HIDE_MS = 450
+/** zwijanie panelu z animacją (deck.css .deck-panelwrap.is-closing) — okno maleje dopiero po niej */
+const CLOSE_MS = 170
 
 /** one wheel notch → one tab; a touchpad's burst of wheel events is not a dozen notches */
 const WHEEL_STEP_MS = 120
@@ -31,6 +33,11 @@ export function DeckApp() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [geo, setGeo] = useState<DeckGeometry | null>(null)
   const [open, setOpen] = useState(false)
+  /** panel zjeżdża (animacja), zaraz się zamknie */
+  const [closing, setClosing] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /** mysz poza dockiem i panelem (choć wciąż w oknie Decka — jest szersze niż one) */
+  const outside = useRef(false)
   /** columns changed with Ctrl + wheel, shown before the stored value comes back */
   const [localCols, setLocalCols] = useState<{ id: string; cols: number } | null>(null)
 
@@ -52,6 +59,7 @@ export function DeckApp() {
       offs.forEach((off) => off())
       clearTimeout(saveTimer.current)
       clearTimeout(hideTimer.current)
+      clearTimeout(closeTimer.current)
     }
   }, [])
 
@@ -101,12 +109,40 @@ export function DeckApp() {
 
   const show = (): void => {
     clearTimeout(hideTimer.current)
+    clearTimeout(closeTimer.current)
+    setClosing(false)
     setOpen(true)
+  }
+  /** zwinięcie panelu: z animacją (ustawienie „Animacje”) — okno Decka maleje dopiero po niej */
+  const close = (): void => {
+    clearTimeout(hideTimer.current)
+    if (!open) return
+    if (deck?.animations === false) return setOpen(false)
+    setClosing(true)
+    clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => {
+      setOpen(false)
+      setClosing(false)
+    }, CLOSE_MS)
   }
   const hideSoon = (): void => {
     clearTimeout(hideTimer.current)
     if (deck?.autoHide === false) return
-    hideTimer.current = setTimeout(() => setOpen(false), HIDE_MS)
+    hideTimer.current = setTimeout(close, HIDE_MS)
+  }
+  // mysz w oknie Decka, ale poza dockiem i panelem (np. wyjazd bokiem w przezroczysty pas okna) — jak wyjście z okna
+  const onMove = (e: React.MouseEvent): void => {
+    if (!geo) return
+    const inRect = (r: { x: number; y: number; width: number; height: number }): boolean =>
+      e.clientX >= r.x && e.clientX < r.x + r.width && e.clientY >= r.y && e.clientY < r.y + r.height
+    const inside = inRect(geo.dock) || (open && geo.expanded && inRect(geo.panel))
+    if (inside && outside.current) {
+      outside.current = false
+      clearTimeout(hideTimer.current)
+    } else if (!inside && !outside.current) {
+      outside.current = true
+      if (open) hideSoon()
+    }
   }
   const changeCols = useCallback(
     (n: number) => {
@@ -128,7 +164,15 @@ export function DeckApp() {
 
   const dock = geo?.dock
   return (
-    <div className="deck-root" onMouseEnter={() => open && clearTimeout(hideTimer.current)} onMouseLeave={hideSoon}>
+    <div
+      className="deck-root"
+      onMouseEnter={() => open && !outside.current && clearTimeout(hideTimer.current)}
+      onMouseLeave={() => {
+        outside.current = true
+        hideSoon()
+      }}
+      onMouseMove={onMove}
+    >
       <div
         className="deck-dock"
         style={dock ? { left: dock.x, top: dock.y, width: dock.width, height: dock.height } : undefined}
@@ -148,7 +192,7 @@ export function DeckApp() {
               active={t.id === active?.id}
               showLogos={deck.showLogos}
               // the open tab clicked again closes the panel (the only way when auto hide is off)
-              onClick={() => (t.id === active?.id && open ? setOpen(false) : (choose(t.id), show()))}
+              onClick={() => (t.id === active?.id && open ? close() : (choose(t.id), show()))}
             />
           ))
         ) : (
@@ -156,7 +200,10 @@ export function DeckApp() {
         )}
       </div>
       {geo?.expanded && group && deck && (
-        <div style={{ position: 'absolute', left: geo.panel.x, top: geo.panel.y }}>
+        <div
+          className={`deck-panelwrap ${deck.animations !== false ? 'is-anim' : ''} ${closing ? 'is-closing' : ''}`}
+          style={{ position: 'absolute', left: geo.panel.x, top: geo.panel.y }}
+        >
           <DeckPanel
             games={games}
             cols={cols}
@@ -167,7 +214,7 @@ export function DeckApp() {
             onCols={changeCols}
             onLaunch={(g) => {
               api().deck.play(g.id)
-              setOpen(false) // the panel folds away behind the starting game (deck_app._on_launched)
+              close() // the panel folds away behind the starting game (deck_app._on_launched)
             }}
           />
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EmuGameOptions, EmuMetaField, EmuSettingsChange, Game } from '@shared/types'
-import { api, attempt, useStore } from '../store'
+import { api, askChoice, attempt, useStore } from '../store'
 import { focusFirst } from '../nav/engine'
 import { formatBytes, formatLastPlayed, plural, versionCountLabel } from '../lib/format'
 import { usePrimaryAction } from '../lib/primary'
@@ -10,6 +10,7 @@ import { OnScreenKeyboard } from './TextField'
 import { ArtPicker } from '../modals/ArtPicker'
 import { GogSaves } from './GogSaves'
 import { GogExtras } from './GogExtras'
+import { gogRemovable, uninstallGog } from './GogDetails'
 import { Controllers } from './Controllers'
 import { CategoryPicker } from '../modals/CategoryPicker'
 
@@ -76,7 +77,7 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
     return () => clearTimeout(t)
   }, [])
 
-  const steamPage = (view: 'details' | 'store' | 'downloads'): void =>
+  const steamPage = (view: 'details' | 'store' | 'downloads' | 'uninstall'): void =>
     void attempt(api().game.openInSteam(game.id, view)).then((r) => r && !r.ok && toast(r.error ?? 'Nie udało się otworzyć Steam.', 'error'))
 
   const rows: Row[] = [
@@ -103,7 +104,33 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
             ? [{ label: 'Pokaż pobieranie w Steam', act: () => steamPage('downloads') }]
             : []),
           { label: 'Otwórz w Steam', value: 'strona gry w kliencie Steam', act: () => steamPage('details') },
-          { label: 'Strona sklepu', value: 'sklep Steam', act: () => steamPage('store') }
+          { label: 'Strona sklepu', value: 'sklep Steam', act: () => steamPage('store') },
+          ...(game.installed && game.appId
+            ? [
+                {
+                  label: 'Odinstaluj',
+                  value: 'okno odinstalowania w kliencie Steam',
+                  act: () =>
+                    void askChoice(`Odinstalować ${game.name}? Steam pokaże swoje okno odinstalowania (zapisy w chmurze Steam zostają).`, [
+                      'Otwórz odinstalowanie w Steam',
+                      'Anuluj'
+                    ]).then((i) => i === 0 && steamPage('uninstall'))
+                }
+              ]
+            : [])
+        ]
+      : []),
+    // gra GOG: to samo okno co na pulpicie (wybór plików w Dokumentach / AppData)
+    ...(game.gog && engineReady && gogRemovable(game.gog)
+      ? [
+          {
+            label: 'Usuń grę',
+            value: 'pliki gry z tego komputera · archiwum na serwerze zostaje',
+            act: () => {
+              onClose()
+              void uninstallGog(game)
+            }
+          }
         ]
       : [])
   ]

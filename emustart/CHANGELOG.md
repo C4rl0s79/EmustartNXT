@@ -69,6 +69,28 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 12 | Etap 2a — Lumen jako administrator: silnik `unelevated.popen` (emulatory, gry GOG — token powłoki); Lumen: `requireAdministrator`, Steam i linki przez `explorer.exe`, autostart przez Harmonogram (30 s, najwyższe uprawnienia, stary wpis Run usuwany), `gog_finish_admin_all` przy starcie, okno odinstalowania z wyborem plików poza grą, pominięte kroki w szczegółach gry | zrobione — wydanie Lumena 1.0.59. Na żywo (zbudowany Lumen, 2026-11-12): Lumen i silnik z uprawnieniami; DOSBox, RetroArch, PCSX2, Steam i gra Steam bez nich; zadanie autostartu (30 s, najwyższe uprawnienia); okno wyboru przy drugiej kopii (oba wybory). Niesprawdzone na żywo: zaległe kroki przy starcie (żadna gra nie czekała) |
 | 13 | Poprawki po 1.0.59 — **wydane: Lumen 1.0.60** (PR #27, `lumen-v1.0.60`): instalacja dużych gier GOG, powrót Lumena po grze, płynność grafik (plan niżej) | zrobione — sprawdzone na żywo przez gracza (2026-11-12): duża gra GOG startuje od razu i pobiera szybciej, Lumen wraca na wierzch w trybie, z którego uruchomiono grę, siatka pulpitu nie wraca na początek, wstęga bez końca, przewijanie gier Steam płynne, animowane plakaty animowane; czeka na wydanie |
 | 14 | Motywy TV jako pakiety z serwera (plan niżej, kroki 14a–14e) — **wydane: EmuStart 0.64.0, Lumen 1.0.61**; wbudowane motywy w formacie paczek — pominięte (decyzja użytkownika 2026-11-13) | 14a, 14b zrobione (testy: sprawdzanie paczek, zapis, panel → HTTP jak Lumen, synchronizacja silnika — tylko zmienione pliki, podmienione pliki odrzucone, ponowne sprawdzenie paczki; protokół lumen-theme:// tylko z plikami pakietu; na żywo jeszcze nie — wymaga nowej wersji serwera); 14c zrobione (na żywo w Lumenie z profilu testowego: przykład `lumen/docs/themes/portal-nexus` przez kod serwera i silnika → arkusz, paleta, czcionka, dekoracje, poziomy animacji wysokie/niskie; złośliwe `layers.html` — nic się nie wykonało, niedozwolone znaczniki/atrybuty/adresy usunięte); 14d zrobione (klucze kategorii jak w „Grafice grupy”: `pc`, `pc/steam`, `grp:konsole`, `es:<system>`, `@logo`; kolejność: własna gracza → motyw → serwer → zdjęcie konsoli; na żywo: tło grupy PC z przykładu); w toku: 14e |
+| 15 | Deck jak w PyLinksDeck (animacje, zwijanie po wyjeździe myszą także bokiem, ustawienia w menu Decka) i usuwanie gier Steam / GOG w trybie TV (plan niżej) | **wydane: Lumen 1.0.62**; zrobione (testy; na żywo na profilu testowym: rozwinięcie z animacją, zwinięcie po wyjeździe bokiem w obrębie okna). Niesprawdzone na żywo: menu prawego klawisza (natywne menu — poza zasięgiem automatu), usuwanie gier na prawdziwych grach |
+
+### Plan: Deck jak w PyLinksDeck, usuwanie gier w trybie TV (etap 15)
+
+Zgłoszenie użytkownika (2026-11-13), porównanie z PyLinksDeck (`D:\GIT\PyLinksDeck`, README):
+- **Animacje zwijania i rozwijania** — ustawienie `deck.animations` istnieje, ale nic go nie używa; panel pojawia się
+  i znika od razu. Zmiana: panel z gier wysuwa się spod docka i zjeżdża z powrotem (krótkie przesunięcie i
+  przenikanie, ~180 ms); okno zmniejsza się dopiero po animacji zwinięcia; „Animacje” wyłączone — jak dotąd od razu.
+- **Zwijanie po wyjeździe myszą bokiem** — panel zwija tylko opuszczenie całego okna Decka; okno jest szersze niż
+  dock / panel, więc wyjazd w bok w przezroczysty pas okna niczego nie robi. Zmiana: zwijanie, gdy mysz jest poza
+  prostokątem docka i panelu (z tym samym opóźnieniem 0,45 s), także w obrębie okna.
+- **Ustawienia w Decku (prawy klik), jak w PyLinksDeck** — dziś tylko: Otwórz Lumen, Wyłącz Decka, Uruchamiaj z
+  Windows, Zamknij. Zmiana: menu „Grupa: <aktywna>” (kształt kafli 2:3 / kwadrat, liczba kolumn, ukryj grupę,
+  przesuń w lewo / prawo), „Grupy” (widoczność każdej), „Wymiary” (szerokość docka i panelu na tym ekranie),
+  „Wyświetlanie” (nazwy gier, logotypy platform, animacje, zwijanie po zjechaniu myszą, przezroczystość) i
+  „Wszystkie ustawienia Decka…” (Ustawienia Lumena). Ta sama pamięć ustawień co w Ustawieniach Lumena (jedna kopia).
+- **Usuwanie gry w trybie TV** — „Opcje gry” (Y) gry Steam i GOG nie mają usuwania (na pulpicie GOG ma „Usuń grę”).
+  Zmiana: GOG — „Usuń grę” z tym samym wyborem plików w Dokumentach / AppData co na pulpicie; Steam — „Odinstaluj”
+  (okno odinstalowania klienta Steam, `steam://uninstall/<appid>`; Lumen sam plików Steam nie usuwa).
+
+Nie dotyka: wyglądu docka i kafli, grup i ich kolejności (poza zmianą z menu), trybu pulpitu Lumena poza oknem
+opcji gry, gier EmuStart (mają „Usuń z dysku”).
 
 ### Plan: poprawki po 1.0.59 (etap 13)
 

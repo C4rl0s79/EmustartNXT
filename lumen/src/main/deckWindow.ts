@@ -29,6 +29,8 @@ export interface DeckHost {
   autostart(): boolean
   /** false when Windows refused it */
   setAutostart(on: boolean): boolean
+  /** ustawienia Decka w jego menu (grupy, wymiary, wyświetlanie — jak w PyLinksDeck), budowane przy każdym otwarciu */
+  settingsMenu(): MenuItemConstructorOptions[]
 }
 
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
@@ -226,6 +228,9 @@ export class DeckWindow {
   private menu(): MenuItemConstructorOptions[] {
     return [
       { label: 'Otwórz Lumen', click: () => this.host.openMain() },
+      { type: 'separator' },
+      ...this.host.settingsMenu(),
+      { type: 'separator' },
       { label: 'Wyłącz Decka', click: () => this.host.disable() },
       { type: 'separator' },
       {

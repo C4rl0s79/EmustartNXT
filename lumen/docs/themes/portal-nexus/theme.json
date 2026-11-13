@@ -1,34 +1,28 @@
 {
   "id": "portal-nexus",
   "name": "Portal Nexus",
-  "version": "1.0",
-  "author": "przykład",
-  "description": "Neon i synthwave: mgławice, siatka przy dolnej krawędzi, unoszące się iskry. Wstęga okładek z odbiciem.",
+  "version": "2.0",
+  "author": "Lumen",
+  "description": "Neon i synthwave: zachody słońca nad siatką, neonowe emblematy grup, lista gier w szkle z poświatą, iskry, pył i spadające gwiazdy.",
   "palette": {
-    "bg": "#05010f",
+    "bg": "#07021a",
     "text": "#f4ecff",
-    "dim": "#c5b4eb",
+    "dim": "#c9b8ef",
     "accent": "#2de2ff",
-    "selText": "#05010f",
+    "selText": "#04121c",
     "selBg": "#2de2ff",
-    "panel": "rgba(13, 6, 38, 0.92)"
+    "panel": "rgba(12, 5, 34, 0.86)"
   },
   "games": {
-    "layout": "coverflow",
-    "reflection": true
+    "layout": "list",
+    "reflection": false
   },
   "logoPlate": true,
   "consoleBackdrop": true,
   "ambient": "none",
   "locks": [
     "accent",
-    "bg",
-    "row",
-    "list_w",
-    "media_h",
-    "tlogo",
-    "tlogo_w",
-    "games_logo"
+    "bg"
   ],
   "fonts": {
     "text": [
@@ -49,6 +43,24 @@
     "high"
   ],
   "categories": {
-    "grp:pc": "assets/categories/pc.webp"
+    "grp:pc": "assets/bg/grp-pc.webp",
+    "grp:pc@logo": "assets/logo/grp-pc.png",
+    "grp:computer": "assets/bg/grp-computer.webp",
+    "grp:computer@logo": "assets/logo/grp-computer.png",
+    "grp:console": "assets/bg/grp-console.webp",
+    "grp:console@logo": "assets/logo/grp-console.png",
+    "grp:arcade": "assets/bg/grp-arcade.webp",
+    "grp:arcade@logo": "assets/logo/grp-arcade.png",
+    "grp:other": "assets/bg/grp-other.webp",
+    "grp:other@logo": "assets/logo/grp-other.png",
+    "grp:col": "assets/bg/grp-col.webp",
+    "grp:col@logo": "assets/logo/grp-col.png",
+    "grp:fav": "assets/bg/grp-fav.webp",
+    "grp:fav@logo": "assets/logo/grp-fav.png",
+    "grp:recent": "assets/bg/grp-recent.webp",
+    "grp:recent@logo": "assets/logo/grp-recent.png",
+    "pc/steam": "assets/bg/pc-steam.webp",
+    "pc/gog": "assets/bg/pc-gog.webp",
+    "pc/shortcut": "assets/bg/pc-shortcut.webp"
   }
 }

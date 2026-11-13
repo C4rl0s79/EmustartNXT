@@ -77,6 +77,8 @@ describe('domyślne grafiki kategorii z motywu (14d)', async () => {
   it('klucze: platforma es:<system>, podgrupa i grupa jak w „Grafice grupy”', () => {
     expect(categoryKeys(sys({ es: 'snes' }))).toEqual(['es:snes'])
     expect(categoryKeys(sys({ sub: { id: 'pc/steam' } }))).toEqual(['pc/steam'])
+    expect(categoryKeys(sys({ sub: { id: 'pc/all' }, group: { id: 'pc' } }))).toEqual(['pc/all', 'grp:pc'])
+    expect(categoryKeys(sys({ es: 'snes', sub: { id: 'console/snes' }, group: { id: 'console' } }))).toEqual(['es:snes'])
     expect(categoryKeys(sys({ group: { id: 'konsole' } }))).toEqual(['grp:konsole'])
   })
 
@@ -86,5 +88,10 @@ describe('domyślne grafiki kategorii z motywu (14d)', async () => {
     expect(categoryArt(pkg, sys({ group: { id: 'konsole' } }), 'logo')).toBe('lumen-theme://portal-nexus/assets/konsole.png?r=0123456789abcdef')
     expect(categoryArt(pkg, sys({ es: 'snes' }), 'hero')).toContain('assets/snes.webp')
     expect(categoryArt(undefined, sys({ es: 'snes' }), 'hero')).toBeUndefined()
+    // podgrupa bez własnej sceny — scena grupy; logo grupy nie (zakryłoby nazwę podgrupy)
+    const all = sys({ sub: { id: 'konsole/all' }, group: { id: 'konsole' } })
+    const withBg = { ...pkg, categories: { ...pkg.categories, 'grp:konsole': 'assets/konsole.webp' } }
+    expect(categoryArt(withBg, all, 'hero')).toContain('assets/konsole.webp')
+    expect(categoryArt(withBg, all, 'logo')).toBeUndefined()
   })
 })

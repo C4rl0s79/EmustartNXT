@@ -75,8 +75,21 @@ const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
 ]
 let lastPage = PAGES[0].id // kept while the program runs
 
+/** Ustawienia od razu na sekcji `id` (menu Decka: „Wszystkie ustawienia Decka…”) */
+export function openSettingsPage(id: string): void {
+  if (!PAGES.some((p) => p.id === id)) return
+  lastPage = id
+  window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: id }))
+  useStore.getState().setTab('settings')
+}
+
 export function SettingsScreen({ active }: { active: boolean }) {
   const [page, setPageState] = useState(lastPage)
+  useEffect(() => {
+    const on = (e: Event): void => setPageState((e as CustomEvent<string>).detail)
+    window.addEventListener('lumen:settings-page', on)
+    return () => window.removeEventListener('lumen:settings-page', on)
+  }, [])
   const setPage = (id: string): void => {
     lastPage = id
     setPageState(id)

@@ -247,6 +247,9 @@ describe('moveDeckGroup', () => {
   const gs = [g('a/1'), g('a/2'), g('a/3')]
   it('hides / shows one tab and moves it by one place', () => {
     expect(moveDeckGroup(gs, { id: 'a/2', hidden: true })[1].hidden).toBe(true)
+    // kształt kafli z menu Decka (jak w PyLinksDeck): kwadrat / okładka 2:3; bez zmiany — ta sama tablica
+    expect(moveDeckGroup(gs, { id: 'a/2', aspect: 'square' })[1].aspect).toBe('square')
+    expect(moveDeckGroup(gs, { id: 'a/2', aspect: gs[1].aspect })).toBe(gs)
     expect(moveDeckGroup(gs, { id: 'a/3', move: -1 }).map((x) => x.id)).toEqual(['a/1', 'a/3', 'a/2'])
   })
   it('returns the same array when nothing changes', () => {
