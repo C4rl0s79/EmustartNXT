@@ -33,6 +33,60 @@ PIN_RETRY = 300                 # s — wznowienie pobierania przypiętej gry na
 ANIMATED_ON_LIST_MAX = 3 << 20
 
 
+class _Durations(list):
+    """Czas klatki, o którą koder pyta zaraz po jej dodaniu (Pillow: `duration[frame_idx]`) — z ostatnio
+    odczytanej klatki, bez drugiego przejścia przez całą animację."""
+
+    def __init__(self, frames: "_Frames"):
+        super().__init__()
+        self._frames = frames
+
+    def __getitem__(self, i):  # type: ignore[override]  # tylko odczyt po indeksie — tak czyta go koder WebP
+        return self._frames.duration
+
+
+class _Frames:
+    """Klatki animacji zmniejszane po jednej: koder animowanego WebP z Pillow pyta o nie przez `seek()` i bierze
+    bieżącą przez `getim()`, więc cała animacja nie leży w pamięci (1233 klatki 360×540 to ~1 GB)."""
+
+    mode = "RGBA"
+
+    def __init__(self, src, size: tuple):
+        self._src = src
+        self.size = size
+        self.n_frames = max(0, int(getattr(src, "n_frames", 1)) - 1)   # klatka 0 to obraz, na którym wołamy save()
+        self.duration = 100
+        self._cur = None
+
+    def frame(self, i: int):
+        from PIL import Image
+        self._src.seek(i)
+        rgba = self._src.convert("RGBA")              # wczytuje klatkę — dopiero wtedy WebP podaje jej czas
+        self.duration = int(self._src.info.get("duration") or 100)
+        self._cur = rgba.resize(self.size, Image.Resampling.BILINEAR)
+        return self._cur
+
+    def seek(self, i: int) -> None:
+        self.frame(i + 1)
+
+    def getim(self):
+        return self._cur.getim()
+
+    def tobytes(self, *a):
+        return self._cur.tobytes(*a)
+
+
+def animated_thumb(im, dst: str, height: int) -> None:
+    """Mała animowana kopia plakatu (animowany WebP, wysokość `height`): ten sam ruch co oryginał, a Chromium nie
+    dekoduje klatek 600×900 bez strat przy każdej zmianie rozmiaru kafla (pomiar: przerwy do 2 s → żadnych)."""
+    w, h = im.size
+    size = (max(1, round(w * height / h)), int(height)) if h > height else (w, h)
+    frames = _Frames(im, size)
+    first = frames.frame(0)
+    first.save(dst, "WEBP", save_all=True, append_images=[frames], duration=_Durations(frames), loop=im.info.get("loop", 0),
+               quality=75, method=0)
+
+
 class Api:
     def __init__(self):
         self._cfg = config.load()
@@ -484,21 +538,34 @@ class Api:
     def art_user_gallery(self, game: str, kind: str) -> dict:
         return self._art_user("gallery", str(game), str(kind))
 
-    def art_thumb(self, src: str, dst: str, height: int) -> dict:
-        """Lumen: mała kopia plakatu na listę (dekodowanie i przetwarzanie pełnych plików zacinało przewijanie)."""
+    def art_thumb(self, src: str, dst: str, height: int, anim: bool = False) -> dict:
+        """Lumen: mała kopia plakatu na listę (dekodowanie i przetwarzanie pełnych plików zacinało przewijanie).
+        `anim` — animowany plakat zostaje animowany: mała animowana kopia (Deck, listy pulpitu)."""
         from PIL import Image
         tmp = f"{dst}.{threading.get_ident()}.tmp"
         try:
             with Image.open(str(src)) as im:
+                animated = getattr(im, "is_animated", False)
+                if anim:
+                    if not animated:
+                        return {"ok": False}
+                    Path(dst).parent.mkdir(parents=True, exist_ok=True)
+                    animated_thumb(im, tmp, int(height))
+                    os.replace(tmp, dst)
+                    return {"ok": True}
                 # animowana zostaje animowana, chyba że plik jest ogromny (dziesiątki MB APNG/WebP zacinały listę na
                 # sekundy): wtedy na liście pierwsza klatka, animacja dalej w szczegółach
-                if getattr(im, "is_animated", False) and os.path.getsize(src) < ANIMATED_ON_LIST_MAX:
+                if animated and os.path.getsize(src) < ANIMATED_ON_LIST_MAX:
                     return {"ok": False}
                 im.thumbnail((int(height) * 2, int(height)), Image.Resampling.BILINEAR)
                 Path(dst).parent.mkdir(parents=True, exist_ok=True)
                 im.convert("RGBA").save(tmp, "WEBP", quality=82, method=2)
             os.replace(tmp, dst)
             return {"ok": True}
+        except (AttributeError, TypeError) as ex:     # inna wersja Pillow (koder animacji bez getim/seek) — oryginał
+            log.info("animowana miniatura: %s", ex)
+            Path(tmp).unlink(missing_ok=True)
+            return {"ok": False}
         except (OSError, ValueError, Image.DecompressionBombError) as ex:
             log.info("miniatura grafiki: %s", ex)
             Path(tmp).unlink(missing_ok=True)

@@ -40,6 +40,7 @@ const api: LumenApi = {
     setPlatformOverride: (id, value) => prefsOp('setPlatformOverride', id, value),
     setGroupPinned: (id, pinned) => prefsOp('setGroupPinned', id, pinned),
     moveGroupPin: (id, delta) => prefsOp('moveGroupPin', id, delta),
+    setSeries: (changes) => prefsOp('setSeries', changes),
     onChange: (cb) => subscribe(IPC.prefsChanged, cb)
   },
   gog: {
@@ -168,6 +169,8 @@ const api: LumenApi = {
     expand: (content) => ipcRenderer.send(IPC.deckExpand, content),
     onGeometry: (cb) => subscribe(IPC.deckGeometry, cb),
     getGeometry: () => invoke(IPC.deckGetGeometry),
+    resizePanel: (height, commit) => ipcRenderer.send(IPC.deckResizePanel, height, commit),
+    onCollapse: (cb) => subscribe(IPC.deckCollapse, cb),
     play: (gameId) => ipcRenderer.send(IPC.deckPlay, gameId),
     onPlayRequest: (cb) => subscribe(IPC.deckPlayRequest, cb),
     reveal: () => ipcRenderer.send(IPC.deckReveal),

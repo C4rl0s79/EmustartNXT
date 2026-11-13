@@ -9,6 +9,7 @@ import { ThemeStore } from './themes'
 import { isModeCombo } from '@shared/pad'
 import type { UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
+import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { TASKLIST } from './systemTools'
@@ -47,7 +48,7 @@ import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
 import { isAnimated } from './art/animated'
-import { deckCandidates, layoutFor, moveDeckGroup, setDeckLayout, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
+import { deckCandidates, layoutFor, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -717,6 +718,30 @@ async function artThumb(file: string, height = 540): Promise<string> {
   return r?.ok ? dst : file
 }
 
+/**
+ * Mała ANIMOWANA kopia animowanego plakatu na listy (Deck, pulpit — anim=1): ten sam ruch, a Chromium nie dekoduje
+ * klatek 600×900 bez strat przy każdej zmianie rozmiaru kafla (pomiar: 24 plakaty, zmiany kolumn — przerwy do 2 s,
+ * z kopiami żadnych). Robiona raz w tle (największe ~20 s); do tego czasu oryginał, potem obraz jest odświeżany.
+ */
+const animThumbLimiter = new Limiter(1, 'art-anim-thumb', true)
+const animThumbBusy = new Set<string>()
+async function animThumb(file: string, gameId: string, height: number): Promise<string> {
+  if (engine.state !== 'ready') return file
+  const st = await fs.stat(file).catch(() => null)
+  if (!st) return file
+  const dst = path.join(paths.artCache, 'thumbs', `${createHash('sha1').update(`${file}|${st.mtimeMs}|anim${height}`).digest('hex')}.webp`)
+  if (await fs.stat(dst).catch(() => null)) return dst
+  if (!animThumbBusy.has(dst)) {
+    animThumbBusy.add(dst)
+    void animThumbLimiter
+      .run(() => engine.call<{ ok?: boolean }>('art_thumb', [file, dst, height, true], 180_000))
+      .then((r) => r?.ok && notifyArt(gameId))
+      .catch((e) => log.warn('art', `animated list copy: ${(e as Error).message}`))
+      .finally(() => animThumbBusy.delete(dst))
+  }
+  return file
+}
+
 const WEB_ART = /^https:\/\/(images\.igdb\.com|cdn\.thegamesdb\.net)\//
 
 async function artResponse(req: Request): Promise<Response> {
@@ -780,7 +805,7 @@ async function artResponse(req: Request): Promise<Response> {
     const thumb = u.searchParams.get('thumb') === '1'
     const keepMoving =
       thumb && u.searchParams.get('anim') === '1' && /\.(png|apng|webp)$/i.test(file) && ((await fs.stat(file).catch(() => null))?.size ?? 0) >= 150_000 && (await isAnimated(file))
-    const served = thumb && !keepMoving ? await artThumb(file, kind === 'hero' ? 720 : 540) : file
+    const served = keepMoving ? await animThumb(file, gameId, kind === 'hero' ? 720 : 540) : thumb ? await artThumb(file, kind === 'hero' ? 720 : 540) : file
     const res = await net.fetch(pathToFileURL(served).toString())
     const headers = new Headers(res.headers)
     headers.set('Cache-Control', 'max-age=31536000')
@@ -1532,6 +1557,8 @@ function registerIpc(): void {
         return updatePrefs((p) => ops.setGroupPinned(p, String(args[0]), args[1] === true))
       case 'moveGroupPin':
         return updatePrefs((p) => ops.moveGroupPin(p, String(args[0]), Number(args[1]) || 0))
+      case 'setSeries':
+        return updatePrefs((p) => ops.setSeries(p, args[0] as Record<string, SeriesPref | null>))
       default:
         throw new Error(`Unknown prefs op ${op}`)
     }
@@ -1825,6 +1852,9 @@ function registerIpc(): void {
     restoreWindow()
   })
   ipcMain.on(IPC.deckExpand, (_e, content: unknown) => deck?.expand(typeof content === 'number' ? content : null))
+  ipcMain.on(IPC.deckResizePanel, (e, height: unknown, commit: unknown) => {
+    if (e.sender === deck?.window?.webContents && typeof height === 'number') deck.resizePanel(height, commit === true)
+  })
   handle(IPC.deckGetGeometry, () => deck?.geometry ?? null)
   handle(IPC.deckAutostart, () => getAutostart())
   handle(IPC.deckSetAutostart, (on: unknown) => {
@@ -2000,6 +2030,10 @@ app.whenReady().then(async () => {
     autostart: getAutostart,
     setAutostart,
     settingsMenu: deckSettingsMenu,
+    storePanelHeight: async (scr, fraction) => {
+      await patchSettings({ deck: { screens: setDeckPanelHeight(settings.get().deck, scr.key, scr.label.slice(0, 40), fraction) } })
+    },
+    collapse: (w) => w.webContents.send(IPC.deckCollapse),
     // the built program's own icon (Lumen.exe); from sources the icon file the build uses
     // ('normal' = 32 px: the tray scales it down — a 16 px one is blurry with display scaling)
     icon: () => (app.isPackaged ? app.getFileIcon(process.execPath, { size: 'normal' }) : Promise.resolve(nativeImage.createFromPath(path.join(app.getAppPath(), 'resources', 'icon.png'))))

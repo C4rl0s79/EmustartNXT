@@ -45,6 +45,17 @@ function report(r: ActionResult | undefined): void {
   if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : r.error, r.ok ? 'info' : 'error')
 }
 
+/** „Uruchom…”: zadanie gry z goggame-*.info (np. „Graphic Mode Setup” — GOGDOSConfig dostaje numer gry, bez niego
+ *  pokazuje błąd) — to samo okno na pulpicie (Szczegóły) i w trybie TV (Opcje gry). */
+export async function chooseGogTask(game: Game, before?: () => void): Promise<void> {
+  const tasks = await attempt(api().gog.playTasks(game.id))
+  if (!tasks?.length) return void useStore.getState().toast('Ta gra nie ma zadań uruchamiania.', 'info')
+  const i = await askChoice('Uruchom', tasks.map((t) => `${t.name}${t.default ? ' (domyślnie)' : ''}${t.category === 'launcher' ? ' — launcher' : ''}`))
+  if (i === null) return
+  before?.()
+  report(await launchGog(game.id, tasks[i].index))
+}
+
 /** Usunięcie gry GOG z tego komputera — z wyborem plików skopiowanych przez instalator poza folder gry (Dokumenty,
  *  AppData — np. domyślne ustawienia); to samo okno na pulpicie (Szczegóły) i w trybie TV (Opcje gry). */
 export async function uninstallGog(game: Game): Promise<void> {
@@ -79,12 +90,7 @@ export function GogActions({ game }: { game: Game }) {
   const installed = g.state === 'installed' || g.state === 'needs_admin' || g.state === 'damaged'
   const moreDlc = (g.available?.dlcs ?? []).some((d) => !(g.dlcs ?? []).includes(d.id))
 
-  const chooseTask = async (): Promise<void> => {
-    const tasks = await attempt(api().gog.playTasks(game.id))
-    if (!tasks?.length) return
-    const i = await askChoice('Uruchom', tasks.map((t) => `${t.name}${t.default ? ' (domyślnie)' : ''}${t.category === 'launcher' ? ' — launcher' : ''}`))
-    if (i !== null) report(await launchGog(game.id, tasks[i].index))
-  }
+  const chooseTask = (): Promise<void> => chooseGogTask(game)
   const verify = async (): Promise<void> => {
     useStore.getState().toast('Sprawdzam pliki gry (MD5 z manifestu)…', 'info')
     const r = await attempt(api().gog.verify(game.id))

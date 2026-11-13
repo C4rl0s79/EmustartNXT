@@ -1,3 +1,4 @@
+import type { SeriesPrefs } from './series'
 // Types shared between the main process, preload bridge and renderer.
 // Game identity is always the stable `id` ("steam:<appid>"), never the title.
 
@@ -468,6 +469,8 @@ export interface Prefs {
   pinnedGroups: string[]
   /** names in LaunchBox set by the server's administrator (GOG games, shortcuts): game id → name; a copy of the server's */
   lbTitles: Record<string, string>
+  /** game series corrected by the player (shared/series.ts): game id → series name / none / place in the series */
+  series: SeriesPrefs
 }
 
 /** a game's name in LaunchBox (set by the server's administrator) and whether this device may change it */

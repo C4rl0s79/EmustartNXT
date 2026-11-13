@@ -31,3 +31,26 @@ def test_huge_animation_becomes_first_frame_small_stays(tmp_path, monkeypatch):
     assert Api.art_thumb(object(), str(src), str(dst), 45) == {"ok": True}
     with Image.open(dst) as im:
         assert not getattr(im, "is_animated", False)
+
+
+def test_animated_copy_is_small_and_keeps_every_frame_and_its_time(tmp_path):
+    """Deck i listy pulpitu: animowany plakat zostaje animowany, ale w małej kopii (przerwy przy zmianie kolumn)."""
+    src, dst = tmp_path / "a.webp", tmp_path / "t" / "a.webp"
+    frames = [Image.new("RGB", (600, 900), (i * 40, 0, 0)) for i in range(5)]
+    frames[0].save(src, save_all=True, append_images=frames[1:], duration=[40, 50, 60, 70, 80], loop=0, lossless=True)
+    assert Api.art_thumb(object(), str(src), str(dst), 540, True) == {"ok": True}
+    with Image.open(dst) as im:
+        assert im.size == (360, 540) and im.n_frames == 5
+        times = []
+        for i in range(im.n_frames):
+            im.seek(i)
+            im.load()
+            times.append(im.info["duration"])
+        assert times == [40, 50, 60, 70, 80]
+
+
+def test_animated_copy_of_a_still_image_is_refused(tmp_path):
+    src, dst = tmp_path / "a.png", tmp_path / "a.webp"
+    Image.new("RGB", (600, 900)).save(src)
+    assert Api.art_thumb(object(), str(src), str(dst), 540, True) == {"ok": False}
+    assert not dst.exists()

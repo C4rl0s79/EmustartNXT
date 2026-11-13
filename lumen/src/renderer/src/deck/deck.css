@@ -204,3 +204,31 @@ body,
     animation: none;
   }
 }
+
+/* dolna krawędź panelu: przeciągnięta ustawia jego wysokość na tym ekranie (zapamiętaną) */
+.deck-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.deck-resize::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 48px;
+  height: 4px;
+  margin-left: -24px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.deck-panelwrap:hover .deck-resize::after,
+.deck-resize:active::after {
+  opacity: 1;
+}

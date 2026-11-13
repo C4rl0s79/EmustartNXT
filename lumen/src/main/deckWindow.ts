@@ -1,5 +1,5 @@
 import { BrowserWindow, Menu, Tray, screen, type MenuItemConstructorOptions, type NativeImage } from 'electron'
-import { deckGeometry, layoutFor, screenKey, type DeckGeometry, type DeckSettings } from '@shared/deck'
+import { DECK_HIDE_MS, deckGeometry, layoutFor, panelHeightFraction, screenKey, type DeckGeometry, type DeckRect, type DeckSettings } from '@shared/deck'
 import { DesktopLayerGuard, handleOf, makeUnobtrusive, pinAboveDesktop, taskbarCreatedMessage } from './desktopLayer'
 import { log } from './logger'
 
@@ -31,6 +31,10 @@ export interface DeckHost {
   setAutostart(on: boolean): boolean
   /** ustawienia Decka w jego menu (grupy, wymiary, wyświetlanie — jak w PyLinksDeck), budowane przy każdym otwarciu */
   settingsMenu(): MenuItemConstructorOptions[]
+  /** zapamiętaj największą wysokość panelu na tym ekranie (ułamek wysokości obszaru roboczego) — przeciągnięta krawędź */
+  storePanelHeight(screen: { key: string; label: string }, fraction: number): Promise<void>
+  /** the mouse has left the dock and the panel for DECK_HIDE_MS — the page folds the panel away */
+  collapse(w: BrowserWindow): void
 }
 
 /** The screen Deck is on (the primary one, as PyLinksDeck) — the key its dimensions are stored under. */
@@ -49,6 +53,8 @@ export function deckScreen(): { key: string; label: string } {
 const SCREEN_CHECK_MS = 3000
 const SCREEN_SETTLE_MS = 400
 const MAX_RELOADS = 3
+/** while the panel is open the main process looks at the cursor this often (its timers are never throttled) */
+const CURSOR_CHECK_MS = 100
 
 export class DeckWindow {
   private dock: BrowserWindow | null = null
@@ -66,6 +72,11 @@ export class DeckWindow {
   private content: number | null = null
   /** the last geometry sent — asked for by the page when it (re)loads */
   private last: DeckGeometry | null = null
+  /** the panel's bottom edge is being dragged: its largest height (fraction) until the drag ends */
+  private dragHeight: number | null = null
+  private cursorTimer: NodeJS.Timeout | undefined
+  /** since when the cursor is outside the dock and the panel (ms), 0 — inside */
+  private outsideSince = 0
 
   get geometry(): DeckGeometry | null {
     return this.window ? this.last : null
@@ -105,7 +116,9 @@ export class DeckWindow {
       transparent: true,
       backgroundColor: '#00000000',
       title: 'Lumen Deck',
-      webPreferences: { preload: this.host.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: true }
+      // no throttling: the window lies below every program window, Chromium takes it for covered and slowed its
+      // timers — the panel folded away more than 10 s after the mouse left it
+      webPreferences: { preload: this.host.preload, sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
     })
     this.dock = w
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
@@ -168,6 +181,8 @@ export class DeckWindow {
     this.tray = null
     clearInterval(this.screenTimer)
     clearTimeout(this.settleTimer)
+    this.watchCursor(false)
+    this.dragHeight = null
     screen.removeListener('display-added', this.onScreen)
     screen.removeListener('display-removed', this.onScreen)
     screen.removeListener('display-metrics-changed', this.onScreen)
@@ -196,7 +211,8 @@ export class DeckWindow {
     const s = this.host.deck()
     const { key, label } = deckScreen()
     this.screenState = this.state()
-    const g = deckGeometry(d.workArea, layoutFor(s, key, label), this.content)
+    const lay = layoutFor(s, key, label)
+    const g = deckGeometry(d.workArea, this.dragHeight === null ? lay : { ...lay, panelHeight: this.dragHeight }, this.content)
     w.setBounds(g.window)
     w.setOpacity(s.opacity)
     this.last = g
@@ -210,6 +226,52 @@ export class DeckWindow {
     if (c === this.content) return
     this.content = c
     this.place()
+    this.watchCursor(c !== null)
+  }
+
+  /**
+   * The panel's bottom edge dragged to `height` px (its largest height on this screen): the window follows; on
+   * release the height is stored for this screen. The panel stays no taller than its tiles need.
+   */
+  resizePanel(height: number, commit: boolean): void {
+    if (!this.window || !Number.isFinite(height)) return
+    const frac = panelHeightFraction(height, screen.getPrimaryDisplay().workArea.height)
+    this.dragHeight = frac
+    this.place()
+    if (!commit) return
+    void this.host
+      .storePanelHeight(deckScreen(), frac)
+      .catch((e) => log.warn('deck', `panel height: ${(e as Error).message}`))
+      .finally(() => {
+        this.dragHeight = null
+        this.place()
+      })
+  }
+
+  /** Folding away by the cursor, from the main process (a page timer in a covered window could sleep for seconds). */
+  private watchCursor(on: boolean): void {
+    clearInterval(this.cursorTimer)
+    this.cursorTimer = undefined
+    this.outsideSince = 0
+    if (!on) return
+    this.cursorTimer = setInterval(() => {
+      const w = this.window
+      const g = this.last
+      if (!w || !g || !g.expanded) return
+      if (this.dragHeight !== null || !this.host.deck().autoHide) {
+        this.outsideSince = 0
+        return
+      }
+      const p = screen.getCursorScreenPoint()
+      const b = w.getBounds()
+      const inRect = (r: DeckRect): boolean => p.x >= b.x + r.x && p.x < b.x + r.x + r.width && p.y >= b.y + r.y && p.y < b.y + r.y + r.height
+      if (inRect(g.dock) || inRect(g.panel)) this.outsideSince = 0
+      else if (!this.outsideSince) this.outsideSince = Date.now()
+      else if (Date.now() - this.outsideSince >= DECK_HIDE_MS) {
+        this.outsideSince = Number.MAX_SAFE_INTEGER // once — until the cursor comes back or the panel opens again
+        this.host.collapse(w)
+      }
+    }, CURSOR_CHECK_MS)
   }
 
   private pin(): void {

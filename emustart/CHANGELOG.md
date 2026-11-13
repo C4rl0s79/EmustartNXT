@@ -70,6 +70,38 @@ gry), API `/v1/…`, serwera i archiwum GOG Managera, APK (nie instaluje gier GO
 | 13 | Poprawki po 1.0.59 — **wydane: Lumen 1.0.60** (PR #27, `lumen-v1.0.60`): instalacja dużych gier GOG, powrót Lumena po grze, płynność grafik (plan niżej) | zrobione — sprawdzone na żywo przez gracza (2026-11-12): duża gra GOG startuje od razu i pobiera szybciej, Lumen wraca na wierzch w trybie, z którego uruchomiono grę, siatka pulpitu nie wraca na początek, wstęga bez końca, przewijanie gier Steam płynne, animowane plakaty animowane; czeka na wydanie |
 | 14 | Motywy TV jako pakiety z serwera (plan niżej, kroki 14a–14e) — **wydane: EmuStart 0.64.0, Lumen 1.0.61**; wbudowane motywy w formacie paczek — pominięte (decyzja użytkownika 2026-11-13) | 14a, 14b zrobione (testy: sprawdzanie paczek, zapis, panel → HTTP jak Lumen, synchronizacja silnika — tylko zmienione pliki, podmienione pliki odrzucone, ponowne sprawdzenie paczki; protokół lumen-theme:// tylko z plikami pakietu; na żywo jeszcze nie — wymaga nowej wersji serwera); 14c zrobione (na żywo w Lumenie z profilu testowego: przykład `lumen/docs/themes/portal-nexus` przez kod serwera i silnika → arkusz, paleta, czcionka, dekoracje, poziomy animacji wysokie/niskie; złośliwe `layers.html` — nic się nie wykonało, niedozwolone znaczniki/atrybuty/adresy usunięte); 14d zrobione (klucze kategorii jak w „Grafice grupy”: `pc`, `pc/steam`, `grp:konsole`, `es:<system>`, `@logo`; kolejność: własna gracza → motyw → serwer → zdjęcie konsoli; na żywo: tło grupy PC z przykładu); w toku: 14e |
 | 15 | Deck jak w PyLinksDeck (animacje, zwijanie po wyjeździe myszą także bokiem, ustawienia w menu Decka) i usuwanie gier Steam / GOG w trybie TV (plan niżej) | **wydane: Lumen 1.0.62**; zrobione (testy; na żywo na profilu testowym: rozwinięcie z animacją, zwinięcie po wyjeździe bokiem w obrębie okna). Niesprawdzone na żywo: menu prawego klawisza (natywne menu — poza zasięgiem automatu), usuwanie gier na prawdziwych grach |
+| 16 | Deck: rozmiar panelu przeciąganiem dolnej krawędzi, szybkie zwijanie, płynna zmiana kolumn (małe kopie animowanych plakatów); serie gier; narzędzia GOG w trybie TV (plan niżej) — **wydane: Lumen 1.0.63** | zrobione (testy: Lumen 387, silnik 880 + 828; mypy bez zmian). Na żywo (zbudowany Lumen, profil testowy z ustawieniami i grafikami gracza, CDP): panel zwija się 0,6 s po wyjeździe kursora (sprawdza proces główny); 18 zmian kolumn przy 45 kaflach Steam — bez przerw w klatkach (najdłuższa 35 ms); 17 małych animowanych kopii zrobionych w tle i podmienionych na kaflach; przeciągnięcie krawędzi 1113 → 812 px, wysokość zapisana dla ekranu. Serie na prawdziwej bibliotece (39 622 tytuły): nawigacja 59 ms zamiast 18 ms, np. seria 007 w kolejności lat. GOGDOSConfig z numerem gry — otwiera się (bez uprawnień). Niesprawdzone na żywo: „Uruchom…” w opcjach TV (profil testowy bez gier GOG), okno „Seria” (tylko testy), prawdziwa mysz nad Deckiem (terminal zasłaniał dock — zdarzenia z CDP, kursor ustawiany w Windows) |
+
+### Plan: Deck, serie gier, narzędzia GOG w trybie TV (etap 16)
+
+Zgłoszenia użytkownika (2026-11-13) i pomiary na tym komputerze:
+- **Zmiana liczby kolumn w Decku zatrzymuje program na dziesiątki sekund.** Pomiar (Electron Lumena, 24 największe
+  animowane plakaty z pamięci podręcznej gracza, 18 zmian kolumn co 150 ms): oryginały (600×900, 150–1233 klatek,
+  28–57 MB, bezstratne) — przerwy w klatkach do 2 s, łącznie 6,3 s, 5 kl./s; kopie 360×540 (animowany WebP, jakość 75)
+  — żadnej przerwy, 142 kl./s. Przyczyna: Deck i listy pulpitu (`anim=1`) dostają animowany plakat w oryginale, a po
+  każdej zmianie rozmiaru kafla Chromium dekoduje jego klatki od nowa. Zmiana: animowany plakat na listach — mała
+  animowana kopia (wysokość 540, jak kopie statyczne), robiona raz w silniku (`art_thumb`, klatka po klatce, bez
+  trzymania całej animacji w pamięci) i trzymana w `thumbs/`; do czasu jej powstania — oryginał jak dziś (plakat
+  nie staje). Szczegóły gry i pełny ekran — dalej oryginał. Liczba kolumn zapisywana po zatrzymaniu kółka.
+- **Panel zwija się po ponad 10 s od zjechania myszą.** Okno Decka leży pod oknami programów, więc Chromium uznaje je
+  za zasłonięte i spowalnia liczniki czasu strony (`backgroundThrottling`). Zmiana: bez spowalniania w oknie Decka,
+  a zjechanie myszą sprawdza też proces główny (położenie kursora co 100 ms, tylko gdy panel jest otwarty).
+- **Rozmiar panelu przeciąganiem dolnej krawędzi, zapamiętany.** Zmiana: uchwyt na dolnej krawędzi panelu ustawia
+  jego największą wysokość na tym ekranie (to samo pole co „Wymiary”, osobno dla każdego ekranu); panel dalej nie
+  jest wyższy niż jego kafle.
+- **Serie gier** (wybór użytkownika: obok siebie w sortowaniu). Listy dalej alfabetycznie, ale gry jednej serii stoją
+  razem w miejscu pierwszej z nich, w kolejności wydania (rok, gdy znany; inaczej numer w tytule: 2 / II / III;
+  inaczej tytuł). Seria rozpoznawana po tytule (część przed dwukropkiem / myślnikiem, bez numeru na końcu;
+  co najmniej dwie gry). „Opcje gry” → „Seria”: dołącz do serii (nazwa), nie należy do serii, wcześniej / później
+  w serii — zapamiętane w preferencjach Lumena. Działa wszędzie, gdzie lista idzie z nawigacji biblioteki
+  (pulpit, tryb TV, Deck); inne sortowania (rok, ocena, ostatnio grane…) bez zmian.
+- **GOGDOSConfig (Strike Commander): „uruchom z menu Start”.** Pomiar: `GOGDOSConfig.exe 1207659195` (numer gry,
+  jak w `goggame-*.info`) otwiera konfigurator, także bez uprawnień; bez numeru — „DOSBox Configurator Error”.
+  Silnik podaje numer poprawnie („Uruchom…” w szczegółach na pulpicie). Tryb TV nie ma wyboru zadania. Zmiana:
+  „Opcje gry” GOG w trybie TV — „Uruchom…” z zadaniami gry (np. Graphic Mode Setup), jak na pulpicie.
+
+Nie dotyka: wyglądu docka i kafli, sortowań innych niż tytuł, statycznych kopii plakatów, szczegółów gry, serwera
+EmuStart, APK i klienta Windows EmuStart (serie i Deck są tylko w Lumenie).
 
 ### Plan: Deck jak w PyLinksDeck, usuwanie gier w trybie TV (etap 15)
 
