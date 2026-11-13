@@ -74,7 +74,8 @@ export interface LumenApi {
   game: {
     play(gameId: string): Promise<ActionResult>
     install(gameId: string): Promise<ActionResult>
-    openInSteam(gameId: string, view: 'details' | 'store' | 'downloads'): Promise<ActionResult>
+    /** „uninstall” — okno odinstalowania gry w kliencie Steam */
+    openInSteam(gameId: string, view: 'details' | 'store' | 'downloads' | 'uninstall'): Promise<ActionResult>
     details(gameId: string, force?: boolean): Promise<DetailsResult>
   }
   prefs: {
@@ -298,6 +299,8 @@ export interface LumenApi {
     /** the game the user is looking at (kept when switching modes) */
     select(gameId: string | null): void
     onMode(cb: (mode: UiMode, selection: string | null) => void): () => void
+    /** Ustawienia na wskazanej sekcji (np. z menu Decka: „Wszystkie ustawienia Decka…”) */
+    onOpenSettings(cb: (page: string) => void): () => void
   }
   app: {
     toggleFullscreen(): Promise<boolean>
@@ -447,6 +450,7 @@ export const IPC = {
   gogRefresh: 'gog:refresh',
   gogMessage: 'gog:message',
   themesList: 'themes:list',
+  uiOpenSettings: 'ui:openSettings',
   themesSync: 'themes:sync',
   themesChanged: 'themes:changed',
   jobsGet: 'jobs:get',

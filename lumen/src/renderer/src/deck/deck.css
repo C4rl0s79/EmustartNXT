@@ -169,3 +169,38 @@ body,
   min-height: 120px;
   opacity: 0.7;
 }
+
+/* rozwijanie i zwijanie panelu z grami (ustawienie „Animacje”; DeckApp: okno maleje dopiero po zwinięciu) */
+.deck-panelwrap.is-anim {
+  transform-origin: top center;
+  animation: deck-open 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.deck-panelwrap.is-anim.is-closing {
+  animation: deck-close 0.17s ease-in both;
+}
+@keyframes deck-open {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes deck-close {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-panelwrap.is-anim,
+  .deck-panelwrap.is-anim.is-closing {
+    animation: none;
+  }
+}

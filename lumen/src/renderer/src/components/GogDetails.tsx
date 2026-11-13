@@ -45,6 +45,30 @@ function report(r: ActionResult | undefined): void {
   if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : r.error, r.ok ? 'info' : 'error')
 }
 
+/** Usunięcie gry GOG z tego komputera — z wyborem plików skopiowanych przez instalator poza folder gry (Dokumenty,
+ *  AppData — np. domyślne ustawienia); to samo okno na pulpicie (Szczegóły) i w trybie TV (Opcje gry). */
+export async function uninstallGog(game: Game): Promise<void> {
+  const outside = (await attempt(api().gog.uninstallPreview(game.id)))?.outside ?? []
+  if (!outside.length) {
+    const i = await askChoice(`Usunąć ${game.name} z tego komputera?`, [
+      'Usuń pliki gry (zapisy i pliki dodane przez grę zostają; archiwum na serwerze bez zmian)',
+      'Anuluj'
+    ])
+    if (i === 0) report(await attempt(api().gog.uninstall(game.id)))
+    return
+  }
+  const names = outside.slice(0, 3).map((p) => p.split(/[\\/]/).slice(-2).join('\\')).join(', ') + (outside.length > 3 ? ', …' : '')
+  const i = await askChoice(`Usunąć ${game.name} z tego komputera? Instalator skopiował też ${outside.length} plik(ów) poza folder gry: ${names}`, [
+    `Usuń grę, zostaw pliki w Dokumentach / AppData (${outside.length})`,
+    `Usuń grę i pliki w Dokumentach / AppData (${outside.length}) — zapisy zostają`,
+    'Anuluj'
+  ])
+  if (i === 0 || i === 1) report(await attempt(api().gog.uninstall(game.id, i === 1)))
+}
+
+/** gra GOG ma pliki na tym komputerze (także nieukończona instalacja) — można ją usunąć */
+export const gogRemovable = (g: Game['gog']): boolean => !!g && ['installed', 'needs_admin', 'damaged', 'failed', 'cancelled'].includes(g.state)
+
 export function GogActions({ game }: { game: Game }) {
   const g = game.gog!
   const engineOk = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
@@ -68,25 +92,7 @@ export function GogActions({ game }: { game: Game }) {
     if (r.error) return useStore.getState().toast(r.error, 'error')
     useStore.getState().toast(r.ok ? `Pliki zgodne z manifestem (${r.checked}).` : `Niezgodnych plików: ${r.badCount} — „Napraw pliki” pobierze tylko je z serwera.`, r.ok ? 'info' : 'error')
   }
-  const uninstall = async (): Promise<void> => {
-    // pliki skopiowane przez instalator poza folder gry (Dokumenty, AppData — np. domyślne ustawienia): wybór gracza
-    const outside = (await attempt(api().gog.uninstallPreview(game.id)))?.outside ?? []
-    if (!outside.length) {
-      const i = await askChoice(`Usunąć ${game.name} z tego komputera?`, [
-        'Usuń pliki gry (zapisy i pliki dodane przez grę zostają; archiwum na serwerze bez zmian)',
-        'Anuluj'
-      ])
-      if (i === 0) report(await attempt(api().gog.uninstall(game.id)))
-      return
-    }
-    const names = outside.slice(0, 3).map((p) => p.split(/[\\/]/).slice(-2).join('\\')).join(', ') + (outside.length > 3 ? ', …' : '')
-    const i = await askChoice(`Usunąć ${game.name} z tego komputera? Instalator skopiował też ${outside.length} plik(ów) poza folder gry: ${names}`, [
-      `Usuń grę, zostaw pliki w Dokumentach / AppData (${outside.length})`,
-      `Usuń grę i pliki w Dokumentach / AppData (${outside.length}) — zapisy zostają`,
-      'Anuluj'
-    ])
-    if (i === 0 || i === 1) report(await attempt(api().gog.uninstall(game.id, i === 1)))
-  }
+  const uninstall = (): Promise<void> => uninstallGog(game)
 
   return (
     <>

@@ -178,7 +178,8 @@ const api: LumenApi = {
     getMode: () => invoke(IPC.uiGetMode),
     setMode: (mode) => invoke(IPC.uiSetMode, mode),
     select: (id) => ipcRenderer.send(IPC.uiSelect, id),
-    onMode: (cb) => subscribe(IPC.uiMode, cb)
+    onMode: (cb) => subscribe(IPC.uiMode, cb),
+    onOpenSettings: (cb) => subscribe(IPC.uiOpenSettings, cb)
   },
   app: {
     toggleFullscreen: () => invoke(IPC.appFullscreen),

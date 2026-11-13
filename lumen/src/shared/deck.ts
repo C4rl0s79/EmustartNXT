@@ -258,7 +258,7 @@ export function setDeckLayout(s: DeckSettings, step: DeckLayoutStep): Record<str
 }
 
 /** One change of the tab list (Settings: show / hide / order; the panel: columns) — applied by the main process. */
-export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 } | { id: string; cols: number }
+export type DeckGroupOp = { id: string; hidden: boolean } | { id: string; move: -1 | 1 } | { id: string; cols: number } | { id: string; aspect: DeckAspect }
 
 /** The tabs after one change; the same array when nothing changes (unknown tab, edge of the list). */
 export function moveDeckGroup(groups: DeckGroup[], op: DeckGroupOp): DeckGroup[] {
@@ -268,6 +268,10 @@ export function moveDeckGroup(groups: DeckGroup[], op: DeckGroupOp): DeckGroup[]
   if ('cols' in op) {
     const cols = clampCols(op.cols)
     return groups[i].cols === cols ? groups : groups.map((g, k) => (k === i ? { ...g, cols } : g))
+  }
+  if ('aspect' in op) {
+    const aspect: DeckAspect = op.aspect === 'square' ? 'square' : 'portrait'
+    return groups[i].aspect === aspect ? groups : groups.map((g, k) => (k === i ? { ...g, aspect } : g))
   }
   const j = i + op.move
   if (j < 0 || j >= groups.length) return groups

@@ -122,6 +122,7 @@ describe('steam:// URIs', () => {
   it('builds documented browser-protocol commands', () => {
     expect(steamUri('run', 620)).toBe('steam://rungameid/620')
     expect(steamUri('install', 620)).toBe('steam://install/620')
+    expect(steamUri('uninstall', 620)).toBe('steam://uninstall/620')
     expect(steamUri('details', 620)).toBe('steam://nav/games/details/620')
     expect(steamUri('downloads')).toBe('steam://open/downloads')
   })
