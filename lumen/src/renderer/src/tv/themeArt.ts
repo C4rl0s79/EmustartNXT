@@ -10,17 +10,22 @@ import type { TvSystem } from './data'
 
 export const ThemePkg = createContext<ThemePackage | undefined>(undefined)
 
-/** klucze kategorii pozycji karuzeli, od najdokładniejszego */
+/** klucze kategorii pozycji karuzeli, od najdokładniejszego; podgrupa biblioteki bez własnej sceny — scena grupy
+ *  (np. „pc/all” → „grp:pc”). Platforma — tylko własny klucz (jej zdjęcie konsoli zostaje, gdy motyw jej nie ma). */
 export function categoryKeys(sys: TvSystem): string[] {
   if (sys.es) return [`es:${sys.es}`]
   const id = groupArtId(sys)
-  return id ? [id.replace(/^navgrp:/, '')] : []
+  if (!id) return []
+  const own = id.replace(/^navgrp:/, '')
+  return sys.sub && sys.group ? [own, `grp:${sys.group.id}`] : [own]
 }
 
 /** plik z motywu dla pozycji karuzeli (tło albo logo) — adres lumen-theme:// albo undefined */
 export function categoryArt(pkg: ThemePackage | undefined, sys: TvSystem, kind: 'hero' | 'logo'): string | undefined {
   if (!pkg) return undefined
-  for (const k of categoryKeys(sys)) {
+  // logo — tylko dokładny klucz (scena grupy pod podgrupą tak, ale jej logo zakryłoby nazwę podgrupy)
+  const keys = kind === 'logo' ? categoryKeys(sys).slice(0, 1) : categoryKeys(sys)
+  for (const k of keys) {
     const rel = pkg.categories[kind === 'logo' ? `${k}@logo` : k]
     if (rel) return layerSrc(pkg, rel)
   }

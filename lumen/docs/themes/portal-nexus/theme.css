@@ -1,95 +1,359 @@
-/* Portal Nexus — przykładowy motyw z paczki (etap 14). Wszystko zawężone do .tv[data-theme='portal-nexus'];
-   kolory z palety theme.json (--tv-bg, --tv-text, --tv-dim, --tv-accent, --tv-sel-*, --tv-panel). */
+/* Portal Nexus — motyw trybu TV z paczki (neon i synthwave). Układ listy; kolory z palety theme.json
+   (--tv-bg, --tv-text, --tv-dim, --tv-accent, --tv-sel-*, --tv-panel); dekoracje w layers.html (poziomy animacji:
+   lv-med — od średniego, lv-high — tylko wysoki). Plik wygenerowany: docs/themes/tools/portal_nexus_css.py */
 
 .tv[data-theme='portal-nexus'] {
   --nx-pink: #ff3fa4;
   --nx-violet: #8b5cff;
+  --nx-cyan: #2de2ff;
   --tv-line: rgba(151, 96, 255, 0.28);
+  --tv-accent2: #ff7ac6;
+  --tv-plate: url(assets/plate.png);
+  --tv-plate-ar: 1200 / 440;
+  --tv-plate-lw: 70;
+  --tv-plate-lh: 58;
+  /* zdjęcia konsol platform: chłodny, przygaszony neon */
+  --tv-con-filter: saturate(1.25) hue-rotate(-12deg) brightness(0.75);
+  --tv-con-op: 0.32;
   background:
-    radial-gradient(1100px 760px at 12% 8%, rgba(45, 226, 255, 0.16), transparent 62%),
-    radial-gradient(1000px 720px at 86% 12%, rgba(139, 92, 255, 0.2), transparent 66%),
-    radial-gradient(1300px 850px at 50% 112%, rgba(255, 63, 164, 0.15), transparent 70%),
-    linear-gradient(180deg, var(--tv-bg) 0%, #0b0326 55%, #14032f 100%);
+    radial-gradient(1100px 760px at 12% 8%, rgba(45, 226, 255, 0.14), transparent 62%),
+    radial-gradient(1000px 720px at 86% 12%, rgba(139, 92, 255, 0.18), transparent 66%),
+    radial-gradient(1300px 850px at 50% 112%, rgba(255, 63, 164, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--tv-bg) 0%, #0d0330 58%, #16033a 100%);
 }
 
-.tv[data-theme='portal-nexus'] .tv-brand b,
+/* ---- górny pasek i podpowiedzi ---- */
+.tv[data-theme='portal-nexus'] .tv-brand {
+  letter-spacing: 0.06em;
+}
+.tv[data-theme='portal-nexus'] .tv-brand b {
+  color: #fff;
+  text-shadow: 0 0 10px var(--nx-cyan), 0 0 26px rgba(45, 226, 255, 0.55);
+}
+.tv[data-theme='portal-nexus'] .tv-clock {
+  color: var(--tv-dim);
+  text-shadow: 0 0 12px rgba(139, 92, 255, 0.6);
+}
+.tv[data-theme='portal-nexus'] .tv-pill {
+  background: rgba(45, 226, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(45, 226, 255, 0.35), 0 0 14px rgba(45, 226, 255, 0.15);
+}
+.tv[data-theme='portal-nexus'] .tv-hints {
+  background: linear-gradient(0deg, rgba(7, 2, 26, 0.92), rgba(7, 2, 26, 0.4) 70%, transparent);
+}
+.tv[data-theme='portal-nexus'] .tv-btn--sq {
+  background: rgba(139, 92, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 255, 0.6);
+}
+
+/* ---- karuzela grup: płytka z neonową krawędzią; wybrana — mocna poświata ---- */
+.tv[data-theme='portal-nexus'] .tv-syscard .sys-plate {
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.6));
+  transition: filter 0.3s ease;
+}
+.tv[data-theme='portal-nexus'] .tv-syscard.is-current .sys-plate {
+  filter: drop-shadow(0 0 22px rgba(45, 226, 255, 0.55)) drop-shadow(0 0 48px rgba(255, 63, 164, 0.3));
+}
 .tv[data-theme='portal-nexus'] .tv-sysinfo h1 {
-  text-shadow: 0 0 14px rgba(45, 226, 255, 0.35), 0 3px 22px rgba(0, 0, 0, 0.85);
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 14px rgba(45, 226, 255, 0.6), 0 0 40px rgba(255, 63, 164, 0.35), 0 3px 22px rgba(0, 0, 0, 0.9);
+}
+.tv[data-theme='portal-nexus'] :is(.tv-sysfacts, .tv-sysabout) {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+/* sceny grup z motywu (categories) — na cały ekran, nie jak małe zdjęcie konsoli */
+.tv[data-theme='portal-nexus'] .tv-console img[src^='lumen-theme:'] {
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  transform: none;
+  opacity: 0.92;
+  filter: none;
+}
+.tv[data-theme='portal-nexus'] .tv-console:has(img[src^='lumen-theme:']) {
+  filter: none;
+}
+.tv[data-theme='portal-nexus'] .tv-console:has(img[src^='lumen-theme:'])::after {
+  background: linear-gradient(180deg, rgba(7, 2, 26, 0.55) 0%, transparent 22%, transparent 48%, rgba(7, 2, 26, 0.78) 74%, rgba(7, 2, 26, 0.95) 100%);
 }
 
-.tv[data-theme='portal-nexus'] .tv-row.sel,
+/* ---- lista gier: szkło; wybrany wiersz — neonowa belka z poświatą ---- */
+.tv[data-theme='portal-nexus'] .tv-gamelist {
+  background: linear-gradient(90deg, rgba(10, 4, 30, 0.72), rgba(10, 4, 30, 0.35) 85%, transparent);
+  border-right: 1px solid rgba(139, 92, 255, 0.2);
+}
+.tv[data-theme='portal-nexus'] .tv-listhead h2 {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255, 63, 164, 0.55);
+}
+.tv[data-theme='portal-nexus'] .tv-row {
+  border-radius: 10px;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.tv[data-theme='portal-nexus'] .tv-row.sel {
+  color: var(--tv-sel-text);
+  background: linear-gradient(90deg, var(--nx-cyan) 0%, #7fefff 45%, rgba(255, 63, 164, 0.9) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 18px rgba(45, 226, 255, 0.55), 0 0 46px rgba(255, 63, 164, 0.3);
+  transform: translateX(0.6vw);
+}
+.tv[data-theme='portal-nexus'] .tv-row.sel .g {
+  color: rgba(4, 18, 28, 0.75);
+}
+.tv[data-theme='portal-nexus'] .tv-tag {
+  border-radius: 6px;
+  background: rgba(45, 226, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(45, 226, 255, 0.28);
+}
+.tv[data-theme='portal-nexus'] .tv-row.sel .tv-tag {
+  background: rgba(4, 18, 28, 0.22);
+  box-shadow: none;
+  color: var(--tv-sel-text);
+}
+
+/* ---- podgląd: okładka i zrzut w neonowych ramkach ---- */
+.tv[data-theme='portal-nexus'] .tv-box .tv-boxart {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 0 0 3px rgba(45, 226, 255, 0.55), 0 0 26px rgba(45, 226, 255, 0.45),
+    0 0 60px rgba(255, 63, 164, 0.22), 0 24px 60px rgba(0, 0, 0, 0.7);
+}
+.tv[data-theme='portal-nexus'] .tv-snap .tv-snapart {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 0 0 3px rgba(255, 63, 164, 0.55), 0 0 26px rgba(255, 63, 164, 0.4),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* ---- panele: ciemne szkło z neonowym brzegiem i świecącą listwą u góry ---- */
+.tv[data-theme='portal-nexus'] :is(.tv-info, .tv-panel) {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid rgba(139, 92, 255, 0.35);
+  background: linear-gradient(180deg, rgba(45, 226, 255, 0.07), transparent 40%), var(--tv-panel);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 34px rgba(139, 92, 255, 0.14);
+  backdrop-filter: blur(10px);
+}
+.tv[data-theme='portal-nexus'] :is(.tv-info, .tv-panel)::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--nx-cyan) 25%, var(--nx-pink) 75%, transparent);
+  box-shadow: 0 0 12px rgba(45, 226, 255, 0.7);
+}
+.tv[data-theme='portal-nexus'] .tv-info h1 {
+  color: #fff;
+  text-shadow: 0 0 14px rgba(45, 226, 255, 0.4);
+}
+.tv[data-theme='portal-nexus'] .tv-menulist li {
+  border-radius: 10px;
+}
 .tv[data-theme='portal-nexus'] .tv-menulist li.sel {
-  background: linear-gradient(90deg, rgba(45, 226, 255, 0.95), rgba(255, 63, 164, 0.85));
-  box-shadow: 0 0 18px rgba(45, 226, 255, 0.25);
+  color: var(--tv-sel-text);
+  background: linear-gradient(90deg, var(--nx-cyan), rgba(255, 63, 164, 0.85));
+  box-shadow: 0 0 18px rgba(45, 226, 255, 0.45);
 }
 
-.tv[data-theme='portal-nexus'] .tv-panel {
-  border: 1px solid rgba(151, 96, 255, 0.3);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.68), 0 0 40px rgba(45, 226, 255, 0.08);
-}
+/* ================= dekoracje (layers.html) ================= */
 
-/* ---- dekoracje (layers.html) ---- */
+/* poświaty dryfujące po niebie (od poziomu niskiego) */
 .tv[data-theme='portal-nexus'] .nx-aura {
   position: absolute;
   inset: -30%;
-  background: conic-gradient(from 120deg at 22% 32%, rgba(45, 226, 255, 0.1), transparent 24%, rgba(139, 92, 255, 0.13), transparent 54%, rgba(255, 63, 164, 0.1), transparent 80%);
+  background: conic-gradient(from 120deg at 22% 32%, rgba(45, 226, 255, 0.12), transparent 24%, rgba(139, 92, 255, 0.15), transparent 54%,
+    rgba(255, 63, 164, 0.12), transparent 80%);
   filter: blur(70px);
   animation: nx-drift 40s ease-in-out infinite alternate;
 }
 @keyframes nx-drift {
-  from { transform: translate3d(-2%, -1%, 0) scale(1.05); }
-  to { transform: translate3d(2%, 2%, 0) scale(1.11); }
+  from { transform: translate3d(-2%, -1%, 0) scale(1.05) rotate(0deg); }
+  to { transform: translate3d(2%, 2%, 0) scale(1.12) rotate(8deg); }
 }
 
+/* migoczące gwiazdy (dwie warstwy, różne tempo) */
+.tv[data-theme='portal-nexus'] :is(.nx-stars, .nx-stars2) {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+}
+.tv[data-theme='portal-nexus'] .nx-stars {
+  background-image: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent 70%), radial-gradient(1px 1px at 37% 64%, #bff6ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 63% 27%, #ffd1ec, transparent 70%), radial-gradient(1px 1px at 84% 72%, #fff, transparent 70%),
+    radial-gradient(1px 1px at 52% 8%, #d9c8ff, transparent 70%);
+  background-size: 420px 420px;
+  animation: nx-twinkle 5s ease-in-out infinite alternate;
+}
+.tv[data-theme='portal-nexus'] .nx-stars2 {
+  background-image: radial-gradient(1px 1px at 22% 44%, #fff, transparent 70%), radial-gradient(1px 1px at 71% 12%, #bff6ff, transparent 70%),
+    radial-gradient(1.5px 1.5px at 46% 86%, #ffd1ec, transparent 70%);
+  background-size: 300px 300px;
+  animation: nx-twinkle 7s ease-in-out -3s infinite alternate;
+}
+@keyframes nx-twinkle {
+  from { opacity: 0.25; }
+  to { opacity: 0.85; }
+}
+
+/* neonowa siatka przy dolnej krawędzi (od średniego) */
 .tv[data-theme='portal-nexus'] .nx-grid {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: -10%;
+  right: -10%;
   bottom: 0;
-  height: 42vh;
-  opacity: 0.28;
-  background-image:
-    linear-gradient(to right, rgba(45, 226, 255, 0.25) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 63, 164, 0.22) 1px, transparent 1px);
+  height: 40vh;
+  opacity: 0.3;
+  background-image: linear-gradient(to right, rgba(45, 226, 255, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 63, 164, 0.3) 1px, transparent 1px);
   background-size: 72px 72px;
   transform: perspective(430px) rotateX(72deg);
   transform-origin: bottom center;
-  mask-image: linear-gradient(to top, black 0%, transparent 82%);
-  animation: nx-grid 20s linear infinite;
+  mask-image: linear-gradient(to top, black 0%, transparent 85%);
+  animation: nx-grid 14s linear infinite;
 }
 @keyframes nx-grid {
   from { background-position: 0 0; }
   to { background-position: 0 72px; }
 }
 
+/* iskry unoszące się z dołu (od średniego) */
 .tv[data-theme='portal-nexus'] .nx-sparks i {
   position: absolute;
-  bottom: 0;
-  width: 3px;
-  height: 3px;
+  bottom: -2vh;
   border-radius: 50%;
-  background: var(--tv-accent);
-  box-shadow: 0 0 8px var(--tv-accent), 0 0 20px rgba(45, 226, 255, 0.35);
+  background: var(--nx-cyan);
+  box-shadow: 0 0 6px var(--nx-cyan), 0 0 16px rgba(45, 226, 255, 0.5);
   opacity: 0;
   animation: nx-rise linear infinite;
 }
 .tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(3n) {
   background: var(--nx-pink);
-  box-shadow: 0 0 8px var(--nx-pink);
+  box-shadow: 0 0 6px var(--nx-pink), 0 0 16px rgba(255, 63, 164, 0.5);
 }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(1) { left: 6%; animation-duration: 16s; animation-delay: -2s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(2) { left: 16%; animation-duration: 21s; animation-delay: -7s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(3) { left: 27%; animation-duration: 14s; animation-delay: -4s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(4) { left: 38%; animation-duration: 24s; animation-delay: -11s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(5) { left: 49%; animation-duration: 18s; animation-delay: -1s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(6) { left: 58%; animation-duration: 22s; animation-delay: -9s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(7) { left: 67%; animation-duration: 15s; animation-delay: -5s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(8) { left: 76%; animation-duration: 26s; animation-delay: -13s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(9) { left: 85%; animation-duration: 19s; animation-delay: -3s; }
-.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(10) { left: 93%; animation-duration: 23s; animation-delay: -8s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(4n) {
+  background: #ffd23f;
+  box-shadow: 0 0 6px #ffd23f, 0 0 16px rgba(255, 210, 63, 0.45);
+}
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(5n) {
+  background: #c7b0ff;
+  box-shadow: 0 0 6px var(--nx-violet), 0 0 16px rgba(139, 92, 255, 0.5);
+}
 @keyframes nx-rise {
-  0% { transform: translate3d(0, 0, 0) scale(0.65); opacity: 0; }
-  12% { opacity: 0.75; }
-  85% { opacity: 0.35; }
-  100% { transform: translate3d(6vw, -112vh, 0) scale(1.15); opacity: 0; }
+  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
+  10% { opacity: 0.9; }
+  70% { opacity: 0.55; }
+  100% { transform: translate3d(var(--nx-dx, 4vw), -108vh, 0) scale(1.2); opacity: 0; }
 }
+
+/* pył — wolne, rozmyte drobiny w całym kadrze (od średniego) */
+.tv[data-theme='portal-nexus'] .nx-dust i {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(220, 230, 255, 0.55);
+  filter: blur(1px);
+  animation: nx-float ease-in-out infinite alternate;
+}
+@keyframes nx-float {
+  from { transform: translate3d(0, 0, 0); opacity: 0.15; }
+  to { transform: translate3d(var(--nx-dx, 3vw), var(--nx-dy, -4vh), 0); opacity: 0.6; }
+}
+
+/* spadające gwiazdy (tylko wysoki) */
+.tv[data-theme='portal-nexus'] .nx-shoot i {
+  position: absolute;
+  width: 18vw;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95) 70%, #fff);
+  box-shadow: 0 0 10px rgba(45, 226, 255, 0.8);
+  opacity: 0;
+  transform: rotate(-24deg);
+  animation: nx-shoot linear infinite;
+}
+@keyframes nx-shoot {
+  0%, 88% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-24deg); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(-40vw, 18vw, 0) rotate(-24deg); }
+}
+
+/* linie CRT i winieta (tylko wysoki) */
+.tv[data-theme='portal-nexus'] .nx-crt {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
+  animation: nx-flicker 6s steps(60) infinite;
+}
+@keyframes nx-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* ---- cząsteczki: pozycje, wielkości i tempo (wygenerowane) ---- */
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(1) { left: 29.3%; width: 3px; height: 3px; --nx-dx: -5.1vw; animation-duration: 11.0s; animation-delay: -18.0s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(2) { left: 40.6%; width: 2px; height: 2px; --nx-dx: 2.5vw; animation-duration: 26.8s; animation-delay: -9.0s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(3) { left: 49.3%; width: 3px; height: 3px; --nx-dx: 5.0vw; animation-duration: 28.0s; animation-delay: -18.8s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(4) { left: 65.7%; width: 5px; height: 5px; --nx-dx: 3.0vw; animation-duration: 15.0s; animation-delay: -11.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(5) { left: 36.8%; width: 4px; height: 4px; --nx-dx: 3.3vw; animation-duration: 17.6s; animation-delay: -19.8s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(6) { left: 16.1%; width: 2px; height: 2px; --nx-dx: 3.5vw; animation-duration: 25.0s; animation-delay: -14.9s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(7) { left: 29.7%; width: 4px; height: 4px; --nx-dx: 4.5vw; animation-duration: 26.5s; animation-delay: -3.2s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(8) { left: 35.4%; width: 3px; height: 3px; --nx-dx: 8.0vw; animation-duration: 13.5s; animation-delay: -3.4s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(9) { left: 40.0%; width: 2px; height: 2px; --nx-dx: -0.9vw; animation-duration: 13.8s; animation-delay: -0.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(10) { left: 91.0%; width: 2px; height: 2px; --nx-dx: 5.2vw; animation-duration: 23.2s; animation-delay: -21.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(11) { left: 27.6%; width: 2px; height: 2px; --nx-dx: 1.9vw; animation-duration: 17.2s; animation-delay: -10.3s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(12) { left: 63.5%; width: 3px; height: 3px; --nx-dx: -1.2vw; animation-duration: 15.7s; animation-delay: -2.3s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(13) { left: 25.8%; width: 5px; height: 5px; --nx-dx: 6.5vw; animation-duration: 19.2s; animation-delay: -2.6s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(14) { left: 83.4%; width: 2px; height: 2px; --nx-dx: 4.2vw; animation-duration: 25.0s; animation-delay: -18.6s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(15) { left: 8.8%; width: 2px; height: 2px; --nx-dx: 4.8vw; animation-duration: 19.5s; animation-delay: -5.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(16) { left: 51.0%; width: 2px; height: 2px; --nx-dx: -2.4vw; animation-duration: 24.3s; animation-delay: -12.3s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(17) { left: 11.1%; width: 5px; height: 5px; --nx-dx: -3.8vw; animation-duration: 18.0s; animation-delay: -19.1s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(18) { left: 7.0%; width: 3px; height: 3px; --nx-dx: 1.3vw; animation-duration: 24.5s; animation-delay: -10.1s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(19) { left: 6.5%; width: 4px; height: 4px; --nx-dx: 0.5vw; animation-duration: 23.9s; animation-delay: -3.6s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(20) { left: 67.3%; width: 2px; height: 2px; --nx-dx: 4.9vw; animation-duration: 19.6s; animation-delay: -15.2s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(21) { left: 42.8%; width: 2px; height: 2px; --nx-dx: -3.6vw; animation-duration: 19.0s; animation-delay: -22.1s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(22) { left: 77.3%; width: 2px; height: 2px; --nx-dx: -3.1vw; animation-duration: 13.3s; animation-delay: -8.3s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(23) { left: 24.0%; width: 5px; height: 5px; --nx-dx: -4.9vw; animation-duration: 23.5s; animation-delay: -13.8s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(24) { left: 92.2%; width: 2px; height: 2px; --nx-dx: -0.9vw; animation-duration: 17.9s; animation-delay: -4.5s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(25) { left: 35.3%; width: 3px; height: 3px; --nx-dx: -4.7vw; animation-duration: 14.0s; animation-delay: -7.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(26) { left: 82.0%; width: 3px; height: 3px; --nx-dx: -1.0vw; animation-duration: 26.8s; animation-delay: -17.4s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(27) { left: 56.9%; width: 5px; height: 5px; --nx-dx: 5.4vw; animation-duration: 23.4s; animation-delay: -10.7s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(28) { left: 43.9%; width: 2px; height: 2px; --nx-dx: -2.3vw; animation-duration: 16.1s; animation-delay: -10.0s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(29) { left: 26.4%; width: 5px; height: 5px; --nx-dx: 6.5vw; animation-duration: 17.4s; animation-delay: -0.4s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(30) { left: 64.6%; width: 4px; height: 4px; --nx-dx: 0.1vw; animation-duration: 18.9s; animation-delay: -10.0s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(31) { left: 72.7%; width: 3px; height: 3px; --nx-dx: 7.5vw; animation-duration: 24.0s; animation-delay: -6.6s; }
+.tv[data-theme='portal-nexus'] .nx-sparks i:nth-child(32) { left: 61.1%; width: 4px; height: 4px; --nx-dx: 1.7vw; animation-duration: 15.0s; animation-delay: -2.6s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(1) { left: 81.1%; top: 64.8%; width: 2px; height: 2px; --nx-dx: -2.4vw; --nx-dy: -0.7vh; animation-duration: 11.7s; animation-delay: -9.3s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(2) { left: 6.0%; top: 67.0%; width: 4px; height: 4px; --nx-dx: 3.1vw; --nx-dy: -1.8vh; animation-duration: 15.5s; animation-delay: -4.6s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(3) { left: 76.9%; top: 71.5%; width: 2px; height: 2px; --nx-dx: 1.0vw; --nx-dy: -1.9vh; animation-duration: 14.0s; animation-delay: -3.0s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(4) { left: 93.4%; top: 74.7%; width: 3px; height: 3px; --nx-dx: 2.8vw; --nx-dy: -0.4vh; animation-duration: 9.7s; animation-delay: -15.1s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(5) { left: 86.8%; top: 24.7%; width: 2px; height: 2px; --nx-dx: 2.6vw; --nx-dy: -3.5vh; animation-duration: 10.3s; animation-delay: -15.0s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(6) { left: 32.3%; top: 65.0%; width: 6px; height: 6px; --nx-dx: -2.3vw; --nx-dy: 1.6vh; animation-duration: 14.4s; animation-delay: -14.8s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(7) { left: 51.3%; top: 91.0%; width: 4px; height: 4px; --nx-dx: 2.7vw; --nx-dy: -4.7vh; animation-duration: 7.7s; animation-delay: -3.5s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(8) { left: 2.7%; top: 35.2%; width: 4px; height: 4px; --nx-dx: 3.4vw; --nx-dy: -0.3vh; animation-duration: 8.8s; animation-delay: -14.8s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(9) { left: 59.6%; top: 83.4%; width: 3px; height: 3px; --nx-dx: 3.1vw; --nx-dy: -2.2vh; animation-duration: 14.4s; animation-delay: -11.2s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(10) { left: 5.2%; top: 59.2%; width: 2px; height: 2px; --nx-dx: -1.2vw; --nx-dy: -3.9vh; animation-duration: 16.0s; animation-delay: -6.2s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(11) { left: 82.4%; top: 66.3%; width: 2px; height: 2px; --nx-dx: -0.1vw; --nx-dy: 1.1vh; animation-duration: 7.8s; animation-delay: -6.0s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(12) { left: 79.2%; top: 80.9%; width: 3px; height: 3px; --nx-dx: 2.1vw; --nx-dy: -3.6vh; animation-duration: 7.5s; animation-delay: -16.0s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(13) { left: 35.7%; top: 24.7%; width: 3px; height: 3px; --nx-dx: -0.2vw; --nx-dy: 2.9vh; animation-duration: 14.9s; animation-delay: -7.7s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(14) { left: 13.1%; top: 56.6%; width: 3px; height: 3px; --nx-dx: -2.7vw; --nx-dy: 2.6vh; animation-duration: 12.7s; animation-delay: -1.2s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(15) { left: 38.5%; top: 58.2%; width: 6px; height: 6px; --nx-dx: -1.4vw; --nx-dy: 2.1vh; animation-duration: 9.5s; animation-delay: -12.1s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(16) { left: 99.0%; top: 30.0%; width: 3px; height: 3px; --nx-dx: -1.2vw; --nx-dy: 2.7vh; animation-duration: 15.5s; animation-delay: -5.3s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(17) { left: 13.5%; top: 80.9%; width: 3px; height: 3px; --nx-dx: -1.9vw; --nx-dy: -4.7vh; animation-duration: 8.4s; animation-delay: -7.5s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(18) { left: 46.1%; top: 39.2%; width: 3px; height: 3px; --nx-dx: -1.1vw; --nx-dy: 1.4vh; animation-duration: 7.6s; animation-delay: -12.7s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(19) { left: 5.0%; top: 39.8%; width: 4px; height: 4px; --nx-dx: -3.2vw; --nx-dy: -3.2vh; animation-duration: 7.0s; animation-delay: -13.1s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(20) { left: 72.6%; top: 34.2%; width: 4px; height: 4px; --nx-dx: 2.2vw; --nx-dy: 2.2vh; animation-duration: 12.5s; animation-delay: -5.3s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(21) { left: 22.4%; top: 24.2%; width: 3px; height: 3px; --nx-dx: -0.0vw; --nx-dy: -2.4vh; animation-duration: 9.5s; animation-delay: -4.7s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(22) { left: 61.2%; top: 71.1%; width: 3px; height: 3px; --nx-dx: 2.8vw; --nx-dy: -3.7vh; animation-duration: 10.0s; animation-delay: -15.2s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(23) { left: 0.4%; top: 77.2%; width: 6px; height: 6px; --nx-dx: -3.0vw; --nx-dy: -0.6vh; animation-duration: 11.1s; animation-delay: -0.4s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(24) { left: 99.9%; top: 11.9%; width: 2px; height: 2px; --nx-dx: 0.0vw; --nx-dy: 1.1vh; animation-duration: 12.9s; animation-delay: -10.1s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(25) { left: 43.2%; top: 11.4%; width: 6px; height: 6px; --nx-dx: 2.0vw; --nx-dy: -4.8vh; animation-duration: 13.7s; animation-delay: -4.9s; }
+.tv[data-theme='portal-nexus'] .nx-dust i:nth-child(26) { left: 47.4%; top: 61.3%; width: 4px; height: 4px; --nx-dx: 1.8vw; --nx-dy: 2.3vh; animation-duration: 11.5s; animation-delay: -15.3s; }
+.tv[data-theme='portal-nexus'] .nx-shoot i:nth-child(1) { left: 85%; top: 31%; animation-duration: 9.3s; animation-delay: -15.8s; }
+.tv[data-theme='portal-nexus'] .nx-shoot i:nth-child(2) { left: 85%; top: 19%; animation-duration: 11.8s; animation-delay: -7.9s; }
+.tv[data-theme='portal-nexus'] .nx-shoot i:nth-child(3) { left: 79%; top: 25%; animation-duration: 10.4s; animation-delay: -1.0s; }
+.tv[data-theme='portal-nexus'] .nx-shoot i:nth-child(4) { left: 46%; top: 34%; animation-duration: 17.1s; animation-delay: -17.7s; }
+.tv[data-theme='portal-nexus'] .nx-shoot i:nth-child(5) { left: 44%; top: 14%; animation-duration: 15.6s; animation-delay: -5.7s; }
