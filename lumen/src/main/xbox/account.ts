@@ -7,13 +7,13 @@ import { isStoreId } from './catalog'
 /**
  * Konto Xbox (etap 19c): logowanie kontem Microsoft na stronie Microsoft w osobnym oknie (Lumen nie widzi hasła) →
  * tokeny Microsoft → Xbox Live (XBL → XSTS) → historia tytułów konta (titlehub). Zapisany jest tylko token odświeżania
- * — zaszyfrowany jak inne sekrety. Dwa sposoby (decyzja użytkownika 2026-11-16, bez Azure):
- *  • domyślnie — publiczny identyfikator aplikacji Xbox od Microsoft (login.live.com, bez rejestracji; Microsoft może
- *    go kiedyś wyłączyć dla programów zewnętrznych),
- *  • własna aplikacja Azure gracza (Ustawienia → Xbox → identyfikator) — login.microsoftonline.com, PKCE.
- * Każdy loguje się własnym kontem; identyfikator oznacza program, nie osobę.
+ * — zaszyfrowany jak inne sekrety. Aplikacja „Lumen Launcher” zarejestrowana przez autora Lumena w Azure (2026-11-16):
+ * konta osobiste Microsoft, przekierowanie klienta publicznego `nativeclient`, PKCE — każdy loguje się własnym kontem.
+ * Publiczne identyfikatory cudzych aplikacji Xbox Live odrzuca (dawna aplikacja Xbox: HTTP 403, kod 00000005).
+ * Inny identyfikator — Ustawienia → Xbox (po zmianie trzeba zalogować się ponownie).
  */
-export const XBOX_PUBLIC_CLIENT = '0000000048093EE3'
+/** aplikacja „Lumen Launcher” w Azure (identyfikator klienta publicznego — nie jest tajny) */
+export const LUMEN_CLIENT = '6f4356fe-85d6-4e01-9669-93a220c3cfdb'
 const PARTITION = 'persist:xbox-login'
 
 interface Flow {
@@ -27,26 +27,16 @@ interface Flow {
   pkce: boolean
 }
 
-/** sposób logowania: własna aplikacja Azure albo publiczny identyfikator Xbox */
+/** sposób logowania: aplikacja „Lumen Launcher” albo identyfikator wpisany przez gracza (Azure) */
 export function flowFor(clientId?: string): Flow {
-  if (clientId)
-    return {
-      clientId,
-      authorize: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
-      token: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
-      redirect: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
-      scope: 'XboxLive.signin offline_access',
-      rps: 'd=',
-      pkce: true
-    }
   return {
-    clientId: XBOX_PUBLIC_CLIENT,
-    authorize: 'https://login.live.com/oauth20_authorize.srf',
-    token: 'https://login.live.com/oauth20_token.srf',
-    redirect: 'https://login.live.com/oauth20_desktop.srf',
-    scope: 'service::user.auth.xboxlive.com::MBI_SSL',
-    rps: 't=',
-    pkce: false
+    clientId: clientId || LUMEN_CLIENT,
+    authorize: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+    token: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
+    redirect: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
+    scope: 'XboxLive.signin offline_access',
+    rps: 'd=',
+    pkce: true
   }
 }
 

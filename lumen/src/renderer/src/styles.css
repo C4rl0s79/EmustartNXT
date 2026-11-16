@@ -2581,3 +2581,16 @@ html.no-pointer body {
     opacity: 0.4;
   }
 }
+
+/* tekst, który da się zaznaczyć i skopiować (adresy, identyfikatory) — reszta okna: user-select none (pad) */
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+.copyline {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}

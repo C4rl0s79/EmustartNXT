@@ -1508,11 +1508,18 @@ let xboxSyncing: Promise<ActionResult> | null = null
 let xboxGen = 0
 const XBOX_EVERY = 6 * 3600_000
 
-async function xboxWithTokens(t: MsTokens, gen: number, clientId: string, rps: 't=' | 'd='): Promise<ActionResult> {
+/** `saveFirst` — odświeżenie zapisanego logowania: nowy token odświeżania od razu (stary Microsoft unieważnia);
+ *  nowe logowanie — zapis dopiero, gdy Xbox Live przyjął token (inaczej „zalogowano”, choć Xbox odmówił). */
+async function xboxWithTokens(t: MsTokens, gen: number, clientId: string, rps: 't=' | 'd=', saveFirst: boolean): Promise<ActionResult> {
   if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
-  await settings.setSecret('xboxRefreshToken', packLogin(clientId, t.refresh)) // Microsoft wydaje nowy token odświeżania
-  send(IPC.settingsChanged, settings.get())                    // „zalogowano” w Ustawieniach
+  const save = async (): Promise<void> => {
+    await settings.setSecret('xboxRefreshToken', packLogin(clientId, t.refresh))
+    send(IPC.settingsChanged, settings.get()) // „zalogowano” w Ustawieniach
+  }
+  if (saveFirst) await save()
   const id = await xblIdentity(t.access, rps)
+  if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
+  if (!saveFirst) await save()
   const titles = await accountTitles(id)
   if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
   const ids = [...new Set(titles.map((x) => x.storeId ?? (x.pfn ? xbox.storeIdByPfn(x.pfn) : undefined)).filter((x): x is string => !!x))]
@@ -1535,7 +1542,7 @@ function xboxSync(): Promise<ActionResult> {
     }
     const gen = xboxGen
     try {
-      return await xboxWithTokens(await refreshTokens(want, saved.refresh), gen, want.clientId, want.rps)
+      return await xboxWithTokens(await refreshTokens(want, saved.refresh), gen, want.clientId, want.rps, true)
     } catch (e) {
       const msg = (e as Error).message
       log.warn('xbox', `konto: ${msg}`)
@@ -1549,10 +1556,10 @@ function xboxSync(): Promise<ActionResult> {
 }
 
 async function xboxLogin(): Promise<ActionResult> {
-  const f = flowFor(settings.get().xboxClientId)          // bez identyfikatora Azure — publiczny identyfikator Xbox
+  const f = flowFor(settings.get().xboxClientId)          // bez własnego identyfikatora — aplikacja „Lumen Launcher”
   const gen = xboxGen
   try {
-    return await xboxWithTokens(await loginWindow(win, f), gen, f.clientId, f.rps)
+    return await xboxWithTokens(await loginWindow(win, f), gen, f.clientId, f.rps, false)
   } catch (e) {
     const msg = (e as Error).message
     log.warn('xbox', `logowanie: ${msg}`)

@@ -121,17 +121,17 @@ describe('katalog: zła odpowiedź to błąd, nie pusta lista (przegląd kodu)',
 
 describe('logowanie bez Azure (publiczny identyfikator Xbox) i z Azure', () => {
   it('sposób zależny od ustawienia; zapisane logowanie pamięta identyfikator', async () => {
-    const { flowFor, authorizeUrl, redirectResult, packLogin, unpackLogin, XBOX_PUBLIC_CLIENT } = await import('../src/main/xbox/account')
-    const live = flowFor(undefined)
-    expect([live.clientId, live.rps, live.pkce]).toEqual([XBOX_PUBLIC_CLIENT, 't=', false])
-    const q = new URL(authorizeUrl(live).url).searchParams
-    expect(q.get('scope')).toBe('service::user.auth.xboxlive.com::MBI_SSL')
-    expect(q.get('code_challenge')).toBeNull()
-    const { state } = authorizeUrl(live)
-    expect(redirectResult(`https://login.live.com/oauth20_desktop.srf?code=M.x&state=${state}`, state, live.redirect)).toEqual({ code: 'M.x' })
+    const { flowFor, authorizeUrl, redirectResult, packLogin, unpackLogin, LUMEN_CLIENT } = await import('../src/main/xbox/account')
+    const own = flowFor(undefined)                                   // aplikacja „Lumen Launcher”
+    expect([own.clientId, own.rps, own.pkce]).toEqual([LUMEN_CLIENT, 'd=', true])
+    const q = new URL(authorizeUrl(own).url).searchParams
+    expect(q.get('client_id')).toBe(LUMEN_CLIENT)
+    expect(q.get('code_challenge')).not.toBeNull()
+    const { state } = authorizeUrl(own)
+    expect(redirectResult(`${own.redirect}?code=M.x&state=${state}`, state, own.redirect)).toEqual({ code: 'M.x' })
     const az = flowFor('11111111-2222-3333-4444-555555555555')
     expect([az.rps, az.pkce]).toEqual(['d=', true])
-    expect(unpackLogin(packLogin(XBOX_PUBLIC_CLIENT, 'M.R3_BAY.-abc!*'))).toEqual({ clientId: XBOX_PUBLIC_CLIENT, refresh: 'M.R3_BAY.-abc!*' })
+    expect(unpackLogin(packLogin(LUMEN_CLIENT, 'M.R3_BAY.-abc!*'))).toEqual({ clientId: LUMEN_CLIENT, refresh: 'M.R3_BAY.-abc!*' })
     expect(unpackLogin('stary-token-bez-identyfikatora')).toBeNull()
     expect(unpackLogin(undefined)).toBeNull()
   })

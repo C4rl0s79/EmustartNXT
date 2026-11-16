@@ -602,8 +602,18 @@ function CategoriesSection() {
   )
 }
 
-/** Xbox / Microsoft Store (etap 19): gry zainstalowane, katalog PC Game Pass, konto Xbox (logowanie przez własną
- *  aplikację Azure gracza — decyzja 2026-11-16). */
+/** tekst do schowka (przycisk „Kopiuj”) — z komunikatem */
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+    useStore.getState().toast('Skopiowano do schowka.', 'info')
+  } catch {
+    useStore.getState().toast('Nie udało się skopiować — zaznacz adres i naciśnij Ctrl+C.', 'error')
+  }
+}
+
+/** Xbox / Microsoft Store (etap 19): gry zainstalowane, katalog PC Game Pass, konto Xbox (logowanie przez aplikację
+ *  „Lumen Launcher” w Azure, inny identyfikator — opcjonalnie). */
 function XboxSection() {
   const settings = useStore((s) => s.settings)!
   const x = useStore((s) => s.snapshot?.xbox)
@@ -650,13 +660,20 @@ function XboxSection() {
         onChange={(v) => void patch({ xboxGamePass: v })}
       />
       <h3 className="cats__heading">Konto Xbox</h3>
-      <p className="card__desc">
-        Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez publiczny identyfikator aplikacji Xbox
-        (bez konfiguracji; Microsoft może go kiedyś wyłączyć dla programów zewnętrznych). Opcjonalnie własna aplikacja Azure: portal.azure.com →
-        Microsoft Entra ID → Rejestracje aplikacji → „Tylko osobiste konta Microsoft”, przekierowanie „Klient publiczny/natywny”:
-        https://login.microsoftonline.com/common/oauth2/nativeclient — jej identyfikator poniżej (po zmianie trzeba zalogować się ponownie).
+      <p className="card__desc selectable">
+        Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez aplikację „Lumen Launcher”
+        (bez konfiguracji). Opcjonalnie własna aplikacja Azure: portal.azure.com →
+        Microsoft Entra ID → Rejestracje aplikacji → „Tylko osobiste konta Microsoft”, przekierowanie „Klient publiczny/natywny” (adres
+        niżej) — jej identyfikator w polu poniżej (po zmianie trzeba zalogować się ponownie).
       </p>
-      <TextField label="Identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
+      {/* zaznaczalny adres i „Kopiuj” — reszta okna nie pozwala zaznaczać tekstu (obsługa padem; zgłoszenie 2026-11-16) */}
+      <div className="modal__row">
+        <code className="selectable copyline">https://login.microsoftonline.com/common/oauth2/nativeclient</code>
+        <button className="btn btn--sm" data-nav onClick={() => void copyText('https://login.microsoftonline.com/common/oauth2/nativeclient')}>
+          Kopiuj adres
+        </button>
+      </div>
+      <TextField label="Inny identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
       <div className="modal__row">
         <button className="btn" data-nav disabled={busy || clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
           Zapisz identyfikator
