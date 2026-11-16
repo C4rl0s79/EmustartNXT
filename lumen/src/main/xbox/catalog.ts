@@ -25,11 +25,16 @@ const LANG = 'pl-pl'
 const BATCH = 20
 
 const STORE_ID = /^[0-9A-Z]{12}$/
+/** identyfikator produktu Sklepu (9P8LR42PTRGJ) — jedno sprawdzenie dla katalogu, konta, grafik i instalacji */
+export const isStoreId = (s: string): boolean => STORE_ID.test(s)
 
 export async function gamePassIds(fetcher = fetchWithTimeout): Promise<string[]> {
   const r = await fetcher(`https://catalog.gamepass.com/sigls/v2?id=${GAMEPASS_PC}&language=${LANG}&market=${MARKET}`, {}, 20_000)
   const list = (await r.json()) as { id?: string }[]
-  return [...new Set((Array.isArray(list) ? list : []).map((x) => String(x?.id ?? '').toUpperCase()).filter((id) => STORE_ID.test(id)))]
+  const ids = [...new Set((Array.isArray(list) ? list : []).map((x) => String(x?.id ?? '').toUpperCase()).filter((id) => STORE_ID.test(id)))]
+  // pusty / zły katalog to błąd, nie „Game Pass bez gier” — stara kopia zostaje (przegląd kodu)
+  if (!ids.length) throw new Error('katalog PC Game Pass bez gier (zła odpowiedź)')
+  return ids
 }
 
 const https = (u: unknown): string | undefined => {
@@ -57,14 +62,17 @@ export function productOf(p: Record<string, unknown>): XboxProduct | null {
   const titleId = alt.find((a) => a.IdType === 'XboxTitleId')?.Value
   const market = (p.MarketProperties as { OriginalReleaseDate?: string }[] | undefined) ?? []
   const year = Number(String(market[0]?.OriginalReleaseDate ?? '').slice(0, 4)) || undefined
+  const poster = pick('Poster')
+  const hero = pick('SuperHeroArt') ?? pick('TitledHeroArt')
+  const box = pick('BoxArt')
   return {
     storeId,
     title,
     ...(pfn ? { pfn } : {}),
     ...(titleId ? { titleId: Number(titleId).toString(16).toLowerCase() } : {}),
-    ...(pick('Poster') ? { poster: pick('Poster') } : {}),
-    ...(pick('SuperHeroArt') ?? pick('TitledHeroArt') ? { hero: pick('SuperHeroArt') ?? pick('TitledHeroArt') } : {}),
-    ...(pick('BoxArt') ? { box: pick('BoxArt') } : {}),
+    ...(poster ? { poster } : {}),
+    ...(hero ? { hero } : {}),
+    ...(box ? { box } : {}),
     ...(year && year > 1970 && year < 3000 ? { year } : {})
   }
 }
@@ -77,7 +85,8 @@ export async function products(ids: string[], fetcher = fetchWithTimeout): Promi
     const part = want.slice(i, i + BATCH).join(',')
     const r = await fetcher(`https://displaycatalog.mp.microsoft.com/v7.0/products?bigIds=${part}&market=${MARKET}&languages=${LANG},en-us`, {}, 30_000)
     const d = (await r.json()) as { Products?: Record<string, unknown>[] }
-    for (const p of d.Products ?? []) {
+    if (!Array.isArray(d?.Products)) throw new Error('katalog produktów Microsoft: zła odpowiedź')
+    for (const p of d.Products) {
       const x = productOf(p)
       if (x) out[x.storeId] = x
     }

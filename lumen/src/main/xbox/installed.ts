@@ -57,7 +57,8 @@ export function parseInstalled(text: string): XboxInstalled[] {
   return out
 }
 
-export function scanInstalled(timeoutMs = 60_000): Promise<XboxInstalled[]> {
+/** null — odczyt nieudany (błąd PowerShell, limit czasu): wywołujący zostawia poprzednią listę */
+export function scanInstalled(timeoutMs = 60_000): Promise<XboxInstalled[] | null> {
   if (process.platform !== 'win32') return Promise.resolve([])
   return new Promise((resolve) => {
     execFile(
@@ -65,7 +66,10 @@ export function scanInstalled(timeoutMs = 60_000): Promise<XboxInstalled[]> {
       ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', SCRIPT],
       { windowsHide: true, timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024, encoding: 'utf8' },
       (err, stdout) => {
-        if (err) log.warn('xbox', `gry zainstalowane: ${err.message}`)
+        if (err) {
+          log.warn('xbox', `gry zainstalowane: ${err.message}`)
+          return resolve(null)
+        }
         resolve(parseInstalled(String(stdout ?? '')))
       }
     )

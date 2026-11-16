@@ -107,3 +107,14 @@ describe('konto Xbox (etap 19c)', () => {
     ])
   })
 })
+
+describe('katalog: zła odpowiedź to błąd, nie pusta lista (przegląd kodu)', () => {
+  it('pusty katalog Game Pass i odpowiedź bez produktów — wyjątek (stara kopia zostaje)', async () => {
+    const { gamePassIds, products } = await import('../src/main/xbox/catalog')
+    const answer = (body: unknown) => (async () => ({ json: async () => body })) as unknown as typeof import('../src/main/net').fetchWithTimeout
+    await expect(gamePassIds(answer([{ siglId: 'x' }]))).rejects.toThrow(/bez gier/)
+    await expect(gamePassIds(answer({ error: 'x' }))).rejects.toThrow(/bez gier/)
+    expect(await gamePassIds(answer([{ siglId: 'x' }, { id: '9p8lr42ptrgj' }]))).toEqual(['9P8LR42PTRGJ'])
+    await expect(products(['9P8LR42PTRGJ'], answer({ error: 'x' }))).rejects.toThrow(/zła odpowiedź/)
+  })
+})

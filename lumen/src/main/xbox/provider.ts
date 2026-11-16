@@ -3,7 +3,7 @@ import type { Game, XboxSummary } from '@shared/types'
 import { JsonFile } from '../store/jsonFile'
 import { log } from '../logger'
 import { sortKey } from '../library/merge'
-import { gamePassIds, products, type XboxProduct } from './catalog'
+import { gamePassIds, isStoreId, products, type XboxProduct } from './catalog'
 import { scanInstalled, type XboxInstalled } from './installed'
 
 /**
@@ -127,14 +127,17 @@ export class XboxProvider extends EventEmitter {
     this.busy = (async () => {
       try {
         if (!this.cache.at) this.cache = await this.file.load()
-        this.installed = await scanInstalled()
+        // nieudany odczyt (PowerShell, limit czasu) — zostaje poprzednia lista, gry nie znikają (przegląd kodu)
+        const now = await scanInstalled()
+        if (now) this.installed = now
         this.apply()
         if (force || Date.now() - this.cache.at > DAY) {
           const ids = await gamePassIds()
           const known = this.cache.products
           const missing = [...ids, ...this.installed.map((i) => i.storeId).filter(Boolean)].filter((id) => !known[id])
           const fresh = force ? await products([...ids, ...this.installed.map((i) => i.storeId).filter(Boolean)]) : await products(missing)
-          this.cache = { at: Date.now(), gamePass: ids, products: { ...known, ...fresh } }
+          // opisy dodane w międzyczasie (gry z konta: ensureProducts) zostają — scalanie z aktualnym stanem
+          this.cache = { at: Date.now(), gamePass: ids, products: { ...this.cache.products, ...fresh } }
           await this.file.save(this.cache)
           log.info('xbox', `katalog: Game Pass ${ids.length} gier, zainstalowane ${this.installed.length}`)
         } else await this.ensureProducts(this.installed.map((i) => i.storeId).filter(Boolean))
@@ -152,7 +155,7 @@ export class XboxProvider extends EventEmitter {
 
   /** opisy brakujących produktów (gra zainstalowana później niż pobrano katalog, gra z konta) */
   private async ensureProducts(ids: string[]): Promise<void> {
-    const missing = ids.filter((id) => id && !this.cache.products[id] && /^[0-9A-Z]{12}$/.test(id))
+    const missing = ids.filter((id) => id && !this.cache.products[id] && isStoreId(id))
     if (!missing.length) return
     try {
       const fresh = await products(missing)

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { BrowserWindow, session } from 'electron'
 import { fetchWithTimeout } from '../net'
 import { log, registerSecret } from '../logger'
+import { isStoreId } from './catalog'
 
 /**
  * Konto Xbox (etap 19c, decyzja użytkownika 2026-11-16: własna rejestracja aplikacji w Azure): logowanie kontem
@@ -115,7 +116,7 @@ export function parseTitles(json: unknown): AccountTitle[] {
     const detail = (t.detail ?? {}) as { availabilities?: { ProductId?: string }[] }
     const pid = String(t.productId ?? detail.availabilities?.find((a) => a?.ProductId)?.ProductId ?? '').toUpperCase()
     const pfn = typeof t.pfn === 'string' ? t.pfn : undefined
-    out.push({ ...(/^[0-9A-Z]{12}$/.test(pid) ? { storeId: pid } : {}), ...(pfn ? { pfn } : {}), name: String(t.name ?? '') })
+    out.push({ ...(isStoreId(pid) ? { storeId: pid } : {}), ...(pfn ? { pfn } : {}), name: String(t.name ?? '') })
   }
   return out
 }
@@ -126,7 +127,10 @@ export async function accountTitles(id: XblIdentity): Promise<AccountTitle[]> {
     { headers: { Authorization: `XBL3.0 x=${id.uhs};${id.token}`, 'x-xbl-contract-version': '2', 'Accept-Language': 'pl-PL', Accept: 'application/json' } },
     60_000
   )
-  return parseTitles(await r.json())
+  const d = (await r.json()) as { titles?: unknown }
+  // odpowiedź bez listy tytułów to błąd — nie „konto bez gier” (lista z konta zostaje; przegląd kodu)
+  if (!Array.isArray(d?.titles)) throw new Error('historia tytułów Xbox: zła odpowiedź')
+  return parseTitles(d)
 }
 
 /** Strona logowania Microsoft w osobnym oknie; kończy się kodem (wymiana na tokeny) albo zamknięciem okna. */

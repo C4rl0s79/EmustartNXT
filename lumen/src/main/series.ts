@@ -124,6 +124,8 @@ export function steamTitles(games: Game[]): { title: string; platform: string; s
   const out: { title: string; platform: string; store?: string; id?: string }[] = []
   for (const g of games) {
     if (g.source === 'emustart' || g.source === 'demo') continue
+    // gry tylko z katalogu Game Pass (nie na tym PC, nie z konta) — nie są gracza; nie zajmują kolejki IGDB serwera
+    if (g.source === 'xbox' && !g.installed && !g.xbox?.owned) continue
     const t = g.name.trim()
     // gra ze sklepu — z identyfikatorem (serwer dopasuje wydanie po nim, nie po tytule; zgłoszenie 2026-11-16)
     const sk = seriesStoreKey(g)

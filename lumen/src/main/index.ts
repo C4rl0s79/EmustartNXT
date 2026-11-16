@@ -8,6 +8,7 @@ import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
 import { XboxProvider } from './xbox/provider'
+import { isStoreId } from './xbox/catalog'
 import { accountTitles, clearLoginSession, loginWindow, refreshTokens, xblIdentity, type MsTokens } from './xbox/account'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
@@ -1066,13 +1067,20 @@ async function xboxArt(gameId: string, k: ArtKind): Promise<Response | null> {
   const storeId = gameId.slice(5)
   const p = xbox.product(storeId)
   const url = k === 'grid' ? (p?.poster ?? p?.box) : k === 'hero' ? p?.hero : undefined
-  if (!url || !/^[0-9A-Z]{12}$/.test(storeId)) return null
+  if (!url || !isStoreId(storeId)) return null
   const file = path.join(userData, 'xbox-art', `${storeId}-${k}.jpg`)
   if (!(await fs.stat(file).catch(() => null))) {
     try {
       const r = await fetchWithTimeout(`${url}${url.includes('?') ? '&' : '?'}w=${k === 'hero' ? 1920 : 600}`, {}, 30_000)
+      if (!/^image\//i.test(r.headers.get('content-type') ?? '')) throw new Error(`nie obraz (${r.headers.get('content-type') ?? '?'})`)
+      const body = Buffer.from(await r.arrayBuffer())
       await fs.mkdir(path.dirname(file), { recursive: true })
-      await fs.writeFile(file, Buffer.from(await r.arrayBuffer()))
+      const tmp = `${file}.${process.pid}.${Date.now()}.tmp` // inne żądanie nie zobaczy pliku w połowie zapisu
+      await fs.writeFile(tmp, body)
+      await fs.rename(tmp, file).catch(async (e) => {
+        await fs.rm(tmp, { force: true })
+        if (!(await fs.stat(file).catch(() => null))) throw e
+      })
     } catch (e) {
       log.warn('xbox', `grafika ${storeId} ${k}: ${(e as Error).message}`)
       return null
@@ -1412,7 +1420,6 @@ async function showControllers(): Promise<void> {
   }
 }
 
-/** Ask the Steam client to install a game (Steam shows its own dialog and runs the download). */
 /** Gra Xbox: start przez Windows (shell:AppsFolder\<rodzina>!<aplikacja>) — Eksplorator przekazuje go powłoce, więc
  *  gra startuje bez uprawnień administratora, jak z menu Start. */
 async function playXbox(game: Game): Promise<ActionResult> {
@@ -1422,18 +1429,20 @@ async function playXbox(game: Game): Promise<ActionResult> {
   p.on('error', (e) => log.warn('xbox', `start ${aumid}: ${e.message}`))
   p.unref()
   log.info('xbox', `play ${game.id} (${aumid})`)
-  if (settings.get().afterLaunch === 'minimize' && !takeDeckLaunch(game.id)) setTimeout(() => win?.minimize(), 2500)
+  // bez minimalizacji: Lumen nie śledzi procesu gry Xbox, więc nie wróciłby sam po jej zakończeniu (przegląd kodu)
+  takeDeckLaunch(game.id)
   return { ok: true, message: 'Uruchamianie przez Windows…' }
 }
 
 /** Gra Xbox spoza tego komputera: strona gry w Sklepie Microsoft (instalacja, także z Game Pass). */
 async function installXbox(game: Game): Promise<ActionResult> {
   const id = game.xbox?.storeId
-  if (!id || !/^[0-9A-Z]{12}$/.test(id)) return fail('Nie znaleziono tej gry w Sklepie Microsoft.')
+  if (!id || !isStoreId(id)) return fail('Nie znaleziono tej gry w Sklepie Microsoft.')
   await openUnelevated(`ms-windows-store://pdp/?ProductId=${id}`)
   return { ok: true, message: 'Sklep Microsoft otworzy stronę gry — instalacją zarządza Sklep / aplikacja Xbox.' }
 }
 
+/** Ask the Steam client to install a game (Steam shows its own dialog and runs the download). */
 async function installSteam(gameId: string): Promise<ActionResult> {
   const game = findGame(gameId)
   if (!game) return fail('Nie znaleziono gry w bibliotece.')
@@ -1493,16 +1502,19 @@ async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
   return p
 }
 
-/** One way to change the settings (IPC and the Deck menu): save, then react to what changed and tell both windows. */
 // ---- konto Xbox (etap 19c): token odświeżania (zaszyfrowany) → Xbox Live → gry z konta ----
 let xboxSyncing: Promise<ActionResult> | null = null
+/** zmienia się przy wylogowaniu — synchronizacja zaczęta wcześniej nie zapisuje już tokenu ani gier */
+let xboxGen = 0
 const XBOX_EVERY = 6 * 3600_000
 
-async function xboxWithTokens(t: MsTokens): Promise<ActionResult> {
+async function xboxWithTokens(t: MsTokens, gen = xboxGen): Promise<ActionResult> {
+  if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
   await settings.setSecret('xboxRefreshToken', t.refresh)          // Microsoft wydaje nowy token odświeżania
   send(IPC.settingsChanged, settings.get())                    // „zalogowano” w Ustawieniach
   const id = await xblIdentity(t.access)
   const titles = await accountTitles(id)
+  if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
   const ids = [...new Set(titles.map((x) => x.storeId ?? (x.pfn ? xbox.storeIdByPfn(x.pfn) : undefined)).filter((x): x is string => !!x))]
   xbox.setOwned(ids, { gamertag: id.gamertag })
   log.info('xbox', `konto ${id.gamertag}: ${titles.length} tytułów na PC, ${ids.length} rozpoznanych w Sklepie`)
@@ -1516,8 +1528,9 @@ function xboxSync(): Promise<ActionResult> {
     const clientId = settings.get().xboxClientId
     const refresh = settings.getSecret('xboxRefreshToken')
     if (!clientId || !refresh) return { ok: false, error: 'Nie zalogowano do konta Xbox.' }
+    const gen = xboxGen
     try {
-      return await xboxWithTokens(await refreshTokens(clientId, refresh))
+      return await xboxWithTokens(await refreshTokens(clientId, refresh), gen)
     } catch (e) {
       const msg = (e as Error).message
       log.warn('xbox', `konto: ${msg}`)
@@ -1533,8 +1546,9 @@ function xboxSync(): Promise<ActionResult> {
 async function xboxLogin(): Promise<ActionResult> {
   const clientId = settings.get().xboxClientId
   if (!clientId) return { ok: false, error: 'Najpierw wpisz identyfikator aplikacji Azure (Ustawienia → Xbox).' }
+  const gen = xboxGen
   try {
-    return await xboxWithTokens(await loginWindow(win, clientId))
+    return await xboxWithTokens(await loginWindow(win, clientId), gen)
   } catch (e) {
     const msg = (e as Error).message
     log.warn('xbox', `logowanie: ${msg}`)
@@ -1543,6 +1557,7 @@ async function xboxLogin(): Promise<ActionResult> {
 }
 
 async function xboxLogout(): Promise<ActionResult> {
+  xboxGen++
   await settings.setSecret('xboxRefreshToken', null)
   send(IPC.settingsChanged, settings.get())
   await clearLoginSession().catch(() => undefined)
@@ -1550,6 +1565,7 @@ async function xboxLogout(): Promise<ActionResult> {
   return { ok: true, message: 'Wylogowano z konta Xbox.' }
 }
 
+/** One way to change the settings (IPC and the Deck menu): save, then react to what changed and tell both windows. */
 async function patchSettings(patch: SettingsPatch): Promise<Settings> {
   const before = settings.get()
   const after = await settings.patch(patch)
