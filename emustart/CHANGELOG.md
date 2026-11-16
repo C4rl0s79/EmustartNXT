@@ -6,6 +6,20 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: pamięć serwera i start gier CD Projekt RED bez launchera — EmuStart 0.64.1 (zgłoszenia 2026-11-16)
+
+Zgłoszenia użytkownika (2026-11-16): serwer prawie nieużywany zajmuje ~1 GB po dniu i ~20 GB po kilku dniach;
+Cyberpunk 2077 i Wiedźmin 3 mają startować bez launchera (REDprelauncher). Pozostałe zgłoszenia z listy (Deck, DOSBox,
+serie, MIDI, Horyzont, nawigacja literami, Steam, rejestr i ikony GOG, stare ścieżki) — kolejne etapy po tych dwóch.
+
+Nie dotyka: listy gier, sterowania, menu, API `/v1/…` (odpowiedzi bez zmian), formatu archiwum GOG Managera,
+zapisów i synchronizacji, APK.
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 1 | Pamięć serwera: zbiór chunków buildu GOG jako `ChunkSet` (skróty jako dwie posortowane tablice 64-bitowe + tablica rozmiarów, ~24 B zamiast ~136 B na chunk; archiwum ~7,3 mln chunków = ~1 GB w słownikach przez cały czas działania i drugie tyle w listingu folderów przy każdym „Odśwież indeks”), w obu kopiach (`emustart/`, `lumen/engine/`); `memwatch` — pamięć procesu w logu serwera co godzinę (pierwszy wpis po 10 min) oraz przed i po każdym indeksie GOG (skoki przy „Odśwież indeks” widoczne w logu); zły rozmiar chunka w manifeście odrzuca build, nie cały indeks | zrobione (testy 834 / 886; code review: 9 uwag poprawionych); czeka na sprawdzenie na żywo (log `pamięć procesu:` i `GOG: po indeksie` na serwerze) |
+| 2 | Cyberpunk 2077 i Wiedźmin 3 (GOG) bez launchera: zadanie startowe wskazujące REDprelauncher zastąpione plikiem gry | do zrobienia |
+
 ### Plan: instalacja gier GOG jak w GOG Galaxy (kroki skryptów, rejestr, deinstalator) — Lumen 1.0.58
 
 Podstawa: skan 549 gier archiwum `Z:\gog` (2026-11-12) — 87 gier miało akcję, symbol albo zadanie uruchamiania,

@@ -6,6 +6,11 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Pamięć indeksu GOG (zgłoszenie 2026-11-16, wspólne z serwerem EmuStart 0.64.1)
+Ta sama zmiana co w `emustart/` (plan i stan: `emustart/CHANGELOG.md` → „Plan: pamięć serwera…”): zbiór chunków
+buildu jako `ChunkSet` (~24 B zamiast ~136 B na chunk), `memwatch` (pamięć procesu w logu trybu serwera co godzinę
+i przy indeksie GOG). Nie dotyka: instalacji gier, interfejsu Lumena, API `/v1/…`.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);
