@@ -602,8 +602,6 @@ function CategoriesSection() {
   )
 }
 
-/** Xbox / Microsoft Store (etap 19): gry zainstalowane, katalog PC Game Pass, konto Xbox (logowanie przez własną
- *  aplikację Azure gracza — decyzja 2026-11-16). */
 /** tekst do schowka (przycisk „Kopiuj”) — z komunikatem */
 async function copyText(text: string): Promise<void> {
   try {
@@ -614,6 +612,8 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
+/** Xbox / Microsoft Store (etap 19): gry zainstalowane, katalog PC Game Pass, konto Xbox (logowanie przez aplikację
+ *  „Lumen Launcher” w Azure, inny identyfikator — opcjonalnie). */
 function XboxSection() {
   const settings = useStore((s) => s.settings)!
   const x = useStore((s) => s.snapshot?.xbox)
