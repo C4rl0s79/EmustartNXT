@@ -294,7 +294,7 @@ def seed_save_folder(app: Path, dst: Path) -> int:
     nakłada na C:). Zgłoszenie 2026-11-16: leżały w {app}/save, gra nie miała C:/SAVEGAME („Couldn't open output
     file”). Tylko brakujące pliki — zapisy gracza zostają; kopia w save/ też (weryfikacja instalacji). → ile skopiowano."""
     src = app / SUPPORT_SAVE
-    if not src.is_dir() or not _inside(dst, app) or same_path(src, dst):
+    if not src.is_dir() or not _inside(dst, app) or same_path(src, dst) or same_path(dst, app):
         return 0
     n = 0
     for f in sorted(src.rglob("*")):

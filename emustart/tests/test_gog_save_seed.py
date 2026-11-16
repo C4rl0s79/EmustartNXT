@@ -46,3 +46,10 @@ def test_no_script_or_no_save_folder_does_nothing(tmp_path):
     app2 = _game(tmp_path / "b")
     (app2 / f"goggame-{PID}.script").write_text(json.dumps({"actions": [SCRIPT["actions"][0]]}), encoding="utf-8")
     assert gogfinal.seed_saves(app2, PID) == 0                 # skrypt bez folderu zapisów
+
+
+def test_folder_target_equal_to_game_folder_gets_nothing(tmp_path):
+    """Przegląd kodu: cel {app} (sam folder gry) — save/ nie jest kopiowany do folderu gry."""
+    app = _game(tmp_path)
+    assert gogfinal.seed_save_folder(app, app) == 0
+    assert not (app / "SAVEGAME").exists()
