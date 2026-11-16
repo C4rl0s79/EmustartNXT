@@ -97,6 +97,18 @@ export interface Game {
   facts?: GameFacts
   /** family and platform in the library hierarchy (set by the main process for every game) */
   platform?: GamePlatform
+  /** series from IGDB via the EmuStart server (main/series.ts) — the player's own choice still wins */
+  igdbSeries?: IgdbSeries
+}
+
+/** A game's series from IGDB (server: emustart/igdbseries.py): franchise, else the narrowest collection. */
+export interface IgdbSeries {
+  /** '' — IGDB zna grę, ale nie jest ona w żadnej serii (nie zgadujemy serii z tytułu) */
+  name: string
+  /** unix seconds used for the order in the series: a remake / port carries its original's date */
+  order: number
+  /** unix seconds: release of this very edition (tie-break: arcade before its port) */
+  release: number
 }
 
 /** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */
@@ -1206,6 +1218,22 @@ export interface GogPlayTask {
   name: string
   category: string
   default: boolean
+}
+
+/** MIDI output of a DOSBox game (engine: emustart/dosmidi.py) — Roland MT-32 / SC-55 per game */
+export const GOG_MIDI_MODES = ['auto', 'mt32', 'sc55', 'default'] as const
+export type GogMidiMode = (typeof GOG_MIDI_MODES)[number]
+export interface GogMidi {
+  ok: boolean
+  reason: string
+  mode?: GogMidiMode
+  device?: 'mt32' | 'sc55' | null
+  port?: string
+  /** remark from the MT-32 list (setup hints, e.g. "Select GM driver in setup for MT-32 output") */
+  note?: string
+  /** the game starts through DOSBox (only then the row is shown) */
+  dosbox?: boolean
+  ports?: { ports: string[]; mt32: string; sc55: string }
 }
 
 export interface GogVerifyResult {

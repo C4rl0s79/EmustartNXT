@@ -731,10 +731,20 @@ def runtime_acts(app: Path, dep_ids: list) -> list:
 
 def pick_play_task(tasks: list):
     """Zadanie gry przed launcherem zewnętrznym (np. REDprelauncher Wiedźmina 3 wymaga instalatora GOG):
-    główne zadanie gry → dowolne zadanie gry → główne zadanie → pierwsze z plikiem."""
-    fts = [t for t in tasks or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
-    fts = [t for t in fts if not t.get("isHidden")] or fts    # ukryte „launcher process” — tylko gdy nie ma innych
-    game = [t for t in fts if (t.get("category") or "").lower() == "game"]
+    główne zadanie gry → dowolne zadanie gry → główne zadanie → pierwsze z plikiem.
+    CD Projekt RED (Cyberpunk 2077, Wiedźmin 3) i podobne: widoczne zadanie główne to launcher, a plik gry jest
+    JEDNYM ukrytym zadaniem kategorii „game” — wtedy gra startuje bez launchera (zgłoszenie 2026-11-16)."""
+    cat = lambda t: str(t.get("category") or "").lower()          # noqa: E731
+    all_fts = [t for t in tasks or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
+    fts = [t for t in all_fts if not t.get("isHidden")] or all_fts   # ukryte „launcher process” — tylko gdy nie ma innych
+    game = [t for t in fts if cat(t) == "game"]
+    if not game and any(cat(t) == "launcher" for t in fts):
+        hidden = [t for t in all_fts if t.get("isHidden") and cat(t) == "game"]
+        # tylko jednoznaczny plik gry: kilka wariantów (Resident Evil 2: Leon / Claire, Outlast: Win32 / Win64,
+        # Divinity OS2: DefEd / Classic) wybiera launcher — wtedy launcher zostaje
+        if len({(str(t["path"]).replace("\\", "/").lower(), str(t.get("arguments") or "").strip())
+                for t in hidden}) == 1:
+            game = hidden[:1]
     return (next((t for t in game if t.get("isPrimary")), None) or (game[0] if game else None)
             or next((t for t in fts if t.get("isPrimary")), None) or (fts[0] if fts else None))
 
@@ -781,22 +791,40 @@ def play_tasks(app: Path, pid: str) -> list:
     [{"index", "name", "category", "default"}] — tylko programy (.exe, .bat, .cmd) wewnątrz katalogu gry."""
     data = _info(app, pid)
     tasks = _file_tasks(app, pid, data)
-    best = pick_play_task(tasks)
+    best = pick_play_task([t for t in tasks if _on_disk(app, t) and str(t["path"]).lower().endswith(RUNNABLE)])
     out = []
     for i, t in enumerate(tasks):
         try:
             exe = safe_join(app, t["path"])
         except UnsafePath:
             continue
-        if exe.suffix.lower() in RUNNABLE and exe.is_file() and not t.get("isHidden"):
+        if exe.suffix.lower() in RUNNABLE and exe.is_file() and (not t.get("isHidden") or t is best):
             out.append({"index": i, "name": str(t.get("name") or exe.stem), "category": str(t.get("category") or ""),
                         "default": t is best})
+    dos = [x for x in out if Path(str(tasks[x["index"]]["path"]).replace("\\", "/")).name.lower() == "dosbox.exe"]
+    for x in dos:                                  # każda część kompilacji (Wing Commander 1 / 2) osobno
+        out.append({"index": DIAG_TASK if x["default"] else DIAG_BASE - x["index"],
+                    "name": DIAG_NAME if len(dos) == 1 else f"{x['name']} — {DIAG_NAME.lower()}",
+                    "category": "diagnostic", "default": False})
     return out
+
+
+def _on_disk(app: Path, t: dict) -> bool:
+    try:
+        return safe_join(app, t["path"]).is_file()
+    except UnsafePath:
+        return True                      # niebezpieczna ścieżka — błąd niżej, nie cicha zamiana zadania
+
+
+def _launcher_skipped(tasks: list, want) -> bool:
+    """`want` to ukryte zadanie gry wybrane zamiast widocznego launchera (pick_play_task)."""
+    return bool(want) and bool(want.get("isHidden")) and any(
+        not t.get("isHidden") and str(t.get("category") or "").lower() == "launcher" for t in tasks)
 
 
 def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
     """Zadanie bez workingDir, a pliki z argumentów (DOSBox: -conf x.conf) leżą w głównym folderze gry, nie obok programu."""
-    names = [a or b for a, b in re.findall(r'"([^"]+)"|(\S+)', args) if "." in (a or b) and not (a or b).startswith("-")]
+    names = [x for x in _tokens(args) if "." in x and not x.startswith("-")]
     def inside(base: Path, n: str) -> bool:
         try:
             return safe_join(base, n).is_file()
@@ -808,6 +836,11 @@ def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
 def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
     """{"exe", "args", "cwd", "name"} z goggame-<pid>.info — ścieżki tylko wewnątrz katalogu gry, tylko .exe.
     `task` — numer zadania z play_tasks (domyślnie zadanie gry przed launcherem)."""
+    if is_diag(task):
+        spec = launch_spec(app, pid, None if task == DIAG_TASK else DIAG_BASE - task)
+        if not is_dosbox(spec):
+            raise FinalizeError("start z diagnostyką jest tylko dla gier DOSBox")
+        return dosbox_diag(app, pid, spec)
     data = _info(app, pid)
     tasks = _file_tasks(app, pid, data)
     if task is not None and task >= 0:
@@ -815,15 +848,13 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
             raise FinalizeError("nie ma takiego zadania uruchamiania")
         t = tasks[task]
     else:
-        def on_disk(x: dict) -> bool:
-            try:
-                return safe_join(app, x["path"]).is_file()
-            except UnsafePath:
-                return True                  # niebezpieczna ścieżka — błąd niżej, nie cicha zamiana zadania
+        on_disk = lambda x: _on_disk(app, x)      # noqa: E731
         t = pick_play_task([x for x in tasks if on_disk(x) and x["path"].lower().endswith(RUNNABLE)])
         want = pick_play_task(tasks)
         is_game = lambda x: bool(x) and (str(x.get("category") or "").lower() == "game" or bool(x.get("isPrimary")))  # noqa: E731
-        if want and is_game(want) and not on_disk(want) and not (t and str(t.get("category") or "").lower() == "game"):
+        # ukryte zadanie gry zamiast launchera, bez pliku (opis innej platformy) — jak dotąd launcher, bez komunikatu
+        if (want and is_game(want) and not _launcher_skipped(tasks, want) and not on_disk(want)
+                and not (t and str(t.get("category") or "").lower() == "game")):
             # zadania gry nie ma na dysku — nie zgadujemy innego programu (Tex Murphy: Manual.pdf, Disciples: Config.exe)
             raise FinalizeError(f"brak pliku gry: {want.get('lnk') or want['path']}")
     if not t:
@@ -844,6 +875,138 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
         cwd = app
     return {"exe": str(exe), "args": args, "cwd": str(cwd if cwd.is_dir() else exe.parent),
             "name": str(t.get("name") or data.get("name") or "")}
+
+
+# ── „Uruchom z diagnostyką” (gry DOSBox) ────────────────────────────────────────
+# Skrypty startowe gier GOG kończą się `exit` (autoexec i pliki .bat gry), więc gdy gra przerwie się z błędem, DOSBox
+# zamyka się natychmiast i komunikatu nie da się przeczytać (zgłoszenie 2026-11-16, Eye of the Beholder III). Start
+# diagnostyczny: kopie plików konfiguracji w podfolderze gry `.emustart-diag` (ścieżka względna: DOSBox 0.74 nie
+# zamontuje ścieżki z „ł” w nazwie użytkownika z %TEMP%) — `exit` → `pause`, wywołane .bat gry (także bez rozszerzenia
+# i zagnieżdżone) z kopii bez `exit` (dysk Y:), okno zamiast pełnego ekranu, widoczna konsola DOSBoxa (bez -noconsole).
+# Pliki gry bez zmian. Każde zadanie DOSBoxa ma swój wariant: DIAG_TASK (domyślne) albo DIAG_BASE - numer zadania.
+
+DIAG_TASK = -2
+DIAG_BASE = -100
+DIAG_NAME = "Uruchom z diagnostyką"
+DIAG_DIR = ".emustart-diag"
+_BAT_LINE = re.compile(r"^(\s*@?\s*)(?:call\s+)?([A-Za-z0-9_\-~]{1,8})(\.bat)?(\s.*)?$", re.IGNORECASE)
+_AUTOEXEC = re.compile(r"^\s*\[autoexec\]\s*$", re.IGNORECASE | re.MULTILINE)
+_MOUNT_C = re.compile(r'^\s*@?\s*mount\s+c\s+(?:"([^"]+)"|(\S+))\s*$', re.IGNORECASE)
+_EXIT = ("exit", "@exit")
+
+
+def is_diag(task) -> bool:
+    return task == DIAG_TASK or (isinstance(task, int) and DIAG_BASE - 63 <= task <= DIAG_BASE)
+
+
+def is_dosbox(spec: dict) -> bool:
+    return Path(spec.get("exe") or "").name.lower() == "dosbox.exe"
+
+
+def _tokens(args: str) -> list:
+    """Argumenty linii poleceń: "w cudzysłowie" albo bez — jedna reguła dla odczytu i diagnostyki."""
+    return [a if a else b for a, b in re.findall(r'"([^"]*)"|(\S+)', args)]
+
+
+def _quote(t: str) -> str:
+    return f'"{t}"' if (" " in t or not t) else t
+
+
+class _Diag:
+    """Przepisanie skryptów: `exit` → `pause`, .bat gry z dysku C: → kopia bez exit na Y: (rekurencyjnie)."""
+
+    def __init__(self, out: Path, c_root: Path):
+        self.out, self.c_root, self.done = out, c_root, set()
+
+    def lines(self, lines: list) -> list:
+        res = []
+        for ln in lines:
+            s = ln.strip()
+            if s.lower() in _EXIT:
+                res.append("pause")
+                continue
+            m = _BAT_LINE.match(ln)
+            if m:
+                name = (m.group(2) + ".bat").upper()
+                src = next((p for p in self.c_root.glob("*") if p.name.upper() == name and p.is_file()), None) \
+                    if self.c_root.is_dir() else None
+                if src is not None:
+                    self.copy(src)
+                    res.append(f"{m.group(1)}call Y:\\{name}{m.group(4) or ''}")
+                    continue
+            res.append(ln)
+        return res
+
+    def copy(self, src: Path) -> None:
+        name = src.name.upper()
+        if name in self.done:
+            return
+        self.done.add(name)
+        body = self.lines(src.read_text(encoding="latin-1").splitlines())
+        (self.out / name).write_text("\r\n".join(body) + "\r\n", encoding="latin-1")
+
+
+def _c_root(texts: list, cwd: Path, app: Path) -> Path:
+    """Folder dysku C: — pierwsze `mount c` (bez nakładki) ze skryptów; inaczej katalog gry."""
+    for t in texts:
+        for ln in t.splitlines():
+            m = _MOUNT_C.match(ln)
+            if m:
+                return (cwd / (m.group(1) or m.group(2))).resolve()
+    return app
+
+
+def dosbox_diag(app: Path, pid: str, spec: dict) -> dict:
+    """Spec DOSBoxa z kopiami konfiguracji do odczytania błędu gry (pliki gry nietknięte)."""
+    import os
+    import shutil
+    out = app / DIAG_DIR
+    shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True, exist_ok=True)
+    cwd = Path(spec["cwd"])
+    toks = _tokens(spec["args"])
+    confs = []
+    for i, t in enumerate(toks):
+        if t.lower() == "-conf" and i + 1 < len(toks):
+            try:
+                confs.append((cwd / toks[i + 1]).resolve().read_text(encoding="latin-1").replace("\r\n", "\n"))
+            except OSError:
+                confs.append("")
+    diag = _Diag(out, _c_root(confs, cwd, app))
+    try:
+        rel_out = os.path.relpath(out, cwd)               # ten sam dysk co gra (ścieżka bez znaków spoza ASCII)
+    except ValueError:
+        rel_out = str(out)
+    new, i, k, mounted = [], 0, 0, False
+    while i < len(toks):
+        t = toks[i]
+        if t.lower() == "-noconsole":
+            i += 1
+            continue
+        if t.lower() == "-c" and i + 1 < len(toks) and toks[i + 1].strip().lower() == "exit":
+            i += 2
+            continue
+        if t.lower() == "-conf" and i + 1 < len(toks):
+            text = confs[k]
+            k += 1
+            m = _AUTOEXEC.search(text)
+            if m:
+                body = diag.lines(text[m.end():].split("\n"))
+                if not mounted:
+                    body.insert(1, f'mount Y "{rel_out}"')   # kopie .bat (przed pierwszym poleceniem autoexec)
+                    mounted = True
+                text = text[:m.end()] + "\n".join(body)
+            dst = out / f"{k:02d}-{Path(toks[i + 1]).name}"   # dwa pliki o tej samej nazwie z różnych folderów
+            dst.write_text(text, encoding="latin-1", errors="replace")
+            new += [t, os.path.relpath(dst, cwd) if rel_out != str(out) else str(dst)]
+            i += 2
+            continue
+        new.append(t)
+        i += 1
+    extra = out / "diagnostyka.conf"
+    extra.write_text("[sdl]\nfullscreen=false\n", encoding="latin-1")
+    new += ["-conf", os.path.relpath(extra, cwd) if rel_out != str(out) else str(extra)]
+    return {**spec, "args": " ".join(_quote(t) for t in new), "name": f"{spec.get('name') or ''} — diagnostyka"}
 
 
 def start(spec: dict) -> subprocess.Popen:

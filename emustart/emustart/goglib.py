@@ -344,6 +344,11 @@ class GogService:
         sync = self._sync_before(pid, e, sync_choice)
         if sync.get("conflict"):
             return {"ok": False, "conflict": sync["conflict"], "reason": "Zapisy tej gry zmieniły się tutaj i na innym urządzeniu."}
+        if gogfinal.is_dosbox(spec):                   # MT-32 / SC-55 per gra (emustart/dosmidi.py) — tuż przed startem
+            from emustart import dosmidi
+            d = dosmidi.decide(str(e.get("title") or ""), str(e.get("midi") or "auto"), self._cfg())
+            log.info("GOG %s: MIDI — %s", pid, d["reason"])
+            spec = dosmidi.apply(spec, root, d)
         try:
             proc = gogfinal.start(spec)
         except OSError as ex:
@@ -355,6 +360,36 @@ class GogService:
         if sync.get("notice"):
             msg += f" · {sync['notice']}"
         return {"ok": True, "message": msg}
+
+    def midi(self, pid: str) -> dict:
+        """Wyjście MIDI gry DOSBox: tryb gracza, decyzja i powód, uwagi z listy MT-32 (dla „Opcji gry”)."""
+        from emustart import dosmidi
+        pid = _pid(pid)
+        e = gi.load_entry(pid)
+        if not e:
+            return {"ok": False, "reason": "Gra nie jest zainstalowana."}
+        try:                                           # dowolne zadanie gry przez DOSBox (nie tylko domyślne)
+            app = Path(e["install_dir"])
+            dosbox = any(Path(str(t.get("path") or "").replace("\\", "/")).name.lower() == "dosbox.exe"
+                         for t in gogfinal._file_tasks(app, pid, gogfinal._info(app, pid)))
+        except (gogfinal.FinalizeError, OSError, KeyError):
+            dosbox = False
+        names = dosmidi.ports()
+        d = dosmidi.decide(str(e.get("title") or ""), str(e.get("midi") or "auto"), self._cfg(), names)
+        return {"ok": True, **d, "dosbox": dosbox, "modes": list(dosmidi.MODES),
+                "ports": dosmidi.port_settings(self._cfg(), names)}
+
+    def midi_set(self, pid: str, mode: str) -> dict:
+        from emustart import dosmidi
+        pid = _pid(pid)
+        if mode not in dosmidi.MODES:
+            return {"ok": False, "reason": "nieznany tryb MIDI"}
+        e = gi.load_entry(pid)
+        if not e:
+            return {"ok": False, "reason": "Gra nie jest zainstalowana."}
+        e["midi"] = mode
+        gi.save_entry(e)
+        return self.midi(pid)
 
     def running_ids(self) -> list:
         """Gra działa, dopóki żyje jej proces albo dowolny proces z plikiem w katalogu gry (launcher, który

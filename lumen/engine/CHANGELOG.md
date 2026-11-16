@@ -6,6 +6,16 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Pamięć indeksu GOG (zgłoszenie 2026-11-16, wspólne z serwerem EmuStart 0.64.1)
+Ta sama zmiana co w `emustart/` (plan i stan: `emustart/CHANGELOG.md` → „Plan: pamięć serwera…”): zbiór chunków
+buildu jako `ChunkSet` (~24 B zamiast ~136 B na chunk), `memwatch` (pamięć procesu w logu trybu serwera co godzinę
+i przy indeksie GOG). Nie dotyka: instalacji gier, interfejsu Lumena, API `/v1/…`.
+
+Gry GOG bez launchera (etap 2 tego samego planu): `gogfinal.pick_play_task` — jedno ukryte zadanie „game” zamiast
+widocznego launchera (Cyberpunk 2077, Wiedźmin 3 i 46 innych), kilka wariantów — launcher zostaje.
+
+Serie z IGDB, diagnostyka i MIDI DOSBoxa (etapy 10, 5 i 11 tego samego planu, `emustart/CHANGELOG.md`): `igdbseries`, `series_sync`; „Uruchom z diagnostyką” (`gogfinal.dosbox_diag`, folder `.emustart-diag`); MT-32 / SC-55 per gra (`dosmidi`, `midigames`, `.emustart-midi/midi.conf`, `gog_midi`, `midi_ports`); odinstalowanie usuwa oba foldery Lumena. Nie dotyka: plików gier, zapisów, API `/v1/…` poza `/v1/series`.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);

@@ -19,6 +19,8 @@ jest brany z pamięci podręcznej indeksu (dane serwera), bez ponownego sprawdza
 
 from __future__ import annotations
 
+import array
+import bisect
 import hashlib
 import json
 import logging
@@ -240,6 +242,90 @@ def available_languages(rec: dict) -> list:
     return sorted(set(out))
 
 
+_HEX32_ANY = re.compile(r"[0-9a-fA-F]{32}\Z")
+_BAD_SIZE = 2**64 - 1          # rozmiar spoza zakresu (uszkodzony manifest) — nigdy nie równy rozmiarowi pliku
+
+
+def csize(v) -> int:
+    """compressedSize z manifestu → liczba; ujemna, za duża albo nie liczba → _BAD_SIZE (nigdy nie równa plikowi)."""
+    try:
+        n = int(v or 0)
+    except (TypeError, ValueError):
+        return _BAD_SIZE
+    return n if 0 <= n < _BAD_SIZE else _BAD_SIZE
+
+
+class ChunkSet:
+    """{compressedMd5: compressedSize} jednego buildu (albo folderu chunków) w zwięzłej postaci: skróty jako dwie
+    posortowane tablice 64-bitowe (bisect w C) i tablica rozmiarów — 24 B na chunk zamiast ~136 B słownika
+    str → int. Archiwum ma miliony chunków: słowniki wszystkich buildów zajmowały w serwerze ~1 GB przez cały czas
+    działania, a listing folderów przy każdym „Odśwież indeks” — drugie tyle."""
+    __slots__ = ("_hi", "_lo", "_s")
+
+    def __init__(self, pairs=()):
+        src = pairs.items() if isinstance(pairs, dict) else pairs
+        rows = []
+        for m, size in src:
+            k = _split(m)
+            if k is None:
+                continue
+            rows.append((k[0], k[1], csize(size)))
+        rows.sort(key=lambda r: (r[0], r[1]))      # stabilnie: przy powtórzeniu kolejność podania zostaje
+        self._hi, self._lo, self._s = array.array("Q"), array.array("Q"), array.array("Q")
+        for h, lo, n in rows:
+            if len(self._hi) and self._hi[-1] == h and self._lo[-1] == lo:
+                self._s[-1] = n                    # ten sam chunk dwa razy — ostatnia wartość (jak w słowniku)
+                continue
+            self._hi.append(h)
+            self._lo.append(lo)
+            self._s.append(n)
+
+    def _find(self, md5) -> int:
+        k = _split(md5)
+        if k is None:
+            return -1
+        h, lo = k
+        i = bisect.bisect_left(self._hi, h)
+        while i < len(self._hi) and self._hi[i] == h:
+            if self._lo[i] == lo:
+                return i
+            i += 1
+        return -1
+
+    def __len__(self) -> int:
+        return len(self._s)
+
+    def __contains__(self, md5) -> bool:
+        return self._find(md5) >= 0
+
+    def get(self, md5, default=None):
+        i = self._find(md5)
+        return self._s[i] if i >= 0 else default
+
+    def items(self):
+        for i in range(len(self._s)):
+            yield f"{self._hi[i]:016x}{self._lo[i]:016x}", self._s[i]
+
+
+def _split(md5):
+    """32 znaki hex → (górne, dolne 64 bity); None, gdy to nie skrót MD5."""
+    m = str(md5 or "")
+    if not _HEX32_ANY.match(m):                 # int(…, 16) przyjmuje też „0x”, „_”, spacje — tylko czysty skrót
+        return None
+    return int(m[:16], 16), int(m[16:], 16)
+
+
+def manifests_chunkset(manifests) -> "ChunkSet":
+    """ChunkSet chunków z manifestów (depotów i zależności) — prawidłowe identyfikatory MD5."""
+    def pairs():
+        for man in manifests:
+            for c in manifest_chunks(man):
+                m = str(c.get("compressedMd5") or "").lower()
+                if HEX32.match(m):
+                    yield m, c.get("compressedSize")
+    return ChunkSet(pairs())
+
+
 class ChunkSizes:
     """Rozmiary chunków z listowania folderów `chunks/ab/cd` — jedno listowanie na folder na całe indeksowanie
     zamiast osobnego zapytania o każdy plik (archiwum ma setki tysięcy chunków; dysk sieciowy / USB)."""
@@ -249,20 +335,20 @@ class ChunkSizes:
         self.dirs: dict = {}
         self.relisted: set = set()
 
-    def _list(self, key: str) -> dict:
-        out = {}
+    def _list(self, key: str) -> "ChunkSet":
+        out = []
         try:
             with os.scandir(self.arc.root / "chunks" / key[:2] / key[2:4]) as it:
                 for d in it:
                     if len(d.name) == 32:
                         try:
-                            out[d.name.lower()] = d.stat().st_size
+                            out.append((d.name.lower(), d.stat().st_size))
                         except OSError:
                             pass
         except OSError:
             pass
-        self.dirs[key] = out
-        return out
+        self.dirs[key] = cs = ChunkSet(out)          # listing całego archiwum w trakcie indeksu — zwięźle
+        return cs
 
     def get(self, md5: str):
         """Rozmiar chunka albo None (brak). Brak → folder listowany ponownie raz (GOG Manager mógł go dopisać)."""
@@ -270,13 +356,14 @@ class ChunkSizes:
         d = self.dirs.get(key)
         if d is None:
             d = self._list(key)
-        if md5 not in d and key not in self.relisted:
+        v = d.get(md5)
+        if v is None and key not in self.relisted:
             self.relisted.add(key)
-            d = self._list(key)
-        return d.get(md5)
+            v = self._list(key).get(md5)
+        return v
 
 
-def chunk_problem(arc: Archive, chunks: dict, deep: bool = False, sizes: ChunkSizes | None = None) -> str:
+def chunk_problem(arc: Archive, chunks, deep: bool = False, sizes: ChunkSizes | None = None) -> str:
     """'' albo powód: brakujące / uszkodzone chunki buildu (rozmiar; `deep` — także MD5)."""
     missing = bad = 0
     sizes = sizes or ChunkSizes(arc)
@@ -341,7 +428,7 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
             m = str(c.get("compressedMd5") or "").lower()
             if not HEX32.match(m):
                 return {**base, "ok": False, "reason": f"zły identyfikator chunka w manifeście: {m!r}"}
-            chunks[m] = int(c.get("compressedSize") or 0)
+            chunks[m] = csize(c.get("compressedSize"))   # zła wartość → build odrzucony niżej, nie cały indeks
     why = chunk_problem(arc, chunks, deep, sizes) if check_chunks else ""
     if why:
         return {**base, "ok": False, "reason": why}
@@ -357,7 +444,7 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
             "languages": langs, "dlcs": dlcs,
             "dependencies": [str(d.get("id")) for d in rec.get("dependencies") or []],
             "size": int(rec.get("size") or 0), "compressed_size": int(rec.get("compressed_size") or 0),
-            "hash": content_hash(rec, meta, manifests), "chunks": chunks,
+            "hash": content_hash(rec, meta, manifests), "chunks": ChunkSet(chunks),
             "created": str(rec.get("created") or ""), "verified": str(rec.get("verified") or "")}
 
 
@@ -459,17 +546,12 @@ def _from_cache(arc: "Archive", pid: str, build: str, c: dict) -> dict:
     return e
 
 
-def build_chunks(arc: "Archive", pid: str, build: str) -> dict:
-    """{compressedMd5: compressedSize} wszystkich chunków buildu (z manifestów rekordu)."""
+def build_chunks(arc: "Archive", pid: str, build: str) -> "ChunkSet":
+    """{compressedMd5: compressedSize} wszystkich chunków buildu (z manifestów rekordu), jako ChunkSet."""
     rec = arc.read_json(arc.record_path(pid, build))
-    out: dict = {}
-    for kind, key in (("depot", "depots"), ("dep", "dependencies")):
-        for d in rec.get(key) or []:
-            for c in manifest_chunks(arc.manifest(kind, d["manifest"])):
-                m = str(c.get("compressedMd5") or "").lower()
-                if HEX32.match(m):
-                    out[m] = int(c.get("compressedSize") or 0)
-    return out
+    return manifests_chunkset(arc.manifest(kind, d["manifest"])
+                              for kind, key in (("depot", "depots"), ("dep", "dependencies"))
+                              for d in rec.get(key) or [])
 
 
 # ── indeks serwera (w pamięci, odbudowywany z archiwum) ─────────────────────────
@@ -479,6 +561,14 @@ INDEX: dict = {"root": "", "builds": {}, "rejected": [], "error": "", "built": 0
                "done": 0, "total": 0, "record_pids": []}
 _want: dict = {"root": "", "deep": False, "gen": 0}     # ostatnie żądanie (panel / start serwera)
 _pin_lock = threading.Lock()
+
+
+def _mem(when: str) -> None:
+    try:
+        from emustart import memwatch
+        log.info("GOG: %s — %s", when, memwatch.line())
+    except Exception:                                  # diagnostyka nigdy nie psuje indeksu
+        pass
 
 
 def build_index(root: str, deep: bool = False, publish=None) -> dict:
@@ -491,6 +581,7 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
     Build niezmieniony od poprzedniego indeksu (czasy i rozmiary rekordu i meta) jest brany z pamięci podręcznej
     (`_cache_path`) bez obu etapów; `deep` zawsze sprawdza wszystko."""
     res = {"root": root, "builds": {}, "rejected": [], "error": "", "built": time.time(), "record_pids": []}
+    _mem("przed indeksem")
     if not root:
         res["error"] = "nie ustawiono folderu archiwum"
         return res
@@ -552,6 +643,7 @@ def build_index(root: str, deep: bool = False, publish=None) -> dict:
                 writer.added()
         writer.maybe(new_cache)
     writer.final(new_cache)
+    _mem("po indeksie")
     log.info("GOG: indeks %s — buildów: %d (z pamięci podręcznej: %d), pominiętych: %d",
              root, len(res["builds"]), reused, len(res["rejected"]))
     return res
@@ -707,14 +799,7 @@ def build_manifest(pid: str, build: str) -> dict:
     if h != e["hash"]:
         raise Changed("zawartość buildu zmieniła się na serwerze — odśwież indeks GOG w panelu serwera")
     if e.get("chunks") is None:                   # build z pamięci podręcznej indeksu — lista z manifestów z dysku
-        flat = {}
-        for kind in ("depot", "dep"):
-            for man in mans[kind].values():
-                for c in manifest_chunks(man):
-                    m = str(c.get("compressedMd5") or "").lower()
-                    if HEX32.match(m):
-                        flat[m] = int(c.get("compressedSize") or 0)
-        e["chunks"] = flat
+        e["chunks"] = manifests_chunkset(man for kind in ("depot", "dep") for man in mans[kind].values())
     pub_rec = strip_secrets({k: v for k, v in rec.items() if k not in ("migration",)})
     return {"format": 1, "product_id": str(pid), "build_id": str(build), "hash": e["hash"],
             "title": e["title"], "version": e["version"], "install_directory": e["install_directory"],

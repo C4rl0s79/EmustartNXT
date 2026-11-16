@@ -6,6 +6,29 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: zgłoszenia 2026-11-16 (pamięć serwera, gry bez launchera, serie, DOSBox) — **wydane: EmuStart 0.65.0, Lumen 1.0.64** (etapy 1–5, 10, 11); etapy 6–9 — następne
+
+Zgłoszenia użytkownika (2026-11-16): serwer prawie nieużywany zajmuje ~1 GB po dniu i ~20 GB po kilku dniach;
+Cyberpunk 2077 i Wiedźmin 3 mają startować bez launchera (REDprelauncher) — zakres: wszystkie gry o tym układzie zadań. Pozostałe zgłoszenia z listy (Deck, DOSBox,
+serie, MIDI, Horyzont, nawigacja literami, Steam, rejestr i ikony GOG, stare ścieżki) — kolejne etapy po tych dwóch.
+
+Nie dotyka: listy gier, sterowania, menu, API `/v1/…` (odpowiedzi bez zmian), formatu archiwum GOG Managera,
+zapisów i synchronizacji, APK.
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 1 | Pamięć serwera: zbiór chunków buildu GOG jako `ChunkSet` (skróty jako dwie posortowane tablice 64-bitowe + tablica rozmiarów, ~24 B zamiast ~136 B na chunk; archiwum ~7,3 mln chunków = ~1 GB w słownikach przez cały czas działania i drugie tyle w listingu folderów przy każdym „Odśwież indeks”), w obu kopiach (`emustart/`, `lumen/engine/`); `memwatch` — pamięć procesu w logu serwera co godzinę (pierwszy wpis po 10 min) oraz przed i po każdym indeksie GOG (skoki przy „Odśwież indeks” widoczne w logu); zły rozmiar chunka w manifeście odrzuca build, nie cały indeks | zrobione (testy 834 / 886; code review: 9 uwag poprawionych); czeka na sprawdzenie na żywo (log `pamięć procesu:` i `GOG: po indeksie` na serwerze) |
+| 2 | Gry GOG bez launchera: gdy widoczne zadanie główne ma kategorię „launcher”, a plik gry jest JEDNYM ukrytym zadaniem „game” (Cyberpunk 2077, Wiedźmin 1–3: REDprelauncher; Fallout 3/4/NV, Oblivion, Mafia I–III, Dragon Age: Origins, gry Unreal Engine…), startuje plik gry; launcher zostaje do wyboru w „Uruchom…”. Kilka ukrytych wariantów gry (Resident Evil 2/3, Outlast, Divinity OS2, XCOM, Control, Homeworld…) — launcher zostaje; ukryte zadanie gry bez pliku na dysku — jak dotąd launcher. Skan archiwum 2026-11-16: 48 gier bez launchera, 11 z launcherem. Zakres zatwierdzony przez użytkownika 2026-11-16 („wszystkie”). Wiedźmin 3 (1495134320) na tym komputerze: `goggame-1495134320.info` ma 0 bajtów (zmieniony 2026-11-14 16:59, bez instalacji w logu silnika) — naprawa przez „Sprawdź / Napraw” | zrobione (testy 846 / 898; code review: 9 z 10 uwag poprawionych — „Graj” i „Uruchom…” liczą domyślne zadanie tak samo, z plików na dysku; warianty po ścieżce i argumentach; stary strażnik „brak pliku gry” poza przypadkiem launchera; zły rozmiar / skrót chunka nie wywraca indeksu ani pobierania; uwaga o pierwszym starcie launcherów Bethesdy — ryzyko przyjęte przez użytkownika; Cyberpunk na tym komputerze: `bin\x64\Cyberpunk2077.exe`); czeka na sprawdzenie na żywo |
+| 3 | Lumen, tryb TV: skok po literach (RT/LT) — litera z klucza sortowania (`sortName`, bez „The/A/An”), nie z tytułu: gry „The …” stoją pod drugim słowem i przerywały skok (z A do B trzeba było nacisnąć kilka razy). Wspólna czysta funkcja `letterJump` (`lumen/src/renderer/src/tv/letters.ts`) | zrobione (testy: 391 Lumena, 4 nowe); czeka na sprawdzenie na żywo |
+| 4 | Serie: edytor („Opcje gry → Seria”) — grę do przesunięcia wybiera się na liście serii (▸), „Wcześniej / Później” przesuwają wybraną grę i nie wyłączają się na krańcu (wyłączony przycisk oddawał fokus sąsiedniemu i gry zamieniały się w pętli); wiersze listy z kluczem gry. Kolejność z edytora na listach: `buildNav` → `arrangeSeries` (pulpit, TV, Deck) — bez zmian | zrobione (typy, testy 391); czeka na sprawdzenie na żywo |
+| 5 | DOSBox: „Uruchom… → Uruchom z diagnostyką” (gry GOG z DOSBoxem): kopie konfiguracji w `%TEMP%\emustart\dosbox-diag\<id>` — `exit` w autoexec → `pause`, wywołane .bat gry (`eye.bat`) z kopii bez `exit` na dysku Y:, okno zamiast pełnego ekranu (`diagnostyka.conf`), bez `-noconsole` i `-c "exit"`; pliki gry bez zmian. Launcher gier z ukrytym zadaniem gry zostaje w „Uruchom…” (etap 2; potrzebny do ustawień i pierwszego startu — użytkownik 2026-11-16). Eye of the Beholder III: MT-32 w `cloud_saves\SOUND.CFG` jest zamierzone (użytkownik 2026-11-16); `mididevice=default` bez `midiconfig` — muzyka idzie do syntezatora Windows, nie do modułu MT-32 (etap 11); przyczyna przerwania — do odczytania startem diagnostycznym | zrobione (testy: serwer 862, silnik 914; próbne przygotowanie na prawdziwym EoB III bez uruchamiania); czeka na sprawdzenie na żywo |
+| 6 | GOG w rejestrze / PyLinks: liczby zamiast tytułów, brak ikon, „zablokowane” odinstalowane gry (Uncharted, Echoes of the End, Front Mission 3), błędny EXE Front Mission 3, stare ścieżki (Wiedźmin w „Games”) | do zrobienia |
+| 7 | Steam: postęp pobierania (procent, prędkość, czas) w Lumenie i Decku jak dla GOG | do zrobienia |
+| 8 | Horyzont: odbicie animowanej grafiki animowane jak oryginał | do zrobienia |
+| 9 | Deck: zawieszanie, obrazki, szybkość wysuwania — porównanie z PyLinksDeck (Qt) i decyzja o Qt (z użytkownikiem) | do zrobienia |
+| 10 | Serie z IGDB jak w PyLinks Web (decyzja użytkownika 2026-11-16: zapytania robi serwer): `emustart/igdbseries.py` — dopasowanie z PyLinks Web (warianty nazwy, próg 0,80, bez modów, gra główna i wcześniejsze wydanie), nazwa serii = franczyza, inaczej najwęższa kolekcja; data do układania = data oryginału (remake / port / edycja). Serwer sam sprawdza swoje gry (katalog GOG, potem tytuły biblioteki emulatorów — 15 min po starcie i raz na dobę, porcje po 40 z zapisem, „nie znaleziono” po 30 dniach); `GET /v1/series` — wszystkie znane serie, `POST /v1/series` — tytuły spoza serwera (gry Steam i skróty — jak grafiki `/v1/userart`), na początek kolejki; funkcja `series` w `/v1/info`; `art_sources.Igdb.query(endpoint, …)`. Silnik: `series_sync`. Lumen: `main/series.ts` (wynik w `series.json`, co 6 h, co 3 min gdy serwer sprawdza), `Game.igdbSeries`; `shared/series.ts` — nazwa z IGDB, gdy gracz nie nadał własnej; kolejność: miejsce gracza → data oryginału → data wydania, gdy IGDB zna wszystkie gry serii; miejsce serii na liście bez zmian (pierwsza gra). Bez kluczy IGDB na serwerze — jak dotąd z tytułu. Steam Web API (lista gier konta) odrzucone: wymaga Steam ID i klucza dla każdego konta, pomija gry z rodziny i skróty | zrobione (testy: serwer 857, silnik 909, Lumen 394); czeka na sprawdzenie na żywo (pierwsze pełne sprawdzenie biblioteki — wiele godzin, limit IGDB 4/s) |
+| 11 | DOSBox MIDI: MT-32 / SC-55 per gra (zasady zatwierdzone przez użytkownika 2026-11-16): `emustart/dosmidi.py` — przy starcie gry DOSBox dodatkowy `-conf` (`.emustart-midi/midi.conf` w folderze gry, ścieżka względna) z `mididevice=win32` i `midiconfig=<numer>`; pliki gry bez zmian. Porty MT-32 / SC-55 po nazwie (config.json `midi_mt32_port`, `midi_sc55_port`; domyślnie zgadnięte: „MT32” / „SC55”, sprzęt przed emulatorem), numer liczony przy każdym starcie. Baza `emustart/midigames.py` (generator `tools/build_midi_games.py`, vogonswiki — CC BY-SA 4.0): 707 gier PC z MT-32 i 320 z sekcji „Games that falsely claim MT-32 compatibility” (wysyła GM → SC-55; sterownik MT-32 psuje grę / muzyka cyfrowa / dane FM → bez zmian). Auto: lista fałszywych → lista MT-32 (MT-32, także gdy muzyka pisana pod SC-55 — priorytet MT-32) → bez zmian. Lumen: „Opcje gry → MIDI” (Automatycznie / MT-32 / SC-55 / Domyślne DOSBoxa, „Wyjścia MIDI…”), powód i uwaga z listy (ustawienia w samej grze — jej programem konfiguracji) | zrobione (testy: serwer 873, silnik 925, Lumen 395; decyzja na prawdziwym EoB III: MT-32 → port „MT32” nr 2); czeka na sprawdzenie na żywo |
+
 ### Plan: instalacja gier GOG jak w GOG Galaxy (kroki skryptów, rejestr, deinstalator) — Lumen 1.0.58
 
 Podstawa: skan 549 gier archiwum `Z:\gog` (2026-11-12) — 87 gier miało akcję, symbol albo zadanie uruchamiania,
@@ -324,6 +347,32 @@ dokumentacji Lumena, wydanie.
 10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
+## [0.65.0] — 2026-11-16
+
+Zakres: serwer (`gogarchive.py`, `memwatch.py` i `igdbseries.py` — nowe, `remote.py`, `server.py`, `art_sources.py`,
+`server_main.py`), silnik GOG (`gogfinal.py`, `goglib.py`, `goginstall.py`, `dosmidi.py` i `midigames.py` — nowe) i
+`api.py`; te same pliki w kopii silnika Lumena (`lumen/engine/`, Lumen 1.0.64). Klient Windows — te same funkcje silnika
+(gry GOG, DOSBox); APK — bez zmian (nie instaluje gier GOG, serie są w Lumenie).
+
+### Naprawione
+- **Pamięć serwera:** zbiór chunków buildu GOG zwięźle (~24 B zamiast ~136 B na chunk — archiwum ~7,3 mln chunków
+  trzymało ~1 GB przez cały czas działania i drugie tyle przy każdym „Odśwież indeks”); pamięć procesu w logu co godzinę
+  i przed / po indeksie GOG (`pamięć procesu:`, `GOG: po indeksie`); zły rozmiar chunka w manifeście odrzuca build, nie
+  cały indeks.
+- **Gry GOG bez launchera:** widoczny launcher (REDprelauncher Cyberpunka 2077 i Wiedźmina 1–3, launchery Fallouta,
+  Oblivionu, Mafii, gier Unreal Engine…) i jeden ukryty plik gry → startuje plik gry (48 gier archiwum); kilka wariantów
+  gry (Resident Evil 2 / 3, Outlast, Divinity OS2…) — launcher zostaje; launcher zawsze do wyboru w „Uruchom…”.
+
+### Nowe
+- **Serie gier z IGDB** (jak PyLinks Web): serwer sam sprawdza swoje gry (GOG, biblioteka emulatorów), Lumen dosyła
+  tytuły Steam; nazwa serii = franczyza / kolekcja, kolejność po dacie oryginału (remake przy oryginale); ręczny wybór
+  gracza wygrywa; gra niezależna według IGDB nie jest łączona z tytułu. API: `GET` / `POST /v1/series`, funkcja `series`
+  w `/v1/info`.
+- **„Uruchom z diagnostyką”** dla gier DOSBox: komunikat błędu gry zostaje na ekranie (kopie skryptów bez `exit`,
+  okno, konsola DOSBoxa); pliki gry bez zmian.
+- **MT-32 / SC-55 per gra DOSBox:** port MIDI przez dodatkowy `-conf` (`mididevice=win32`, `midiconfig`); porty po
+  nazwie; tryb auto z listy vogonswiki (707 gier MT-32, 320 fałszywie deklarujących MT-32: GM → SC-55).
 
 ## [0.64.0] — 2026-11-13
 

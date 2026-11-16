@@ -114,6 +114,10 @@ def _server_mode() -> None:
     emustore.scheduler(lambda: api._cfg)      # nowe wersje emulatorów raz dziennie
     from emustart import clientdist
     clientdist.scheduler()                    # programy do pobrania ze strony serwera
+    from emustart import memwatch
+    memwatch.start()                          # pamięć procesu w logu co godzinę
+    from emustart import igdbseries
+    igdbseries.scheduler(lambda: api._cfg)    # serie gier serwera z IGDB (w tle, raz na dobę)
     from emustart import srvadmin
     srvadmin.ENABLED = True
     srvadmin.import_keys_file(api)          # server\art_keys.json — klucze źródeł grafik (plik usuwany)

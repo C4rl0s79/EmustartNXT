@@ -17,6 +17,7 @@ import { useFacts } from './facts'
 import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter } from './filters'
 import { useLook } from './look'
 import { listTop } from './listWindow'
+import { letterJump } from './letters'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
 
@@ -49,11 +50,6 @@ function useDetails(game: Game | undefined): DetailsResult | null {
     }
   }, [game])
   return d
-}
-
-const letterOf = (g: Game): string => {
-  const c = g.name.trim().charAt(0).toUpperCase()
-  return /[A-ZĄĆĘŁŃÓŚŹŻ]/.test(c) ? c : '#'
 }
 
 export function TvGames({
@@ -163,21 +159,7 @@ export function TvGames({
     setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
     return true
   }
-  const jumpLetter = (dir: 1 | -1): boolean => {
-    if (!sel) return true
-    const cur = letterOf(sel)
-    for (let i = idx + dir; i >= 0 && i < games.length; i += dir) {
-      if (letterOf(games[i]) !== cur) {
-        // backwards: the first game of that letter
-        if (dir < 0) {
-          const l = letterOf(games[i])
-          while (i > 0 && letterOf(games[i - 1]) === l) i--
-        }
-        return go(i)
-      }
-    }
-    return go(dir > 0 ? games.length - 1 : 0)
-  }
+  const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir)) : true)
   const play = (): boolean => {
     if (!primary || busy) return true
     if (primary.disabled || !primary.run) useStore.getState().toast(primary.note ?? primary.label, 'info')

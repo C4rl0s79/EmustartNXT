@@ -6,8 +6,9 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
+import { SeriesService } from './series'
 import { isModeCombo } from '@shared/pad'
-import type { UserArtItem } from '@shared/types'
+import type { IgdbSeries, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
@@ -159,7 +160,14 @@ const gog = new GogProvider(engine, paths.gogLibrary)
 const themeStore = new ThemeStore(path.join(userData, 'themes'), engine)
 const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
 let platformCatalog: PlatformInfo[] = []
-const unified = new UnifiedLibrary(library, emu, gog, { overrides: () => prefs.get().platformOverrides, platforms: () => platformCatalog })
+const seriesService: SeriesService = new SeriesService(path.join(userData, 'series.json'), engine, (): Game[] => unified.current.games)
+const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
+  overrides: () => prefs.get().platformOverrides,
+  platforms: () => platformCatalog,
+  series: (g: Game): IgdbSeries | undefined => seriesService.of(g)
+})
+seriesService.on('change', () => unified.update())
+void seriesService.load()
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
 const updater = new Updater({
@@ -1972,6 +1980,7 @@ app.whenReady().then(async () => {
     engineReadyAt = st === 'ready' ? Date.now() : 0
     if (st === 'ready') scheduleArtSync(8000)
     if (st !== 'ready') return
+    seriesService.schedule(15_000)                   // serie z IGDB z serwera (main/series.ts)
     void emustartDefaults()
     // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags
     void engine

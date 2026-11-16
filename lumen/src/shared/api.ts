@@ -34,6 +34,8 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogInstallRequest,
   GogOptionsResult,
   GogPlayTask,
+  GogMidi,
+  GogMidiMode,
   GogVerifyResult,
   GogLaunchResult,
   GogSaveChoice,
@@ -118,6 +120,10 @@ export interface LumenApi {
     savesBackups(gameId: string): Promise<{ id: string; sets: string[] }[]>
     savesRestore(gameId: string, backupId: string): Promise<ActionResult>
     playTasks(gameId: string): Promise<GogPlayTask[]>
+    /** DOSBox games: MIDI output (Roland MT-32 / SC-55 per game) and the Windows MIDI ports of both modules */
+    midi(gameId: string): Promise<GogMidi>
+    setMidi(gameId: string, mode: GogMidiMode): Promise<GogMidi>
+    setMidiPorts(mt32: string, sc55: string): Promise<ActionResult>
     /** removes only the files installed by Lumen; saves and the player's files stay; the server archive is never touched.
      *  removeOutside — also the files the installer copied to Documents / AppData (the player's choice; saves stay) */
     uninstall(gameId: string, removeOutside?: boolean): Promise<ActionResult>
@@ -455,6 +461,9 @@ export const IPC = {
   gogSavesBackups: 'gog:savesBackups',
   gogSavesRestore: 'gog:savesRestore',
   gogPlayTasks: 'gog:playTasks',
+  gogMidi: 'gog:midi',
+  gogMidiSet: 'gog:midiSet',
+  gogMidiPorts: 'gog:midiPorts',
   gogUninstall: 'gog:uninstall',
   gogUninstallPreview: 'gog:uninstallPreview',
   gogFinishAdmin: 'gog:finishAdmin',

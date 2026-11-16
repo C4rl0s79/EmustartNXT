@@ -445,6 +445,9 @@ def test_play_task_choice(env, monkeypatch):
 
 def test_uninstall_removes_whole_folder_when_nothing_of_the_player_is_left(env):
     _e, target, _ = _install(env)
+    for own in (".emustart-midi", ".emustart-diag"):          # foldery Lumena (port MIDI, diagnostyka DOSBoxa)
+        (target / own).mkdir()
+        (target / own / "x.conf").write_text("[midi]", encoding="latin-1")
     r = gi.uninstall(PID, remove_hkcu=lambda a: None)
     assert r["left"] == 0 and r["dir_removed"] and not target.exists() and target.parent.exists()
 

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { IPC } from '@shared/api'
-import type { ActionResult, GogExtra, GogExtrasResult, GogInstallRequest, GogLaunchResult, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
+import { GOG_MIDI_MODES } from '@shared/types'
+import type { ActionResult, GogExtra, GogExtrasResult, GogInstallRequest, GogLaunchResult, GogMidi, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
 import type { EmustartEngine } from '../emustart/engine'
 import { gogPid, type GogProvider } from './provider'
 
@@ -96,7 +97,9 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     return { ok: !r.bad_count, checked: r.checked, badCount: r.bad_count ?? 0, bad: r.bad }
   })
   handle(IPC.gogLaunch, async (gameId: string, task?: number, choice?: string) => {
-    const t = typeof task === 'number' && Number.isInteger(task) && task >= 0 && task < 64 ? task : -1
+    // ≥ 0 — zadanie z gog_play_tasks; -2 i -100…-163 — „Uruchom z diagnostyką” (gry DOSBox, gogfinal.DIAG_*)
+    const diag = task === -2 || (typeof task === 'number' && task <= -100 && task >= -163)
+    const t = typeof task === 'number' && Number.isInteger(task) && ((task >= 0 && task < 64) || diag) ? task : -1
     if (process.env.LUMEN_DRY_RUN === '1') return fail('Tryb testowy (LUMEN_DRY_RUN=1): uruchamianie gier jest wyłączone.')
     // saves are synced with the EmuStart server before the game (2 min: a large set over a slow link)
     const r = await call<RawLaunch>('gog_launch', [pidOf(gameId), t, saveChoice(choice)], 120_000)
@@ -149,6 +152,14 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     const r = await call<{ ok: boolean; tasks?: GogPlayTask[] }>('gog_play_tasks', [pidOf(gameId)])
     return r.ok ? (r.tasks ?? []) : []
   })
+  const midiOf = (r: Partial<GogMidi> & { reason?: string }): GogMidi => ({ ...r, ok: r.ok === true, reason: r.reason ?? '' })
+  handle(IPC.gogMidi, async (gameId: string): Promise<GogMidi> => midiOf(await call<GogMidi>('gog_midi', [pidOf(gameId)])))
+  handle(IPC.gogMidiSet, async (gameId: string, mode: string): Promise<GogMidi> =>
+    (GOG_MIDI_MODES as readonly string[]).includes(mode) ? midiOf(await call<GogMidi>('gog_midi_set', [pidOf(gameId), mode])) : { ok: false, reason: 'nieznany tryb MIDI' }
+  )
+  handle(IPC.gogMidiPorts, async (mt32: string, sc55: string) =>
+    result(await call('midi_ports_set', [String(mt32 ?? ''), String(sc55 ?? '')]), 'Zapisano wyjścia MIDI.')
+  )
   handle(IPC.gogUninstall, async (gameId: string, removeOutside?: boolean) => {
     const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_uninstall', [pidOf(gameId), removeOutside === true], 10 * 60_000)
     void gog.refresh(false)

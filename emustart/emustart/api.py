@@ -750,7 +750,9 @@ class Api:
         """Zainstalowana gra (bez serwera); `task` — zadanie z gog_play_tasks (-1 = domyślne); `sync_choice` —
         decyzja gracza przy konflikcie zapisów (local | remote | both | skip)."""
         try:
-            return self._gog.launch(pid, int(task) if int(task) >= 0 else None, str(sync_choice or ""))
+            from emustart import gogfinal
+            t = int(task)                                  # ≥ 0 zadanie, -1 domyślne, ujemne diagnostyki DOSBoxa
+            return self._gog.launch(pid, t if t >= 0 or gogfinal.is_diag(t) else None, str(sync_choice or ""))
         except (TypeError, ValueError) as ex:
             return {"ok": False, "reason": str(ex)}
 
@@ -785,6 +787,35 @@ class Api:
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 
+    def gog_midi(self, pid: str) -> dict:
+        """Wyjście MIDI gry DOSBox (MT-32 / SC-55 / domyślne) — emustart/dosmidi.py."""
+        try:
+            return self._gog.midi(pid)
+        except ValueError as ex:
+            return {"ok": False, "reason": str(ex)}
+
+    def gog_midi_set(self, pid: str, mode: str) -> dict:
+        try:
+            return self._gog.midi_set(pid, str(mode or ""))
+        except ValueError as ex:
+            return {"ok": False, "reason": str(ex)}
+
+    def midi_ports(self) -> dict:
+        """Wyjścia MIDI Windows i porty MT-32 / SC-55 (wybrane albo zgadnięte po nazwie)."""
+        from emustart import dosmidi
+        return {"ok": True, **dosmidi.port_settings(self._cfg)}
+
+    def midi_ports_set(self, mt32: str, sc55: str) -> dict:
+        from emustart import dosmidi
+        names = dosmidi.ports()
+        for key, val in (("midi_mt32_port", mt32), ("midi_sc55_port", sc55)):
+            v = str(val or "").strip()                     # "" — zgadnięty po nazwie, "-" — wyłączony
+            if v and v != dosmidi.NONE and v not in names:
+                return {"ok": False, "reason": f"nie ma wyjścia MIDI „{v}”"}
+            self._cfg[key] = v
+        config.save(self._cfg)
+        return {"ok": True, **dosmidi.port_settings(self._cfg, names)}
+
     def gog_play_tasks(self, pid: str) -> dict:
         try:
             return self._gog.play_tasks(pid)
@@ -813,6 +844,43 @@ class Api:
         """Gry z zaległymi krokami administratora (Lumen: okno UAC przy starcie, gdy lista nie jest pusta)."""
         from emustart import goginstall as gi
         return {"ok": True, "games": self._gog.admin_pending(), "undo": len(gi.pending_undo())}
+
+    def series_sync(self, extra: list) -> dict:
+        """Lumen: serie gier z IGDB z serwera (emustart/igdbseries.py). Gry serwera (emulatory, GOG) sprawdza sam
+        serwer; `extra` — [{"title", "platform": "pc"}] gier, których serwer nie zna (Steam, skróty).
+        → {"ok", "enabled", "series": {"<system|tytuł>": {"name", "order_ts", "release_ts"…}}, "pending"}."""
+        import json as _json
+        from emustart import netsrc
+        ep = netsrc.endpoint(self._cfg)
+        if not ep:
+            return {"ok": False, "reason": "To urządzenie nie jest połączone z serwerem EmuStart."}
+        st, body, _t = netsrc._request(ep, "/v1/series", timeout=30, gzip=True)
+        if st == 404:
+            return {"ok": False, "reason": "Serwer ma starszą wersję EmuStart — bez serii z IGDB."}
+        try:
+            d = _json.loads(body or b"{}") if st == 200 else {}
+        except ValueError:
+            d = {}
+        if not isinstance(d, dict) or not d.get("ok"):
+            return {"ok": False, "reason": f"Serwer odpowiedział {st}."}
+        from emustart import igdbseries
+        series = dict(d.get("series") or {})
+        standalone = set(d.get("standalone") or [])
+        # tylko tytuły, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu)
+        ask = [g for g in (extra or []) if isinstance(g, dict) and g.get("title")
+               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in series
+               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in standalone][:20000]
+        own_pending = 0
+        if ask and d.get("enabled"):
+            r = netsrc.authed_post(self._cfg, "/v1/series", {"games": ask})
+            if r.get("ok"):
+                got = r.get("series") or {}
+                series.update({k: v for k, v in got.items() if v})
+                standalone.update(k for k, v in got.items() if v is None)
+                own_pending = sum(1 for g in ask if igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
+                                  not in got)
+        return {"ok": True, "enabled": bool(d.get("enabled")), "series": series, "standalone": sorted(standalone),
+                "pending": int(d.get("pending") or 0), "own_pending": own_pending}
 
     def themes_sync(self, dest: str) -> dict:
         """Lumen: motywy trybu TV z serwera do `dest` (LumenData/themes) — emustart/themes.py: tylko zmienione pliki,

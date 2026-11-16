@@ -258,14 +258,20 @@ class Sgdb:
 
 # ── 4. IGDB ──
 
+class IgdbError(Exception):
+    """IGDB nie odpowiedziało (sieć, limit 429, token) — co innego niż „nic nie znaleziono”."""
+
+
 class Igdb:
     API = "https://api.igdb.com/v4"
+    # limit IGDB (4 zapytania/s) wspólny dla wszystkich klientów procesu: grafiki i serie (igdbseries) razem
+    _rate_lock = threading.Lock()
+    _last = 0.0
 
     def __init__(self, client_id: str, secret: str):
         self.cid, self.secret = (client_id or "").strip(), (secret or "").strip()
         self._tok, self._exp = "", 0.0
         self._lock = threading.Lock()
-        self._last = 0.0
 
     def _token(self) -> str:
         with self._lock:
@@ -284,20 +290,36 @@ class Igdb:
             return self._tok
 
     def _query(self, body: str) -> list:
+        return self.query("games", body)
+
+    def query(self, endpoint: str, body: str, strict: bool = False) -> list:
+        """Zapytanie apicalypse do endpointu IGDB (games, collections, franchises…) — z limitem 4/s.
+        `strict` — brak odpowiedzi (sieć, limit, token) to IgdbError, nie pusta lista."""
+        if endpoint not in ("games", "collections", "franchises"):
+            raise ValueError(f"nieobsługiwany endpoint IGDB: {endpoint}")
         tok = self._token() if self.cid and self.secret else ""
         if not tok:
+            if strict:
+                raise IgdbError("brak tokenu IGDB")
             return []
-        with self._lock:                 # limit IGDB: 4 zapytania/s
-            wait = self._last + 0.3 - time.monotonic()
+        with Igdb._rate_lock:            # limit IGDB: 4 zapytania/s (wspólny)
+            wait = Igdb._last + 0.3 - time.monotonic()
             if wait > 0:
                 time.sleep(wait)
-            self._last = time.monotonic()
-        d = fetch(f"{self.API}/games", {"Client-ID": self.cid, "Authorization": f"Bearer {tok}",
+            Igdb._last = time.monotonic()
+        d = fetch(f"{self.API}/{endpoint}", {"Client-ID": self.cid, "Authorization": f"Bearer {tok}",
                                         "Content-Type": "text/plain"}, data=body.encode())
+        if d is None and strict:
+            raise IgdbError(f"IGDB {endpoint}: brak odpowiedzi")
         try:
-            return json.loads(d) if d else []
+            out = json.loads(d) if d else []
         except ValueError:
+            if strict:
+                raise IgdbError(f"IGDB {endpoint}: zła odpowiedź")
             return []
+        if strict and not isinstance(out, list):
+            raise IgdbError(f"IGDB {endpoint}: {str(out)[:80]}")
+        return out if isinstance(out, list) else []
 
     def gallery(self, title: str, plat: str, kind: str) -> list:
         """Wszystkie grafiki rodzaju `kind` dla najlepiej pasującej gry: okładka albo zrzuty i grafiki promocyjne."""

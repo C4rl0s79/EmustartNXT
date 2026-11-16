@@ -382,3 +382,21 @@ def test_missing_chunk_after_caching_fails_the_install_not_the_index(arc):
         ga.chunk_bytes(PID, BUILD, h, f.name)
     ga.refresh(str(root), deep=True, wait=True)
     assert ga.status()["builds"] == 0                            # „dokładnie” wycofuje build
+
+
+def test_bad_chunk_size_rejects_the_build_not_the_index(arc):
+    """manifest z rozmiarem chunka „x” albo -1: ten build pominięty z powodem, indeks działa (ChunkSet, 2026-11-16)"""
+    root, _ = arc
+    a = ga.Archive(root)
+    rec = a.read_json(a.record_path(PID, BUILD))
+    mid = rec["depots"][0]["manifest"]
+    p = a.manifest_path("depot", mid)
+    man = json.loads(p.read_text(encoding="utf-8"))
+    items = [it for it in man["depot"]["items"] if it.get("chunks")]
+    items[0]["chunks"][0]["compressedSize"] = "x"
+    items[-1]["chunks"][-1]["compressedSize"] = -1
+    p.write_text(json.dumps(man), encoding="utf-8")
+    res = ga.build_index(str(root))
+    assert res["error"] == ""
+    assert (PID, BUILD) not in res["builds"]
+    assert any("uszkodzone" in str(r["reason"]) for r in res["rejected"])

@@ -1,8 +1,10 @@
 import type { Game } from './types'
 
 // Serie gier: na listach po tytule gry jednej serii stoją razem — w miejscu pierwszej z nich, w kolejności wydania
-// (wybór gracza 2026-11-13: „obok siebie w sortowaniu”). Seria rozpoznawana po tytule; gracz może ją poprawić
-// (Opcje gry → Seria), a jego wybór zostaje w preferencjach (prefs.series). Czyste funkcje — tests/series.test.ts.
+// (wybór gracza 2026-11-13: „obok siebie w sortowaniu”). Seria z IGDB przez serwer EmuStart (Game.igdbSeries —
+// franczyza / kolekcja, data oryginału; decyzja 2026-11-16, jak PyLinks Web), bez niej — z tytułu; gracz może ją
+// poprawić (Opcje gry → Seria), a jego wybór zostaje w preferencjach (prefs.series) i zawsze wygrywa.
+// Czyste funkcje — tests/series.test.ts.
 
 /** Wybór gracza dla jednej gry: inna nazwa serii, „nie należy do serii”, miejsce w serii. */
 export interface SeriesPref {
@@ -68,27 +70,35 @@ function keyOf(name: string): string {
 /** Seria gry: nazwa (do pokazania), klucz i numer części — albo nic (gracz wyłączył albo tytuł nic nie mówi). */
 type Found = { key: string; name: string; num?: number } | undefined
 /** seria rozpoznana z tytułu (bez wyboru gracza), przy obiekcie gry — ważna, dopóki tytuł ten sam */
-const autoCache = new WeakMap<Game, { title: string; found: Found }>()
+const autoCache = new WeakMap<Game, { title: string; igdb: string | undefined; found: Found }>()
 
 export function seriesOf(g: Game, prefs: SeriesPrefs | undefined): Found {
   const p = prefs?.[g.id]
   if (!p) {
     const hit = autoCache.get(g)
-    if (hit && hit.title === g.name) return hit.found
+    if (hit && hit.title === g.name && hit.igdb === g.igdbSeries?.name) return hit.found
     const found = findSeries(g, undefined)
-    autoCache.set(g, { title: g.name, found })
+    autoCache.set(g, { title: g.name, igdb: g.igdbSeries?.name, found })
     return found
   }
   return findSeries(g, p)
 }
 
+/** Klucz wyniku serii z serwera: „snes|super metroid”, „pc|cyberpunk 2077” (emustart/igdbseries.key_of). */
+export function seriesLookupKey(g: Game): string {
+  const src = g.source === 'emustart' && g.emu?.es ? g.emu.es.toLowerCase() : 'pc'
+  return `${src}|${g.name.toLowerCase().split(/\s+/).filter(Boolean).join(' ')}`
+}
+
 function findSeries(g: Game, p: SeriesPref | undefined): Found {
   if (p?.none) return undefined
+  // IGDB zna grę, ale bez serii: nie zgadujemy z tytułu (błędna seria gorsza niż jej brak — jak PyLinksDeck)
+  if (!p?.name && g.igdbSeries && !g.igdbSeries.name.trim()) return undefined
   const parsed = parseSeries(g.name)
-  const name = p?.name?.trim() || parsed.base
+  const name = p?.name?.trim() || g.igdbSeries?.name?.trim() || parsed.base
   const key = seriesKey(name)
-  // jedna litera albo samo „The” to nie seria; własna nazwa gracza — zawsze
-  if (!p?.name && key.replace(/\s/g, '').length < 3) return undefined
+  // jedna litera albo samo „The” to nie seria; własna nazwa gracza i seria z IGDB — zawsze
+  if (!p?.name && !g.igdbSeries && key.replace(/\s/g, '').length < 3) return undefined
   return { key, name, ...(parsed.num !== undefined ? { num: parsed.num } : {}) }
 }
 
@@ -98,20 +108,23 @@ export const yearOf = (g: Game): number | undefined => {
 }
 
 /**
- * Kolejność w serii: miejsce ustawione przez gracza, potem rok wydania (gdy znają go wszystkie gry serii), potem
- * numer części z tytułu, potem rok i tytuł. Zawsze ten sam porządek klucza — porównanie jest przechodnie.
+ * Kolejność w serii: miejsce ustawione przez gracza, potem — gdy IGDB zna daty wszystkich gier serii — data oryginału
+ * (remake przy oryginale) i data tego wydania (jak PyLinksDeck), inaczej rok wydania (gdy znają go wszystkie gry),
+ * numer części z tytułu, rok i tytuł. Zawsze ten sam porządek klucza — porównanie jest przechodnie.
  */
 export function orderSeries(members: Game[], prefs: SeriesPrefs | undefined): Game[] {
+  const allIgdb = members.every((g) => !!g.igdbSeries?.name && g.igdbSeries.order > 0)
   const allYears = members.every((g) => yearOf(g) !== undefined)
   const key = (g: Game): [number, number, number, number] => {
-    const own = prefs?.[g.id]?.order
-    const y = yearOf(g) ?? Number.MAX_SAFE_INTEGER
+    const own = prefs?.[g.id]?.order ?? Number.MAX_SAFE_INTEGER
     const n = parseSeries(g.name).num ?? Number.MAX_SAFE_INTEGER
-    return [own ?? Number.MAX_SAFE_INTEGER, allYears ? y : n, allYears ? n : y, 0]
+    if (allIgdb) return [own, g.igdbSeries!.order, g.igdbSeries!.release || g.igdbSeries!.order, n]
+    const y = yearOf(g) ?? Number.MAX_SAFE_INTEGER
+    return [own, allYears ? y : n, allYears ? n : y, 0]
   }
   return members
     .map((g, i) => ({ g, k: key(g), i }))
-    .sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2] || a.i - b.i)
+    .sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2] || a.k[3] - b.k[3] || a.i - b.i)
     .map((x) => x.g)
 }
 
