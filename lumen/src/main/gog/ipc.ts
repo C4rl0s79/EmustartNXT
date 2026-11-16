@@ -160,6 +160,11 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
   handle(IPC.gogMidiPorts, async (mt32: string, sc55: string) =>
     result(await call('midi_ports_set', [String(mt32 ?? ''), String(sc55 ?? '')]), 'Zapisano wyjścia MIDI.')
   )
+  handle(IPC.gogMidiApps, async (mt32: string, sc55: string) => {
+    const r = await call<{ ok: boolean; reason?: string }>('midi_apps_set', [String(mt32 ?? ''), String(sc55 ?? '')])
+    if (r.ok) void call('midi_warmup', [], 30_000).catch(() => undefined) // nowy program — uruchomiony od razu
+    return result(r, 'Zapisano programy MIDI.')
+  })
   handle(IPC.gogUninstall, async (gameId: string, removeOutside?: boolean) => {
     const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_uninstall', [pidOf(gameId), removeOutside === true], 10 * 60_000)
     void gog.refresh(false)

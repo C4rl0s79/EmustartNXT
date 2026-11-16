@@ -131,6 +131,8 @@ export interface LumenApi {
     midi(gameId: string): Promise<GogMidi>
     setMidi(gameId: string, mode: GogMidiMode): Promise<GogMidi>
     setMidiPorts(mt32: string, sc55: string): Promise<ActionResult>
+    /** programy grające porty MT-32 / SC-55: "" — domyślnie (MT-32: Munt), "-" — nic, inaczej ścieżka .exe */
+    setMidiApps(mt32: string, sc55: string): Promise<ActionResult>
     /** removes only the files installed by Lumen; saves and the player's files stay; the server archive is never touched.
      *  removeOutside — also the files the installer copied to Documents / AppData (the player's choice; saves stay) */
     uninstall(gameId: string, removeOutside?: boolean): Promise<ActionResult>
@@ -274,6 +276,12 @@ export interface LumenApi {
     onChange(cb: (list: ServerActivity[]) => void): () => void
     series(): Promise<SeriesStatus>
     onSeries(cb: (s: SeriesStatus) => void): () => void
+  }
+  /** konto Xbox (etap 19c): logowanie kontem Microsoft (identyfikator aplikacji Azure w ustawieniach), lista gier z konta */
+  xbox: {
+    login(): Promise<ActionResult>
+    logout(): Promise<ActionResult>
+    sync(): Promise<ActionResult>
   }
   jobs: {
     get(): Promise<JobsSnapshot>
@@ -480,6 +488,7 @@ export const IPC = {
   gogMidi: 'gog:midi',
   gogMidiSet: 'gog:midiSet',
   gogMidiPorts: 'gog:midiPorts',
+  gogMidiApps: 'gog:midiApps',
   gogUninstall: 'gog:uninstall',
   gogUninstallPreview: 'gog:uninstallPreview',
   gogFinishAdmin: 'gog:finishAdmin',
@@ -494,6 +503,9 @@ export const IPC = {
   activityChanged: 'activity:changed',
   activitySeries: 'activity:series',
   activitySeriesChanged: 'activity:seriesChanged',
+  xboxLogin: 'xbox:login',
+  xboxLogout: 'xbox:logout',
+  xboxSync: 'xbox:sync',
   jobsGet: 'jobs:get',
   jobsCancel: 'jobs:cancel',
   jobsChanged: 'jobs:changed',

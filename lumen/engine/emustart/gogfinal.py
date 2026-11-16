@@ -285,6 +285,56 @@ def read_script(app: Path, pid: str) -> dict | None:
         raise FinalizeError(f"goggame-{pid}.script: zły JSON ({ex})")
 
 
+SUPPORT_SAVE = "save"
+
+
+def seed_save_folder(app: Path, dst: Path) -> int:
+    """Pliki „support” z `save/` (początkowe pliki zapisów gry: SAVEGAME/LVL*.TMP Eye of the Beholder III,
+    KRONDOR.CFG…) → folder zapisów ze skryptu gry (`supportData` bez źródła, np. {app}/cloud_saves, który DOSBox
+    nakłada na C:). Zgłoszenie 2026-11-16: leżały w {app}/save, gra nie miała C:/SAVEGAME („Couldn't open output
+    file”). Tylko brakujące pliki — zapisy gracza zostają; kopia w save/ też (weryfikacja instalacji). → ile skopiowano."""
+    src = app / SUPPORT_SAVE
+    if not src.is_dir() or not _inside(dst, app) or same_path(src, dst) or same_path(dst, app):
+        return 0
+    n = 0
+    for f in sorted(src.rglob("*")):
+        if not f.is_file():
+            continue
+        t = dst / f.relative_to(src)
+        if t.exists():
+            continue
+        t.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, t)
+        n += 1
+    return n
+
+
+def save_folders(app: Path, pid: str) -> list:
+    """Foldery zapisów ze skryptu gry: cele `supportData` bez źródła (typ folder) wewnątrz katalogu gry."""
+    try:
+        script = read_script(app, pid) or {}
+    except FinalizeError:
+        return []
+    out = []
+    for act in script.get("actions") or []:
+        ins = act.get("install") or {}
+        args = ins.get("arguments") or {}
+        if ins.get("action") != "supportData" or args.get("source") or str(args.get("type") or "").lower() != "folder":
+            continue
+        t = str(args.get("target") or "")
+        if not t.startswith("{app}"):
+            continue
+        dst = Path(os.path.abspath(str(app) + t[len("{app}"):]))
+        if _inside(dst, app) and not same_path(dst, app):
+            out.append(dst)
+    return out
+
+
+def seed_saves(app: Path, pid: str) -> int:
+    """Przed startem gry: uzupełnia foldery zapisów z save/ (także w grach zainstalowanych przed tą poprawką)."""
+    return sum(seed_save_folder(app, d) for d in save_folders(app, pid))
+
+
 def _same(a: Path, b: Path) -> bool:
     """skrypt wskazał ten sam plik jako źródło i cel — kopiowanie nie ma sensu (i kończy się błędem)"""
     return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
@@ -498,7 +548,8 @@ def apply_script(app: Path, pid: str, hkcu=None, docs: Path | None = None, known
             dst.mkdir(parents=True, exist_ok=True)
             if _inside(dst, app):
                 res["dirs"].append(os.path.relpath(dst, app).replace("\\", "/"))
-            res["done"].append(f"folder {dst.name}")
+            seeded = seed_save_folder(app, dst)     # początkowe pliki zapisów z {supportDir}/save
+            res["done"].append(f"folder {dst.name}" + (f" (+{seeded} plików z save/)" if seeded else ""))
         elif kind == "supportData":
             src, dst = resolve(args.get("source")), resolve(args.get("target"))
             if not (_inside(src, app) and _inside(dst, app, *user_dirs)):

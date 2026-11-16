@@ -96,7 +96,7 @@ def _shell_token():
         k32.CloseHandle(hproc)
 
 
-def _with_shell_token(cmdline: str, cwd: str | None, env: dict | None, flags: int) -> Proc:
+def _with_shell_token(cmdline: str, cwd: str | None, env: dict | None, flags: int, show: int | None = None) -> Proc:
     from ctypes import wintypes
 
     class STARTUPINFO(ctypes.Structure):
@@ -117,6 +117,8 @@ def _with_shell_token(cmdline: str, cwd: str | None, env: dict | None, flags: in
     k32, adv = ctypes.windll.kernel32, ctypes.windll.advapi32
     try:
         si, pi = STARTUPINFO(cb=ctypes.sizeof(STARTUPINFO)), PROCESS_INFORMATION()
+        if show is not None:                                          # np. zminimalizowane bez fokusu
+            si.dwFlags, si.wShowWindow = STARTF_USESHOWWINDOW, int(show)
         buf = ctypes.create_unicode_buffer(cmdline)                   # CreateProcess* może zmienić bufor
         block = _env_block(env) if env is not None else None
         ok = adv.CreateProcessWithTokenW(tok, 0, None, buf, flags | CREATE_UNICODE_ENVIRONMENT, block, cwd,
@@ -129,7 +131,11 @@ def _with_shell_token(cmdline: str, cwd: str | None, env: dict | None, flags: in
         k32.CloseHandle(tok)
 
 
-def popen(cmd, cwd=None, env=None, creationflags: int = 0, close_fds: bool = True):
+STARTF_USESHOWWINDOW = 0x1
+SW_SHOWMINNOACTIVE = 7
+
+
+def popen(cmd, cwd=None, env=None, creationflags: int = 0, close_fds: bool = True, show: int | None = None):
     """Jak subprocess.Popen(cmd, cwd, env, creationflags); w procesie z uprawnieniami administratora — bez nich.
     Gdy uruchomienie z tokenem powłoki się nie uda, program startuje zwykle (z uprawnieniami) i trafia to do logu —
     gra działa, zamiast nie wystartować wcale."""
@@ -137,12 +143,18 @@ def popen(cmd, cwd=None, env=None, creationflags: int = 0, close_fds: bool = Tru
     if os.name == "nt" and gogadmin.is_elevated():
         line = cmd if isinstance(cmd, str) else subprocess.list2cmdline([str(c) for c in cmd])
         try:
-            p = WITH_SHELL_TOKEN(line, str(cwd) if cwd else None, env, creationflags)
+            p = WITH_SHELL_TOKEN(line, str(cwd) if cwd else None, env, creationflags,
+                                 *(() if show is None else (show,)))
             log.info("bez uprawnień administratora: %s", line[:200])
             return p
         except OSError as ex:
             log.warning("nie uruchomiono bez uprawnień administratora (%s) — zwykłe uruchomienie: %s", ex, line[:200])
-    return subprocess.Popen(cmd, cwd=cwd, env=env, creationflags=creationflags, close_fds=close_fds)
+    si = None
+    if show is not None and os.name == "nt":
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= STARTF_USESHOWWINDOW
+        si.wShowWindow = int(show)
+    return subprocess.Popen(cmd, cwd=cwd, env=env, creationflags=creationflags, close_fds=close_fds, startupinfo=si)
 
 
 WITH_SHELL_TOKEN = _with_shell_token

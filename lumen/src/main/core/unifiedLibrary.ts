@@ -4,6 +4,7 @@ import { classify, classifyContext } from '@shared/libraryNav'
 import type { LibraryService } from '../library/service'
 import type { EmustartProvider } from '../emustart/provider'
 import type { GogProvider } from '../gog/provider'
+import type { XboxProvider } from '../xbox/provider'
 import { emuJobs, steamJobs } from './jobs'
 import { timed } from '../perfTime'
 import { gogJobs } from '../gog/provider'
@@ -31,7 +32,8 @@ export class UnifiedLibrary extends EventEmitter {
     private readonly steam: LibraryService,
     private readonly emu: EmustartProvider,
     private readonly gog: GogProvider,
-    private readonly opts: UnifiedOptions = { overrides: () => ({}), platforms: () => [] }
+    private readonly opts: UnifiedOptions = { overrides: () => ({}), platforms: () => [] },
+    private readonly xbox?: XboxProvider
   ) {
     super()
     this.snap = this.compose()
@@ -40,6 +42,7 @@ export class UnifiedLibrary extends EventEmitter {
     emu.on('status', () => this.updateJobs())
     gog.on('library', () => this.update())
     gog.on('status', () => this.updateJobs())
+    xbox?.on('library', () => this.update())
   }
 
   private compose(): LibrarySnapshot {
@@ -47,8 +50,11 @@ export class UnifiedLibrary extends EventEmitter {
     const emustart = this.emu.summary()
     const platforms = this.opts.platforms()
     const ctx = classifyContext(emustart.systems, platforms, this.opts.overrides())
-    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames].map((g) => ({ ...g, platform: classify(g, ctx) }))
-    return { ...s, games, emustart, gog: this.gog.summary(), platforms }
+    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames, ...(this.xbox?.currentGames ?? [])].map((g) => ({
+      ...g,
+      platform: classify(g, ctx)
+    }))
+    return { ...s, games, emustart, gog: this.gog.summary(), platforms, ...(this.xbox ? { xbox: this.xbox.summary() } : {}) }
   }
 
   /** re-run after a classification input changed (a platform override, the platform catalog) */

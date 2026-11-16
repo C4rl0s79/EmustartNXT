@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell, type MenuItemConstructorOptions } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
@@ -7,6 +7,9 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
+import { XboxProvider } from './xbox/provider'
+import { isStoreId } from './xbox/catalog'
+import { accountTitles, clearLoginSession, flowFor, loginWindow, packLogin, refreshTokens, unpackLogin, xblIdentity, type MsTokens } from './xbox/account'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
@@ -16,12 +19,12 @@ import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
-import { TASKLIST } from './systemTools'
+import { EXPLORER, TASKLIST } from './systemTools'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
 import { listDir } from './fsBrowse'
-import { Limiter } from './net'
+import { Limiter, fetchWithTimeout } from './net'
 import { detectFlavor, Updater } from './updater'
 import { cleanLbTitles, ops, PrefsError, PrefsStore } from './store/prefs'
 import { SettingsStore } from './store/settings'
@@ -159,15 +162,23 @@ const engine = new EmustartEngine({
 })
 const emu = new EmustartProvider(engine, paths.emustartLibrary, () => ({ order: settings.get().regionOrder, choices: prefs.get().versions }))
 const gog = new GogProvider(engine, paths.gogLibrary)
+// gry Xbox / Microsoft Store (etap 19): zainstalowane, katalog PC Game Pass, konto Xbox
+const xbox = new XboxProvider(path.join(userData, 'xbox-catalog.json'), () => settings.get().xboxGamePass)
 // motywy trybu TV z serwera (pobiera i sprawdza silnik) — LumenData/themes
 const themeStore = new ThemeStore(path.join(userData, 'themes'), engine)
 const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
 let platformCatalog: PlatformInfo[] = []
 const seriesService: SeriesService = new SeriesService(path.join(userData, 'series.json'), engine, (): Game[] => unified.current.games)
-const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
-  overrides: () => prefs.get().platformOverrides,
-  platforms: () => platformCatalog
-})
+const unified: UnifiedLibrary = new UnifiedLibrary(
+  library,
+  emu,
+  gog,
+  {
+    overrides: () => prefs.get().platformOverrides,
+    platforms: () => platformCatalog
+  },
+  xbox
+)
 // serie z IGDB osobnym kanałem: okna pobierają je raz (IPC.librarySeries), potem dostają tylko zmiany — bez pełnej
 // migawki biblioteki (40 tys. gier do obu okien, także Decka). Ręczne zmiany gracza idą jak dotąd z preferencjami.
 seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(IPC.librarySeriesChanged, changes))
@@ -837,6 +848,10 @@ async function artResponse(req: Request): Promise<Response> {
       if (own) return own
     }
     if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
+    if (gameId.startsWith('xbox:')) {
+      const own = await xboxArt(gameId, kind as ArtKind)
+      if (own) return own
+    }
     // GOG: the server's art (GOG Manager's folder) first, SteamGridDB by name without it — the other
     // way round when "SteamGridDB first" is on for GOG
     const isGog = isGogId(gameId)
@@ -1043,6 +1058,35 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
   if (info?.art && !info.art.includes(k)) return null
   const r = await engine.call<{ path?: string }>('gog_art', [pid, k], 70_000).catch(() => null)
   return r?.path ? fileResponse(r.path) : null
+}
+
+/** Gra Xbox: okładka i tło z katalogu Microsoft (pobrane raz do LumenData/xbox-art); wybór gracza i pozostałe rodzaje
+ *  — jak dla innych gier (SteamGridDB po nazwie). */
+async function xboxArt(gameId: string, k: ArtKind): Promise<Response | null> {
+  if (prefs.get().art[gameId]?.[k] || prefs.get().artTv[gameId]?.[k]) return null
+  const storeId = gameId.slice(5)
+  const p = xbox.product(storeId)
+  const url = k === 'grid' ? (p?.poster ?? p?.box) : k === 'hero' ? p?.hero : undefined
+  if (!url || !isStoreId(storeId)) return null
+  const file = path.join(userData, 'xbox-art', `${storeId}-${k}.jpg`)
+  if (!(await fs.stat(file).catch(() => null))) {
+    try {
+      const r = await fetchWithTimeout(`${url}${url.includes('?') ? '&' : '?'}w=${k === 'hero' ? 1920 : 600}`, {}, 30_000)
+      if (!/^image\//i.test(r.headers.get('content-type') ?? '')) throw new Error(`nie obraz (${r.headers.get('content-type') ?? '?'})`)
+      const body = Buffer.from(await r.arrayBuffer())
+      await fs.mkdir(path.dirname(file), { recursive: true })
+      const tmp = `${file}.${process.pid}.${Date.now()}.tmp` // inne żądanie nie zobaczy pliku w połowie zapisu
+      await fs.writeFile(tmp, body)
+      await fs.rename(tmp, file).catch(async (e) => {
+        await fs.rm(tmp, { force: true })
+        if (!(await fs.stat(file).catch(() => null))) throw e
+      })
+    } catch (e) {
+      log.warn('xbox', `grafika ${storeId} ${k}: ${(e as Error).message}`)
+      return null
+    }
+  }
+  return fileResponse(file)
 }
 
 async function userArtFile(sha: string, ext: string): Promise<string | null> {
@@ -1312,6 +1356,7 @@ async function playSteam(gameId: string): Promise<ActionResult> {
   if (game.source === 'demo') return fail('To jest gra demonstracyjna — nie można jej uruchomić.')
   if (game.source === 'emustart') return fail('Gry z serwera EmuStart uruchamia EmuStart.')
   if (game.source === 'gog') return fail('Gry GOG uruchamia silnik EmuStart, nie Steam.')
+  if (game.source === 'xbox') return playXbox(game)
   if (library.current.steam.status === 'notInstalled') return fail('Nie znaleziono klienta Steam na tym komputerze.')
   if (!isPlayable(game.installState))
     return fail(game.source === 'shortcut' ? 'Nie znaleziono programu tego skrótu na dysku.' : 'Gra nie jest gotowa do uruchomienia.')
@@ -1375,10 +1420,33 @@ async function showControllers(): Promise<void> {
   }
 }
 
+/** Gra Xbox: start przez Windows (shell:AppsFolder\<rodzina>!<aplikacja>) — Eksplorator przekazuje go powłoce, więc
+ *  gra startuje bez uprawnień administratora, jak z menu Start. */
+async function playXbox(game: Game): Promise<ActionResult> {
+  const aumid = game.xbox?.aumid
+  if (!aumid) return fail('Gra nie jest zainstalowana na tym komputerze — „Zainstaluj” otworzy ją w Sklepie Microsoft.')
+  const p = spawn(EXPLORER, [`shell:AppsFolder\\${aumid}`], { detached: true, stdio: 'ignore', windowsHide: true })
+  p.on('error', (e) => log.warn('xbox', `start ${aumid}: ${e.message}`))
+  p.unref()
+  log.info('xbox', `play ${game.id} (${aumid})`)
+  // bez minimalizacji: Lumen nie śledzi procesu gry Xbox, więc nie wróciłby sam po jej zakończeniu (przegląd kodu)
+  takeDeckLaunch(game.id)
+  return { ok: true, message: 'Uruchamianie przez Windows…' }
+}
+
+/** Gra Xbox spoza tego komputera: strona gry w Sklepie Microsoft (instalacja, także z Game Pass). */
+async function installXbox(game: Game): Promise<ActionResult> {
+  const id = game.xbox?.storeId
+  if (!id || !isStoreId(id)) return fail('Nie znaleziono tej gry w Sklepie Microsoft.')
+  await openUnelevated(`ms-windows-store://pdp/?ProductId=${id}`)
+  return { ok: true, message: 'Sklep Microsoft otworzy stronę gry — instalacją zarządza Sklep / aplikacja Xbox.' }
+}
+
 /** Ask the Steam client to install a game (Steam shows its own dialog and runs the download). */
 async function installSteam(gameId: string): Promise<ActionResult> {
   const game = findGame(gameId)
   if (!game) return fail('Nie znaleziono gry w bibliotece.')
+  if (game.source === 'xbox') return installXbox(game)
   if (game.source !== 'steam') return fail('Tej pozycji nie instaluje się przez Steam.')
   if (library.current.steam.status === 'notInstalled') return fail('Nie znaleziono klienta Steam na tym komputerze.')
   await openSteam('install', game.appId)
@@ -1434,6 +1502,73 @@ async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
   return p
 }
 
+// ---- konto Xbox (etap 19c): token odświeżania (zaszyfrowany) → Xbox Live → gry z konta ----
+let xboxSyncing: Promise<ActionResult> | null = null
+/** zmienia się przy wylogowaniu — synchronizacja zaczęta wcześniej nie zapisuje już tokenu ani gier */
+let xboxGen = 0
+const XBOX_EVERY = 6 * 3600_000
+
+async function xboxWithTokens(t: MsTokens, gen: number, clientId: string, rps: 't=' | 'd='): Promise<ActionResult> {
+  if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
+  await settings.setSecret('xboxRefreshToken', packLogin(clientId, t.refresh)) // Microsoft wydaje nowy token odświeżania
+  send(IPC.settingsChanged, settings.get())                    // „zalogowano” w Ustawieniach
+  const id = await xblIdentity(t.access, rps)
+  const titles = await accountTitles(id)
+  if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
+  const ids = [...new Set(titles.map((x) => x.storeId ?? (x.pfn ? xbox.storeIdByPfn(x.pfn) : undefined)).filter((x): x is string => !!x))]
+  xbox.setOwned(ids, { gamertag: id.gamertag })
+  log.info('xbox', `konto ${id.gamertag}: ${titles.length} tytułów na PC, ${ids.length} rozpoznanych w Sklepie`)
+  return { ok: true, message: `Konto Xbox ${id.gamertag}: ${ids.length} gier.` }
+}
+
+/** gry z konta Xbox — z zapisanego logowania (przy starcie, co 6 h, na żądanie) */
+function xboxSync(): Promise<ActionResult> {
+  if (xboxSyncing) return xboxSyncing
+  xboxSyncing = (async (): Promise<ActionResult> => {
+    const saved = unpackLogin(settings.getSecret('xboxRefreshToken'))
+    if (!saved) return { ok: false, error: 'Nie zalogowano do konta Xbox.' }
+    // logowanie innym identyfikatorem niż teraz w Ustawieniach (zmiana Azure ↔ bez Azure) — trzeba zalogować się ponownie
+    const want = flowFor(settings.get().xboxClientId)
+    if (saved.clientId !== want.clientId) {
+      xbox.setOwned(null, null, 'zmieniono sposób logowania — zaloguj się ponownie')
+      return { ok: false, error: 'Zmieniono identyfikator aplikacji — zaloguj się ponownie (Ustawienia → Xbox).' }
+    }
+    const gen = xboxGen
+    try {
+      return await xboxWithTokens(await refreshTokens(want, saved.refresh), gen, want.clientId, want.rps)
+    } catch (e) {
+      const msg = (e as Error).message
+      log.warn('xbox', `konto: ${msg}`)
+      xbox.setOwned(null, xbox.summary().account ?? null, msg)
+      return { ok: false, error: `Konto Xbox: ${msg}` }
+    } finally {
+      xboxSyncing = null
+    }
+  })()
+  return xboxSyncing
+}
+
+async function xboxLogin(): Promise<ActionResult> {
+  const f = flowFor(settings.get().xboxClientId)          // bez identyfikatora Azure — publiczny identyfikator Xbox
+  const gen = xboxGen
+  try {
+    return await xboxWithTokens(await loginWindow(win, f), gen, f.clientId, f.rps)
+  } catch (e) {
+    const msg = (e as Error).message
+    log.warn('xbox', `logowanie: ${msg}`)
+    return { ok: false, error: `Logowanie do Xbox: ${msg}` }
+  }
+}
+
+async function xboxLogout(): Promise<ActionResult> {
+  xboxGen++
+  await settings.setSecret('xboxRefreshToken', null)
+  send(IPC.settingsChanged, settings.get())
+  await clearLoginSession().catch(() => undefined)
+  xbox.setOwned([], null)
+  return { ok: true, message: 'Wylogowano z konta Xbox.' }
+}
+
 /** One way to change the settings (IPC and the Deck menu): save, then react to what changed and tell both windows. */
 async function patchSettings(patch: SettingsPatch): Promise<Settings> {
   const before = settings.get()
@@ -1455,6 +1590,7 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
     if (after.emustartEnabled) void engine.restart()
     else void engine.stop()
   }
+  if (before.xboxGamePass !== after.xboxGamePass) xbox.reapply()
   if (before.deck.enabled !== after.deck.enabled || JSON.stringify(before.deck.screens) !== JSON.stringify(after.deck.screens) || before.deck.opacity !== after.deck.opacity)
     applyDeck()
   // the settings as they are now — a slower patch finishing after a newer one must not send older ones
@@ -1534,7 +1670,7 @@ function registerIpc(): void {
   handle(IPC.libraryRefresh, async (includeAccount: boolean) => {
     if (includeAccount) void family.refresh(library.current.steam.activeSteamId, true)
     if (includeAccount) await library.refreshAccount(true)
-    await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined])
+    await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined, xbox.refresh(includeAccount)])
     return unified.current
   })
   // (Deck nie odświeża biblioteki; gdyby zaczął — odpowiedź przez snapshotFor jak w library:get)
@@ -1644,6 +1780,9 @@ function registerIpc(): void {
 
   handle(IPC.settingsGet, () => settings.get())
   handle(IPC.settingsPatch, (patch: SettingsPatch) => patchSettings(patch))
+  handle(IPC.xboxLogin, () => xboxLogin())
+  handle(IPC.xboxLogout, () => xboxLogout())
+  handle(IPC.xboxSync, () => xboxSync())
   handle(IPC.settingsSecret, async (name: SecretName, value: string | null) => {
     if (!['sgdbApiKey', 'steamWebApiKey', 'igdbClientId', 'igdbClientSecret', 'tgdbApiKey'].includes(name)) throw new Error('Unknown secret')
     await settings.setSecret(name, value)
@@ -2022,6 +2161,8 @@ app.whenReady().then(async () => {
   themeStore.on('change', (list) => send(IPC.themesChanged, list))
   watchMainLag()
   registerIpc()
+  void xbox.refresh().then(() => xboxSync())         // gry Xbox: zainstalowane, katalog Microsoft (doba), konto
+  setInterval(() => void xboxSync(), XBOX_EVERY).unref?.()
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {
@@ -2052,6 +2193,11 @@ app.whenReady().then(async () => {
     if (st !== 'ready') return
     seriesService.schedule(15_000)                   // serie z IGDB z serwera (main/series.ts)
     serverActivity.pokeSeries(5000)                  // postęp serii i powód, gdy ich nie ma (Ustawienia, pasek)
+    // programy grające porty MIDI (Munt, odtwarzacz SC-55) zawczasu — gry DOSBox startują od razu z dźwiękiem
+    void engine
+      .call<{ ok: boolean; started?: string[] }>('midi_warmup', [], 30_000)
+      .then((r) => r.started?.length && log.info('midi', r.started.join('; ')))
+      .catch(() => undefined)
     void emustartDefaults()
     // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags
     void engine

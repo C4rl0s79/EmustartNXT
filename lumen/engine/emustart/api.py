@@ -803,7 +803,7 @@ class Api:
     def midi_ports(self) -> dict:
         """Wyjścia MIDI Windows i porty MT-32 / SC-55 (wybrane albo zgadnięte po nazwie)."""
         from emustart import dosmidi
-        return {"ok": True, **dosmidi.port_settings(self._cfg)}
+        return {"ok": True, **dosmidi.port_settings(self._cfg), "apps": dosmidi.apps(self._cfg)}
 
     def midi_ports_set(self, mt32: str, sc55: str) -> dict:
         from emustart import dosmidi
@@ -815,6 +815,29 @@ class Api:
             self._cfg[key] = v
         config.save(self._cfg)
         return {"ok": True, **dosmidi.port_settings(self._cfg, names)}
+
+    def midi_apps_set(self, mt32: str, sc55: str) -> dict:
+        """Programy grające porty MT-32 / SC-55 (Munt, odtwarzacz SC-55): "" — domyślnie (MT-32: Munt, jeśli
+        zainstalowany), "-" — nic, inaczej ścieżka do istniejącego programu .exe."""
+        from emustart import dosmidi
+        for key, val in (("midi_mt32_app", mt32), ("midi_sc55_app", sc55)):
+            v = str(val or "").strip()
+            if v and v != "-" and not (v.lower().endswith(".exe") and Path(v).is_file()):
+                return {"ok": False, "reason": f"nie ma programu „{v}”"}
+            self._cfg[key] = v
+        config.save(self._cfg)
+        return {"ok": True, "apps": dosmidi.apps(self._cfg)}
+
+    def midi_warmup(self) -> dict:
+        """Lumen przy starcie: programy grające porty MIDI uruchomione zawczasu (gry DOSBox startują od razu z dźwiękiem)."""
+        from emustart import dosmidi
+        try:
+            started = dosmidi.warmup(self._cfg)
+        except OSError as ex:
+            return {"ok": False, "reason": str(ex)}
+        for s in started:
+            log.info("MIDI przy starcie: %s", s)
+        return {"ok": True, "started": started}
 
     def gog_play_tasks(self, pid: str) -> dict:
         try:
