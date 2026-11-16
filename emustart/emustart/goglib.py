@@ -344,6 +344,12 @@ class GogService:
         sync = self._sync_before(pid, e, sync_choice)
         if sync.get("conflict"):
             return {"ok": False, "conflict": sync["conflict"], "reason": "Zapisy tej gry zmieniły się tutaj i na innym urządzeniu."}
+        try:                                           # początkowe pliki zapisów z save/ (gry sprzed poprawki 2026-11-16)
+            seeded = gogfinal.seed_saves(root, pid)
+            if seeded:
+                log.info("GOG %s: %d początkowych plików zapisów z save/ do folderu zapisów", pid, seeded)
+        except OSError as ex:
+            log.warning("GOG %s: pliki zapisów z save/: %s", pid, ex)
         if gogfinal.is_dosbox(spec):                   # MT-32 / SC-55 per gra (emustart/dosmidi.py) — tuż przed startem
             from emustart import dosmidi
             d = dosmidi.decide(str(e.get("title") or ""), str(e.get("midi") or "auto"), self._cfg())
