@@ -11,6 +11,9 @@ Ta sama zmiana co w `emustart/` (plan i stan: `emustart/CHANGELOG.md` → „Pla
 buildu jako `ChunkSet` (~24 B zamiast ~136 B na chunk), `memwatch` (pamięć procesu w logu trybu serwera co godzinę
 i przy indeksie GOG). Nie dotyka: instalacji gier, interfejsu Lumena, API `/v1/…`.
 
+Gry GOG bez launchera (etap 2 tego samego planu): `gogfinal.pick_play_task` — jedno ukryte zadanie „game” zamiast
+widocznego launchera (Cyberpunk 2077, Wiedźmin 3 i 46 innych), kilka wariantów — launcher zostaje.
+
 Plan najbliższych zmian: [ROADMAP.md](ROADMAP.md). Otwarte po 0.55.0: Xenia 1c (logowanie przypiętego profilu na
 nowym urządzeniu — do sprawdzenia na żywo), Play! (miejsce kart), APK (te same reguły zapisów — brak środowiska do
 budowania), adaptery pozostałych samodzielnych emulatorów przy pierwszym użyciu, sprawdzenie na żywo (niżej);

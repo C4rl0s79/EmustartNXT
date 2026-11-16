@@ -731,10 +731,20 @@ def runtime_acts(app: Path, dep_ids: list) -> list:
 
 def pick_play_task(tasks: list):
     """Zadanie gry przed launcherem zewnętrznym (np. REDprelauncher Wiedźmina 3 wymaga instalatora GOG):
-    główne zadanie gry → dowolne zadanie gry → główne zadanie → pierwsze z plikiem."""
-    fts = [t for t in tasks or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
-    fts = [t for t in fts if not t.get("isHidden")] or fts    # ukryte „launcher process” — tylko gdy nie ma innych
-    game = [t for t in fts if (t.get("category") or "").lower() == "game"]
+    główne zadanie gry → dowolne zadanie gry → główne zadanie → pierwsze z plikiem.
+    CD Projekt RED (Cyberpunk 2077, Wiedźmin 3) i podobne: widoczne zadanie główne to launcher, a plik gry jest
+    JEDNYM ukrytym zadaniem kategorii „game” — wtedy gra startuje bez launchera (zgłoszenie 2026-11-16)."""
+    cat = lambda t: str(t.get("category") or "").lower()          # noqa: E731
+    all_fts = [t for t in tasks or [] if t.get("path") and (t.get("type") or "FileTask") == "FileTask"]
+    fts = [t for t in all_fts if not t.get("isHidden")] or all_fts   # ukryte „launcher process” — tylko gdy nie ma innych
+    game = [t for t in fts if cat(t) == "game"]
+    if not game and any(cat(t) == "launcher" for t in fts):
+        hidden = [t for t in all_fts if t.get("isHidden") and cat(t) == "game"]
+        # tylko jednoznaczny plik gry: kilka wariantów (Resident Evil 2: Leon / Claire, Outlast: Win32 / Win64,
+        # Divinity OS2: DefEd / Classic) wybiera launcher — wtedy launcher zostaje
+        if len({(str(t["path"]).replace("\\", "/").lower(), str(t.get("arguments") or "").strip())
+                for t in hidden}) == 1:
+            game = hidden[:1]
     return (next((t for t in game if t.get("isPrimary")), None) or (game[0] if game else None)
             or next((t for t in fts if t.get("isPrimary")), None) or (fts[0] if fts else None))
 
@@ -781,17 +791,30 @@ def play_tasks(app: Path, pid: str) -> list:
     [{"index", "name", "category", "default"}] — tylko programy (.exe, .bat, .cmd) wewnątrz katalogu gry."""
     data = _info(app, pid)
     tasks = _file_tasks(app, pid, data)
-    best = pick_play_task(tasks)
+    best = pick_play_task([t for t in tasks if _on_disk(app, t) and str(t["path"]).lower().endswith(RUNNABLE)])
     out = []
     for i, t in enumerate(tasks):
         try:
             exe = safe_join(app, t["path"])
         except UnsafePath:
             continue
-        if exe.suffix.lower() in RUNNABLE and exe.is_file() and not t.get("isHidden"):
+        if exe.suffix.lower() in RUNNABLE and exe.is_file() and (not t.get("isHidden") or t is best):
             out.append({"index": i, "name": str(t.get("name") or exe.stem), "category": str(t.get("category") or ""),
                         "default": t is best})
     return out
+
+
+def _on_disk(app: Path, t: dict) -> bool:
+    try:
+        return safe_join(app, t["path"]).is_file()
+    except UnsafePath:
+        return True                      # niebezpieczna ścieżka — błąd niżej, nie cicha zamiana zadania
+
+
+def _launcher_skipped(tasks: list, want) -> bool:
+    """`want` to ukryte zadanie gry wybrane zamiast widocznego launchera (pick_play_task)."""
+    return bool(want) and bool(want.get("isHidden")) and any(
+        not t.get("isHidden") and str(t.get("category") or "").lower() == "launcher" for t in tasks)
 
 
 def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
@@ -815,15 +838,13 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
             raise FinalizeError("nie ma takiego zadania uruchamiania")
         t = tasks[task]
     else:
-        def on_disk(x: dict) -> bool:
-            try:
-                return safe_join(app, x["path"]).is_file()
-            except UnsafePath:
-                return True                  # niebezpieczna ścieżka — błąd niżej, nie cicha zamiana zadania
+        on_disk = lambda x: _on_disk(app, x)      # noqa: E731
         t = pick_play_task([x for x in tasks if on_disk(x) and x["path"].lower().endswith(RUNNABLE)])
         want = pick_play_task(tasks)
         is_game = lambda x: bool(x) and (str(x.get("category") or "").lower() == "game" or bool(x.get("isPrimary")))  # noqa: E731
-        if want and is_game(want) and not on_disk(want) and not (t and str(t.get("category") or "").lower() == "game"):
+        # ukryte zadanie gry zamiast launchera, bez pliku (opis innej platformy) — jak dotąd launcher, bez komunikatu
+        if (want and is_game(want) and not _launcher_skipped(tasks, want) and not on_disk(want)
+                and not (t and str(t.get("category") or "").lower() == "game")):
             # zadania gry nie ma na dysku — nie zgadujemy innego programu (Tex Murphy: Manual.pdf, Disciples: Config.exe)
             raise FinalizeError(f"brak pliku gry: {want.get('lnk') or want['path']}")
     if not t:

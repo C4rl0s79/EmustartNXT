@@ -71,3 +71,22 @@ class ChunkSetTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChunkSetReviewTest(unittest.TestCase):
+    def test_lookalike_keys_are_not_members(self):
+        real = "0123456789abcdef" * 2
+        cs = ChunkSet({real: 10})
+        for fake in ("0_23456789abcdef" + real[16:], " " + real[1:], "0x" + real[2:], "+" + real[1:]):
+            self.assertEqual(len(fake), 32)
+            self.assertNotIn(fake, cs)
+
+    def test_duplicate_keeps_last_value_like_a_dict(self):
+        m = _md5(7)
+        self.assertEqual(ChunkSet([(m, 100), (m, 120)]).get(m), 120)
+        self.assertEqual(ChunkSet([(m, 120), (m, 100)]).get(m), 100)
+
+    def test_size_as_text_still_matches(self):
+        from emustart.gogarchive import csize
+        self.assertEqual(csize("123"), 123)
+        self.assertEqual(ChunkSet([(_md5(1), "123")]).get(_md5(1)), 123)

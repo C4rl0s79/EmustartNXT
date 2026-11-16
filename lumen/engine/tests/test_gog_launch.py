@@ -77,3 +77,82 @@ def test_bat_game_task_runs_through_cmd(tmp_path, monkeypatch):
     monkeypatch.setattr(gogadmin, "is_elevated", lambda: False)
     gogfinal.start(s)
     assert seen["cmd"] == f'cmd.exe /c ""{app / "run_GMDX.bat"}" -x"'
+
+
+# CD Projekt RED (Cyberpunk 2077, Wiedźmin 3): widoczne zadanie główne to REDprelauncher (kategoria „launcher”),
+# plik gry jest ukrytym zadaniem kategorii „game” — gra ma startować bez launchera (zgłoszenie 2026-11-16).
+RED = [{"type": "FileTask", "isPrimary": True, "category": "launcher", "name": "Cyberpunk 2077",
+        "path": "REDprelauncher.exe"},
+       {"type": "FileTask", "isHidden": True, "category": "game", "name": "Cyberpunk 2077",
+        "path": "bin\\x64\\Cyberpunk2077.exe"},
+       {"type": "FileTask", "category": "other", "name": "Support", "path": ""}]
+
+
+def test_red_launcher_skipped_for_hidden_game_task(tmp_path):
+    app = _game(tmp_path, RED, ["REDprelauncher.exe", "bin/x64/Cyberpunk2077.exe"])
+    spec = gogfinal.launch_spec(app, "1")
+    assert spec["exe"].endswith("Cyberpunk2077.exe")
+    assert spec["cwd"].endswith("x64")
+    tasks = gogfinal.play_tasks(app, "1")                   # „Uruchom…”: gra domyślna, launcher do wyboru
+    assert [t["name"] for t in tasks if t["default"]] == ["Cyberpunk 2077"]
+    assert len(tasks) == 2
+    default = next(t for t in tasks if t["default"])
+    assert gogfinal.launch_spec(app, "1", default["index"])["exe"].endswith("Cyberpunk2077.exe")
+
+
+def test_hidden_game_task_without_file_falls_back_to_launcher(tmp_path):
+    """ukryte zadanie gry, którego pliku nie ma (opis innej platformy) — jak dotąd launcher (test_gog_install)"""
+    app = _game(tmp_path, RED, ["REDprelauncher.exe"])
+    assert gogfinal.launch_spec(app, "1")["exe"].endswith("REDprelauncher.exe")
+
+
+def test_several_hidden_game_variants_keep_the_launcher(tmp_path):
+    """Resident Evil 2 (Leon / Claire), Outlast (Win32 / Win64): launcher wybiera wariant — zostaje"""
+    tasks = [{"type": "FileTask", "isPrimary": True, "category": "launcher", "name": "RE2", "path": "RE2Launcher.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "Claire", "path": "ClaireU.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "Leon", "path": "LeonU.exe"}]
+    app = _game(tmp_path, tasks, ["RE2Launcher.exe", "ClaireU.exe", "LeonU.exe"])
+    assert gogfinal.launch_spec(app, "1")["exe"].endswith("RE2Launcher.exe")
+    assert [t["name"] for t in gogfinal.play_tasks(app, "1")] == ["RE2"]
+
+
+def test_hidden_non_game_task_still_not_preferred(tmp_path):
+    tasks = [{"type": "FileTask", "isPrimary": True, "category": "game", "name": "Gra", "path": "game.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "launcher", "name": "proces", "path": "helper.exe"}]
+    app = _game(tmp_path, tasks, ["game.exe", "helper.exe"])
+    assert gogfinal.launch_spec(app, "1")["exe"].endswith("game.exe")
+    assert [t["name"] for t in gogfinal.play_tasks(app, "1")] == ["Gra"]
+
+
+def test_run_menu_default_matches_play_when_game_file_missing(tmp_path):
+    """tylko launcher na dysku: „Graj” startuje launcher i ten sam wpis jest domyślny w „Uruchom…”"""
+    app = _game(tmp_path, RED, ["REDprelauncher.exe"])
+    tasks = gogfinal.play_tasks(app, "1")
+    assert [t["category"] for t in tasks if t["default"]] == ["launcher"]
+
+
+def test_run_menu_default_matches_play_with_one_installed_variant(tmp_path):
+    tasks = [{"type": "FileTask", "isPrimary": True, "category": "launcher", "name": "L", "path": "L.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "32", "path": "Win32/G.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "64", "path": "Win64/G.exe"}]
+    app = _game(tmp_path, tasks, ["L.exe", "Win64/G.exe"])
+    started = gogfinal.launch_spec(app, "1")["exe"]
+    default = next(t for t in gogfinal.play_tasks(app, "1") if t["default"])
+    assert gogfinal.launch_spec(app, "1", default["index"])["exe"] == started
+
+
+def test_same_exe_different_arguments_are_variants(tmp_path):
+    tasks = [{"type": "FileTask", "isPrimary": True, "category": "launcher", "name": "L", "path": "L.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "DX11", "path": "g.exe", "arguments": "-dx11"},
+             {"type": "FileTask", "isHidden": True, "category": "game", "name": "DX12", "path": "g.exe", "arguments": "-dx12"}]
+    app = _game(tmp_path, tasks, ["L.exe", "g.exe"])
+    assert gogfinal.launch_spec(app, "1")["exe"].endswith("L.exe")
+
+
+def test_only_hidden_tasks_missing_game_is_still_reported(tmp_path):
+    """bez widocznego launchera stary strażnik zostaje (Tex Murphy / Disciples): nie inny program po cichu"""
+    tasks = [{"type": "FileTask", "isHidden": True, "isPrimary": True, "category": "game", "name": "G", "path": "Game.exe"},
+             {"type": "FileTask", "isHidden": True, "category": "tool", "name": "C", "path": "Config.exe"}]
+    app = _game(tmp_path, tasks, ["Config.exe"])
+    with pytest.raises(gogfinal.FinalizeError, match="Game.exe"):
+        gogfinal.launch_spec(app, "1")

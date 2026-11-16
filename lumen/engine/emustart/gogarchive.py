@@ -242,7 +242,17 @@ def available_languages(rec: dict) -> list:
     return sorted(set(out))
 
 
+_HEX32_ANY = re.compile(r"[0-9a-fA-F]{32}\Z")
 _BAD_SIZE = 2**64 - 1          # rozmiar spoza zakresu (uszkodzony manifest) — nigdy nie równy rozmiarowi pliku
+
+
+def csize(v) -> int:
+    """compressedSize z manifestu → liczba; ujemna, za duża albo nie liczba → _BAD_SIZE (nigdy nie równa plikowi)."""
+    try:
+        n = int(v or 0)
+    except (TypeError, ValueError):
+        return _BAD_SIZE
+    return n if 0 <= n < _BAD_SIZE else _BAD_SIZE
 
 
 class ChunkSet:
@@ -259,18 +269,13 @@ class ChunkSet:
             k = _split(m)
             if k is None:
                 continue
-            try:
-                n = int(size or 0)
-            except (TypeError, ValueError):
-                n = _BAD_SIZE
-            rows.append((k[0], k[1], n if 0 <= n < _BAD_SIZE else _BAD_SIZE))
-        rows.sort()
+            rows.append((k[0], k[1], csize(size)))
+        rows.sort(key=lambda r: (r[0], r[1]))      # stabilnie: przy powtórzeniu kolejność podania zostaje
         self._hi, self._lo, self._s = array.array("Q"), array.array("Q"), array.array("Q")
-        last = None
         for h, lo, n in rows:
-            if (h, lo) == last:
-                continue                           # ten sam chunk dwa razy — pierwszy (po sortowaniu) wygrywa
-            last = (h, lo)
+            if len(self._hi) and self._hi[-1] == h and self._lo[-1] == lo:
+                self._s[-1] = n                    # ten sam chunk dwa razy — ostatnia wartość (jak w słowniku)
+                continue
             self._hi.append(h)
             self._lo.append(lo)
             self._s.append(n)
@@ -305,12 +310,9 @@ class ChunkSet:
 def _split(md5):
     """32 znaki hex → (górne, dolne 64 bity); None, gdy to nie skrót MD5."""
     m = str(md5 or "")
-    if len(m) != 32:
+    if not _HEX32_ANY.match(m):                 # int(…, 16) przyjmuje też „0x”, „_”, spacje — tylko czysty skrót
         return None
-    try:
-        return int(m[:16], 16), int(m[16:], 16)
-    except ValueError:
-        return None
+    return int(m[:16], 16), int(m[16:], 16)
 
 
 def manifests_chunkset(manifests) -> "ChunkSet":
@@ -320,7 +322,7 @@ def manifests_chunkset(manifests) -> "ChunkSet":
             for c in manifest_chunks(man):
                 m = str(c.get("compressedMd5") or "").lower()
                 if HEX32.match(m):
-                    yield m, int(c.get("compressedSize") or 0)
+                    yield m, c.get("compressedSize")
     return ChunkSet(pairs())
 
 
@@ -426,7 +428,7 @@ def index_record(arc: Archive, pid: str, build: str, deep: bool = False, sizes: 
             m = str(c.get("compressedMd5") or "").lower()
             if not HEX32.match(m):
                 return {**base, "ok": False, "reason": f"zły identyfikator chunka w manifeście: {m!r}"}
-            chunks[m] = int(c.get("compressedSize") or 0)
+            chunks[m] = csize(c.get("compressedSize"))   # zła wartość → build odrzucony niżej, nie cały indeks
     why = chunk_problem(arc, chunks, deep, sizes) if check_chunks else ""
     if why:
         return {**base, "ok": False, "reason": why}

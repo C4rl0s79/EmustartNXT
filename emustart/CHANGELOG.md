@@ -9,7 +9,7 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 ### Plan: pamięć serwera i start gier CD Projekt RED bez launchera — EmuStart 0.64.1 (zgłoszenia 2026-11-16)
 
 Zgłoszenia użytkownika (2026-11-16): serwer prawie nieużywany zajmuje ~1 GB po dniu i ~20 GB po kilku dniach;
-Cyberpunk 2077 i Wiedźmin 3 mają startować bez launchera (REDprelauncher). Pozostałe zgłoszenia z listy (Deck, DOSBox,
+Cyberpunk 2077 i Wiedźmin 3 mają startować bez launchera (REDprelauncher) — zakres: wszystkie gry o tym układzie zadań. Pozostałe zgłoszenia z listy (Deck, DOSBox,
 serie, MIDI, Horyzont, nawigacja literami, Steam, rejestr i ikony GOG, stare ścieżki) — kolejne etapy po tych dwóch.
 
 Nie dotyka: listy gier, sterowania, menu, API `/v1/…` (odpowiedzi bez zmian), formatu archiwum GOG Managera,
@@ -18,7 +18,7 @@ zapisów i synchronizacji, APK.
 | Etap | Zakres | Stan |
 |---|---|---|
 | 1 | Pamięć serwera: zbiór chunków buildu GOG jako `ChunkSet` (skróty jako dwie posortowane tablice 64-bitowe + tablica rozmiarów, ~24 B zamiast ~136 B na chunk; archiwum ~7,3 mln chunków = ~1 GB w słownikach przez cały czas działania i drugie tyle w listingu folderów przy każdym „Odśwież indeks”), w obu kopiach (`emustart/`, `lumen/engine/`); `memwatch` — pamięć procesu w logu serwera co godzinę (pierwszy wpis po 10 min) oraz przed i po każdym indeksie GOG (skoki przy „Odśwież indeks” widoczne w logu); zły rozmiar chunka w manifeście odrzuca build, nie cały indeks | zrobione (testy 834 / 886; code review: 9 uwag poprawionych); czeka na sprawdzenie na żywo (log `pamięć procesu:` i `GOG: po indeksie` na serwerze) |
-| 2 | Cyberpunk 2077 i Wiedźmin 3 (GOG) bez launchera: zadanie startowe wskazujące REDprelauncher zastąpione plikiem gry | do zrobienia |
+| 2 | Gry GOG bez launchera: gdy widoczne zadanie główne ma kategorię „launcher”, a plik gry jest JEDNYM ukrytym zadaniem „game” (Cyberpunk 2077, Wiedźmin 1–3: REDprelauncher; Fallout 3/4/NV, Oblivion, Mafia I–III, Dragon Age: Origins, gry Unreal Engine…), startuje plik gry; launcher zostaje do wyboru w „Uruchom…”. Kilka ukrytych wariantów gry (Resident Evil 2/3, Outlast, Divinity OS2, XCOM, Control, Homeworld…) — launcher zostaje; ukryte zadanie gry bez pliku na dysku — jak dotąd launcher. Skan archiwum 2026-11-16: 48 gier bez launchera, 11 z launcherem. Zakres zatwierdzony przez użytkownika 2026-11-16 („wszystkie”). Wiedźmin 3 (1495134320) na tym komputerze: `goggame-1495134320.info` ma 0 bajtów (zmieniony 2026-11-14 16:59, bez instalacji w logu silnika) — naprawa przez „Sprawdź / Napraw” | zrobione (testy 846 / 898; code review: 9 z 10 uwag poprawionych — „Graj” i „Uruchom…” liczą domyślne zadanie tak samo, z plików na dysku; warianty po ścieżce i argumentach; stary strażnik „brak pliku gry” poza przypadkiem launchera; zły rozmiar / skrót chunka nie wywraca indeksu ani pobierania; uwaga o pierwszym starcie launcherów Bethesdy — ryzyko przyjęte przez użytkownika; Cyberpunk na tym komputerze: `bin\x64\Cyberpunk2077.exe`); czeka na sprawdzenie na żywo |
 
 ### Plan: instalacja gier GOG jak w GOG Galaxy (kroki skryptów, rejestr, deinstalator) — Lumen 1.0.58
 
