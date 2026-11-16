@@ -23,12 +23,14 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   const series = useStore((s) => s.prefs?.series)
   const all = useStore((s) => s.snapshot?.games)
   const [naming, setNaming] = useState(false)
+  // gra przesuwana przyciskami „Wcześniej / Później” — wybierana na liście serii (na początku: ta z opcji gry)
+  const [picked, setPicked] = useState(game.id)
   const listRef = useRef<HTMLDivElement>(null)
   const members = useMemo(() => seriesMembers(game, all ?? [game], series), [game, all, series])
   const own = series?.[game.id]
   const s = seriesOf(game, series)
-  const i = members.findIndex((g) => g.id === game.id)
   const inSeries = !!s && members.length > 1
+  const pick = members.find((g) => g.id === picked) ?? game
 
   useEffect(() => {
     const t = setTimeout(() => listRef.current && focusFirst(listRef.current), 0)
@@ -36,25 +38,33 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   }, [])
 
   const set = (changes: Record<string, SeriesPrefs[string] | null>): void => void attempt(api().prefs.setSeries(changes))
+  // Przyciski nie wyłączają się na krańcu listy: wyłączony przycisk oddawał fokus sąsiedniemu („Później”) i kolejne
+  // naciśnięcie przesuwało grę z powrotem — gry zamieniały się w pętli (zgłoszenie 2026-11-16).
   const move = (dir: -1 | 1): void => {
-    const next = moveInSeries(members, game.id, dir, series)
+    const next = moveInSeries(members, pick.id, dir, series)
     if (next) set(next)
   }
 
-  const rows: { label: string; value?: string; act?: () => void; mark?: boolean }[] = [
+  const rows: { key: string; label: string; value?: string; act?: () => void; mark?: boolean }[] = [
     ...(inSeries
       ? [
-          { label: 'Wcześniej w serii', act: i > 0 ? () => move(-1) : undefined },
-          { label: 'Później w serii', act: i < members.length - 1 ? () => move(1) : undefined }
+          { label: 'Wcześniej w serii', value: pick.name, act: () => move(-1) },
+          { label: 'Później w serii', value: pick.name, act: () => move(1) }
         ]
       : []),
     { label: inSeries ? 'Zmień nazwę serii…' : 'Dołącz do serii…', value: 'ta sama nazwa co inna gra — razem z nią', act: () => setNaming(true) },
     ...(own?.none ? [] : [{ label: 'Nie należy do serii', act: () => set({ [game.id]: { none: true } }) }]),
     ...(own ? [{ label: 'Rozpoznawaj z tytułu', value: 'bez Twoich zmian dla tej gry', act: () => set({ [game.id]: null }) }] : []),
     ...(inSeries
-      ? members.map((g, k) => ({ label: `${k + 1}. ${g.name}`, value: String(yearOf(g) ?? ''), mark: g.id === game.id }))
+      ? members.map((g, k) => ({
+          key: `g:${g.id}`,
+          label: `${k + 1}. ${g.name}`,
+          value: String(yearOf(g) ?? ''),
+          mark: g.id === pick.id,
+          act: () => setPicked(g.id)
+        }))
       : [])
-  ]
+  ].map((r) => ({ key: r.label, ...r }))
 
   return (
     <>
@@ -69,12 +79,14 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
         ]}
       >
         <p className="details__muted">
-          {inSeries ? `${s!.name}: gry stoją razem na listach po tytule, w tej kolejności.` : 'Ta gra nie stoi w żadnej serii.'}
+          {inSeries
+            ? `${s!.name}: gry stoją razem na listach po tytule, w tej kolejności. Wybierz grę z listy (▸), potem „Wcześniej / Później w serii”.`
+            : 'Ta gra nie stoi w żadnej serii.'}
         </p>
         <div className="gopt__list" ref={listRef}>
-          {rows.map((r, k) => (
+          {rows.map((r) => (
             <button
-              key={r.label + k}
+              key={r.key}
               className={'gopt__row' + (r.mark ? ' is-current' : '')}
               data-nav={r.act ? true : undefined}
               disabled={!r.act}
