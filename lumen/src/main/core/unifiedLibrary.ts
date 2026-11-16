@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import type { Game, JobsSnapshot, LibrarySnapshot, PlatformInfo } from '@shared/types'
+import type { Game, IgdbSeries, JobsSnapshot, LibrarySnapshot, PlatformInfo } from '@shared/types'
 import { classify, classifyContext } from '@shared/libraryNav'
 import type { LibraryService } from '../library/service'
 import type { EmustartProvider } from '../emustart/provider'
@@ -12,6 +12,8 @@ export interface UnifiedOptions {
   overrides: () => Record<string, string>
   /** EmuStart's system catalog (classification of shortcuts by their Steam tags) */
   platforms: () => PlatformInfo[]
+  /** series from IGDB via the EmuStart server (main/series.ts) */
+  series?: (g: Game) => IgdbSeries | undefined
 }
 
 /**
@@ -46,7 +48,11 @@ export class UnifiedLibrary extends EventEmitter {
     const emustart = this.emu.summary()
     const platforms = this.opts.platforms()
     const ctx = classifyContext(emustart.systems, platforms, this.opts.overrides())
-    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames].map((g) => ({ ...g, platform: classify(g, ctx) }))
+    const series = this.opts.series
+    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames].map((g) => {
+      const igdb = series?.(g)
+      return { ...g, platform: classify(g, ctx), ...(igdb ? { igdbSeries: igdb } : {}) }
+    })
     return { ...s, games, emustart, gog: this.gog.summary(), platforms }
   }
 

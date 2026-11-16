@@ -814,6 +814,43 @@ class Api:
         from emustart import goginstall as gi
         return {"ok": True, "games": self._gog.admin_pending(), "undo": len(gi.pending_undo())}
 
+    def series_sync(self, extra: list) -> dict:
+        """Lumen: serie gier z IGDB z serwera (emustart/igdbseries.py). Gry serwera (emulatory, GOG) sprawdza sam
+        serwer; `extra` — [{"title", "platform": "pc"}] gier, których serwer nie zna (Steam, skróty).
+        → {"ok", "enabled", "series": {"<system|tytuł>": {"name", "order_ts", "release_ts"…}}, "pending"}."""
+        import json as _json
+        from emustart import netsrc
+        ep = netsrc.endpoint(self._cfg)
+        if not ep:
+            return {"ok": False, "reason": "To urządzenie nie jest połączone z serwerem EmuStart."}
+        st, body, _t = netsrc._request(ep, "/v1/series", timeout=30, gzip=True)
+        if st == 404:
+            return {"ok": False, "reason": "Serwer ma starszą wersję EmuStart — bez serii z IGDB."}
+        try:
+            d = _json.loads(body or b"{}") if st == 200 else {}
+        except ValueError:
+            d = {}
+        if not isinstance(d, dict) or not d.get("ok"):
+            return {"ok": False, "reason": f"Serwer odpowiedział {st}."}
+        from emustart import igdbseries
+        series = dict(d.get("series") or {})
+        standalone = set(d.get("standalone") or [])
+        # tylko tytuły, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu)
+        ask = [g for g in (extra or []) if isinstance(g, dict) and g.get("title")
+               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in series
+               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in standalone][:20000]
+        own_pending = 0
+        if ask and d.get("enabled"):
+            r = netsrc.authed_post(self._cfg, "/v1/series", {"games": ask})
+            if r.get("ok"):
+                got = r.get("series") or {}
+                series.update({k: v for k, v in got.items() if v})
+                standalone.update(k for k, v in got.items() if v is None)
+                own_pending = sum(1 for g in ask if igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
+                                  not in got)
+        return {"ok": True, "enabled": bool(d.get("enabled")), "series": series, "standalone": sorted(standalone),
+                "pending": int(d.get("pending") or 0), "own_pending": own_pending}
+
     def themes_sync(self, dest: str) -> dict:
         """Lumen: motywy trybu TV z serwera do `dest` (LumenData/themes) — emustart/themes.py: tylko zmienione pliki,
         każdy zgodny z indeksem serwera, cały motyw sprawdzony jak na serwerze."""

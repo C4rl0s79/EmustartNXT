@@ -282,7 +282,7 @@ def handle(handler) -> None:
     try:
         if parts == ["info"]:
             from emustart import gogarchive
-            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
+            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock", "series"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
                 + (["gog"] if gogarchive.INDEX["builds"] else [])
             return _json(handler, {"name": socket.gethostname(), "version": __version__, "api": 1,
                                    "features": feats + ["admin"], "nas_id": NAS_ID, "endpoints": endpoints(),
@@ -378,6 +378,9 @@ def handle(handler) -> None:
             return _send_file(handler, int(parts[1]), "/".join(parts[3:]))
         if parts and parts[0] == "userart":
             return userart_call(handler, "GET", parts[1:])
+        if parts == ["series"]:                        # serie gier z IGDB (emustart/igdbseries.py, Lumen)
+            from emustart import igdbseries
+            return _json(handler, igdbseries.all_series((lambda: API._cfg) if API is not None else None))
         if parts and parts[0] == "gog":
             return _gog(handler, parts[1:])
         return _json(handler, {"error": "nieznany adres"}, 404)
@@ -1087,6 +1090,28 @@ def userart_call(handler, method: str, parts: list) -> None:
         handler.wfile.write(data)
         return None
     return _sync_errors(handler, run)
+
+
+def series_post(handler) -> None:
+    """POST /v1/series {"games": [{"title", "platform"}]} → serie z IGDB (emustart/igdbseries.py, dla Lumena)."""
+    from emustart import igdbseries
+    if not authorized(handler):
+        return _json(handler, {"error": "brak lub zły klucz serwera"}, 401)
+    _seen(handler)
+    n = int(handler.headers.get("Content-Length") or 0)
+    if n > 8 << 20:
+        return _json(handler, {"ok": False, "reason": "za duże zapytanie"}, 413)
+    try:
+        d = json.loads(handler.rfile.read(n) or b"{}") if n else {}
+    except ValueError:
+        d = {}
+    games = d.get("games") if isinstance(d, dict) else None
+    try:
+        return _json(handler, igdbseries.lookup(games if isinstance(games, list) else [],
+                                                (lambda: API._cfg) if API is not None else None))
+    except Exception as ex:
+        log.exception("serie")
+        return _json(handler, {"ok": False, "reason": str(ex)}, 500)
 
 
 def savesync_post(handler) -> None:

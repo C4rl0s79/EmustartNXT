@@ -97,6 +97,18 @@ export interface Game {
   facts?: GameFacts
   /** family and platform in the library hierarchy (set by the main process for every game) */
   platform?: GamePlatform
+  /** series from IGDB via the EmuStart server (main/series.ts) — the player's own choice still wins */
+  igdbSeries?: IgdbSeries
+}
+
+/** A game's series from IGDB (server: emustart/igdbseries.py): franchise, else the narrowest collection. */
+export interface IgdbSeries {
+  /** '' — IGDB zna grę, ale nie jest ona w żadnej serii (nie zgadujemy serii z tytułu) */
+  name: string
+  /** unix seconds used for the order in the series: a remake / port carries its original's date */
+  order: number
+  /** unix seconds: release of this very edition (tie-break: arcade before its port) */
+  release: number
 }
 
 /** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */

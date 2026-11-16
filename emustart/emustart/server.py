@@ -157,6 +157,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p.startswith("/v1/userart/"):
             from emustart import remote      # grafiki użytkowników i wybory grafik (emustart/userart.py)
             return remote.userart_call(self, "POST", [x for x in p.split("/") if x][2:])
+        if p == "/v1/series":
+            from emustart import remote      # serie gier z IGDB dla Lumena (emustart/igdbseries.py)
+            return remote.series_post(self)
         if p.startswith("/v1/lock/"):
             from emustart import remote      # jedna gra naraz na profil (emustart/plock.py)
             return remote.lock_post(self)

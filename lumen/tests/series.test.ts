@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Game } from '@shared/types'
-import { arrangeSeries, cleanSeriesPrefs, moveInSeries, parseSeries, seriesMembers, seriesOf } from '@shared/series'
+import { arrangeSeries, cleanSeriesPrefs, moveInSeries, parseSeries, seriesLookupKey, seriesMembers, seriesOf } from '@shared/series'
 import { compareText } from '@shared/libraryNav'
 import { panelHeightFraction, setDeckPanelHeight, defaultDeckSettings } from '@shared/deck'
 
@@ -76,5 +76,40 @@ describe('Deck panel height dragged', () => {
     const out = setDeckPanelHeight(s, '2560x1440@1', 'b', 0.5)
     expect(out['1920x1080@1'].panelHeight).toBe(0.8)
     expect(out['2560x1440@1'].panelHeight).toBe(0.5)
+  })
+})
+
+describe('serie z IGDB (serwer EmuStart, Game.igdbSeries)', () => {
+  const ig = (id: string, name: string, series: string, order: number, release = order): Game =>
+    ({ ...g(id, name), igdbSeries: { name: series, order, release } }) as Game
+  const y0 = ig('a', 'Yakuza 0', 'Yakuza', 1_134_000_000, 1_420_000_000) // prequel: data serii jak u IGDB
+  const kiwami = ig('b', 'Yakuza Kiwami', 'Yakuza', 1_134_000_000, 1_453_000_000) // remake: data oryginału
+  const lad = ig('c', 'Like a Dragon: Infinite Wealth', 'Yakuza', 1_706_000_000)
+  const other = g('d', 'Judgment')
+
+  it('jedna seria mimo różnych tytułów — w miejscu pierwszej gry, po dacie oryginału', () => {
+    const list = arrangeSeries([lad, other, kiwami, y0].sort(byName), undefined)
+    expect(names(list)).toEqual(['Judgment', 'Yakuza 0', 'Yakuza Kiwami', 'Like a Dragon: Infinite Wealth'])
+    expect(seriesOf(lad, undefined)?.name).toBe('Yakuza')
+  })
+
+  it('wybór gracza wygrywa z IGDB', () => {
+    expect(seriesOf(lad, { c: { name: 'Like a Dragon' } })?.name).toBe('Like a Dragon')
+    expect(seriesOf(lad, { c: { none: true } })).toBeUndefined()
+    const moved = arrangeSeries([y0, kiwami, lad].sort(byName), { c: { order: 1 } })
+    expect(names(moved)[0]).toBe('Like a Dragon: Infinite Wealth')
+  })
+
+  it('IGDB: gra bez serii nie jest zgadywana z tytułu (chyba że gracz nada nazwę)', () => {
+    const solo = { ...g('s', 'Doom 3'), igdbSeries: { name: '', order: 0, release: 0 } } as Game
+    expect(seriesOf(solo, undefined)).toBeUndefined()
+    expect(seriesOf(solo, { s: { name: 'Doom' } })?.name).toBe('Doom')
+    expect(seriesOf(g('t', 'Doom 3'), undefined)?.name).toBe('Doom')        // bez wyniku IGDB — z tytułu
+  })
+
+  it('klucz jak na serwerze (emustart/igdbseries.key_of)', () => {
+    expect(seriesLookupKey(g('x', 'Cyberpunk  2077'))).toBe('pc|cyberpunk 2077')
+    const emu = { ...g('y', 'Super Metroid'), source: 'emustart', emu: { es: 'snes' } } as unknown as Game
+    expect(seriesLookupKey(emu)).toBe('snes|super metroid')
   })
 })
