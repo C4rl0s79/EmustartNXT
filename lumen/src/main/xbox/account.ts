@@ -128,28 +128,91 @@ export const exchangeCode = (f: Flow, code: string, verifier: string): Promise<M
 export const refreshTokens = (f: Flow, refresh: string): Promise<MsTokens> =>
   tokenCall(f.token, { client_id: f.clientId, grant_type: 'refresh_token', refresh_token: refresh, scope: f.scope, ...(f.pkce ? {} : { redirect_uri: f.redirect }) })
 
+/** kody odmowy Xbox Live (nagłówek / pole XErr) → przyczyna po polsku */
+const XERR: Record<string, string> = {
+  '2148916227': 'konto zablokowane w Xbox',
+  '2148916229': 'konto dziecka bez zgody rodzica na Xbox Live',
+  '2148916233': 'konto Microsoft nie ma profilu Xbox — załóż go raz na xbox.com',
+  '2148916234': 'trzeba zaakceptować warunki Xbox na xbox.com',
+  '2148916235': 'Xbox Live jest niedostępny w kraju konta',
+  '2148916236': 'konto wymaga weryfikacji wieku na xbox.com',
+  '2148916237': 'limit czasu gry na koncie dziecka',
+  '2148916238': 'konto dziecka (poniżej 18 lat) — trzeba dodać je do rodziny Microsoft'
+}
+
+export function xerrText(code: string | null | undefined): string {
+  const c = String(code ?? '').trim()
+  return c ? (XERR[c] ?? `kod Xbox ${c}`) : ''
+}
+
+/** POST JSON do Xbox Live — przy odmowie błąd z kodem XErr (nagłówek x-err albo pole XErr), nie sam status HTTP.
+ *  Własny limit czasu zamiast fetchWithTimeout: tamta funkcja przy odmowie rzuca wyjątek bez nagłówków odpowiedzi. */
+async function xblPost(url: string, body: unknown): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; xerr: string }> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 30_000)
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'x-xbl-contract-version': '1' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal
+    })
+    const text = await r.text()
+    let data: Record<string, unknown> = {}
+    try {
+      data = text ? (JSON.parse(text) as Record<string, unknown>) : {}
+    } catch {
+      /* odpowiedź bez JSON (np. 403 z pustą treścią) */
+    }
+    if (r.ok) return { ok: true, data }
+    return { ok: false, status: r.status, xerr: String(r.headers.get('x-err') ?? data.XErr ?? '') }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** formy biletu RPS do sprawdzenia: najpierw ta ze sposobu logowania, potem pozostałe (źródła nie są zgodne) */
+export function rpsCandidates(access: string, rps: Flow['rps']): string[] {
+  const all = [`${rps}${access}`, `${rps === 't=' ? 'd=' : 't='}${access}`, access]
+  return [...new Set(all)]
+}
+
 /** token Microsoft → tożsamość Xbox Live (uhs, xuid, gamertag, token XSTS dla xboxlive.com) */
 export async function xblIdentity(access: string, rps: Flow['rps'] = 'd='): Promise<XblIdentity> {
-  const json = { 'Content-Type': 'application/json', Accept: 'application/json', 'x-xbl-contract-version': '1' }
-  const u = await fetchWithTimeout(
-    'https://user.auth.xboxlive.com/user/authenticate',
-    {
-      method: 'POST',
-      headers: json,
-      body: JSON.stringify({ Properties: { AuthMethod: 'RPS', SiteName: 'user.auth.xboxlive.com', RpsTicket: `${rps}${access}` }, RelyingParty: 'http://auth.xboxlive.com', TokenType: 'JWT' })
-    },
-    30_000
-  )
-  const user = (await u.json()) as { Token?: string }
-  if (!user.Token) throw new Error('Xbox Live nie przyjął logowania')
-  const x = await fetchWithTimeout(
-    'https://xsts.auth.xboxlive.com/xsts/authorize',
-    { method: 'POST', headers: json, body: JSON.stringify({ Properties: { SandboxId: 'RETAIL', UserTokens: [user.Token] }, RelyingParty: 'http://xboxlive.com', TokenType: 'JWT' }) },
-    30_000
-  )
-  const xsts = (await x.json()) as { Token?: string; DisplayClaims?: { xui?: { uhs?: string; xid?: string; gtg?: string }[] } }
+  let userToken = ''
+  let last = ''
+  for (const ticket of rpsCandidates(access, rps)) {
+    const r = await xblPost('https://user.auth.xboxlive.com/user/authenticate', {
+      Properties: { AuthMethod: 'RPS', SiteName: 'user.auth.xboxlive.com', RpsTicket: ticket },
+      RelyingParty: 'http://auth.xboxlive.com',
+      TokenType: 'JWT'
+    })
+    if (r.ok && typeof r.data.Token === 'string') {
+      userToken = r.data.Token
+      log.info('xbox', `bilet RPS przyjęty (${ticket === access ? 'bez przedrostka' : ticket.slice(0, 2)})`)
+      break
+    }
+    if (!r.ok) {
+      last = `HTTP ${r.status}${r.xerr ? `, ${xerrText(r.xerr)}` : ''}`
+      log.warn('xbox', `user.auth (${ticket === access ? 'bez przedrostka' : ticket.slice(0, 2)}): ${last}`)
+      if (r.status >= 500) break
+    }
+  }
+  if (!userToken) throw new Error(`Xbox Live nie przyjął logowania (${last || 'brak tokenu'})`)
+  const x = await xblPost('https://xsts.auth.xboxlive.com/xsts/authorize', {
+    Properties: { SandboxId: 'RETAIL', UserTokens: [userToken] },
+    RelyingParty: 'http://xboxlive.com',
+    TokenType: 'JWT'
+  })
+  if (!x.ok) {
+    const why = xerrText(x.xerr)
+    log.warn('xbox', `xsts: HTTP ${x.status}${why ? `, ${why}` : ''}`)
+    throw new Error(`Xbox Live nie wydał tokenu (${why || `HTTP ${x.status}`})`)
+  }
+  const xsts = x.data as { Token?: string; DisplayClaims?: { xui?: { uhs?: string; xid?: string; gtg?: string }[] } }
   const c = xsts.DisplayClaims?.xui?.[0]
   if (!xsts.Token || !c?.uhs || !c.xid) throw new Error('Xbox Live nie wydał tokenu (konto bez profilu Xbox?)')
+  registerSecret(userToken)
   registerSecret(xsts.Token)
   return { uhs: c.uhs, xuid: c.xid, gamertag: c.gtg ?? '', token: xsts.Token }
 }
