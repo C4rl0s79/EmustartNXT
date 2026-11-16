@@ -34,8 +34,9 @@ NAMES = {"franchises": {10: ("Yakuza", 9)}, "collections": {20: ("Yakuza", 8), 2
 class FakeIgdb:
     """Odpowiedzi na zapytania apicalypse, jakie wysyła detect()."""
 
-    def __init__(self, fail=0):
+    def __init__(self, fail=0, ext_fail=False):
         self.calls = []
+        self.ext_fail = ext_fail         # pytanie po identyfikatorze sklepu kończy się błędem (np. nieznane pole)
         self.fail = fail                 # tyle pierwszych zapytań kończy się błędem IGDB (sieć, 429)
 
     def query(self, endpoint, body, strict=False):
@@ -44,6 +45,13 @@ class FakeIgdb:
             self.fail -= 1
             from emustart.art_sources import IgdbError
             raise IgdbError("429")
+        if endpoint == "external_games":
+            if self.ext_fail:
+                return []                    # nieścisłe pytanie: błąd IGDB to pusta lista
+            # Steam 777 → gra 5 (nowe pole źródła), GOG 888 → gra 1 (stare pole category), Steam 999 → brak
+            links = [{"uid": "777", "external_game_source": 1, "game": 5}, {"uid": "888", "category": 5, "game": 1},
+                     {"uid": "888", "category": 1, "game": 6}]        # ten sam numer w innym sklepie — pominięty
+            return [r for r in links if f'"{r["uid"]}"' in body]
         if endpoint in NAMES:
             return [{"id": i, "name": n, "games": list(range(c))} for i, (n, c) in NAMES[endpoint].items()
                     if str(i) in body]
@@ -52,11 +60,14 @@ class FakeIgdb:
             return [g for g in GAMES.values() if q.split()[0] in g["name"].lower()]
         if "remakes =" in body:
             return [g for g in GAMES.values() if any(str(x) in body for x in g.get("remakes") or [])]
+        if "where id = (" in body:
+            ids = {int(x) for x in body.split("where id = (")[1].split(")")[0].split(",")}
+            return [g for g in GAMES.values() if g["id"] in ids]
         return []
 
 
 def q_of(fake):
-    return lambda ep, body: fake.query(ep, body)
+    return lambda ep, body, strict=True: fake.query(ep, body, strict)
 
 
 def test_pick_game_prefers_original_over_mod_and_rejects_weak_match():
@@ -76,7 +87,9 @@ def test_detect_franchise_collection_and_remake_order():
     rows = S.detect(q_of(FakeIgdb()), [{"key": "pc|yakuza 0", "title": "Yakuza 0", "platform": "pc"},
                                        {"key": "pc|yakuza kiwami", "title": "Yakuza Kiwami", "platform": "pc"}])
     by = {r[0]: S._result(r) for r in rows}
-    assert by["pc|yakuza 0"]["name"] == "Yakuza" and by["pc|yakuza 0"]["collection"] == "Yakuza Prequels"
+    # seria = najwęższa kolekcja z co najmniej dwiema grami (nie jednoelementowa „Yakuza Prequels”), grupa = franczyza
+    assert by["pc|yakuza 0"]["name"] == "Yakuza" and by["pc|yakuza 0"]["collection"] == "Yakuza"
+    assert by["pc|yakuza 0"]["group"] == "Yakuza"
     k = by["pc|yakuza kiwami"]
     assert k["order_ts"] == GAMES[3]["first_release_date"]   # remake → data oryginału
     assert k["release_ts"] == GAMES[2]["first_release_date"]
@@ -212,3 +225,30 @@ def test_routes_need_the_server_key(srv, fake_server):  # noqa: F811
     assert st == 200 and r["ok"] and "series" not in r and r["progress"]["checked"] == 1
     st, info = _req(srv, "GET", "/v1/info", key)
     assert "series" in info["features"]
+
+
+def test_series_is_collection_group_is_franchise():
+    """Zgłoszenie 2026-11-16: franczyza (Dungeons & Dragons) nie jest serią — seria to kolekcja; bez kolekcji —
+    pusta nazwa (Lumen bierze serię z tytułu), franczyza jako grupa; bez obu — gra spoza serii."""
+    row = lambda fr, co: ("pc|x", "X", "pc", 7, "X", fr, co, 1, 1, 1.0, 0.0)                 # noqa: E731
+    r = S._result(row("Dungeons & Dragons", "Eye of the Beholder"))
+    assert (r["name"], r["group"]) == ("Eye of the Beholder", "Dungeons & Dragons")
+    r = S._result(row("Dungeons & Dragons", None))
+    assert (r["name"], r["group"]) == ("", "Dungeons & Dragons")
+    assert S._result(row(None, None)) is None
+    assert S._result(row(None, "Tex Murphy"))["group"] == ""
+
+
+def test_store_id_wins_over_title():
+    """Zgłoszenie 2026-11-16: gra ze Steam / GOG dopasowana po identyfikatorze sklepu, nie po tytule (Steam
+    „Tomb Raider” 2013 ≠ gra z 1996); pytanie po identyfikatorze nieudane — po tytule, jak dotąd."""
+    games = [{"key": "steam|777", "title": "Yakuza 0", "platform": "pc", "store": "steam", "ext": "777"},
+             {"key": "gog|888", "title": "Chrono Trigger", "platform": "pc", "store": "gog", "ext": "888"},
+             {"key": "steam|999", "title": "Yakuza Kiwami", "platform": "pc", "store": "steam", "ext": "999"}]
+    by = {r[0]: r for r in S.detect(q_of(FakeIgdb()), games)}
+    assert by["steam|777"][3] == 5 and by["gog|888"][3] == 1 and by["steam|999"][3] == 2
+    by = {r[0]: r for r in S.detect(q_of(FakeIgdb(ext_fail=True)), games)}
+    assert by["steam|777"][3] == 1                          # po tytule „Yakuza 0”
+    want = S._want([{"title": "Tomb Raider", "platform": "pc", "store": "steam", "id": "203160"},
+                    {"title": "Tomb Raider", "platform": "pc"}, {"title": "X", "store": "steam", "id": "1; drop"}])
+    assert set(want) == {"steam|203160", "pc|tomb raider", "pc|x"}

@@ -86,11 +86,55 @@ def key_of(title: str, platform: str) -> str:
     return f"{source_of(platform)}|{' '.join(str(title or '').lower().split())}"
 
 
+STORES = {"steam": 1, "gog": 5}     # źródło wydania w IGDB (external_games: category / external_game_source)
+
+
+def store_key(store: str, ext: str) -> str:
+    """Klucz gry ze sklepu po jej identyfikatorze: „steam|203160”, „gog|1207658930” (zgłoszenie 2026-11-16: po
+    tytule „Tomb Raider” ze Steam — reboot z 2013 — dopasowywał się do gry z 1996). Lumen liczy go tak samo."""
+    return f"{store}|{ext}"
+
+
 def _igdb_platform(plat: str):
     if plat == "PC":
         return 6
     from emustart import art_sources
     return art_sources.IGDB_PLATFORMS.get(plat)
+
+
+GAME_FIELDS = ("id,name,platforms,collections,franchises,franchise,first_release_date,version_parent,game_type,"
+               "alternative_names.name")
+
+
+def _by_store_id(q, games: list) -> dict:
+    """{(sklep, identyfikator): gra IGDB} — wydanie ze Steam / GOG po identyfikatorze sklepu, nie po tytule.
+    Każdy błąd tego pytania (nieznane pole, limit) to pusty wynik: te gry dopasuje tytuł, jak dotąd."""
+    out: dict = {}
+    want = {(g["store"], g["ext"]) for g in games}
+    if not want:
+        return out
+    try:
+        links: dict = {}
+        for part in _chunks(sorted({e for _, e in want}), 50):
+            uids = ",".join(f'"{u}"' for u in part)
+            for r in q("external_games", f"fields *; where uid = ({uids}); limit 500;", False) or []:
+                src = r.get("external_game_source") or r.get("category")
+                store = next((s for s, n in STORES.items() if n == src), None)
+                game = r.get("game")
+                game = game.get("id") if isinstance(game, dict) else game
+                if store and game and (store, str(r.get("uid"))) in want:
+                    links[(store, str(r.get("uid")))] = int(game)
+        rows: dict = {}
+        for part in _chunks(sorted(set(links.values())), 100):
+            for r in q("games", f'fields {GAME_FIELDS}; where id = ({",".join(map(str, part))}); limit 100;', False) or []:
+                rows[r["id"]] = r
+        for k, gid in links.items():
+            if gid in rows:
+                out[k] = rows[gid]
+    except Exception:
+        log.info("serie IGDB: dopasowanie po identyfikatorze sklepu nieudane — po tytule", exc_info=True)
+        return {}
+    return out
 
 
 # ── dopasowanie (PyLinks Web) ──
@@ -204,8 +248,13 @@ def _names(q, endpoint: str, ids) -> dict:
 def detect(q, games: list) -> list:
     """games: [{"key", "title", "platform"}] → wiersze do bazy. `q(endpoint, apicalypse) -> list`."""
     found = []
+    by_ext = _by_store_id(q, [g for g in games if g.get("store") and g.get("ext")])
     for g in games:
-        best, sim = None, 0.0
+        best, sim = by_ext.get((g.get("store"), g.get("ext"))), 1.0
+        if best is not None:
+            found.append((g, best, sim))
+            continue
+        sim = 0.0
         for phrase, compare in name_variants(g["title"]):
             esc = phrase.replace('"', " ")
             rows = q("games", f'search "{esc}"; fields id,name,platforms,collections,franchises,franchise,'
@@ -249,7 +298,10 @@ def detect(q, games: list) -> list:
         par = parent_info.get(best.get("version_parent")) or {}
         c_ids = best.get("collections") or par.get("collections") or []
         f_ids = _franchises(best) or _franchises(par)
-        c_id = min(c_ids, key=lambda c: colls.get(c, ("", 10**9))[1]) if c_ids else None
+        # najwęższa kolekcja z co najmniej dwiema grami (jednoelementowa — np. „Yakuza Prequels” — zostawiłaby grę
+        # samą); jednoelementowa tylko, gdy innej nie ma
+        size = lambda c: colls.get(c, ("", 10**9))[1]                          # noqa: E731
+        c_id = min(c_ids, key=lambda c: (size(c) < 2, size(c))) if c_ids else None
         f_id = f_ids[0] if f_ids else None
         rel = best.get("first_release_date")
         order = original_ts.get(best["id"]) or par.get("first_release_date") or rel
@@ -262,13 +314,18 @@ def detect(q, games: list) -> list:
 # ── pytanie Lumena i wątek w tle ──
 
 def _result(row) -> dict | None:
-    """Wiersz bazy → odpowiedź dla Lumena; None = gra spoza serii (sprawdzona)."""
+    """Wiersz bazy → odpowiedź dla Lumena; None = gra spoza serii (sprawdzona).
+
+    Seria = kolekcja IGDB (Baldur's Gate, Eye of the Beholder, Heroes of Might and Magic), grupa = franczyza
+    (Dungeons & Dragons, Might and Magic) — zgłoszenie 2026-11-16: franczyza jako seria łączyła niezależne serie.
+    Gra z franczyzą bez kolekcji: `name` puste, `group` — Lumen bierze serię z tytułu (remaster dołącza do serii
+    oryginału, gra bez pary zostaje sama), nie worek z całej franczyzy."""
     _key, _t, _p, igdb_id, igdb_name, franchise, collection, rel, order, _sim, _ts = row
-    name = franchise or collection
-    if not igdb_id or not name:
+    if not igdb_id or not (collection or franchise):
         return None
-    return {"name": name, "franchise": franchise or "", "collection": collection or "",
-            "order_ts": int(order or 0), "release_ts": int(rel or 0), "igdb": igdb_name or ""}
+    return {"name": collection or "", "group": franchise or "", "franchise": franchise or "",
+            "collection": collection or "", "order_ts": int(order or 0), "release_ts": int(rel or 0),
+            "igdb": igdb_name or ""}
 
 
 def _want(games) -> dict:
@@ -280,6 +337,11 @@ def _want(games) -> dict:
         if not title:
             continue
         src = source_of(str(g.get("platform") or ""))
+        store, ext = str(g.get("store") or "").lower(), str(g.get("id") or "").strip()
+        if store in STORES and ext.isdigit() and len(ext) <= 20:
+            k = store_key(store, ext)
+            want.setdefault(k, {"key": k, "title": title, "platform": src, "store": store, "ext": ext})
+            continue
         want.setdefault(key_of(title, src), {"key": key_of(title, src), "title": title, "platform": src})
     return want
 
@@ -370,7 +432,8 @@ def server_games(cfg: dict) -> list:
     out = []
     try:
         from emustart import gogarchive
-        out += [{"title": g["title"], "platform": "pc"} for g in gogarchive.catalog() if g.get("title")]
+        out += [{"title": g["title"], "platform": "pc", "store": "gog", "id": g.get("product_id")}
+                for g in gogarchive.catalog() if g.get("title")]
     except Exception:
         log.exception("serie: katalog GOG")
     try:
@@ -459,7 +522,7 @@ def _run() -> None:
                     log.info("serie IGDB: sprawdzono %d gier", done)
                 return
         try:
-            rows = detect(lambda ep, body: ig.query(ep, body, strict=True), batch)
+            rows = detect(lambda ep, body, strict=True: ig.query(ep, body, strict=strict), batch)
             with _db_lock, _db() as con:
                 con.executemany("INSERT OR REPLACE INTO series VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
             done += len(rows)

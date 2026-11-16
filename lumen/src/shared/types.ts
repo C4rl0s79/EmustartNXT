@@ -109,6 +109,8 @@ export interface IgdbSeries {
   order: number
   /** unix seconds: release of this very edition (tie-break: arcade before its port) */
   release: number
+  /** grupa nad serią — franczyza IGDB (Dungeons & Dragons nad Eye of the Beholder); seria to kolekcja */
+  group?: string
 }
 
 /** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */

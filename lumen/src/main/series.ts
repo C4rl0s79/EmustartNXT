@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import type { Game, IgdbSeries } from '@shared/types'
+import { seriesStoreKey } from '@shared/series'
 import type { EmustartEngine } from './emustart/engine'
 import { JsonFile } from './store/jsonFile'
 import { log } from './logger'
@@ -19,7 +20,7 @@ interface Answer {
   ok: boolean
   reason?: string
   enabled?: boolean
-  series?: Record<string, { name?: string; order_ts?: number; release_ts?: number }>
+  series?: Record<string, { name?: string; group?: string; order_ts?: number; release_ts?: number }>
   /** sprawdzone w IGDB, bez serii — Lumen nie zgaduje ich serii z tytułu */
   standalone?: string[]
   pending?: number
@@ -85,7 +86,10 @@ export class SeriesService extends EventEmitter {
       }
       const series: Record<string, IgdbSeries> = {}
       for (const [k, v] of Object.entries(r.series ?? {})) {
-        if (v && typeof v.name === 'string' && v.name.trim()) series[k] = { name: v.name.trim(), order: Number(v.order_ts) || 0, release: Number(v.release_ts) || 0 }
+        // seria (kolekcja) albo sama grupa (franczyza bez kolekcji: seria z tytułu, serwer ≥ 0.66)
+        const name = typeof v?.name === 'string' ? v.name.trim() : ''
+        const group = typeof v?.group === 'string' ? v.group.trim() : ''
+        if (name || group) series[k] = { name, order: Number(v.order_ts) || 0, release: Number(v.release_ts) || 0, ...(group ? { group } : {}) }
       }
       for (const k of r.standalone ?? []) if (typeof k === 'string' && !series[k]) series[k] = { name: '', order: 0, release: 0 }
       if (r.own_pending) next = WHILE_PENDING          // szybciej tylko, gdy serwer sprawdza gry TEGO Lumena
@@ -94,7 +98,7 @@ export class SeriesService extends EventEmitter {
       const changes: Record<string, IgdbSeries | null> = {}
       for (const [k, v] of Object.entries(series)) {
         const old = this.data.series[k]
-        if (!old || old.name !== v.name || old.order !== v.order || old.release !== v.release) changes[k] = v
+        if (!old || old.name !== v.name || old.order !== v.order || old.release !== v.release || old.group !== v.group) changes[k] = v
       }
       for (const k of Object.keys(this.data.series)) if (!(k in series)) changes[k] = null
       if (Object.keys(changes).length) {
@@ -115,15 +119,21 @@ export class SeriesService extends EventEmitter {
 
 /** Tytuły PC do dosłania (silnik wysyła tylko te, których serwer nie zna): Steam, skróty, GOG — tytuł zainstalowanej
  * gry bywa inny niż w katalogu archiwum serwera. Gry emulatorów serwer zna zawsze. */
-export function steamTitles(games: Game[]): { title: string; platform: string }[] {
+export function steamTitles(games: Game[]): { title: string; platform: string; store?: string; id?: string }[] {
   const seen = new Set<string>()
-  const out: { title: string; platform: string }[] = []
+  const out: { title: string; platform: string; store?: string; id?: string }[] = []
   for (const g of games) {
     if (g.source === 'emustart' || g.source === 'demo') continue
     const t = g.name.trim()
-    if (!t || seen.has(t.toLowerCase())) continue
-    seen.add(t.toLowerCase())
-    out.push({ title: t, platform: 'pc' })
+    // gra ze sklepu — z identyfikatorem (serwer dopasuje wydanie po nim, nie po tytule; zgłoszenie 2026-11-16)
+    const sk = seriesStoreKey(g)
+    const id = sk ? `${sk}` : `t:${t.toLowerCase()}`
+    if (!t || seen.has(id)) continue
+    seen.add(id)
+    if (sk) {
+      const [store, ext] = sk.split('|')
+      out.push({ title: t, platform: 'pc', store, id: ext })
+    } else out.push({ title: t, platform: 'pc' })
   }
   return out
 }
@@ -133,7 +143,8 @@ function clean(raw: unknown): Stored {
   const series: Record<string, IgdbSeries> = {}
   for (const [k, v] of Object.entries((r && typeof r.series === 'object' && r.series) || {})) {
     const s = v as Partial<IgdbSeries>
-    if (typeof s?.name === 'string') series[k] = { name: s.name, order: Number(s.order) || 0, release: Number(s.release) || 0 }
+    if (typeof s?.name === 'string')
+      series[k] = { name: s.name, order: Number(s.order) || 0, release: Number(s.release) || 0, ...(typeof s.group === 'string' && s.group ? { group: s.group } : {}) }
   }
   return { at: Number(r?.at) || 0, series }
 }

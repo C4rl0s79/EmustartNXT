@@ -878,10 +878,15 @@ class Api:
         from emustart import igdbseries
         series = dict(d.get("series") or {})
         standalone = set(d.get("standalone") or [])
-        # tylko tytuły, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu)
+        # tylko gry, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu); gra ze
+        # sklepu — po identyfikatorze („steam|203160”), inne po tytule
+        def key(g: dict) -> str:
+            store, ext = str(g.get("store") or ""), str(g.get("id") or "")
+            if store in igdbseries.STORES and ext.isdigit():
+                return igdbseries.store_key(store, ext)
+            return igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
         ask = [g for g in (extra or []) if isinstance(g, dict) and g.get("title")
-               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in series
-               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in standalone][:20000]
+               and key(g) not in series and key(g) not in standalone][:20000]
         own_pending = 0
         if ask and d.get("enabled"):
             r = netsrc.authed_post(self._cfg, "/v1/series", {"games": ask})
@@ -889,8 +894,7 @@ class Api:
                 got = r.get("series") or {}
                 series.update({k: v for k, v in got.items() if v})
                 standalone.update(k for k, v in got.items() if v is None)
-                own_pending = sum(1 for g in ask if igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
-                                  not in got)
+                own_pending = sum(1 for g in ask if key(g) not in got)
         return {"ok": True, "enabled": bool(d.get("enabled")), "series": series, "standalone": sorted(standalone),
                 "pending": int(d.get("pending") or 0), "own_pending": own_pending,
                 "progress": d.get("progress") if isinstance(d.get("progress"), dict) else None}
