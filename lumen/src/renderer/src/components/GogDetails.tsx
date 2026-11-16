@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { ActionResult, Game } from '@shared/types'
+import type { ActionResult, Game, GogMidi, GogMidiMode } from '@shared/types'
+import { GOG_MIDI_MODES } from '@shared/types'
 import { FAMILY_LABEL } from '@shared/libraryNav'
 import { api, askChoice, attempt, useStore } from '../store'
 import { GogSaves, launchGog } from './GogSaves'
@@ -54,6 +55,46 @@ export async function chooseGogTask(game: Game, before?: () => void): Promise<vo
   if (i === null) return
   before?.()
   report(await launchGog(game.id, tasks[i].index))
+}
+
+const MIDI_LABEL: Record<GogMidiMode, string> = { auto: 'Automatycznie', mt32: 'Roland MT-32', sc55: 'Roland SC-55', default: 'Domyślne DOSBoxa' }
+
+/** Wiersz „MIDI” w opcjach gry: krótko, co dostanie DOSBox (powód z silnika). */
+export function midiSummary(m: GogMidi | null): string {
+  if (!m?.ok || !m.mode) return ''
+  return `${MIDI_LABEL[m.mode]} · ${m.reason}`
+}
+
+/** „MIDI”: tryb gry (Automatycznie / MT-32 / SC-55 / domyślne DOSBoxa) i wyjścia MIDI Windows obu modułów (wspólne dla
+ *  wszystkich gier). Urządzenie w samej grze ustawia się jej programem konfiguracji — stąd uwaga z listy MT-32. */
+export async function chooseGogMidi(game: Game, current: GogMidi | null): Promise<GogMidi | null> {
+  const modes: GogMidiMode[] = [...GOG_MIDI_MODES]
+  const ports = current?.ports
+  const opts = [
+    ...modes.map((m) => `${MIDI_LABEL[m]}${current?.mode === m ? ' ✓' : ''}`),
+    `Wyjścia MIDI… (MT-32: ${ports?.mt32 || 'nie wybrano'}, SC-55: ${ports?.sc55 || 'nie wybrano'})`
+  ]
+  const i = await askChoice(`MIDI — ${game.name}`, opts)
+  if (i === null) return current
+  if (i === modes.length) {
+    const list = ports?.ports ?? []
+    if (!list.length) {
+      useStore.getState().toast('Windows nie zgłasza żadnego wyjścia MIDI.', 'error')
+      return current
+    }
+    const pick = [...list, 'brak (nie używaj tego modułu)']
+    const mt = await askChoice('Wyjście MIDI dla Roland MT-32', pick)
+    if (mt === null) return current
+    const sc = await askChoice('Wyjście MIDI dla Roland SC-55', pick)
+    if (sc === null) return current
+    const port = (i: number): string => (i === list.length ? '-' : list[i])
+    report(await attempt(api().gog.setMidiPorts(port(mt), port(sc))))
+    return (await attempt(api().gog.midi(game.id))) ?? current
+  }
+  const r = await attempt(api().gog.setMidi(game.id, modes[i]))
+  if (r?.ok) useStore.getState().toast(r.note ? `${r.reason}. Uwaga do gry: ${r.note}` : r.reason, 'info')
+  else if (r) useStore.getState().toast(r.reason, 'error')
+  return r?.ok ? r : current
 }
 
 /** Usunięcie gry GOG z tego komputera — z wyborem plików skopiowanych przez instalator poza folder gry (Dokumenty,

@@ -1220,6 +1220,22 @@ export interface GogPlayTask {
   default: boolean
 }
 
+/** MIDI output of a DOSBox game (engine: emustart/dosmidi.py) — Roland MT-32 / SC-55 per game */
+export const GOG_MIDI_MODES = ['auto', 'mt32', 'sc55', 'default'] as const
+export type GogMidiMode = (typeof GOG_MIDI_MODES)[number]
+export interface GogMidi {
+  ok: boolean
+  reason: string
+  mode?: GogMidiMode
+  device?: 'mt32' | 'sc55' | null
+  port?: string
+  /** remark from the MT-32 list (setup hints, e.g. "Select GM driver in setup for MT-32 output") */
+  note?: string
+  /** the game starts through DOSBox (only then the row is shown) */
+  dosbox?: boolean
+  ports?: { ports: string[]; mt32: string; sc55: string }
+}
+
 export interface GogVerifyResult {
   ok: boolean
   checked?: number

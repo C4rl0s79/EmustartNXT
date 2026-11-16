@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { IPC } from '@shared/api'
-import type { ActionResult, GogExtra, GogExtrasResult, GogInstallRequest, GogLaunchResult, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
+import { GOG_MIDI_MODES } from '@shared/types'
+import type { ActionResult, GogExtra, GogExtrasResult, GogInstallRequest, GogLaunchResult, GogMidi, GogOptionsResult, GogPlayTask, GogSaveConflict, GogSavesStatus, GogVerifyResult, Settings } from '@shared/types'
 import type { EmustartEngine } from '../emustart/engine'
 import { gogPid, type GogProvider } from './provider'
 
@@ -151,6 +152,14 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     const r = await call<{ ok: boolean; tasks?: GogPlayTask[] }>('gog_play_tasks', [pidOf(gameId)])
     return r.ok ? (r.tasks ?? []) : []
   })
+  const midiOf = (r: Partial<GogMidi> & { reason?: string }): GogMidi => ({ ...r, ok: r.ok === true, reason: r.reason ?? '' })
+  handle(IPC.gogMidi, async (gameId: string): Promise<GogMidi> => midiOf(await call<GogMidi>('gog_midi', [pidOf(gameId)])))
+  handle(IPC.gogMidiSet, async (gameId: string, mode: string): Promise<GogMidi> =>
+    (GOG_MIDI_MODES as readonly string[]).includes(mode) ? midiOf(await call<GogMidi>('gog_midi_set', [pidOf(gameId), mode])) : { ok: false, reason: 'nieznany tryb MIDI' }
+  )
+  handle(IPC.gogMidiPorts, async (mt32: string, sc55: string) =>
+    result(await call('midi_ports_set', [String(mt32 ?? ''), String(sc55 ?? '')]), 'Zapisano wyjścia MIDI.')
+  )
   handle(IPC.gogUninstall, async (gameId: string, removeOutside?: boolean) => {
     const r = await call<{ ok: boolean; reason?: string; message?: string }>('gog_uninstall', [pidOf(gameId), removeOutside === true], 10 * 60_000)
     void gog.refresh(false)

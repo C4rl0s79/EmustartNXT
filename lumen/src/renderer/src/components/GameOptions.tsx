@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { EmuGameOptions, EmuMetaField, EmuSettingsChange, Game } from '@shared/types'
+import type { EmuGameOptions, EmuMetaField, EmuSettingsChange, Game, GogMidi } from '@shared/types'
 import { api, askChoice, attempt, useStore } from '../store'
 import { focusFirst } from '../nav/engine'
 import { formatBytes, formatLastPlayed, plural, versionCountLabel } from '../lib/format'
@@ -10,7 +10,7 @@ import { OnScreenKeyboard } from './TextField'
 import { ArtPicker } from '../modals/ArtPicker'
 import { GogSaves } from './GogSaves'
 import { GogExtras } from './GogExtras'
-import { chooseGogTask, gogRemovable, uninstallGog } from './GogDetails'
+import { chooseGogMidi, chooseGogTask, gogRemovable, midiSummary, uninstallGog } from './GogDetails'
 import { Controllers } from './Controllers'
 import { CategoryPicker } from '../modals/CategoryPicker'
 import { SeriesEditor, seriesSummary } from '../modals/SeriesEditor'
@@ -77,6 +77,19 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
   const cats = useStore((s) => s.prefs?.gameCategories[game.id]?.length ?? 0)
   const engineReady = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
   const { primary, busy } = usePrimaryAction(game)
+  // gra DOSBox: wyjście MIDI (silnik: emustart/dosmidi.py) — wiersz tylko, gdy gra startuje przez DOSBox
+  const [midi, setMidi] = useState<GogMidi | null>(null)
+  useEffect(() => {
+    if (game.gog?.state !== 'installed' || !engineReady) {
+      setMidi(null)                                   // odinstalowana gra / silnik nie działa — bez wiersza MIDI
+      return
+    }
+    let alive = true
+    void attempt(api().gog.midi(game.id)).then((m) => alive && setMidi(m ?? null))
+    return () => {
+      alive = false
+    }
+  }, [game.id, game.gog?.state, engineReady])
   const listRef = useRef<HTMLDivElement>(null)
   const toast = useStore((s) => s.toast)
   const steam = game.source === 'steam'
@@ -101,7 +114,11 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
     },
     // gra GOG: inne zadania z goggame-*.info (ustawienia grafiki DOSBoxa, launcher, druga część) — jak „Uruchom…” na pulpicie
     ...(game.gog?.state === 'installed' && engineReady
-      ? [{ label: 'Uruchom…', value: 'zadania gry: ustawienia, launcher, inne części', act: () => void chooseGogTask(game, onClose) }]
+      ? [{ label: 'Uruchom…', value: 'zadania gry: ustawienia, launcher, inne części, diagnostyka DOSBoxa', act: () => void chooseGogTask(game, onClose) }]
+      : []),
+    // gra DOSBox: wyjście MIDI — Roland MT-32 / SC-55 (emustart/dosmidi.py)
+    ...(midi?.ok && midi.dosbox
+      ? [{ label: 'MIDI', value: midiSummary(midi), act: () => void chooseGogMidi(game, midi).then((m) => setMidi(m)) }]
       : []),
     { label: isFav ? '★ W ulubionych' : '☆ Do ulubionych', act: () => void attempt(api().prefs.toggleFavorite(game.id)) },
     { label: 'Kategorie', value: cats ? `${cats} ${plural(cats, 'kategoria', 'kategorie', 'kategorii')}` : 'przypisz do grup', act: () => setSub('categories') },

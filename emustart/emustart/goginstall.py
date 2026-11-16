@@ -1202,6 +1202,11 @@ def _remove_managed(e: dict) -> tuple:
                     p.rmdir()
             except (OSError, UnsafePath):
                 pass
+    import shutil                                       # foldery Lumena: diagnostyka DOSBoxa i port MIDI (gogfinal, dosmidi)
+    for own in (".emustart-diag", ".emustart-midi"):
+        p = root / own
+        if p.is_dir() and not p.is_symlink():
+            shutil.rmtree(p, ignore_errors=True)
     left = sum(1 for p in root.rglob("*") if p.is_file()) if root.is_dir() else 0
     if root.is_dir() and not any(root.iterdir()) and not root.is_symlink():
         try:

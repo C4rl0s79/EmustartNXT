@@ -787,6 +787,35 @@ class Api:
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 
+    def gog_midi(self, pid: str) -> dict:
+        """Wyjście MIDI gry DOSBox (MT-32 / SC-55 / domyślne) — emustart/dosmidi.py."""
+        try:
+            return self._gog.midi(pid)
+        except ValueError as ex:
+            return {"ok": False, "reason": str(ex)}
+
+    def gog_midi_set(self, pid: str, mode: str) -> dict:
+        try:
+            return self._gog.midi_set(pid, str(mode or ""))
+        except ValueError as ex:
+            return {"ok": False, "reason": str(ex)}
+
+    def midi_ports(self) -> dict:
+        """Wyjścia MIDI Windows i porty MT-32 / SC-55 (wybrane albo zgadnięte po nazwie)."""
+        from emustart import dosmidi
+        return {"ok": True, **dosmidi.port_settings(self._cfg)}
+
+    def midi_ports_set(self, mt32: str, sc55: str) -> dict:
+        from emustart import dosmidi
+        names = dosmidi.ports()
+        for key, val in (("midi_mt32_port", mt32), ("midi_sc55_port", sc55)):
+            v = str(val or "").strip()                     # "" — zgadnięty po nazwie, "-" — wyłączony
+            if v and v != dosmidi.NONE and v not in names:
+                return {"ok": False, "reason": f"nie ma wyjścia MIDI „{v}”"}
+            self._cfg[key] = v
+        config.save(self._cfg)
+        return {"ok": True, **dosmidi.port_settings(self._cfg, names)}
+
     def gog_play_tasks(self, pid: str) -> dict:
         try:
             return self._gog.play_tasks(pid)
