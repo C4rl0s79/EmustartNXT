@@ -651,12 +651,12 @@ function XboxSection() {
       />
       <h3 className="cats__heading">Konto Xbox</h3>
       <p className="card__desc">
-        Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez publiczny identyfikator launchera Minecraft
-        (bez konfiguracji; okno logowania pokaże nazwę Minecraft; Microsoft może go kiedyś wyłączyć dla programów zewnętrznych). Opcjonalnie własna aplikacja Azure: portal.azure.com →
+        Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez aplikację „Lumen Launcher”
+        (bez konfiguracji). Opcjonalnie własna aplikacja Azure: portal.azure.com →
         Microsoft Entra ID → Rejestracje aplikacji → „Tylko osobiste konta Microsoft”, przekierowanie „Klient publiczny/natywny”:
         https://login.microsoftonline.com/common/oauth2/nativeclient — jej identyfikator poniżej (po zmianie trzeba zalogować się ponownie).
       </p>
-      <TextField label="Identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
+      <TextField label="Inny identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
       <div className="modal__row">
         <button className="btn" data-nav disabled={busy || clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
           Zapisz identyfikator

@@ -1556,7 +1556,7 @@ function xboxSync(): Promise<ActionResult> {
 }
 
 async function xboxLogin(): Promise<ActionResult> {
-  const f = flowFor(settings.get().xboxClientId)          // bez identyfikatora Azure — publiczny identyfikator Xbox
+  const f = flowFor(settings.get().xboxClientId)          // bez własnego identyfikatora — aplikacja „Lumen Launcher”
   const gen = xboxGen
   try {
     return await xboxWithTokens(await loginWindow(win, f), gen, f.clientId, f.rps, false)
