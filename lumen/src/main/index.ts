@@ -167,7 +167,18 @@ const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
   platforms: () => platformCatalog,
   series: (g: Game): IgdbSeries | undefined => seriesService.of(g)
 })
-seriesService.on('change', () => unified.update())
+// Nowe serie z serwera najwyżej raz na 30 min (pierwsze wczytanie od razu): każda zmiana to pełna migawka biblioteki
+// do obu okien, także Decka — a serwer przez wiele godzin sprawdza bibliotekę i wynik zmienia się co kilka minut
+let seriesApplied = 0
+let seriesTimer: NodeJS.Timeout | undefined
+seriesService.on('change', () => {
+  const wait = seriesApplied ? Math.max(0, seriesApplied + 30 * 60_000 - Date.now()) : 0
+  clearTimeout(seriesTimer)
+  seriesTimer = setTimeout(() => {
+    seriesApplied = Date.now()
+    unified.update()
+  }, wait)
+})
 void seriesService.load()
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
