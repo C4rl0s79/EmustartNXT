@@ -10,7 +10,9 @@ from emustart.api import Api
 
 
 def _api():
-    return types.SimpleNamespace(_cfg={})
+    ns = types.SimpleNamespace(_cfg={})
+    ns._series_get = lambda *a, **k: Api._series_get(ns, *a, **k)
+    return ns
 
 
 def test_gets_server_series_and_posts_only_steam_titles(monkeypatch):

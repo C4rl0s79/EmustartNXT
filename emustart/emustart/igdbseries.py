@@ -312,7 +312,8 @@ def progress(con) -> dict:
         pending = len(_queue) + (len(_worker.get("batch") or ()) if _worker.get("busy") else 0)
         done = int(_worker.get("done") or 0)
         error = str(_worker.get("error") or "")
-        running = _worker.get("thread") is not None
+        t = _worker.get("thread")
+        running = t is not None and t.is_alive()     # wątek, który padł, nie „sprawdza” w nieskończoność
     return {"running": running, "done": done, "total": done + pending, "checked": int(checked or 0),
             "in_series": int(in_series or 0), "last_batch": float(last or 0), "error": error}
 

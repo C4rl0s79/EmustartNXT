@@ -88,8 +88,9 @@ export class SeriesService extends EventEmitter {
         if (v && typeof v.name === 'string' && v.name.trim()) series[k] = { name: v.name.trim(), order: Number(v.order_ts) || 0, release: Number(v.release_ts) || 0 }
       }
       for (const k of r.standalone ?? []) if (typeof k === 'string' && !series[k]) series[k] = { name: '', order: 0, release: 0 }
-      // szybciej, gdy serwer sprawdza gry TEGO Lumena albo trwa jego przebieg (każda porcja przegrupowuje listę)
-      if (r.own_pending || r.progress?.running) next = WHILE_PENDING
+      if (r.own_pending) next = WHILE_PENDING          // szybciej tylko, gdy serwer sprawdza gry TEGO Lumena
+      // przebieg serwera trwa — pasek „Serie z IGDB” od razu (main/serverActivity.ts), nie po kilku minutach
+      if (r.progress?.running) this.emit('running')
       const changes: Record<string, IgdbSeries | null> = {}
       for (const [k, v] of Object.entries(series)) {
         const old = this.data.series[k]

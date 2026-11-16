@@ -7,11 +7,11 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
-import { serverActivity } from './serverActivity'
+import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
 import { isModeCombo } from '@shared/pad'
-import type { IgdbSeries, UserArtItem } from '@shared/types'
+import type { IgdbSeries, SeriesStatus, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
@@ -174,8 +174,16 @@ seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(
 void seriesService.load()
 // wymiana z serwerem w toku (paski pod „EmuStart”) i stan serii z IGDB — tylko główne okno (nie ma ich w DECK_CHANNELS)
 serverActivity.on('change', (list) => send(IPC.activityChanged, list))
-serverActivity.on('series', (s) => send(IPC.activitySeriesChanged, s))
+serverActivity.on('series', (s: SeriesStatus) => {
+  send(IPC.activitySeriesChanged, s)
+  seriesDuringPass(s)
+})
+seriesService.on('running', () => serverActivity.pokeSeries(1000))
 serverActivity.start(engine)
+const seriesPass = new SeriesPassWatch()
+function seriesDuringPass(s: SeriesStatus): void {
+  if (seriesPass.refetch(s)) seriesService.schedule(0)
+}
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
 const updater = new Updater({

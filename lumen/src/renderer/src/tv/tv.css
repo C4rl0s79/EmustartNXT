@@ -1170,7 +1170,11 @@
   flex: 0 1 38vw;
   min-width: 0;
   margin: 0 2vw;
-  align-self: center;
+  /* cała wysokość paska: lista wymian zaczyna się pod nim, także gdy nic się nie pobiera */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .activity-list--tv {
   position: absolute;

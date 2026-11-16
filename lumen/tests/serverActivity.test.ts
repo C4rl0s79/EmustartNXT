@@ -64,3 +64,20 @@ describe('tablica wymian', () => {
     expect(seen).toEqual([1, 0])
   })
 })
+
+describe('pełna lista serii w trakcie przebiegu serwera', () => {
+  it('najwyżej co 15 min, tylko gdy przybyło sprawdzonych, i raz na koniec', async () => {
+    const { SeriesPassWatch } = await import('../src/main/serverActivity')
+    const w = new SeriesPassWatch()
+    const st = (running: boolean, checked: number) => ({ state: 'ok' as const, running, checked })
+    const min = 60_000
+    expect(w.refetch(st(true, 100), 0)).toBe(false) // pierwszy odczyt — punkt odniesienia
+    expect(w.refetch(st(true, 140), 16 * min)).toBe(true) // przybyło, minęło 15 min
+    expect(w.refetch(st(true, 180), 20 * min)).toBe(false) // za wcześnie
+    expect(w.refetch(st(true, 180), 40 * min)).toBe(true) // 180 ≠ 140, minęło
+    expect(w.refetch(st(true, 180), 60 * min)).toBe(false) // nic nie przybyło
+    expect(w.refetch(st(false, 200), 61 * min)).toBe(true) // koniec przebiegu
+    expect(w.refetch(st(false, 200), 90 * min)).toBe(false)
+    expect(w.refetch({ state: 'error', reason: 'x' }, 100 * min)).toBe(false)
+  })
+})

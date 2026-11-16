@@ -12,14 +12,17 @@ import { log } from './logger'
 
 /** krótka wymiana nie miga paskiem: widoczna dopiero, gdy trwa dłużej */
 export const SHOW_AFTER_MS = 700
-const SAVES_IDLE_MS = 3000
+const SAVES_IDLE_MS = 10_000
 const SAVES_ACTIVE_MS = 1000
 const SERIES_RUNNING_MS = 15_000
 const SERIES_IDLE_MS = 5 * 60_000
 const EMIT_MS = 200
+const ENGINE_DOWN = 'Silnik EmuStart nie działa — stan serii nieznany.'
 
 interface SavesProgress {
   active: boolean
+  /** gotowy opis z silnika (syncclient.progress_text); starszy silnik — bez niego */
+  text?: string
   op?: 'send' | 'get' | 'pack'
   done?: number
   total?: number
@@ -35,7 +38,7 @@ interface SeriesAnswer {
 
 const num = (n: number): string => Math.round(n).toLocaleString('pl-PL')
 
-/** „wysłano 120 / 262 MB · ok. 1 min” — jak syncclient.progress_text w silniku */
+/** „wysłano 120 / 262 MB · ok. 1 min” — tylko dla silnika bez gotowego tekstu (sync_progress.text) */
 export function savesText(p: SavesProgress): string {
   const mb = (n: number): string => (n >= 10 * 1048576 ? (n / 1048576).toFixed(0) : (n / 1048576).toFixed(1))
   const verb = p.op === 'send' ? 'wysłano' : p.op === 'get' ? 'pobrano' : p.op === 'pack' ? 'spakowano' : ''
@@ -160,7 +163,7 @@ export class ServerActivityBoard extends EventEmitter {
       const p = await e.call<SavesProgress>('sync_progress', [], 5_000)
       if (p?.active && p.total) {
         next = SAVES_ACTIVE_MS
-        this.set({ id: 'saves', label: 'Zapisy', detail: savesText(p), done: p.done ?? 0, total: p.total })
+        this.set({ id: 'saves', label: 'Zapisy', detail: p.text || savesText(p), done: p.done ?? 0, total: p.total })
       } else this.end('saves')
     } catch {
       this.end('saves')
@@ -179,6 +182,11 @@ export class ServerActivityBoard extends EventEmitter {
     let next = SERIES_IDLE_MS
     try {
       if (e?.state !== 'ready') {
+        // Ustawienia nie zostają na „Sprawdzam…” ani na starym postępie
+        if (this.seriesState.state !== 'error' || this.seriesState.reason !== ENGINE_DOWN) {
+          this.seriesState = { state: 'error', reason: ENGINE_DOWN, at: Date.now() }
+          this.emit('series', this.seriesState)
+        }
         this.end('series')
         next = 30_000
         return
@@ -201,6 +209,32 @@ export class ServerActivityBoard extends EventEmitter {
     } finally {
       this.pollSeries(next)
     }
+  }
+}
+
+/**
+ * W trakcie przebiegu serwera nowe serie spływają porcjami: pełna lista serii najwyżej co 15 min i tylko, gdy
+ * przybyło sprawdzonych gier, i raz na koniec przebiegu (code review 2026-11-16: co 3 min przez godziny to znów
+ * duże paczki do okien).
+ */
+export class SeriesPassWatch {
+  private checked = -1
+  private at = 0
+  private running = false
+
+  constructor(private readonly every = 15 * 60_000) {}
+
+  /** nowy stan z serwera → czy pobrać pełną listę serii teraz */
+  refetch(s: SeriesStatus, now = Date.now()): boolean {
+    if (s.state !== 'ok') return false
+    const ended = this.running && !s.running
+    this.running = !!s.running
+    const checked = s.checked ?? 0
+    if (this.checked < 0) this.checked = checked
+    if (!ended && !(s.running && checked !== this.checked && now - this.at >= this.every)) return false
+    this.checked = checked
+    this.at = now
+    return true
   }
 }
 

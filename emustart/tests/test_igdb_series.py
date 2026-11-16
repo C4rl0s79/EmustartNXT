@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import threading
 import time
+import types
 
 import pytest
 
@@ -178,7 +179,8 @@ def test_progress_counts_run_and_database(tmp_path, monkeypatch):
             ("pc|b", "B", "pc", 2, "B", "", "", 0, 0, 1.0, 200.0),      # IGDB zna, bez serii
             ("pc|c", "C", "pc", None, "", "", "", 0, 0, 0.0, 150.0),    # nie znaleziono
         ])
-    monkeypatch.setattr(S, "_worker", {"thread": object(), "done": 40, "busy": True, "batch": [{}] * 40,
+    alive = types.SimpleNamespace(is_alive=lambda: True)
+    monkeypatch.setattr(S, "_worker", {"thread": alive, "done": 40, "busy": True, "batch": [{}] * 40,
                                        "error": "IGDB: 429"})
     S._queue.clear()
     S._queue.extend([{"key": "x"}] * 20)
@@ -189,6 +191,9 @@ def test_progress_counts_run_and_database(tmp_path, monkeypatch):
         S._queue.clear()
     assert p == {"running": True, "done": 40, "total": 100, "checked": 3, "in_series": 1, "last_batch": 200.0,
                  "error": "IGDB: 429"}
+    S._worker["thread"] = types.SimpleNamespace(is_alive=lambda: False)   # wątek padł — nie „sprawdza” dalej
+    with S._db_lock, S._db() as con:
+        assert S.progress(con)["running"] is False
 
 
 def test_routes_need_the_server_key(srv, fake_server):  # noqa: F811

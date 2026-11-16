@@ -170,7 +170,7 @@ function drawSeries(s) {
   if (!s?.ok || !p) { $("seriesInfo").textContent = s?.reason ? "Serie z IGDB: " + s.reason : ""; $("seriesBarWrap").hidden = true; return; }
   const total = Math.max(p.total, p.done), ago = p.last_batch ? new Date(p.last_batch * 1000).toLocaleString("pl-PL") : "jeszcze żadnej";
   $("seriesInfo").textContent = !s.enabled ? "Serie z IGDB: brak kluczy IGDB — Lumen układa serie tylko z tytułów."
-    : (p.running ? `Serie z IGDB: sprawdzam ${n(p.done)} z ${n(total)} (w kolejce ${n(s.pending)})` : "Serie z IGDB: nic teraz nie sprawdzam") +
+    : (p.running ? `Serie z IGDB: sprawdzam ${n(p.done)} z ${n(total)} (zostało ${n(total - p.done)})` : "Serie z IGDB: nic teraz nie sprawdzam") +
       ` · sprawdzone razem ${n(p.checked)}, w seriach ${n(p.in_series)} · ostatnia porcja: ${ago}` + (p.error ? ` · ${p.error}` : "");
   $("seriesBarWrap").hidden = !(s.enabled && p.running && total);
   $("seriesBar").style.width = total ? (100 * p.done / total).toFixed(0) + "%" : "0%";
