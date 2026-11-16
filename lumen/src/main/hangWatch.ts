@@ -13,13 +13,15 @@ const METRICS_EVERY = 10 * 60_000
 export function watchWindow(wc: WebContents, name: string): void {
   let since = 0
   wc.on('unresponsive', () => {
+    if (since) return // to samo zawieszenie zgłoszone ponownie — czas od pierwszego zgłoszenia
     since = Date.now()
     log.warn('hang', `${name}: nie odpowiada`)
   })
   wc.on('responsive', () => {
-    const s = since ? Math.round((Date.now() - since) / 1000) : 0
+    if (!since) return
+    const s = Math.round((Date.now() - since) / 1000)
     since = 0
-    log.warn('hang', `${name}: znów odpowiada${s ? ` po ${s} s` : ''}`)
+    log.warn('hang', `${name}: znów odpowiada po ${s} s`)
   })
   wc.on('console-message', (e: unknown, ...rest: unknown[]) => {
     const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
@@ -46,7 +48,7 @@ export function memoryLine(): string {
   for (const wc of webContents.getAllWebContents()) {
     try {
       const pid = wc.getOSProcessId()
-      if (pid) names.set(pid, /deck/i.test(wc.getURL()) ? 'Deck' : names.get(pid) ?? 'okno')
+      if (pid) names.set(pid, /[\\/]deck\.html(?:[?#]|$)/i.test(wc.getURL()) ? 'Deck' : names.get(pid) ?? 'okno')
     } catch {
       /* zniszczone w międzyczasie */
     }

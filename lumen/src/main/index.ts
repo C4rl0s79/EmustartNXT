@@ -8,6 +8,7 @@ import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
 import { watchProcesses, watchWindow } from './hangWatch'
+import { timed } from './perfTime'
 import { isModeCombo } from '@shared/pad'
 import type { IgdbSeries, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
@@ -324,7 +325,20 @@ const DECK_SNAPSHOT_MS = 300
 let deckPending: LibrarySnapshot | null = null
 let deckSnapTimer: NodeJS.Timeout | undefined
 function deckView(s: LibrarySnapshot): LibrarySnapshot {
-  return { ...s, games: s.games.filter(onThisPc) }
+  // + ostatnio grane z całej biblioteki: zakładka „Ostatnio grane” (buildNav, 40 gier) liczy się z tego samego zbioru
+  // co dotąd — Deck i tak pokazuje z niej tylko gry z tego komputera
+  const recent = new Set(
+    s.games
+      .filter((g) => g.lastPlayed)
+      .sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))
+      .slice(0, 40)
+      .map((g) => g.id)
+  )
+  return { ...s, games: s.games.filter((g) => onThisPc(g) || recent.has(g.id)) }
+}
+/** Migawka dla nadawcy zapytania: Deck — deckView, główne okno — całość. */
+function snapshotFor(sender: Electron.WebContents): LibrarySnapshot {
+  return sender === deck?.window?.webContents ? deckView(unified.current) : unified.current
 }
 function sendDeckSnapshot(s: LibrarySnapshot): void {
   deckPending = s
@@ -338,16 +352,6 @@ function sendDeckSnapshot(s: LibrarySnapshot): void {
   }, DECK_SNAPSHOT_MS)
 }
 
-/** Praca procesu głównego dłuższa niż 200 ms → log (dane do zawieszeń, etap 9a / 9b). */
-function timed<T>(what: string, fn: () => T): T {
-  const t = performance.now()
-  try {
-    return fn()
-  } finally {
-    const ms = Math.round(performance.now() - t)
-    if (ms > 200) log.info('perf', `proces główny: ${what} ${ms} ms`)
-  }
-}
 
 /** Deck switched on or off: its window follows; with Deck off a hidden main window comes back (nothing else is on screen). */
 function applyDeck(): void {
@@ -1381,6 +1385,18 @@ async function openInSteam(gameId: string, view: 'details' | 'store' | 'download
 
 // ---------------- IPC ----------------
 
+/** Jak handle(), ale z nadawcą (okno albo Deck) — ten sam zapis błędów. */
+function handleFrom<A extends unknown[], R>(channel: string, fn: (sender: Electron.WebContents, ...args: A) => Promise<R> | R): void {
+  ipcMain.handle(channel, async (e, ...args) => {
+    try {
+      return await fn(e.sender, ...(args as A))
+    } catch (err) {
+      log.error('ipc', `${channel} failed`, err)
+      throw new Error((err as Error).message)
+    }
+  })
+}
+
 function handle<A extends unknown[], R>(channel: string, fn: (...args: A) => Promise<R> | R): void {
   ipcMain.handle(channel, async (_e, ...args) => {
     try {
@@ -1435,7 +1451,7 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
 
 function registerIpc(): void {
   // Deck: tylko gry z tego komputera (deckView) — jak w migawkach wysyłanych do niego
-  ipcMain.handle(IPC.libraryGet, (e) => (e.sender === deck?.window?.webContents ? deckView(unified.current) : unified.current))
+  handleFrom(IPC.libraryGet, (sender) => snapshotFor(sender))
   handle(IPC.libraryRatings, async (ids: string[]) => {
     const ratings: Record<string, GameRatings> = {}
     const missing: number[] = []
@@ -1506,6 +1522,7 @@ function registerIpc(): void {
     await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined])
     return unified.current
   })
+  // (Deck nie odświeża biblioteki; gdyby zaczął — odpowiedź przez snapshotFor jak w library:get)
 
   handle(IPC.gamePlay, (gameId: string) => playSteam(gameId))
   handle(IPC.gameInstall, (gameId: string) => installSteam(gameId))

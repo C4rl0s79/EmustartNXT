@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
 import type { Game, IgdbSeries } from '@shared/types'
-import { seriesLookupKey } from '@shared/series'
 import type { EmustartEngine } from './emustart/engine'
 import { JsonFile } from './store/jsonFile'
 import { log } from './logger'
@@ -46,20 +45,22 @@ export class SeriesService extends EventEmitter {
     this.file = new JsonFile<Stored>(dataFile, () => ({ at: 0, series: {} }), (raw) => clean(raw))
   }
 
-  async load(): Promise<void> {
-    this.data = await this.file.load()
-    // okno, które zapytało przed wczytaniem pliku, dostaje całość jako zmianę
-    if (Object.keys(this.data.series).length) this.emit('change', { ...this.data.series })
+  private loading: Promise<void> | null = null
+
+  /** Plik z dysku — raz; all() i sync() czekają na niego (bez nadpisania nowszych danych starszymi). */
+  load(): Promise<void> {
+    if (!this.loading) {
+      this.loading = this.file.load().then((d) => {
+        this.data = d
+      })
+    }
+    return this.loading
   }
 
   /** Wszystkie znane serie (okno pobiera raz, potem tylko zmiany: zdarzenie „change”). */
-  all(): Record<string, IgdbSeries> {
+  async all(): Promise<Record<string, IgdbSeries>> {
+    await this.load()
     return this.data.series
-  }
-
-  /** Seria gry z IGDB albo nic (serwer jej nie zna albo gra nie jest w serii). */
-  of(g: Game): IgdbSeries | undefined {
-    return this.data.series[seriesLookupKey(g)]
   }
 
   /** Pytanie serwera teraz, potem co EVERY (co WHILE_PENDING, dopóki serwer sprawdza gry). */
@@ -71,6 +72,7 @@ export class SeriesService extends EventEmitter {
   async sync(): Promise<void> {
     if (this.busy || this.engine.state !== 'ready') return this.schedule(EVERY)
     this.busy = true
+    await this.load()
     let next = EVERY
     try {
       const extra = steamTitles(this.games())

@@ -6,7 +6,12 @@ import type { IgdbSeries } from '@shared/types'
 
 // serie z IGDB tego okna (patchIgdb) — źródło dla shared/series.ts
 let igdbMap = new Map<string, IgdbSeries>()
-setIgdbResolver((g) => igdbMap.get(seriesLookupKey(g)))
+const keyOf = new WeakMap<object, string>() // klucz gry policzony raz (listy pytają setki tysięcy razy na przeliczenie)
+setIgdbResolver((g) => {
+  let k = keyOf.get(g)
+  if (k === undefined) keyOf.set(g, (k = seriesLookupKey(g)))
+  return igdbMap.get(k)
+})
 
 declare global {
   interface Window {

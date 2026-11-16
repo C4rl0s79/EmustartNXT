@@ -44,7 +44,21 @@ describe('SeriesService wysyła tylko zmiany', () => {
     series = { 'pc|doom': { name: 'Doom', order_ts: 5, release_ts: 5 } }
     await s.sync()
     expect(got[1]).toEqual({ 'pc|doom': { name: 'Doom', order: 5, release: 5 }, 'pc|yakuza 0': null })
-    expect(Object.keys(s.all())).toEqual(['pc|doom'])
+    expect(Object.keys(await s.all())).toEqual(['pc|doom'])
     s.schedule(3_600_000) // zegar następnego pytania nie blokuje końca testu
+  })
+
+  it('plik z dysku nie nadpisuje nowszego wyniku z serwera (sync czeka na wczytanie)', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'lumen-series-'))
+    const file = path.join(dir, 'series.json')
+    const old = new SeriesService(file, engine(() => ({ ok: true, series: { 'pc|a': { name: 'Stara', order_ts: 1 } } })), () => [])
+    await old.sync()
+    old.schedule(3_600_000)
+    const s = new SeriesService(file, engine(() => ({ ok: true, series: { 'pc|a': { name: 'Nowa', order_ts: 1 } } })), () => [])
+    const sync = s.sync() // przed load() — jak przy szybkim silniku i wolnym dysku
+    void s.load()
+    await sync
+    expect((await s.all())['pc|a'].name).toBe('Nowa')
+    s.schedule(3_600_000)
   })
 })

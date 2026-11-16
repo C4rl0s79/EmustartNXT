@@ -23,6 +23,7 @@ const MARKS = /[™®©]/g
 
 // Seria z IGDB dla gry: okno (renderer) ustawia źródło — mapę z serwera pobraną raz i łataną samymi zmianami
 // (library.series / onSeries). Migawka biblioteki jej nie niesie (40 tys. gier przy każdej zmianie, także do Decka).
+// domyślnie pole gry (testy); okno ustawia mapę z serwera (store.ts) — migawka tego pola nie wypełnia
 let igdbOf: (g: Game) => IgdbSeries | undefined = (g) => g.igdbSeries
 export function setIgdbResolver(fn: (g: Game) => IgdbSeries | undefined): void {
   igdbOf = fn
