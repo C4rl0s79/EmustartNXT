@@ -7,19 +7,20 @@ import { api, attempt, useStore } from '../store'
 
 // One hierarchy for all components (App, top bar, screens): built once per snapshot / prefs change,
 // not once per component that asks for it.
-let shared: { games: unknown; prefs: unknown; collections: unknown; nav: NavGroup[] } | undefined
+let shared: { games: unknown; prefs: unknown; collections: unknown; igdb: number; nav: NavGroup[] } | undefined
 
 export function useNav(): NavGroup[] {
   const games = useStore((s) => s.snapshot?.games)
   const collections = useStore((s) => s.snapshot?.collections ?? null)
   const prefs = useStore((s) => s.prefs)
+  const igdb = useStore((s) => s.igdbRev) // serie z IGDB (osobny kanał) — listy układane od nowa
   return useMemo(() => {
     if (!games || !prefs) return []
-    if (shared && shared.games === games && shared.prefs === prefs && shared.collections === collections) return shared.nav
+    if (shared && shared.games === games && shared.prefs === prefs && shared.collections === collections && shared.igdb === igdb) return shared.nav
     const nav = buildNav(games, prefs, collections)
-    shared = { games, prefs, collections, nav }
+    shared = { games, prefs, collections, igdb, nav }
     return nav
-  }, [games, prefs, collections])
+  }, [games, prefs, collections, igdb])
 }
 
 export function usePinned(nav: NavGroup[]): { group: NavGroup; sub: NavSub }[] {

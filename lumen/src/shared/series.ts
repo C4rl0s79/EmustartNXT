@@ -1,4 +1,4 @@
-import type { Game } from './types'
+import type { Game, IgdbSeries } from './types'
 
 // Serie gier: na listach po tytule gry jednej serii stoją razem — w miejscu pierwszej z nich, w kolejności wydania
 // (wybór gracza 2026-11-13: „obok siebie w sortowaniu”). Seria z IGDB przez serwer EmuStart (Game.igdbSeries —
@@ -20,6 +20,13 @@ export type SeriesPrefs = Record<string, SeriesPref>
 
 const ROMAN: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12, xiii: 13 }
 const MARKS = /[™®©]/g
+
+// Seria z IGDB dla gry: okno (renderer) ustawia źródło — mapę z serwera pobraną raz i łataną samymi zmianami
+// (library.series / onSeries). Migawka biblioteki jej nie niesie (40 tys. gier przy każdej zmianie, także do Decka).
+let igdbOf: (g: Game) => IgdbSeries | undefined = (g) => g.igdbSeries
+export function setIgdbResolver(fn: (g: Game) => IgdbSeries | undefined): void {
+  igdbOf = fn
+}
 
 // wyniki po tytule — listy budowane są często (40 tys. gier: bez pamięci +110 ms na każde zbudowanie nawigacji)
 const parsedCache = new Map<string, { base: string; num?: number }>()
@@ -76,9 +83,10 @@ export function seriesOf(g: Game, prefs: SeriesPrefs | undefined): Found {
   const p = prefs?.[g.id]
   if (!p) {
     const hit = autoCache.get(g)
-    if (hit && hit.title === g.name && hit.igdb === g.igdbSeries?.name) return hit.found
+    const igdb = igdbOf(g)?.name
+    if (hit && hit.title === g.name && hit.igdb === igdb) return hit.found
     const found = findSeries(g, undefined)
-    autoCache.set(g, { title: g.name, igdb: g.igdbSeries?.name, found })
+    autoCache.set(g, { title: g.name, igdb, found })
     return found
   }
   return findSeries(g, p)
@@ -93,12 +101,13 @@ export function seriesLookupKey(g: Game): string {
 function findSeries(g: Game, p: SeriesPref | undefined): Found {
   if (p?.none) return undefined
   // IGDB zna grę, ale bez serii: nie zgadujemy z tytułu (błędna seria gorsza niż jej brak — jak PyLinksDeck)
-  if (!p?.name && g.igdbSeries && !g.igdbSeries.name.trim()) return undefined
+  const ig = igdbOf(g)
+  if (!p?.name && ig && !ig.name.trim()) return undefined
   const parsed = parseSeries(g.name)
-  const name = p?.name?.trim() || g.igdbSeries?.name?.trim() || parsed.base
+  const name = p?.name?.trim() || ig?.name?.trim() || parsed.base
   const key = seriesKey(name)
   // jedna litera albo samo „The” to nie seria; własna nazwa gracza i seria z IGDB — zawsze
-  if (!p?.name && !g.igdbSeries && key.replace(/\s/g, '').length < 3) return undefined
+  if (!p?.name && !ig && key.replace(/\s/g, '').length < 3) return undefined
   return { key, name, ...(parsed.num !== undefined ? { num: parsed.num } : {}) }
 }
 
@@ -113,12 +122,13 @@ export const yearOf = (g: Game): number | undefined => {
  * numer części z tytułu, rok i tytuł. Zawsze ten sam porządek klucza — porównanie jest przechodnie.
  */
 export function orderSeries(members: Game[], prefs: SeriesPrefs | undefined): Game[] {
-  const allIgdb = members.every((g) => !!g.igdbSeries?.name && g.igdbSeries.order > 0)
+  const allIgdb = members.every((g) => !!igdbOf(g)?.name && igdbOf(g)!.order > 0)
   const allYears = members.every((g) => yearOf(g) !== undefined)
   const key = (g: Game): [number, number, number, number] => {
     const own = prefs?.[g.id]?.order ?? Number.MAX_SAFE_INTEGER
     const n = parseSeries(g.name).num ?? Number.MAX_SAFE_INTEGER
-    if (allIgdb) return [own, g.igdbSeries!.order, g.igdbSeries!.release || g.igdbSeries!.order, n]
+    const ig = igdbOf(g)
+    if (allIgdb && ig) return [own, ig.order, ig.release || ig.order, n]
     const y = yearOf(g) ?? Number.MAX_SAFE_INTEGER
     return [own, allYears ? y : n, allYears ? n : y, 0]
   }

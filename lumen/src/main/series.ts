@@ -48,7 +48,13 @@ export class SeriesService extends EventEmitter {
 
   async load(): Promise<void> {
     this.data = await this.file.load()
-    if (Object.keys(this.data.series).length) this.emit('change')
+    // okno, które zapytało przed wczytaniem pliku, dostaje całość jako zmianę
+    if (Object.keys(this.data.series).length) this.emit('change', { ...this.data.series })
+  }
+
+  /** Wszystkie znane serie (okno pobiera raz, potem tylko zmiany: zdarzenie „change”). */
+  all(): Record<string, IgdbSeries> {
+    return this.data.series
   }
 
   /** Seria gry z IGDB albo nic (serwer jej nie zna albo gra nie jest w serii). */
@@ -79,12 +85,18 @@ export class SeriesService extends EventEmitter {
       }
       for (const k of r.standalone ?? []) if (typeof k === 'string' && !series[k]) series[k] = { name: '', order: 0, release: 0 }
       if (r.own_pending) next = WHILE_PENDING          // szybciej tylko, gdy serwer sprawdza gry TEGO Lumena
-      if (JSON.stringify(series) !== JSON.stringify(this.data.series)) {
+      const changes: Record<string, IgdbSeries | null> = {}
+      for (const [k, v] of Object.entries(series)) {
+        const old = this.data.series[k]
+        if (!old || old.name !== v.name || old.order !== v.order || old.release !== v.release) changes[k] = v
+      }
+      for (const k of Object.keys(this.data.series)) if (!(k in series)) changes[k] = null
+      if (Object.keys(changes).length) {
         this.data = { at: Date.now(), series }
         await this.file.save(this.data)
         const inSeries = Object.values(series).filter((s) => s.name).length
         log.info('series', `serie z IGDB: ${inSeries} gier w seriach${r.pending ? `, serwer sprawdza jeszcze ${r.pending}` : ''}`)
-        this.emit('change')
+        this.emit('change', changes)           // tylko zmiany — małe zdarzenie, bez migawki biblioteki
       }
     } catch (e) {
       log.warn('series', `serie z serwera: ${(e as Error).message}`)

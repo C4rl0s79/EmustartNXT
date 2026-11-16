@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import type { LumenApi, PickPathOptions } from '@shared/api'
 import type { UiMode, Category, Game, JobsSnapshot, LibrarySnapshot, Prefs, Settings, SteamCollection } from '@shared/types'
+import { seriesLookupKey, setIgdbResolver } from '@shared/series'
+import type { IgdbSeries } from '@shared/types'
+
+// serie z IGDB tego okna (patchIgdb) — źródło dla shared/series.ts
+let igdbMap = new Map<string, IgdbSeries>()
+setIgdbResolver((g) => igdbMap.get(seriesLookupKey(g)))
 
 declare global {
   interface Window {
@@ -24,6 +30,8 @@ export interface Toast {
 
 interface State {
   snapshot: LibrarySnapshot | null
+  /** series from IGDB (main/series.ts): fetched once, then patched with changes; igdbRev — for rebuilding lists */
+  igdbRev: number
   /** one task list shared with the fullscreen interface (Steam downloads, EmuStart jobs) */
   jobs: JobsSnapshot
   /** jobs panel open */
@@ -61,6 +69,8 @@ interface State {
   setEnroll(e: { code: string; account: string; mode: string } | null): void
   setUiMode(mode: UiMode, selection?: string | null): void
   setSnapshot(s: LibrarySnapshot): void
+  setIgdb(all: Record<string, IgdbSeries>): void
+  patchIgdb(changes: Record<string, IgdbSeries | null>): void
   setJobs(j: JobsSnapshot): void
   setJobsOpen(open: boolean): void
   setPrefs(p: Prefs): void
@@ -87,6 +97,7 @@ const savedTab = (): Tab => {
 
 export const useStore = create<State>((set) => ({
   snapshot: null,
+  igdbRev: 0,
   jobs: { jobs: [], emu: null },
   jobsOpen: false,
   picker: null,
@@ -117,6 +128,17 @@ export const useStore = create<State>((set) => ({
   setGogInstall: (gogInstall) => set({ gogInstall }),
   setUiMode: (uiMode, uiSelection = null) => set({ uiMode, uiSelection }),
   setSnapshot: (snapshot) => set({ snapshot }),
+  setIgdb: (all) => {
+    igdbMap = new Map(Object.entries(all))
+    set((s) => ({ igdbRev: s.igdbRev + 1 }))
+  },
+  patchIgdb: (changes) => {
+    for (const [k, v] of Object.entries(changes)) {
+      if (v) igdbMap.set(k, v)
+      else igdbMap.delete(k)
+    }
+    set((s) => ({ igdbRev: s.igdbRev + 1 }))
+  },
   setJobs: (jobs) => set({ jobs }),
   setJobsOpen: (jobsOpen) => set({ jobsOpen }),
   setPrefs: (prefs) => set({ prefs }),

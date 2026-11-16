@@ -51,11 +51,13 @@ export function DeckApp() {
     const s = useStore.getState()
     const a = api()
     void a.library.get().then(s.setSnapshot)
+    void a.library.series().then(s.setIgdb) // serie z IGDB: raz, potem tylko zmiany (onSeries)
     void a.prefs.get().then(s.setPrefs)
     void a.settings.get().then(s.setSettings)
     void a.deck.getGeometry().then((g) => g && setGeo(g))
     const offs = [
       a.library.onSnapshot(s.setSnapshot),
+      a.library.onSeries(s.patchIgdb),
       a.prefs.onChange(s.setPrefs),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),

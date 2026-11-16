@@ -53,12 +53,14 @@ export function App() {
     const s = useStore.getState()
     const a = api()
     void a.library.get().then(s.setSnapshot)
+    void a.library.series().then(s.setIgdb) // serie z IGDB: raz, potem tylko zmiany (onSeries)
     void a.prefs.get().then(s.setPrefs)
     void a.settings.get().then(s.setSettings)
     void a.jobs.get().then(s.setJobs)
     void a.ui.getMode().then((m) => s.setUiMode(m))
     const offs = [
       a.library.onSnapshot(s.setSnapshot),
+      a.library.onSeries(s.patchIgdb),
       a.jobs.onChange(s.setJobs),
       // back from the fullscreen interface: show the game that was selected there
       a.ui.onMode((mode, selection) => {

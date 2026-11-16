@@ -34,6 +34,7 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   GogInstallRequest,
   GogOptionsResult,
   GogPlayTask,
+  IgdbSeries,
   GogMidi,
   GogMidiMode,
   GogVerifyResult,
@@ -66,6 +67,10 @@ export interface LumenApi {
     get(): Promise<LibrarySnapshot>
     refresh(includeAccount: boolean): Promise<LibrarySnapshot>
     onSnapshot(cb: (s: LibrarySnapshot) => void): () => void
+    /** series from IGDB via the EmuStart server: all once (key → series, see shared/series.seriesLookupKey) … */
+    series(): Promise<Record<string, IgdbSeries>>
+    /** … then only what changed (null — removed) */
+    onSeries(cb: (changes: Record<string, IgdbSeries | null>) => void): () => void
     /**
      * ratings of these games (for sorting): what is known now; `missing` Steam games are looked up
      * in the store in the background (ask again later)
@@ -343,6 +348,8 @@ export const IPC = {
   libraryFacts: 'library:facts',
   libraryRefresh: 'library:refresh',
   librarySnapshot: 'library:snapshot',
+  librarySeries: 'library:series',
+  librarySeriesChanged: 'library:seriesChanged',
   gamePlay: 'game:play',
   gameInstall: 'game:install',
   gameOpen: 'game:open',

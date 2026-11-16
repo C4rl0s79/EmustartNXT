@@ -164,21 +164,11 @@ let platformCatalog: PlatformInfo[] = []
 const seriesService: SeriesService = new SeriesService(path.join(userData, 'series.json'), engine, (): Game[] => unified.current.games)
 const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
   overrides: () => prefs.get().platformOverrides,
-  platforms: () => platformCatalog,
-  series: (g: Game): IgdbSeries | undefined => seriesService.of(g)
+  platforms: () => platformCatalog
 })
-// Nowe serie z serwera najwyżej raz na 30 min (pierwsze wczytanie od razu): każda zmiana to pełna migawka biblioteki
-// do obu okien, także Decka — a serwer przez wiele godzin sprawdza bibliotekę i wynik zmienia się co kilka minut
-let seriesApplied = 0
-let seriesTimer: NodeJS.Timeout | undefined
-seriesService.on('change', () => {
-  const wait = seriesApplied ? Math.max(0, seriesApplied + 30 * 60_000 - Date.now()) : 0
-  clearTimeout(seriesTimer)
-  seriesTimer = setTimeout(() => {
-    seriesApplied = Date.now()
-    unified.update()
-  }, wait)
-})
+// serie z IGDB osobnym kanałem: okna pobierają je raz (IPC.librarySeries), potem dostają tylko zmiany — bez pełnej
+// migawki biblioteki (40 tys. gier do obu okien, także Decka). Ręczne zmiany gracza idą jak dotąd z preferencjami.
+seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(IPC.librarySeriesChanged, changes))
 void seriesService.load()
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
@@ -315,7 +305,7 @@ let hiddenWatchdog: NodeJS.Timeout | undefined
 const artRev = new Map<string, number>()
 
 /** what the Deck window listens to — the library, prefs, settings and art; never pad state, focus or modes */
-const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
+const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.librarySeriesChanged, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
 
 function send(channel: string, ...args: unknown[]): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
@@ -1439,6 +1429,7 @@ function registerIpc(): void {
     lbFacts.set(g.id, f)
     return f
   }
+  handle(IPC.librarySeries, () => seriesService.all()) // serie z IGDB — raz; zmiany: IPC.librarySeriesChanged
   handle(IPC.libraryFacts, async (ids: string[]) => {
     const facts: Record<string, GameFacts> = {}
     const missing: number[] = []
