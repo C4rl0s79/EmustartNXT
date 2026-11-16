@@ -156,3 +156,53 @@ def test_only_hidden_tasks_missing_game_is_still_reported(tmp_path):
     app = _game(tmp_path, tasks, ["Config.exe"])
     with pytest.raises(gogfinal.FinalizeError, match="Game.exe"):
         gogfinal.launch_spec(app, "1")
+
+
+# „Uruchom z diagnostyką” (gry DOSBox, zgłoszenie 2026-11-16): komunikat błędu gry zostaje na ekranie.
+EOB = [{"type": "FileTask", "isPrimary": True, "category": "game", "name": "EoB III", "path": "DOSBOX\dosbox.exe",
+        "arguments": '-conf "..\dosbox_eob3.conf" -conf "..\dosbox_eob3_single.conf" -noconsole -c "exit"',
+        "workingDir": "DOSBOX"},
+       {"type": "FileTask", "category": "tool", "name": "Graphic Mode Setup", "path": "DOSBOX\GOGDOSConfig.exe",
+        "arguments": "1432576327", "workingDir": "DOSBOX"}]
+CONF = "[sdl]\nfullscreen=true\n[autoexec]\n"
+SINGLE = ("[autoexec]\n@ECHO OFF\nmount c \"..\"\nc:\ngoto launcher\n:launcher\nchoice /c12\nif errorlevel 1 goto game\n"
+          ":game\ncls\neye.bat\ngoto exit\n:exit\nexit\n")
+
+
+def _eob(tmp_path):
+    app = _game(tmp_path, EOB, ["DOSBOX/dosbox.exe", "DOSBOX/GOGDOSConfig.exe"])
+    (app / "dosbox_eob3.conf").write_text(CONF, encoding="latin-1")
+    (app / "dosbox_eob3_single.conf").write_text(SINGLE, encoding="latin-1")
+    (app / "EYE.BAT").write_text("@echo off\r\naesop eye start\r\n\r\nexit\r\n", encoding="latin-1")
+    return app
+
+
+def test_dosbox_game_offers_diagnostic_run(tmp_path):
+    app = _eob(tmp_path)
+    diag = [t for t in gogfinal.play_tasks(app, "1") if t["index"] == gogfinal.DIAG_TASK]
+    assert diag and diag[0]["name"] == "Uruchom z diagnostyką" and not diag[0]["default"]
+    (tmp_path / "x").mkdir()
+    plain = _game(tmp_path / "x", [{"type": "FileTask", "isPrimary": True, "category": "game", "path": "g.exe"}], ["g.exe"])
+    assert all(t["index"] != gogfinal.DIAG_TASK for t in gogfinal.play_tasks(plain, "1"))
+
+
+def test_diagnostic_run_keeps_the_error_on_screen(tmp_path, monkeypatch):
+    monkeypatch.setattr(gogfinal, "_diag_root", lambda: tmp_path / "diag")
+    app = _eob(tmp_path)
+    spec = gogfinal.launch_spec(app, "1", gogfinal.DIAG_TASK)
+    assert spec["exe"].endswith("dosbox.exe") and spec["cwd"].endswith("DOSBOX")
+    assert "-noconsole" not in spec["args"] and '-c "exit"' not in spec["args"]
+    d = tmp_path / "diag" / "1"
+    single = (d / "dosbox_eob3_single.conf").read_text(encoding="latin-1")
+    auto = single.split("[autoexec]", 1)[1].splitlines()
+    assert "exit" not in [x.strip().lower() for x in auto]                    # exit → pause
+    assert "pause" in [x.strip().lower() for x in auto]
+    assert any(x.strip().lower() == "call y:\eye.bat" for x in auto)         # .bat gry z kopii bez exit
+    assert any(x.lower().startswith("mount y ") for x in (d / "dosbox_eob3.conf").read_text(encoding="latin-1").splitlines())
+    bat = (d / "EYE.BAT").read_text(encoding="latin-1").lower().splitlines()
+    assert "exit" not in [x.strip() for x in bat] and "aesop eye start" in bat
+    assert "fullscreen=false" in (d / "diagnostyka.conf").read_text(encoding="latin-1")
+    assert spec["args"].index("dosbox_eob3.conf") < spec["args"].index("diagnostyka.conf")
+    # pliki gry bez zmian
+    assert (app / "dosbox_eob3_single.conf").read_text(encoding="latin-1") == SINGLE
+    assert "exit" in (app / "EYE.BAT").read_text(encoding="latin-1")

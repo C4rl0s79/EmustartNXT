@@ -801,6 +801,8 @@ def play_tasks(app: Path, pid: str) -> list:
         if exe.suffix.lower() in RUNNABLE and exe.is_file() and (not t.get("isHidden") or t is best):
             out.append({"index": i, "name": str(t.get("name") or exe.stem), "category": str(t.get("category") or ""),
                         "default": t is best})
+    if best is not None and Path(str(best["path"]).replace("\\", "/")).name.lower() == "dosbox.exe":
+        out.append({"index": DIAG_TASK, "name": DIAG_NAME, "category": "diagnostic", "default": False})
     return out
 
 
@@ -831,6 +833,11 @@ def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
 def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
     """{"exe", "args", "cwd", "name"} z goggame-<pid>.info — ścieżki tylko wewnątrz katalogu gry, tylko .exe.
     `task` — numer zadania z play_tasks (domyślnie zadanie gry przed launcherem)."""
+    if task == DIAG_TASK:
+        spec = launch_spec(app, pid, None)
+        if not is_dosbox(spec):
+            raise FinalizeError("start z diagnostyką jest tylko dla gier DOSBox")
+        return dosbox_diag(app, pid, spec)
     data = _info(app, pid)
     tasks = _file_tasks(app, pid, data)
     if task is not None and task >= 0:
@@ -865,6 +872,100 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
         cwd = app
     return {"exe": str(exe), "args": args, "cwd": str(cwd if cwd.is_dir() else exe.parent),
             "name": str(t.get("name") or data.get("name") or "")}
+
+
+# ── „Uruchom z diagnostyką” (gry DOSBox) ────────────────────────────────────────
+# Skrypty startowe gier GOG kończą się `exit` (autoexec i pliki .bat gry), więc gdy gra przerwie się z błędem, DOSBox
+# zamyka się natychmiast i komunikatu nie da się przeczytać (zgłoszenie 2026-11-16, Eye of the Beholder III). Start
+# diagnostyczny: kopie plików konfiguracji w folderze tymczasowym — `exit` → `pause`, wywołane .bat gry z kopii bez
+# `exit` (dysk Y:), okno zamiast pełnego ekranu, widoczna konsola DOSBoxa (bez -noconsole). Pliki gry bez zmian.
+
+DIAG_TASK = -2
+DIAG_NAME = "Uruchom z diagnostyką"
+_BAT_LINE = re.compile(r"^(\s*@?\s*)(?:call\s+)?([A-Za-z0-9_\-~]{1,8}\.bat)(\s.*)?$", re.IGNORECASE)
+
+
+def _diag_root() -> Path:
+    import tempfile
+    return Path(tempfile.gettempdir()) / "emustart" / "dosbox-diag"
+
+
+def is_dosbox(spec: dict) -> bool:
+    return Path(spec.get("exe") or "").name.lower() == "dosbox.exe"
+
+
+def _tokens(args: str) -> list:
+    return [a if a else b for a, b in re.findall(r'"([^"]*)"|(\S+)', args)]
+
+
+def _quote(t: str) -> str:
+    return f'"{t}"' if (" " in t or not t) else t
+
+
+def _diag_autoexec(lines: list, app: Path, out: Path) -> list:
+    """[autoexec]: `exit` → `pause`, wywołanie .bat gry → `call Y:\\NAZWA.BAT` (kopia bez exit)."""
+    res = []
+    for ln in lines:
+        s = ln.strip()
+        if s.lower() in ("exit", "@exit"):
+            res.append("pause")
+            continue
+        m = _BAT_LINE.match(ln)
+        if m and (app / m.group(2)).is_file():
+            name = m.group(2).upper()
+            bat = (app / m.group(2)).read_text(encoding="latin-1").splitlines()
+            fixed = ["pause" if x.strip().lower() in ("exit", "@exit") else x for x in bat]
+            (out / name).write_text("\r\n".join(fixed) + "\r\n", encoding="latin-1")
+            res.append(f"{m.group(1)}call Y:\\{name}{m.group(3) or ''}")
+            continue
+        res.append(ln)
+    return res
+
+
+def dosbox_diag(app: Path, pid: str, spec: dict) -> dict:
+    """Spec DOSBoxa z kopiami konfiguracji do odczytania błędu gry (pliki gry nietknięte)."""
+    out = _diag_root() / str(pid)
+    if out.exists():
+        import shutil
+        shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True, exist_ok=True)
+    cwd = Path(spec["cwd"])
+    toks = _tokens(spec["args"])
+    new, i, mounted = [], 0, False
+    while i < len(toks):
+        t = toks[i]
+        if t.lower() == "-noconsole":
+            i += 1
+            continue
+        if t.lower() == "-c" and i + 1 < len(toks) and toks[i + 1].strip().lower() == "exit":
+            i += 2
+            continue
+        if t.lower() == "-conf" and i + 1 < len(toks):
+            src = (cwd / toks[i + 1]).resolve()
+            try:
+                text = src.read_text(encoding="latin-1")
+            except OSError:
+                new += [t, toks[i + 1]]
+                i += 2
+                continue
+            head, sep, auto = text.replace("\r\n", "\n").partition("[autoexec]")
+            if sep:
+                body = _diag_autoexec(auto.split("\n"), app, out)
+                if not mounted:
+                    body.insert(1, f'mount Y "{out}"')     # kopie .bat gry (przed pierwszym poleceniem autoexec)
+                    mounted = True
+                text = head + sep + "\n".join(body)
+            dst = out / src.name
+            dst.write_text(text, encoding="latin-1")
+            new += [t, str(dst)]
+            i += 2
+            continue
+        new.append(t)
+        i += 1
+    extra = out / "diagnostyka.conf"
+    extra.write_text("[sdl]\nfullscreen=false\n", encoding="latin-1")
+    new += ["-conf", str(extra)]
+    return {**spec, "args": " ".join(_quote(t) for t in new), "name": f"{spec.get('name') or ''} — diagnostyka"}
 
 
 def start(spec: dict) -> subprocess.Popen:
