@@ -8,12 +8,13 @@ import { isStoreId } from './catalog'
  * Konto Xbox (etap 19c): logowanie kontem Microsoft na stronie Microsoft w osobnym oknie (Lumen nie widzi hasła) →
  * tokeny Microsoft → Xbox Live (XBL → XSTS) → historia tytułów konta (titlehub). Zapisany jest tylko token odświeżania
  * — zaszyfrowany jak inne sekrety. Dwa sposoby (decyzja użytkownika 2026-11-16, bez Azure):
- *  • domyślnie — publiczny identyfikator aplikacji Xbox od Microsoft (login.live.com, bez rejestracji; Microsoft może
- *    go kiedyś wyłączyć dla programów zewnętrznych),
+ *  • domyślnie — publiczny identyfikator launchera Minecraft (login.live.com, bez rejestracji; wybór użytkownika
+ *    2026-11-16 — identyfikator dawnej aplikacji Xbox 0000000048093EE3 Xbox Live odrzuca: HTTP 403, kod 00000005;
+ *    okno logowania pokazuje nazwę Minecraft, Microsoft może go kiedyś wyłączyć dla programów zewnętrznych),
  *  • własna aplikacja Azure gracza (Ustawienia → Xbox → identyfikator) — login.microsoftonline.com, PKCE.
  * Każdy loguje się własnym kontem; identyfikator oznacza program, nie osobę.
  */
-export const XBOX_PUBLIC_CLIENT = '0000000048093EE3'
+export const XBOX_PUBLIC_CLIENT = '00000000402b5328'
 const PARTITION = 'persist:xbox-login'
 
 interface Flow {
