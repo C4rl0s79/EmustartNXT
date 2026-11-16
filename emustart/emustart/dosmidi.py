@@ -232,6 +232,63 @@ def apply(spec: dict, app: Path, d: dict) -> dict:
     return {**spec, "args": (spec["args"] + f' -conf "{rel}"').strip()}
 
 
+# Program, który gra MIDI z portu urządzenia (zgłoszenie 2026-11-16: port loopMIDI „MT32” grał tylko przy ręcznie
+# uruchomionym Munt mt32emu-qt — bez niego gra była cicha). config.json: midi_mt32_app / midi_sc55_app (ścieżka; „-” —
+# nic nie uruchamiać); MT-32 bez ustawienia — Munt mt32emu-qt, jeśli zainstalowany.
+MUNT_EXE = "mt32emu-qt.exe"
+
+
+def _munt() -> str:
+    import os
+    for base in (os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramFiles(x86)", "")):
+        p = Path(base or "") / "Munt" / MUNT_EXE
+        if base and p.is_file():
+            return str(p)
+    return ""
+
+
+def companion(device: str | None, cfg: dict) -> str:
+    """Ścieżka programu grającego port urządzenia albo "" (nic do uruchomienia)."""
+    if device not in ("mt32", "sc55"):
+        return ""
+    own = str(cfg.get(f"midi_{device}_app") or "").strip()
+    if own == "-":
+        return ""
+    if own:
+        return own if Path(own).is_file() else ""
+    return _munt() if device == "mt32" else ""
+
+
+def _running(exe: str) -> bool:
+    import subprocess
+    name = Path(exe).name
+    try:
+        out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH", "/FO", "CSV"], capture_output=True,
+                             text=True, timeout=10, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+    except (OSError, subprocess.SubprocessError):
+        return True                                   # nie wiadomo — lepiej nie uruchamiać drugiej kopii
+    return name.lower() in out.lower()
+
+
+def ensure_companion(d: dict, cfg: dict, wait: float = 2.0) -> str:
+    """Przed startem DOSBoxa: program grający wybrany port (Munt mt32emu-qt) — gdy nie działa, uruchomiony bez
+    uprawnień administratora (jak DOSBox — sterownik w grze łączy się z nim), zminimalizowany i bez fokusu (nie
+    zabiera pełnego ekranu grze). → opis do logu albo "" (nic nie trzeba było robić)."""
+    if d.get("index") is None:
+        return ""
+    exe = companion(d.get("device"), cfg)
+    if not exe or _running(exe):
+        return ""
+    import time
+    from emustart import unelevated
+    try:
+        unelevated.popen([exe], cwd=str(Path(exe).parent), show=unelevated.SW_SHOWMINNOACTIVE)
+    except OSError as ex:
+        return f"nie uruchomiono {Path(exe).name}: {ex}"
+    time.sleep(wait)                                  # program otwiera porty MIDI, zanim gra zacznie grać
+    return f"uruchomiono {Path(exe).name} (zminimalizowany)"
+
+
 def _key(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(name or "").lower())
 

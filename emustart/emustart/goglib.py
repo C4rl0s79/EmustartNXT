@@ -355,6 +355,9 @@ class GogService:
             d = dosmidi.decide(str(e.get("title") or ""), str(e.get("midi") or "auto"), self._cfg())
             log.info("GOG %s: MIDI — %s", pid, d["reason"])
             spec = dosmidi.apply(spec, root, d)
+            started = dosmidi.ensure_companion(d, self._cfg())
+            if started:
+                log.info("GOG %s: MIDI — %s", pid, started)
         try:
             proc = gogfinal.start(spec)
         except OSError as ex:
