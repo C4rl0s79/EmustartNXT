@@ -1,3 +1,4 @@
+import { watchWindow } from './hangWatch'
 import { BrowserWindow, Menu, Tray, screen, type MenuItemConstructorOptions, type NativeImage } from 'electron'
 import { DECK_HIDE_MS, deckGeometry, layoutFor, panelHeightFraction, screenKey, type DeckGeometry, type DeckRect, type DeckSettings } from '@shared/deck'
 import { DesktopLayerGuard, handleOf, makeUnobtrusive, pinAboveDesktop, taskbarCreatedMessage } from './desktopLayer'
@@ -123,6 +124,7 @@ export class DeckWindow {
     this.dock = w
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     w.webContents.on('will-navigate', (e) => e.preventDefault())
+    watchWindow(w.webContents, 'Deck') // „nie odpowiada / znów odpowiada”, czujnik zacięć (etap 9a)
     // a crashed page would leave a dead dock — with the main window hidden, the only way back to Lumen;
     // reloaded a few times, then given up (a page that crashes on load would reload forever)
     let crashes = 0

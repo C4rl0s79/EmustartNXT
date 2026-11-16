@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
+import { watchProcesses, watchWindow } from './hangWatch'
 import { isModeCombo } from '@shared/pad'
 import type { IgdbSeries, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
@@ -552,11 +553,9 @@ function createWindow(): void {
   })
   win.webContents.on('before-input-event', (_e, input) => hotkeys(input, win!.webContents))
   win.webContents.on('render-process-gone', (_e, d) => log.error('app', `renderer gone: ${d.reason}`))
-  // czujnik zacięć interfejsu (lib/perf.ts) — jego komunikaty „[perf] …” do logu Lumena
-  win.webContents.on('console-message', (e: unknown, ...rest: unknown[]) => {
-    const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
-    if (msg.startsWith('[perf] ')) log.info('perf', msg.slice(7))
-  })
+  // czujnik zacięć interfejsu (lib/perf.ts) do logu, „nie odpowiada / znów odpowiada”, awarie procesów i pamięć (etap 9a)
+  watchWindow(win.webContents, 'okno')
+  watchProcesses()
 
   if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
