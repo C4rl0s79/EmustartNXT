@@ -1,6 +1,6 @@
 import { watchWindow } from './hangWatch'
 import { BrowserWindow, Menu, Tray, screen, type MenuItemConstructorOptions, type NativeImage } from 'electron'
-import { DECK_HIDE_MS, deckGeometry, layoutFor, panelHeightFraction, screenKey, type DeckGeometry, type DeckRect, type DeckSettings } from '@shared/deck'
+import { DECK_HIDE_MS, deckGeometry, layoutFor, panelHeightFraction, sameRect, screenKey, type DeckGeometry, type DeckRect, type DeckSettings } from '@shared/deck'
 import { DesktopLayerGuard, handleOf, makeUnobtrusive, pinAboveDesktop, taskbarCreatedMessage } from './desktopLayer'
 import { log } from './logger'
 
@@ -49,6 +49,8 @@ export function deckScreen(): { key: string; label: string } {
       : screen.dipToScreenRect(null, d.bounds)
   return screenKey(d.size.width, d.size.height, d.scaleFactor, px)
 }
+
+const rectText = (r: DeckRect): string => `${r.x},${r.y} ${r.width}×${r.height}`
 
 /** a screen change may come without an event, or before Windows reports the new size — checked every 3 s too */
 const SCREEN_CHECK_MS = 3000
@@ -215,7 +217,16 @@ export class DeckWindow {
     this.screenState = this.state()
     const lay = layoutFor(s, key, label)
     const g = deckGeometry(d.workArea, this.dragHeight === null ? lay : { ...lay, panelHeight: this.dragHeight }, this.content)
+    if (this.content !== null && !g.expanded) {
+      const a = d.workArea
+      log.warn('deck', `panel się nie mieści: obszar roboczy ${a.x},${a.y} ${a.width}×${a.height}, wysokość panelu ${lay.panelHeight}`)
+    }
     w.setBounds(g.window)
+    const b = w.getBounds()
+    if (!sameRect(b, g.window)) {
+      // zgłoszenie 2026-11-16: panel przestał się rozwijać, okno zostało 46 px — teraz widać, czy Windows nie przyjął rozmiaru
+      log.warn('deck', `okno nie przyjęło rozmiaru: chciane ${rectText(g.window)}, jest ${rectText(b)} (skala ${d.scaleFactor})`)
+    }
     w.setOpacity(s.opacity)
     this.last = g
     this.host.geometry(w, g)
@@ -225,7 +236,15 @@ export class DeckWindow {
   /** Open the games panel (the height its tiles need) or close it (null) — from the Deck page. */
   expand(content: number | null): void {
     const c = content === null || !Number.isFinite(content) ? null : Math.max(0, Math.min(20_000, content))
-    if (c === this.content) return
+    if (c === this.content) {
+      // ta sama prośba, a okno ma inny rozmiar niż ostatnio ustawiony (zmienił je ktoś inny: Windows przy zmianie
+      // trybu ekranu, gra pełnoekranowa) — ustawiane jeszcze raz, zamiast pominąć prośbę
+      const w = this.window
+      if (!w || !this.last || sameRect(w.getBounds(), this.last.window)) return
+      log.warn('deck', `okno ma ${rectText(w.getBounds())} zamiast ${rectText(this.last.window)} — ustawiane ponownie`)
+      this.place()
+      return
+    }
     this.content = c
     this.place()
     this.watchCursor(c !== null)

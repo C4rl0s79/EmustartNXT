@@ -156,6 +156,11 @@ export interface DeckGeometry {
   expanded: boolean
 }
 
+/** prostokąty równe co do piksela (Electron zaokrągla przy skalowaniu ekranu — 1 px różnicy to nie błąd) */
+export function sameRect(a: DeckRect, b: DeckRect): boolean {
+  return Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1 && Math.abs(a.width - b.width) <= 1 && Math.abs(a.height - b.height) <= 1
+}
+
 export function deckGeometry(area: DeckRect, lay: DeckScreenLayout, content: number | null): DeckGeometry {
   const dock = dockRect(area, lay)
   const width = Math.min(area.width, Math.max(PANEL_MIN_W, Math.floor(area.width * lay.panelWidth)))
