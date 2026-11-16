@@ -279,3 +279,44 @@ export function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; d
     </div>
   )
 }
+
+/** the state of a game in one word, for the one tag on its row / poster (the most important state wins) */
+export function stateTag(game: Game): { label: string; kind: 'run' | 'dl' | 'ok' | 'keep' } | null {
+  const e = game.emu
+  if (game.running) return { label: 'w grze', kind: 'run' }
+  if (e?.copying) return { label: 'pobieranie', kind: 'dl' }
+  if (e?.pinned) return { label: 'na dysku', kind: 'keep' }
+  if (e ? e.cached : game.installed) return { label: e ? 'lokalnie' : 'zainstalowana', kind: 'ok' }
+  return null
+}
+
+/**
+ * The game in short, for the lists (instead of the bar with every detail): its logo (or title) and one line —
+ * the status, the play time (or "nigdy"), the year and the system. Everything else is on the game's page (A).
+ */
+export function TvSummary({ game, details: dr, note, className }: { game: Game; details: DetailsResult | null; note?: string; className?: string }) {
+  const d = dr?.ok ? dr.details : undefined
+  const e = game.emu
+  const status = useGameStatus(game)
+  const minutes = game.playtimeMinutes ?? 0
+  const year = (d?.releaseDate || e?.year || '').match(/\d{4}/)?.[0]
+  const parts = [
+    minutes > 0 ? `grano ${formatPlaytime(minutes)}` : game.lastPlayed ? `ostatnio: ${formatLastPlayed(game.lastPlayed)?.toLowerCase()}` : 'jeszcze nie grana',
+    year,
+    e ? e.system : d?.platform
+  ].filter((p): p is string => !!p)
+  return (
+    <div className={`tv-summary ${className ?? ''}`}>
+      <div className="tv-summary__logo">
+        <LogoTitle key={game.id} game={game} text={<h1>{game.name}</h1>} />
+      </div>
+      <p className="tv-summary__facts">
+        <span className={`tv-summary__status ${status.ready ? 'st-c' : 'st-n'}`}>● {status.text}</span>
+        {parts.map((p) => (
+          <span key={p}>{p}</span>
+        ))}
+      </p>
+      {note && <p className="tv-note">{note}</p>}
+    </div>
+  )
+}

@@ -17,11 +17,11 @@ import { listTop } from './listWindow'
 import { letterJump } from './letters'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
-import { LogoTitle, TvBackdrop, TvDesc, TvInfo, useDetails } from './gameParts'
+import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails } from './gameParts'
 import { TvGamePage } from './TvGamePage'
 
 // Game list of one system (EmuStart look): titles on the left, cover | details | screenshot on the
-// right, the description below. A opens the game's page (TvGamePage: actions, description, facts,
+// right, the game's logo and one line about it below. A opens the game's page (TvGamePage: actions, description, facts,
 // "Opcje gry"); X starts the game at once (the same main action as the desktop details, usePrimaryAction);
 // Y — filters. View is not used: View+Start switches the interface.
 
@@ -40,7 +40,12 @@ export function TvGames({
   theme: TvTheme
 }) {
   // the theme decides how the list is shown: titles in a column, or covers on a horizontal ribbon
-  const flow = theme.games.layout === 'coverflow'
+  // the player's choice for this group (Menu → Układ listy), else the theme's
+  const chosen = useStore((s) => s.settings?.tvLayouts?.[system.key])
+  const layout = chosen ?? theme.games.layout
+  // both ribbons (the 3D one and the flat row of posters) move left / right and go round the list
+  const flow = layout !== 'list'
+  const posters = layout === 'posters'
   const favorites = useStore((s) => s.prefs?.favorites)
   const opened = useStore((s) => s.uiSelection)
   // "installed" (Steam, GOG, PC groups) vs "in the game cache" (EmuStart platforms)
@@ -55,7 +60,6 @@ export function TvGames({
   const [filters, setFilters] = useState(false)
   // the game's page over the list (A); the list stays mounted under it, on the same game
   const [gamePage, setGamePage] = useState(false)
-  const [infoRev, setInfoRev] = useState(0) // the details bar reads EmuStart's data again after the game's page
   const isFav = (id: string): boolean => !!favorites?.includes(id)
   const ratings = useRatings(system.games, filter.sort)
   const { games: known, missing } = useFacts(system.games, filters || needsFacts(filter))
@@ -227,11 +231,7 @@ export function TvGames({
         <TvGamePage
           game={sel}
           onMenu={onMenu}
-          onBack={() => {
-            // the facts may have changed there (emulator, saves, download)
-            setInfoRev((r) => r + 1)
-            setGamePage(false)
-          }}
+          onBack={() => setGamePage(false)}
         />
       )}
       {filters && (
@@ -242,26 +242,25 @@ export function TvGames({
 
   if (flow)
     return (
-      <section className="tv-screen tv-games tv-games--flow">
+      <section className={`tv-screen tv-games tv-games--flow ${posters ? 'tv-games--posters' : ''}`}>
         {backdrop && <TvBackdrop key={backdrop.id} game={backdrop} />}
         {head}
+        {/* posters: the game's logo and one line about it stand above the row, over its background */}
+        {posters && sel && <TvSummary game={sel} details={d} note={primary?.note} className="tv-posters__summary" />}
         {games.length ? (
-          <TvCoverflow games={games} pos={pos} animate={backdrop?.id === sel?.id} onPick={(i) => (i === idx ? openPage() : setIdx(i))} reflection={!!theme.games.reflection} />
+          <TvCoverflow
+            games={games}
+            pos={pos}
+            animate={backdrop?.id === sel?.id}
+            onPick={(i) => (i === idx ? openPage() : setIdx(i))}
+            reflection={!posters && !!theme.games.reflection}
+            flat={posters}
+          />
         ) : (
           <div className="tv-flow">{empty}</div>
         )}
-        {sel && (
-          // under the ribbon: the title and the description (readable, many lines) | the details in a column
-          <div className="tv-flow__panel">
-            <div className="tv-flow__main">
-              <div className="tv-flow__title">
-                <LogoTitle key={sel.id} game={sel} text={<h1>{sel.name}</h1>} />
-              </div>
-              <TvDesc game={sel} details={d} className="tv-flow__desc" />
-            </div>
-            <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} noLogo />
-          </div>
-        )}
+        {/* the ribbon: the logo and one line about the game below it (the description and every detail: A) */}
+        {!posters && sel && <TvSummary game={sel} details={d} note={primary?.note} className="tv-flow__summary" />}
         {modals}
       </section>
     )
@@ -284,15 +283,17 @@ export function TvGames({
           {!games.length && empty}
         </div>
       </div>
-      {sel && <TvPreview game={sel} details={d} />}
-      {sel && <TvInfo game={sel} details={d} note={primary?.note} rev={infoRev} />}
+      {sel && <TvPreview game={sel} details={d} note={primary?.note} />}
       {modals}
     </section>
   )
 }
 
+const TAG_CLASS = { run: 'd', dl: 'd', keep: 'p', ok: 'c' } as const
+
 function TvRow({ game, sel, fav, asLogo, onClick }: { game: Game; sel: boolean; fav: boolean; asLogo: boolean; onClick: () => void }) {
   const e = game.emu
+  const tag = stateTag(game)
   return (
     <div className={`tv-row ${sel ? 'sel' : ''}`} onClick={onClick}>
       {asLogo && e ? <LogoTitle key={game.id} game={game} text={<span className="t">{game.name}</span>} /> : <span className="t">{game.name}</span>}
@@ -309,10 +310,8 @@ function TvRow({ game, sel, fav, asLogo, onClick }: { game: Game; sel: boolean; 
           </span>
         )}
         {e?.versions && <span className="tv-tag">{versionCountLabel(e.versions.length)}</span>}
-        {e?.pinned && <span className="tv-tag p">na dysku</span>}
-        {e?.copying && <span className="tv-tag d">pobieranie</span>}
-        {e ? e.cached && <span className="tv-tag c">lokalnie</span> : game.installed && <span className="tv-tag c">zainstalowana</span>}
-        {game.running && <span className="tv-tag d">w grze</span>}
+        {/* one state tag: the most important one (playing → downloading → kept → here) */}
+        {tag && <span className={`tv-tag ${TAG_CLASS[tag.kind]}`}>{tag.label}</span>}
       </span>
     </div>
   )
@@ -361,7 +360,7 @@ function useMediaFit(boxRatio: number, snapRatio: number): { ref: (el: HTMLDivEl
   return { ref: setEl, h: Math.max(0, Math.floor(h)) }
 }
 
-function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult | null }) {
+function TvPreview({ game, details: dr, note }: { game: Game; details: DetailsResult | null; note?: string }) {
   const [boxOk, setBoxOk] = useState(true)
   const [snapOk, setSnapOk] = useState(true)
   // the cover and the screenshot share one height (their own shapes); when both do not fit side by
@@ -398,7 +397,8 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
           />
         )}
       </div>
-      <TvDesc game={game} details={dr} />
+      {/* below the art: the logo and one line about the game (the description and every detail: A — the game's page) */}
+      <TvSummary game={game} details={dr} note={note} className="tv-preview__summary" />
     </div>
   )
 }

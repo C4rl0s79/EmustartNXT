@@ -1,6 +1,7 @@
 import { memo, useSyncExternalStore } from 'react'
 import type { Game } from '@shared/types'
 import { Art } from '../components/Art'
+import { stateTag } from './gameParts'
 
 // The game list as a horizontal ribbon of covers (themes with games.layout = "coverflow"): the
 // selected cover stands in the middle facing the player, its neighbours turn towards it.
@@ -36,10 +37,20 @@ export function coverBox(ratio: number): [number, number] {
   return [w, w / r]
 }
 
+// flat row of posters (layout "posters"): every cover faces the player, the selected one larger
+const FLAT_SEL = 1.12
+const FLAT_SIDE = 0.86
+
+/** a cover's scale in the flat row */
+export function flatScale(d: number): number {
+  return d === 0 ? FLAT_SEL : FLAT_SIDE
+}
+
 /** the centre of each cover from the selected one (index `sel`), in H, from the covers' widths */
-export function flowLayout(widths: number[], sel: number): number[] {
+export function flowLayout(widths: number[], sel: number, flat = false): number[] {
   const x = new Array<number>(widths.length).fill(0)
-  const half = (i: number): number => (i === sel ? SEL_HALF : SIDE_HALF * flowScale(i - sel)) * widths[i]
+  const half = (i: number): number =>
+    (flat ? flatScale(i - sel) / 2 : i === sel ? SEL_HALF : SIDE_HALF * flowScale(i - sel)) * widths[i]
   for (let i = sel + 1; i < widths.length; i++) x[i] = x[i - 1] + half(i - 1) + GAP + half(i)
   for (let i = sel - 1; i >= 0; i--) x[i] = x[i + 1] - half(i + 1) - GAP - half(i)
   return x
@@ -83,7 +94,22 @@ export function flowWindow(n: number, idx: number): { i: number; d: number; copy
 }
 
 /** `animate`: wybór stoi (~350 ms bez ruchu) — animowane okładki w ruchu; w trakcie przewijania pierwsza klatka */
-export function TvCoverflow({ games, pos, onPick, reflection, animate }: { games: Game[]; pos: number; onPick: (i: number) => void; reflection: boolean; animate: boolean }) {
+/** `flat`: the "posters" layout — a flat row along the bottom of the screen, no perspective */
+export function TvCoverflow({
+  games,
+  pos,
+  onPick,
+  reflection,
+  animate,
+  flat = false
+}: {
+  games: Game[]
+  pos: number
+  onPick: (i: number) => void
+  reflection: boolean
+  animate: boolean
+  flat?: boolean
+}) {
   useRatios()
   const n = games.length
   // the ribbon goes round: SIDE covers on each side always, a short list repeats its covers to fill the screen
@@ -96,22 +122,40 @@ export function TvCoverflow({ games, pos, onPick, reflection, animate }: { games
   const boxes = items.map((it) => coverBox(ratios.get(games[it.i].id) ?? usual))
   const x = flowLayout(
     boxes.map((b) => b[0]),
-    SIDE
+    SIDE,
+    flat
   )
   return (
-    <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''}`}>
+    <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''} ${flat ? 'tv-flow--flat' : ''}`}>
       <div className="tv-flow__stage">
         {items.map((it, k) => (
-          <FlowItem key={`${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} animate={animate} onPick={() => onPick(it.i)} />
+          <FlowItem key={`${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} animate={animate} flat={flat} onPick={() => onPick(it.i)} />
         ))}
       </div>
     </div>
   )
 }
 
-const FlowItem = memo(function FlowItem({ game, d, x, box, animate, onPick }: { game: Game; d: number; x: number; box: [number, number]; animate: boolean; onPick: () => void }) {
+const FlowItem = memo(function FlowItem({
+  game,
+  d,
+  x,
+  box,
+  animate,
+  flat,
+  onPick
+}: {
+  game: Game
+  d: number
+  x: number
+  box: [number, number]
+  animate: boolean
+  flat: boolean
+  onPick: () => void
+}) {
   const a = Math.abs(d)
-  const turn = d === 0 ? 0 : -Math.sign(d) * 58
+  const turn = d === 0 || flat ? 0 : -Math.sign(d) * 58
+  const tag = flat ? stateTag(game) : null
   return (
     <div
       className={`tv-flow__item ${d === 0 ? 'sel' : ''}`}
@@ -120,7 +164,9 @@ const FlowItem = memo(function FlowItem({ game, d, x, box, animate, onPick }: { 
         ['--h' as string]: box[1],
         // each cover has its own perspective (not the ribbon's): every turned cover then looks the same
         // and its width is what the spacing counts on, however far from the middle it stands
-        transform: `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) perspective(1100px) rotateY(${turn}deg) scale(${flowScale(d)})`,
+        transform: flat
+          ? `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) scale(${flatScale(d)})`
+          : `translateX(calc(-50% + ${x.toFixed(3)} * var(--tv-flow-h))) perspective(1100px) rotateY(${turn}deg) scale(${flowScale(d)})`,
         zIndex: 20 - a,
         opacity: a > SIDE - 1 ? 0 : 1
       }}
@@ -136,6 +182,8 @@ const FlowItem = memo(function FlowItem({ game, d, x, box, animate, onPick }: { 
             czas, mogą stanąć tylko podczas przewijania); animowana wersja wczytuje się w tle, do tego czasu pierwsza
             klatka (components/Art.tsx: stary obraz zostaje do gotowości nowego), potem z pamięci od razu */}
         <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim={animate} onRatio={(r) => setRatio(game.id, r)} />
+        {/* posters: the game's state as one dot in the corner (ready / downloading / playing) */}
+        {tag && <span className={`tv-flow__state tv-flow__state--${tag.kind}`} aria-label={tag.label} />}
       </div>
     </div>
   )

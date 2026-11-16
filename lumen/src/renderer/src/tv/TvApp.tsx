@@ -2,6 +2,7 @@ import { JobsStrip } from '../components/Jobs'
 import { ActivityList } from '../components/Activity'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { api, attempt, useStore } from '../store'
+import type { TvGamesLayout } from '@shared/types'
 import { useActions, useHints, type Action } from '../nav/input'
 import { focusFirst } from '../nav/engine'
 import { SettingsScreen } from '../screens/Settings'
@@ -161,6 +162,8 @@ export function TvApp() {
       {menu && (
         <TvMenu
           themeName={theme.name}
+          themeLayout={theme.games.layout}
+          listOf={screen === 'games' && sys ? { key: sys.key, name: sys.display } : undefined}
           onTheme={() => {
             setMenu(false)
             if (screen === 'settings') setScreen('top') // the chooser shows each theme on the layout underneath
@@ -301,19 +304,39 @@ function TvHints() {
   )
 }
 
+/** the TV game list layouts by name (menu "Układ listy") */
+const LAYOUT_NAMES: Record<TvGamesLayout, string> = { list: 'Lista', coverflow: 'Wstęga', posters: 'Plakaty' }
+
 function TvMenu({
   onClose,
   onSettings,
   onLook,
   onTheme,
-  themeName
+  themeName,
+  themeLayout,
+  listOf
 }: {
   onClose: () => void
   onSettings: () => void
   onLook: () => void
   onTheme: () => void
   themeName: string
+  themeLayout: TvGamesLayout
+  /** the game list under the menu: its layout can be changed here (kept for that group) */
+  listOf?: { key: string; name: string }
 }) {
+  const layouts = useStore((s) => s.settings?.tvLayouts)
+  const own = listOf ? layouts?.[listOf.key] : undefined
+  // z motywu → Lista → Wstęga → Plakaty → z motywu
+  const nextLayout = (): void => {
+    if (!listOf) return
+    const order: (TvGamesLayout | undefined)[] = [undefined, 'list', 'coverflow', 'posters']
+    const next = order[(order.indexOf(own) + 1) % order.length]
+    const all = { ...(layouts ?? {}) }
+    if (next) all[listOf.key] = next
+    else delete all[listOf.key]
+    void attempt(api().settings.patch({ tvLayouts: all })).then((st) => st && useStore.getState().setSettings(st))
+  }
   const loggedIn = useStore((s) => !!s.snapshot?.emustart?.server)
   // with the Deck on Lumen keeps running in the tray (like closing the window): ask whether to hide or really quit
   const deckOn = useStore((s) => !!s.settings?.deck?.enabled)
@@ -339,6 +362,9 @@ function TvMenu({
     ['Anuluj', () => leaveExit()]
   ]
   const menuItems: [string, () => void][] = [
+    ...(listOf
+      ? ([[`Układ listy „${listOf.name}”: ${own ? LAYOUT_NAMES[own] : `z motywu (${LAYOUT_NAMES[themeLayout].toLowerCase()})`}  ·  A — zmień`, nextLayout]] as [string, () => void][])
+      : []),
     ['Ustawienia', onSettings],
     [`Motyw: ${themeName}`, onTheme],
     ['Wygląd', onLook],

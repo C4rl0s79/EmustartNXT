@@ -18,7 +18,7 @@
 }
 
 /* display face (the look's "Czcionka nagłówków", Cinzel by default): names and titles only */
-.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
+.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-summary__logo h1, .tv-gamepage__logo h1) {
   font-weight: 600;
   letter-spacing: 0.03em;
 }

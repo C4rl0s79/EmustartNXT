@@ -415,6 +415,10 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   Wersje; opis z miejscem na ~10 linii; fakty w kartach „Na tym komputerze / Twoja gra / O grze” — `tv/gameParts.tsx`
   `useGameFacts`). Na liście: X — Graj od razu, Y — filtry (dotąd X); opcje gry tylko ze strony gry (Y albo przycisk).
   B na stronie gry wraca na listę na tę samą grę.
+- **Układy listy TV** (etapy 20b–20c): Lista (EmuStart), Wstęga (3D), Plakaty (płaski rząd na dole, logo gry na
+  tle). Na liście zamiast paska szczegółów `TvSummary` — logo i jedna linia (status, czas gry, rok, system); reszta
+  na stronie gry. Układ wybiera się dla grupy w menu Start („Układ listy”), zapis `Settings.tvLayouts[klucz grupy]`;
+  bez wyboru — układ motywu.
 - **Szczegóły i oceny** (lista TV — pasek na dole: logo z lewej, szczegóły obok):
   - LaunchBox (baza w schemacie 3, przebudowuje się sama): ocena społeczności i liczba głosów, ESRB,
     kooperacja, typ wydania, maks. liczba graczy;
