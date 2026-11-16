@@ -1477,3 +1477,8 @@
 .tv-flow__state--run {
   background: var(--tv-accent);
 }
+
+/* kopiuj / wklej: tekst do czytania w trybie TV da się zaznaczyć myszą (opis, wartości szczegółów, linia faktów) */
+.tv :is(.tv-desc, .tv-card dd, .tv-summary__facts, .tv-info dd) {
+  user-select: text;
+}

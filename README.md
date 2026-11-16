@@ -12,3 +12,14 @@ Zasada: lokalne pliki (grafiki, logotypy, media) czyta Lumen; silnik EmuStart s�
 danych z serwerem. Kierunek: klient EmuStart wchłonięty przez Lumena, EmuStart — serwer.
 
 Instrukcje budowania i uruchamiania: `emustart/README.md`, `lumen/README.md`.
+
+## Wiki
+
+[github.com/C4rl0s79/EmustartNXT/wiki](https://github.com/C4rl0s79/EmustartNXT/wiki) — strony dla gracza (Lumen,
+EmuStart) i techniczne (z OpenWiki). Źródła są w repozytorium: `lumen/docs/wiki/`, `emustart/docs/wiki/`,
+`openwiki/`; na wiki nie edytuj. Publikacja:
+
+```
+git clone https://github.com/C4rl0s79/EmustartNXT.wiki.git <folder>
+python scripts/publish_wiki.py <folder> --push
+```

@@ -16,50 +16,76 @@ import { Modal } from '../components/Modal'
 import { formatBytes, gameCountLabel } from '../lib/format'
 import { UpdateSection } from '../components/Update'
 import { EmuLibraryOptions, Stepper } from '../components/EmuOptions'
+import { KeyGuide } from '../components/KeyGuide'
 
 // Two panes: the list of sections on the left, the chosen section on the right (scrolled on its own).
 // Moving along the list shows the section; right / A goes into it, B (or left at its edge) back to the list.
+// Seven entries instead of fourteen (2026-11-16): related sections share a page; the fields where keys and
+// identifiers are typed live together in "Zaawansowane", each section that used them says so where they were.
 const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
-  { id: 'interface', label: 'Interfejs', render: () => <InterfaceSection /> },
-  { id: 'deck', label: 'Deck', render: () => <DeckSection /> },
-  { id: 'steam', label: 'Steam', render: () => <SteamSection /> },
-  { id: 'emustart', label: 'EmuStart', render: () => <EmustartSection /> },
-  { id: 'gog', label: 'Gry GOG', render: () => <GogSection /> },
-  { id: 'xbox', label: 'Xbox', render: () => <XboxSection /> },
   {
-    id: 'library',
-    label: 'Biblioteka EmuStart',
-    render: () => (
-      <Section
-        title="Biblioteka EmuStart"
-        desc="Te same ustawienia co w EmuStart (tryb TV → Ustawienia) — zapisane raz, działają w obu trybach."
-      >
-        <EmuLibraryOptions part="library" />
-      </Section>
-    )
-  },
-  {
-    id: 'systems',
-    label: 'Systemy',
-    render: () => (
-      <Section title="Systemy" desc="Emulator dla każdego systemu na tym komputerze; wyłączony system znika z biblioteki.">
-        <EmuLibraryOptions part="systems" />
-      </Section>
-    )
-  },
-  { id: 'groups', label: 'Szybki dostęp', render: () => <CategoriesSection /> },
-  {
-    id: 'art',
-    label: 'Grafiki i opisy',
+    id: 'look',
+    label: 'Wygląd',
     render: () => (
       <>
+        <InterfaceSection />
+        <TvLookSection />
+      </>
+    )
+  },
+  {
+    id: 'library',
+    label: 'Biblioteka',
+    render: () => (
+      <>
+        <Section
+          title="Biblioteka EmuStart"
+          desc="Te same ustawienia co w EmuStart (tryb TV → Ustawienia) — zapisane raz, działają w obu trybach."
+        >
+          <EmuLibraryOptions part="library" />
+        </Section>
+        <Section title="Systemy" desc="Emulator dla każdego systemu na tym komputerze; wyłączony system znika z biblioteki.">
+          <EmuLibraryOptions part="systems" />
+        </Section>
+        <CategoriesSection />
         <ArtSection />
         <LaunchBoxSection />
       </>
     )
   },
-  { id: 'behaviour', label: 'Zachowanie', render: () => <BehaviourSection /> },
-  { id: 'data', label: 'Dane', render: () => <DataSection /> },
+  {
+    id: 'accounts',
+    label: 'Konta i sklepy',
+    render: () => (
+      <>
+        <EmustartSection />
+        <SteamSection />
+        <GogSection />
+        <XboxSection />
+      </>
+    )
+  },
+  {
+    id: 'pads',
+    label: 'Pady i sterowanie',
+    render: () => (
+      <>
+        <PadsSection />
+        <HelpSection />
+      </>
+    )
+  },
+  {
+    id: 'behaviour',
+    label: 'Zachowanie i dane',
+    render: () => (
+      <>
+        <BehaviourSection />
+        <DeckSection />
+        <DataSection />
+      </>
+    )
+  },
   {
     id: 'update',
     label: 'Aktualizacja',
@@ -72,12 +98,27 @@ const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
       </Section>
     )
   },
-  { id: 'help', label: 'Sterowanie', render: () => <HelpSection /> }
+  { id: 'advanced', label: 'Zaawansowane', render: () => <AdvancedSection /> }
 ]
+/** old section ids (Deck menu, links) → the page that holds that section now */
+const PAGE_OF: Record<string, string> = {
+  interface: 'look',
+  deck: 'behaviour',
+  steam: 'accounts',
+  emustart: 'accounts',
+  gog: 'accounts',
+  xbox: 'accounts',
+  systems: 'library',
+  groups: 'library',
+  art: 'library',
+  data: 'behaviour',
+  help: 'pads'
+}
 let lastPage = PAGES[0].id // kept while the program runs
 
 /** Ustawienia od razu na sekcji `id` (menu Decka: „Wszystkie ustawienia Decka…”) */
 export function openSettingsPage(id: string): void {
+  id = PAGE_OF[id] ?? id
   if (!PAGES.some((p) => p.id === id)) return
   lastPage = id
   window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: id }))
@@ -219,8 +260,6 @@ function SecretField({ name, label, has }: { name: SecretName; label: string; ha
 
 function SteamSection() {
   const snapshot = useStore((s) => s.snapshot)!
-  const settings = useStore((s) => s.settings)!
-  const [steamId, setSteamId] = useState(settings.steamIdOverride ?? '')
   const { steam, account } = snapshot
   const statusText = { running: 'działa', notRunning: 'zainstalowany, wyłączony', notInstalled: 'nie znaleziono', unknown: 'nieznany' }[steam.status]
   const [family, setFamily] = useState<SteamFamilyStatus | null>(null)
@@ -268,21 +307,7 @@ function SteamSection() {
           <dd>{accountText}</dd>
         </div>
       </dl>
-      <SecretField name="steamWebApiKey" label="Klucz Steam Web API" has={settings.hasSteamWebKey} />
-      <p className="card__desc">
-        Klucz wygenerujesz na stronie{' '}
-        <button className="link" data-nav onClick={() => void api().app.openExternal('https://steamcommunity.com/dev/apikey')}>
-          steamcommunity.com/dev/apikey
-        </button>
-        . Klucz jest przechowywany lokalnie{settings.secretsEncrypted ? ' i szyfrowany (Windows DPAPI)' : ''}.
-      </p>
-      <div className="field-row">
-        <label>Inne SteamID64 (opcjonalnie)</label>
-        <TextField label="SteamID64" placeholder="automatycznie" value={steamId} onChange={setSteamId} onSubmit={(v) => void patch({ steamIdOverride: v.trim() })} />
-        <button className="btn" data-nav onClick={() => void patch({ steamIdOverride: steamId.trim() })}>
-          Zastosuj
-        </button>
-      </div>
+      <AdvancedNote what="Klucz Steam Web API (lista gier konta) i inne SteamID64" />
       <div className="modal__row">
         <button
           className="btn btn--primary"
@@ -324,14 +349,7 @@ function ArtSection() {
       title="Grafiki (SteamGridDB)"
       desc="Plakaty, tła i logotypy mogą pochodzić ze SteamGridDB (wymaga darmowego klucza API) albo z oficjalnych grafik Steam. Pobrane obrazy są zapisywane w lokalnej pamięci podręcznej."
     >
-      <SecretField name="sgdbApiKey" label="Klucz SteamGridDB" has={settings.hasSgdbKey} />
-      <p className="card__desc">
-        Klucz znajdziesz po zalogowaniu na{' '}
-        <button className="link" data-nav onClick={() => void api().app.openExternal('https://www.steamgriddb.com/profile/preferences/api')}>
-          steamgriddb.com → Preferences → API
-        </button>
-        .
-      </p>
+      <AdvancedNote what="Klucz SteamGridDB" />
       <Toggle
         label="Najpierw grafiki ze SteamGridDB"
         desc={
@@ -354,12 +372,7 @@ function ArtSection() {
             }
           />
         ))}
-      <h3 className="card__desc">Własne klucze innych źródeł (IGDB, TheGamesDB)</h3>
-      <p className="card__desc">Klucze zostają na tym urządzeniu, a zapytania idą wprost do tych usług, nie przez serwer EmuStart. Grafiki pojawią się w oknie „Grafiki” gry.</p>
-      <SecretField name="igdbClientId" label="IGDB: Client ID" has={settings.hasIgdbId} />
-      <SecretField name="igdbClientSecret" label="IGDB: Client Secret" has={settings.hasIgdbSecret} />
-      <SecretField name="tgdbApiKey" label="Klucz TheGamesDB" has={settings.hasTgdbKey} />
-      <KeysTransfer />
+      <AdvancedNote what="Własne klucze IGDB i TheGamesDB oraz przenoszenie kluczy między urządzeniami" />
     </Section>
   )
 }
@@ -617,7 +630,6 @@ async function copyText(text: string): Promise<void> {
 function XboxSection() {
   const settings = useStore((s) => s.settings)!
   const x = useStore((s) => s.snapshot?.xbox)
-  const [clientId, setClientId] = useState(settings.xboxClientId ?? '')
   const [busy, setBusy] = useState(false)
   const run = async (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>): Promise<void> => {
     setBusy(true)
@@ -660,24 +672,12 @@ function XboxSection() {
         onChange={(v) => void patch({ xboxGamePass: v })}
       />
       <h3 className="cats__heading">Konto Xbox</h3>
-      <p className="card__desc selectable">
+      <p className="card__desc">
         Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez aplikację „Lumen Launcher”
-        (bez konfiguracji). Opcjonalnie własna aplikacja Azure: portal.azure.com →
-        Microsoft Entra ID → Rejestracje aplikacji → „Tylko osobiste konta Microsoft”, przekierowanie „Klient publiczny/natywny” (adres
-        niżej) — jej identyfikator w polu poniżej (po zmianie trzeba zalogować się ponownie).
+        (bez konfiguracji).
       </p>
-      {/* zaznaczalny adres i „Kopiuj” — reszta okna nie pozwala zaznaczać tekstu (obsługa padem; zgłoszenie 2026-11-16) */}
+      <AdvancedNote what="Własna aplikacja Azure (inny identyfikator klienta, adres przekierowania)" />
       <div className="modal__row">
-        <code className="selectable copyline">https://login.microsoftonline.com/common/oauth2/nativeclient</code>
-        <button className="btn btn--sm" data-nav onClick={() => void copyText('https://login.microsoftonline.com/common/oauth2/nativeclient')}>
-          Kopiuj adres
-        </button>
-      </div>
-      <TextField label="Inny identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
-      <div className="modal__row">
-        <button className="btn" data-nav disabled={busy || clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
-          Zapisz identyfikator
-        </button>
         <button className="btn btn--primary" data-nav disabled={busy} onClick={() => void run(() => api().xbox.login())}>
           Zaloguj kontem Microsoft
         </button>
@@ -783,16 +783,150 @@ function NamePrompt({ title, initial, onClose, onSubmit }: { title: string; init
   )
 }
 
+/** go to another page of the settings without leaving them (both modes) */
+function goToPage(id: string): void {
+  lastPage = id
+  window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: id }))
+}
+
+/** where a field was before it moved to "Zaawansowane": what moved, and a button that goes there */
+function AdvancedNote({ what }: { what: string }) {
+  return (
+    <div className="advnote">
+      <span>
+        <strong>{what}</strong> — przeniesione do „Zaawansowane”.
+      </span>
+      <button className="btn btn--sm" data-nav onClick={() => goToPage('advanced')}>
+        Przejdź do Zaawansowane
+      </button>
+    </div>
+  )
+}
+
+/** keys and identifiers typed by hand — all in one place, each with a short guide to getting it */
+function AdvancedSection() {
+  const settings = useStore((s) => s.settings)!
+  const [steamId, setSteamId] = useState(settings.steamIdOverride ?? '')
+  const [clientId, setClientId] = useState(settings.xboxClientId ?? '')
+  const enc = settings.secretsEncrypted ? ' i szyfrowane (Windows DPAPI)' : ''
+  return (
+    <>
+      <Section
+        title="Zaawansowane"
+        desc={
+          <>
+            Tu są pola, w które wpisuje się <strong>klucze i identyfikatory usług</strong>. Przeniesiono je z sekcji Steam, Grafiki i Xbox
+            (tam zostały odnośniki „przeniesione do Zaawansowane”), bo wpisuje się je raz — zwykle klawiaturą albo przez Wklej — a na co dzień
+            tylko wydłużały listę ustawień. Wszystko tu jest opcjonalne: Lumen działa bez tych kluczy, dają tylko więcej danych (lista gier konta
+            Steam, grafiki, opisy). Klucze zostają na tym komputerze{enc} i nie trafiają na serwer EmuStart. Przy każdym polu: „Jak zdobyć…?”.
+          </>
+        }
+      >
+        {null}
+      </Section>
+      <Section title="Steam" desc="Klucz Web API daje listę wszystkich gier konta (także niezainstalowanych) i czas gry z konta.">
+        <SecretField name="steamWebApiKey" label="Klucz Steam Web API" has={settings.hasSteamWebKey} />
+        <KeyGuide id="steam" />
+        <div className="field-row">
+          <label>Inne SteamID64 (opcjonalnie)</label>
+          <TextField label="SteamID64" placeholder="automatycznie" value={steamId} onChange={setSteamId} onSubmit={(v) => void patch({ steamIdOverride: v.trim() })} />
+          <button className="btn" data-nav onClick={() => void patch({ steamIdOverride: steamId.trim() })}>
+            Zastosuj
+          </button>
+        </div>
+        <p className="card__desc">Zwykle puste — Lumen bierze konto zalogowane w Steam. Inne SteamID64 (17 cyfr) pokazuje bibliotekę innego konta.</p>
+      </Section>
+      <Section title="SteamGridDB" desc="Plakaty, tła, logotypy i ikony gier (Steam, GOG, skróty, EmuStart).">
+        <SecretField name="sgdbApiKey" label="Klucz SteamGridDB" has={settings.hasSgdbKey} />
+        <KeyGuide id="sgdb" />
+      </Section>
+      <Section
+        title="IGDB i TheGamesDB"
+        desc="Dodatkowe źródła grafik w oknie „Grafiki” gry. Zapytania idą wprost do tych usług, nie przez serwer EmuStart."
+      >
+        <SecretField name="igdbClientId" label="IGDB: Client ID" has={settings.hasIgdbId} />
+        <SecretField name="igdbClientSecret" label="IGDB: Client Secret" has={settings.hasIgdbSecret} />
+        <KeyGuide id="igdb" />
+        <SecretField name="tgdbApiKey" label="Klucz TheGamesDB" has={settings.hasTgdbKey} />
+        <KeyGuide id="tgdb" />
+      </Section>
+      <Section title="Przenoszenie kluczy" desc="Klucze grafik z PyLinks na tym komputerze albo z pliku z innego urządzenia.">
+        <KeysTransfer />
+      </Section>
+      <Section
+        title="Xbox — własna aplikacja Azure"
+        desc="Potrzebna tylko wtedy, gdy logowanie przez domyślną aplikację „Lumen Launcher” przestanie działać. Po zmianie identyfikatora trzeba zalogować się ponownie (Konta i sklepy → Xbox)."
+      >
+        <p className="card__desc">Adres przekierowania do wpisania w aplikacji Azure:</p>
+        <div className="modal__row">
+          <code className="selectable copyline">https://login.microsoftonline.com/common/oauth2/nativeclient</code>
+          <button className="btn btn--sm" data-nav onClick={() => void copyText('https://login.microsoftonline.com/common/oauth2/nativeclient')}>
+            Kopiuj adres
+          </button>
+        </div>
+        <TextField label="Identyfikator aplikacji (klienta) Azure" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
+        <div className="modal__row">
+          <button className="btn" data-nav disabled={clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
+            Zapisz identyfikator
+          </button>
+        </div>
+        <KeyGuide id="azure" />
+      </Section>
+    </>
+  )
+}
+
+/** pads: their order (who is player 1) and the per-game controllers — the same windows as in the TV menu */
+function PadsSection() {
+  return (
+    <Section title="Pady" desc="Kolejność padów (kto jest graczem 1) i kontrolery dla gier — wspólne dla obu trybów.">
+      <div className="modal__row">
+        <button className="btn" data-nav onClick={() => useStore.getState().setPads(true)}>
+          Kolejność padów…
+        </button>
+        <button className="btn" data-nav onClick={() => useStore.getState().setControllers(true)}>
+          Kontrolery…
+        </button>
+      </div>
+    </Section>
+  )
+}
+
+/** the TV layout's theme and look (their editors draw over the TV screens, so they open from the TV mode) */
+function TvLookSection() {
+  const tv = useStore((s) => s.uiMode) === 'fullscreen'
+  return (
+    <Section
+      title="Tryb TV — motyw i wygląd"
+      desc="Motyw (kolory, układ list, dekoracje), edytor wyglądu (czcionki, rozmiary) i układ listy gier dla każdej grupy (menu Start na liście gier → „Układ listy”)."
+    >
+      {tv ? (
+        <div className="modal__row">
+          <button className="btn" data-nav onClick={() => window.dispatchEvent(new CustomEvent('lumen:tv-open', { detail: 'theme' }))}>
+            Motyw…
+          </button>
+          <button className="btn" data-nav onClick={() => window.dispatchEvent(new CustomEvent('lumen:tv-open', { detail: 'look' }))}>
+            Wygląd…
+          </button>
+        </div>
+      ) : (
+        <p className="card__desc">Dostępne w trybie TV: Ustawienia → Wygląd albo menu Start → Motyw.</p>
+      )}
+    </Section>
+  )
+}
+
 function InterfaceSection() {
   const settings = useStore((s) => s.settings)!
+  const tv = useStore((s) => s.uiMode) === 'fullscreen'
   return (
     <Section
       title="Tryb interfejsu"
-      desc="Dwa wyglądy tej samej aplikacji: pulpit (ten widok) i tryb TV w stylu EmuStart — z tą samą biblioteką, ustawieniami i listą zadań. Przełączanie nie przerywa pobierania ani gry: F10 albo View + Start na padzie."
+      desc="Dwa wyglądy tej samej aplikacji: pulpit i tryb TV w stylu EmuStart — z tą samą biblioteką, ustawieniami i listą zadań. Przełączanie nie przerywa pobierania ani gry: F10 albo View + Start na padzie."
     >
       <div className="modal__row">
-        <button className="btn btn--primary" data-nav onClick={() => void api().ui.setMode('fullscreen')}>
-          Przełącz na tryb TV
+        <button className="btn btn--primary" data-nav onClick={() => void api().ui.setMode(tv ? 'desktop' : 'fullscreen')}>
+          {tv ? 'Przełącz na pulpit' : 'Przełącz na tryb TV'}
         </button>
       </div>
       <Toggle
@@ -1260,6 +1394,19 @@ function DataSection() {
   )
 }
 
+/** the TV layout's game list and game page (wiki: Lumen-tryb-TV) */
+const TV_KEYS: [string, string, string][] = [
+  ['Strona gry (szczegóły i opcje)', 'Enter', 'A'],
+  ['Graj od razu', 'F', 'X'],
+  ['Filtry i sortowanie (lista) / Opcje gry (strona gry)', 'S', 'Y'],
+  ['Szukaj', 'Z', 'L3'],
+  ['Ulubiona', 'U', 'R3'],
+  ['O stronę', 'Q / E', 'LB / RB'],
+  ['Poprzednia / następna litera', 'PgUp / PgDn', 'LT / RT'],
+  ['Menu (Ustawienia, Motyw, Układ listy…)', 'O', 'Start'],
+  ['Klawiatura ekranowa: wklej', 'Ctrl+V', 'RB']
+]
+
 function HelpSection() {
   const rows: [string, string, string][] = [
     ['Nawigacja', 'Strzałki', 'D-pad / lewa gałka'],
@@ -1285,6 +1432,25 @@ function HelpSection() {
         </thead>
         <tbody>
           {rows.map(([a, k, p]) => (
+            <tr key={a}>
+              <td>{a}</td>
+              <td>{k}</td>
+              <td>{p}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h3 className="cats__heading">Tryb TV — lista gier i strona gry</h3>
+      <table className="keys">
+        <thead>
+          <tr>
+            <th>Akcja</th>
+            <th>Klawiatura</th>
+            <th>Kontroler</th>
+          </tr>
+        </thead>
+        <tbody>
+          {TV_KEYS.map(([a, k, p]) => (
             <tr key={a}>
               <td>{a}</td>
               <td>{k}</td>

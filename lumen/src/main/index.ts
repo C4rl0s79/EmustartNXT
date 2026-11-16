@@ -19,6 +19,7 @@ import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
+import { attachEditMenu } from './editMenu'
 import { EXPLORER, TASKLIST } from './systemTools'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
@@ -578,6 +579,7 @@ function createWindow(): void {
     }
   })
   Menu.setApplicationMenu(null)
+  attachEditMenu(win.webContents) // prawy przycisk: Wytnij / Kopiuj / Wklej w polach i przy zaznaczonym tekście
   win.on('page-title-updated', (e) => e.preventDefault())
   // with Deck on, closing the window hides it: Lumen keeps running on the desktop (Deck menu → Zamknij Lumen)
   // Windows ending the session closes the window without before-quit: never hold it up (session-end only —

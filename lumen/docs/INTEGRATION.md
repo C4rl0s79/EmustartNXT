@@ -419,6 +419,9 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   tle). Na liście zamiast paska szczegółów `TvSummary` — logo i jedna linia (status, czas gry, rok, system); reszta
   na stronie gry. Układ wybiera się dla grupy w menu Start („Układ listy”), zapis `Settings.tvLayouts[klucz grupy]`;
   bez wyboru — układ motywu.
+- **Ustawienia** (etap 20d–20f): 7 działów (`screens/Settings.tsx` PAGES; stare identyfikatory sekcji → `PAGE_OF`),
+  pola kluczy w „Zaawansowane” z poradnikami `components/KeyGuide.tsx` (linki do wiki GitHub). Kopiuj / wklej: menu
+  prawego przycisku `main/editMenu.ts`, klawiatura ekranowa — Ctrl+V / RB / „Wklej”. Wiki: `scripts/publish_wiki.py`.
 - **Szczegóły i oceny** (lista TV — pasek na dole: logo z lewej, szczegóły obok):
   - LaunchBox (baza w schemacie 3, przebudowuje się sama): ocena społeczności i liczba głosów, ESRB,
     kooperacja, typ wydania, maks. liczba graczy;
