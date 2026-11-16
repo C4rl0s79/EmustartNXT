@@ -278,3 +278,12 @@ describe('setDeckLayout', () => {
     expect(Object.keys(setDeckLayout(base, { key: '1920x1080@1', label: '1920×1080', field: 'dockWidth', delta: 0.01 }))).toEqual(['1280x720@1', '1920x1080@1'])
   })
 })
+
+describe('sameRect — okno Decka ma rozmiar, który mu ustawiono', () => {
+  it('1 px różnicy (zaokrąglenie przy skalowaniu) to ten sam rozmiar, 46 px zamiast panelu — nie', async () => {
+    const { sameRect } = await import('@shared/deck')
+    const want = { x: 0, y: 0, width: 2560, height: 1300 }
+    expect(sameRect({ x: 0, y: 1, width: 2559, height: 1301 }, want)).toBe(true)
+    expect(sameRect({ x: 0, y: 0, width: 2560, height: 46 }, want)).toBe(false)
+  })
+})

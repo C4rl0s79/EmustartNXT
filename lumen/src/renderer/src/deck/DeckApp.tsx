@@ -122,6 +122,14 @@ export function DeckApp() {
     clearTimeout(closeTimer.current)
     setClosing(false)
     setOpen(true)
+    if (content === null) {
+      // zgłoszenie 2026-11-16: panel przestał się rozwijać — w logu widać, czego brakuje do policzenia jego wysokości
+      console.warn(`[deck] panel bez wysokości: geometria ${geo ? 'jest' : 'brak'}, zakładka ${group ? group.id : 'brak'}, ustawienia ${deck ? 'są' : 'brak'}`)
+    } else if (open && geo && !geo.expanded) {
+      // „otwarty” tutaj, a okno zwinięte: prośba ponawiana (efekt niżej wysyła ją tylko przy zmianie)
+      console.warn('[deck] panel otwarty, okno zwinięte — prośba o rozwinięcie ponowiona')
+      api().deck.expand(content)
+    }
   }
   /** zwinięcie panelu: z animacją (ustawienie „Animacje”) — okno Decka maleje dopiero po niej */
   const close = (): void => {

@@ -26,6 +26,7 @@ export function watchWindow(wc: WebContents, name: string): void {
   wc.on('console-message', (e: unknown, ...rest: unknown[]) => {
     const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
     if (msg.startsWith('[perf] ')) log.info('perf', `${name}: ${msg.slice(7)}`)
+    else if (msg.startsWith('[deck] ')) log.warn('deck', `${name}: ${msg.slice(7)}`)
   })
 }
 
