@@ -6,7 +6,7 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
-### Plan: pamięć serwera i start gier CD Projekt RED bez launchera — EmuStart 0.64.1 (zgłoszenia 2026-11-16)
+### Plan: zgłoszenia 2026-11-16 (pamięć serwera, gry bez launchera, serie, DOSBox) — **wydane: EmuStart 0.65.0, Lumen 1.0.64** (etapy 1–5, 10, 11); etapy 6–9 — następne
 
 Zgłoszenia użytkownika (2026-11-16): serwer prawie nieużywany zajmuje ~1 GB po dniu i ~20 GB po kilku dniach;
 Cyberpunk 2077 i Wiedźmin 3 mają startować bez launchera (REDprelauncher) — zakres: wszystkie gry o tym układzie zadań. Pozostałe zgłoszenia z listy (Deck, DOSBox,
@@ -347,6 +347,32 @@ dokumentacji Lumena, wydanie.
 10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
+## [0.65.0] — 2026-11-16
+
+Zakres: serwer (`gogarchive.py`, `memwatch.py` i `igdbseries.py` — nowe, `remote.py`, `server.py`, `art_sources.py`,
+`server_main.py`), silnik GOG (`gogfinal.py`, `goglib.py`, `goginstall.py`, `dosmidi.py` i `midigames.py` — nowe) i
+`api.py`; te same pliki w kopii silnika Lumena (`lumen/engine/`, Lumen 1.0.64). Klient Windows — te same funkcje silnika
+(gry GOG, DOSBox); APK — bez zmian (nie instaluje gier GOG, serie są w Lumenie).
+
+### Naprawione
+- **Pamięć serwera:** zbiór chunków buildu GOG zwięźle (~24 B zamiast ~136 B na chunk — archiwum ~7,3 mln chunków
+  trzymało ~1 GB przez cały czas działania i drugie tyle przy każdym „Odśwież indeks”); pamięć procesu w logu co godzinę
+  i przed / po indeksie GOG (`pamięć procesu:`, `GOG: po indeksie`); zły rozmiar chunka w manifeście odrzuca build, nie
+  cały indeks.
+- **Gry GOG bez launchera:** widoczny launcher (REDprelauncher Cyberpunka 2077 i Wiedźmina 1–3, launchery Fallouta,
+  Oblivionu, Mafii, gier Unreal Engine…) i jeden ukryty plik gry → startuje plik gry (48 gier archiwum); kilka wariantów
+  gry (Resident Evil 2 / 3, Outlast, Divinity OS2…) — launcher zostaje; launcher zawsze do wyboru w „Uruchom…”.
+
+### Nowe
+- **Serie gier z IGDB** (jak PyLinks Web): serwer sam sprawdza swoje gry (GOG, biblioteka emulatorów), Lumen dosyła
+  tytuły Steam; nazwa serii = franczyza / kolekcja, kolejność po dacie oryginału (remake przy oryginale); ręczny wybór
+  gracza wygrywa; gra niezależna według IGDB nie jest łączona z tytułu. API: `GET` / `POST /v1/series`, funkcja `series`
+  w `/v1/info`.
+- **„Uruchom z diagnostyką”** dla gier DOSBox: komunikat błędu gry zostaje na ekranie (kopie skryptów bez `exit`,
+  okno, konsola DOSBoxa); pliki gry bez zmian.
+- **MT-32 / SC-55 per gra DOSBox:** port MIDI przez dodatkowy `-conf` (`mididevice=win32`, `midiconfig`); porty po
+  nazwie; tryb auto z listy vogonswiki (707 gier MT-32, 320 fałszywie deklarujących MT-32: GM → SC-55).
 
 ## [0.64.0] — 2026-11-13
 
