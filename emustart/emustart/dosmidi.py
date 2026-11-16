@@ -270,6 +270,27 @@ def _running(exe: str) -> bool:
     return name.lower() in out.lower()
 
 
+def apps(cfg: dict) -> dict:
+    """Programy grające porty: {"mt32": ścieżka|"", "sc55": …} (to, co zostanie uruchomione) i ustawienie gracza
+    ({"mt32_set": "", "sc55_set": ""}: "" — domyślnie, "-" — nic, inaczej ścieżka)."""
+    return {"mt32": companion("mt32", cfg), "sc55": companion("sc55", cfg),
+            "mt32_set": str(cfg.get("midi_mt32_app") or ""), "sc55_set": str(cfg.get("midi_sc55_app") or "")}
+
+
+def warmup(cfg: dict, names: list | None = None) -> list:
+    """Przy starcie Lumena (zgłoszenie 2026-11-16: odtwarzacz SC-55 długo się uruchamia): programy grające porty
+    MT-32 / SC-55, które są wybrane i jeszcze nie działają — zminimalizowane, bez fokusu, bez czekania. → uruchomione."""
+    ports_ = port_settings(cfg, names)
+    out = []
+    for device in ("mt32", "sc55"):
+        if not ports_.get(device):
+            continue
+        r = ensure_companion({"device": device, "index": 0}, cfg, wait=0)
+        if r:
+            out.append(r)
+    return out
+
+
 def ensure_companion(d: dict, cfg: dict, wait: float = 2.0) -> str:
     """Przed startem DOSBoxa: program grający wybrany port (Munt mt32emu-qt) — gdy nie działa, uruchomiony bez
     uprawnień administratora (jak DOSBox — sterownik w grze łączy się z nim), zminimalizowany i bez fokusu (nie

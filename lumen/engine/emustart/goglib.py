@@ -386,7 +386,7 @@ class GogService:
         names = dosmidi.ports()
         d = dosmidi.decide(str(e.get("title") or ""), str(e.get("midi") or "auto"), self._cfg(), names)
         return {"ok": True, **d, "dosbox": dosbox, "modes": list(dosmidi.MODES),
-                "ports": dosmidi.port_settings(self._cfg(), names)}
+                "ports": {**dosmidi.port_settings(self._cfg(), names), "apps": dosmidi.apps(self._cfg())}}
 
     def midi_set(self, pid: str, mode: str) -> dict:
         from emustart import dosmidi

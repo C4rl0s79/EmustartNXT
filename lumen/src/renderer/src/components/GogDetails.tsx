@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { ActionResult, Game, GogMidi, GogMidiMode } from '@shared/types'
 import { GOG_MIDI_MODES } from '@shared/types'
 import { FAMILY_LABEL } from '@shared/libraryNav'
-import { api, askChoice, attempt, useStore } from '../store'
+import { api, askChoice, attempt, pickPath, useStore } from '../store'
 import { GogSaves, launchGog } from './GogSaves'
 import { GogExtras } from './GogExtras'
 import { formatBytes } from '../lib/format'
@@ -57,6 +57,9 @@ export async function chooseGogTask(game: Game, before?: () => void): Promise<vo
   report(await launchGog(game.id, tasks[i].index))
 }
 
+/** „mt32emu-qt.exe” ze ścieżki; brak — „nic” */
+const appName = (p?: string): string => (p && p !== '-' ? (p.split(/[\\/]/).pop() ?? p) : 'nic')
+
 const MIDI_LABEL: Record<GogMidiMode, string> = { auto: 'Automatycznie', mt32: 'Roland MT-32', sc55: 'Roland SC-55', default: 'Domyślne DOSBoxa' }
 
 /** Wiersz „MIDI” w opcjach gry: krótko, co dostanie DOSBox (powód z silnika). */
@@ -72,10 +75,28 @@ export async function chooseGogMidi(game: Game, current: GogMidi | null): Promis
   const ports = current?.ports
   const opts = [
     ...modes.map((m) => `${MIDI_LABEL[m]}${current?.mode === m ? ' ✓' : ''}`),
-    `Wyjścia MIDI… (MT-32: ${ports?.mt32 || 'nie wybrano'}, SC-55: ${ports?.sc55 || 'nie wybrano'})`
+    `Wyjścia MIDI… (MT-32: ${ports?.mt32 || 'nie wybrano'}, SC-55: ${ports?.sc55 || 'nie wybrano'})`,
+    `Programy MIDI… (MT-32: ${appName(ports?.apps?.mt32)}, SC-55: ${appName(ports?.apps?.sc55)})`
   ]
   const i = await askChoice(`MIDI — ${game.name}`, opts)
   if (i === null) return current
+  if (i === modes.length + 1) {
+    // program grający port (Munt, odtwarzacz SC-55) — Lumen uruchamia go przy starcie i przed grą, zminimalizowany
+    const apps = ports?.apps
+    const pickApp = async (label: string, set: string | undefined, def: string): Promise<string | null> => {
+      const j = await askChoice(`Program dla ${label}`, [`Wskaż program…${set && set !== '-' ? ` (teraz: ${appName(set)})` : ''}`, def, 'Nic nie uruchamiaj'])
+      if (j === null) return null
+      if (j === 1) return ''
+      if (j === 2) return '-'
+      return await pickPath({ kind: 'file', title: `Program grający port ${label} (.exe)`, extensions: ['exe'] })
+    }
+    const mt = await pickApp('Roland MT-32', apps?.mt32_set, 'Domyślnie — Munt (mt32emu-qt), jeśli zainstalowany')
+    if (mt === null) return current
+    const sc = await pickApp('Roland SC-55', apps?.sc55_set, 'Domyślnie — nic')
+    if (sc === null) return current
+    report(await attempt(api().gog.setMidiApps(mt, sc)))
+    return (await attempt(api().gog.midi(game.id))) ?? current
+  }
   if (i === modes.length) {
     const list = ports?.ports ?? []
     if (!list.length) {

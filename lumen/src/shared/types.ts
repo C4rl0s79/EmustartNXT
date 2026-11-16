@@ -1265,7 +1265,13 @@ export interface GogMidi {
   note?: string
   /** the game starts through DOSBox (only then the row is shown) */
   dosbox?: boolean
-  ports?: { ports: string[]; mt32: string; sc55: string }
+  ports?: {
+    ports: string[]
+    mt32: string
+    sc55: string
+    /** programy grające porty (uruchamiane z Lumenem i przed grą): ścieżka albo "" i ustawienie gracza ("" domyślnie, "-" nic) */
+    apps?: { mt32: string; sc55: string; mt32_set: string; sc55_set: string }
+  }
 }
 
 export interface GogVerifyResult {

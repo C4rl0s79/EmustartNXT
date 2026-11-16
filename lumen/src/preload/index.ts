@@ -64,6 +64,7 @@ const api: LumenApi = {
     midi: (id) => invoke(IPC.gogMidi, id),
     setMidi: (id, mode) => invoke(IPC.gogMidiSet, id, mode),
     setMidiPorts: (mt32, sc55) => invoke(IPC.gogMidiPorts, mt32, sc55),
+    setMidiApps: (mt32, sc55) => invoke(IPC.gogMidiApps, mt32, sc55),
     uninstall: (id, removeOutside) => invoke(IPC.gogUninstall, id, removeOutside === true),
     uninstallPreview: (id) => invoke(IPC.gogUninstallPreview, id),
     finishAdmin: (id) => invoke(IPC.gogFinishAdmin, id),

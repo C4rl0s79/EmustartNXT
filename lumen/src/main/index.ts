@@ -2052,6 +2052,11 @@ app.whenReady().then(async () => {
     if (st !== 'ready') return
     seriesService.schedule(15_000)                   // serie z IGDB z serwera (main/series.ts)
     serverActivity.pokeSeries(5000)                  // postęp serii i powód, gdy ich nie ma (Ustawienia, pasek)
+    // programy grające porty MIDI (Munt, odtwarzacz SC-55) zawczasu — gry DOSBox startują od razu z dźwiękiem
+    void engine
+      .call<{ ok: boolean; started?: string[] }>('midi_warmup', [], 30_000)
+      .then((r) => r.started?.length && log.info('midi', r.started.join('; ')))
+      .catch(() => undefined)
     void emustartDefaults()
     // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags
     void engine
