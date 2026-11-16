@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../src/main/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
+vi.mock('../src/main/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, registerSecret: vi.fn() }))
 
 import { parseInstalled } from '../src/main/xbox/installed'
 import { productOf } from '../src/main/xbox/catalog'
@@ -134,5 +134,31 @@ describe('logowanie bez Azure (publiczny identyfikator Xbox) i z Azure', () => {
     expect(unpackLogin(packLogin(XBOX_PUBLIC_CLIENT, 'M.R3_BAY.-abc!*'))).toEqual({ clientId: XBOX_PUBLIC_CLIENT, refresh: 'M.R3_BAY.-abc!*' })
     expect(unpackLogin('stary-token-bez-identyfikatora')).toBeNull()
     expect(unpackLogin(undefined)).toBeNull()
+  })
+})
+
+describe('Xbox Live: forma biletu i przyczyna odmowy (zgłoszenie 2026-11-16: HTTP 403 przy logowaniu)', () => {
+  it('pierwsza forma odrzucona — następna przyjęta; odmowa XSTS z kodem — czytelny powód', async () => {
+    const { xblIdentity, rpsCandidates, xerrText } = await import('../src/main/xbox/account')
+    expect(rpsCandidates('TOK', 't=')).toEqual(['t=TOK', 'd=TOK', 'TOK'])
+    expect(xerrText('2148916233')).toMatch(/profilu Xbox/)
+    const seen: string[] = []
+    const reply = (status: number, body: unknown, xerr?: string) =>
+      new Response(JSON.stringify(body), { status, headers: xerr ? { 'x-err': xerr } : {} })
+    vi.stubGlobal('fetch', async (url: string, init: { body: string }) => {
+      const b = JSON.parse(init.body)
+      if (url.includes('user.auth')) {
+        seen.push(b.Properties.RpsTicket.slice(0, 2))
+        return b.Properties.RpsTicket.startsWith('d=') ? reply(200, { Token: 'USER' }) : reply(403, {})
+      }
+      return reply(200, { Token: 'XSTS', DisplayClaims: { xui: [{ uhs: 'U', xid: '25', gtg: 'Gracz' }] } })
+    })
+    expect(await xblIdentity('TOK', 't=')).toEqual({ uhs: 'U', xuid: '25', gamertag: 'Gracz', token: 'XSTS' })
+    expect(seen).toEqual(['t=', 'd='])
+    vi.stubGlobal('fetch', async (url: string) =>
+      url.includes('user.auth') ? reply(200, { Token: 'USER' }) : reply(401, { XErr: 2148916238 })
+    )
+    await expect(xblIdentity('TOK', 't=')).rejects.toThrow(/konto dziecka/)
+    vi.unstubAllGlobals()
   })
 })
