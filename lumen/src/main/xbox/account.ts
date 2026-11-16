@@ -128,7 +128,6 @@ export const exchangeCode = (f: Flow, code: string, verifier: string): Promise<M
 export const refreshTokens = (f: Flow, refresh: string): Promise<MsTokens> =>
   tokenCall(f.token, { client_id: f.clientId, grant_type: 'refresh_token', refresh_token: refresh, scope: f.scope, ...(f.pkce ? {} : { redirect_uri: f.redirect }) })
 
-/** token Microsoft → tożsamość Xbox Live (uhs, xuid, gamertag, token XSTS dla xboxlive.com) */
 /** kody odmowy Xbox Live (nagłówek / pole XErr) → przyczyna po polsku */
 const XERR: Record<string, string> = {
   '2148916227': 'konto zablokowane w Xbox',
@@ -146,7 +145,8 @@ export function xerrText(code: string | null | undefined): string {
   return c ? (XERR[c] ?? `kod Xbox ${c}`) : ''
 }
 
-/** POST JSON do Xbox Live — przy odmowie błąd z kodem XErr (nagłówek x-err albo pole XErr), nie sam status HTTP */
+/** POST JSON do Xbox Live — przy odmowie błąd z kodem XErr (nagłówek x-err albo pole XErr), nie sam status HTTP.
+ *  Własny limit czasu zamiast fetchWithTimeout: tamta funkcja przy odmowie rzuca wyjątek bez nagłówków odpowiedzi. */
 async function xblPost(url: string, body: unknown): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; xerr: string }> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 30_000)
