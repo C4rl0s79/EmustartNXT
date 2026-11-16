@@ -46,6 +46,7 @@ function onePerGame(members: Game[], current: string): { games: Game[]; lead: Ga
 function sourceOf(g: Game): string {
   if (g.source === 'steam') return g.installed ? 'Steam · zainstalowana' : 'Steam'
   if (g.source === 'gog') return g.installed ? 'GOG · zainstalowana' : 'GOG'
+  if (g.source === 'xbox') return g.installed ? 'Xbox · zainstalowana' : g.xbox?.gamePass && !g.xbox.owned ? 'Game Pass' : 'Xbox'
   if (g.source === 'emustart') return `${g.emu?.system ?? g.emu?.es ?? 'EmuStart'}${g.emu?.cached ? ' · pobrana' : ''}`
   return g.source === 'shortcut' ? 'skrót Steam' : g.source
 }

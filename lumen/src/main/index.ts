@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, protocol, shell, type MenuItemConstructorOptions } from 'electron'
 import { existsSync, mkdirSync, promises as fs } from 'node:fs'
@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
+import { XboxProvider } from './xbox/provider'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
@@ -16,12 +17,12 @@ import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
-import { TASKLIST } from './systemTools'
+import { EXPLORER, TASKLIST } from './systemTools'
 import { AUTOSTART_DELAY_S, autostartTaskExists, isElevated, openUnelevated, setAutostartTask } from './elevation'
 import { chooseDataDir, migrateDataDir } from './dataDir'
 import { conflictMessage, handOffToRunning, isOtherCopy, registerRunning, type Answer, type LumenInstance } from './instances'
 import { listDir } from './fsBrowse'
-import { Limiter } from './net'
+import { Limiter, fetchWithTimeout } from './net'
 import { detectFlavor, Updater } from './updater'
 import { cleanLbTitles, ops, PrefsError, PrefsStore } from './store/prefs'
 import { SettingsStore } from './store/settings'
@@ -159,15 +160,23 @@ const engine = new EmustartEngine({
 })
 const emu = new EmustartProvider(engine, paths.emustartLibrary, () => ({ order: settings.get().regionOrder, choices: prefs.get().versions }))
 const gog = new GogProvider(engine, paths.gogLibrary)
+// gry Xbox / Microsoft Store (etap 19): zainstalowane, katalog PC Game Pass, konto Xbox
+const xbox = new XboxProvider(path.join(userData, 'xbox-catalog.json'))
 // motywy trybu TV z serwera (pobiera i sprawdza silnik) — LumenData/themes
 const themeStore = new ThemeStore(path.join(userData, 'themes'), engine)
 const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
 let platformCatalog: PlatformInfo[] = []
 const seriesService: SeriesService = new SeriesService(path.join(userData, 'series.json'), engine, (): Game[] => unified.current.games)
-const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
-  overrides: () => prefs.get().platformOverrides,
-  platforms: () => platformCatalog
-})
+const unified: UnifiedLibrary = new UnifiedLibrary(
+  library,
+  emu,
+  gog,
+  {
+    overrides: () => prefs.get().platformOverrides,
+    platforms: () => platformCatalog
+  },
+  xbox
+)
 // serie z IGDB osobnym kanałem: okna pobierają je raz (IPC.librarySeries), potem dostają tylko zmiany — bez pełnej
 // migawki biblioteki (40 tys. gier do obu okien, także Decka). Ręczne zmiany gracza idą jak dotąd z preferencjami.
 seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(IPC.librarySeriesChanged, changes))
@@ -837,6 +846,10 @@ async function artResponse(req: Request): Promise<Response> {
       if (own) return own
     }
     if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
+    if (gameId.startsWith('xbox:')) {
+      const own = await xboxArt(gameId, kind as ArtKind)
+      if (own) return own
+    }
     // GOG: the server's art (GOG Manager's folder) first, SteamGridDB by name without it — the other
     // way round when "SteamGridDB first" is on for GOG
     const isGog = isGogId(gameId)
@@ -1043,6 +1056,28 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
   if (info?.art && !info.art.includes(k)) return null
   const r = await engine.call<{ path?: string }>('gog_art', [pid, k], 70_000).catch(() => null)
   return r?.path ? fileResponse(r.path) : null
+}
+
+/** Gra Xbox: okładka i tło z katalogu Microsoft (pobrane raz do LumenData/xbox-art); wybór gracza i pozostałe rodzaje
+ *  — jak dla innych gier (SteamGridDB po nazwie). */
+async function xboxArt(gameId: string, k: ArtKind): Promise<Response | null> {
+  if (prefs.get().art[gameId]?.[k] || prefs.get().artTv[gameId]?.[k]) return null
+  const storeId = gameId.slice(5)
+  const p = xbox.product(storeId)
+  const url = k === 'grid' ? (p?.poster ?? p?.box) : k === 'hero' ? p?.hero : undefined
+  if (!url || !/^[0-9A-Z]{12}$/.test(storeId)) return null
+  const file = path.join(userData, 'xbox-art', `${storeId}-${k}.jpg`)
+  if (!(await fs.stat(file).catch(() => null))) {
+    try {
+      const r = await fetchWithTimeout(`${url}${url.includes('?') ? '&' : '?'}w=${k === 'hero' ? 1920 : 600}`, {}, 30_000)
+      await fs.mkdir(path.dirname(file), { recursive: true })
+      await fs.writeFile(file, Buffer.from(await r.arrayBuffer()))
+    } catch (e) {
+      log.warn('xbox', `grafika ${storeId} ${k}: ${(e as Error).message}`)
+      return null
+    }
+  }
+  return fileResponse(file)
 }
 
 async function userArtFile(sha: string, ext: string): Promise<string | null> {
@@ -1312,6 +1347,7 @@ async function playSteam(gameId: string): Promise<ActionResult> {
   if (game.source === 'demo') return fail('To jest gra demonstracyjna — nie można jej uruchomić.')
   if (game.source === 'emustart') return fail('Gry z serwera EmuStart uruchamia EmuStart.')
   if (game.source === 'gog') return fail('Gry GOG uruchamia silnik EmuStart, nie Steam.')
+  if (game.source === 'xbox') return playXbox(game)
   if (library.current.steam.status === 'notInstalled') return fail('Nie znaleziono klienta Steam na tym komputerze.')
   if (!isPlayable(game.installState))
     return fail(game.source === 'shortcut' ? 'Nie znaleziono programu tego skrótu na dysku.' : 'Gra nie jest gotowa do uruchomienia.')
@@ -1376,9 +1412,31 @@ async function showControllers(): Promise<void> {
 }
 
 /** Ask the Steam client to install a game (Steam shows its own dialog and runs the download). */
+/** Gra Xbox: start przez Windows (shell:AppsFolder\<rodzina>!<aplikacja>) — Eksplorator przekazuje go powłoce, więc
+ *  gra startuje bez uprawnień administratora, jak z menu Start. */
+async function playXbox(game: Game): Promise<ActionResult> {
+  const aumid = game.xbox?.aumid
+  if (!aumid) return fail('Gra nie jest zainstalowana na tym komputerze — „Zainstaluj” otworzy ją w Sklepie Microsoft.')
+  const p = spawn(EXPLORER, [`shell:AppsFolder\\${aumid}`], { detached: true, stdio: 'ignore', windowsHide: true })
+  p.on('error', (e) => log.warn('xbox', `start ${aumid}: ${e.message}`))
+  p.unref()
+  log.info('xbox', `play ${game.id} (${aumid})`)
+  if (settings.get().afterLaunch === 'minimize' && !takeDeckLaunch(game.id)) setTimeout(() => win?.minimize(), 2500)
+  return { ok: true, message: 'Uruchamianie przez Windows…' }
+}
+
+/** Gra Xbox spoza tego komputera: strona gry w Sklepie Microsoft (instalacja, także z Game Pass). */
+async function installXbox(game: Game): Promise<ActionResult> {
+  const id = game.xbox?.storeId
+  if (!id || !/^[0-9A-Z]{12}$/.test(id)) return fail('Nie znaleziono tej gry w Sklepie Microsoft.')
+  await openUnelevated(`ms-windows-store://pdp/?ProductId=${id}`)
+  return { ok: true, message: 'Sklep Microsoft otworzy stronę gry — instalacją zarządza Sklep / aplikacja Xbox.' }
+}
+
 async function installSteam(gameId: string): Promise<ActionResult> {
   const game = findGame(gameId)
   if (!game) return fail('Nie znaleziono gry w bibliotece.')
+  if (game.source === 'xbox') return installXbox(game)
   if (game.source !== 'steam') return fail('Tej pozycji nie instaluje się przez Steam.')
   if (library.current.steam.status === 'notInstalled') return fail('Nie znaleziono klienta Steam na tym komputerze.')
   await openSteam('install', game.appId)
@@ -1534,7 +1592,7 @@ function registerIpc(): void {
   handle(IPC.libraryRefresh, async (includeAccount: boolean) => {
     if (includeAccount) void family.refresh(library.current.steam.activeSteamId, true)
     if (includeAccount) await library.refreshAccount(true)
-    await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined])
+    await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined, xbox.refresh(includeAccount)])
     return unified.current
   })
   // (Deck nie odświeża biblioteki; gdyby zaczął — odpowiedź przez snapshotFor jak w library:get)
@@ -2022,6 +2080,7 @@ app.whenReady().then(async () => {
   themeStore.on('change', (list) => send(IPC.themesChanged, list))
   watchMainLag()
   registerIpc()
+  void xbox.refresh()                                // gry Xbox: zainstalowane teraz, katalog Microsoft raz na dobę
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {

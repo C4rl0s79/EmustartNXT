@@ -9,7 +9,7 @@ import type { DeckSettings } from './deck'
  * emustart = game on the EmuStart server, downloaded and run with an emulator by the EmuStart engine;
  * gog = GOG game from the EmuStart server's depot archive, installed and run by the EmuStart engine
  */
-export type GameSource = 'steam' | 'shortcut' | 'demo' | 'emustart' | 'gog'
+export type GameSource = 'steam' | 'shortcut' | 'demo' | 'emustart' | 'gog' | 'xbox'
 
 /**
  * Platform family for navigation — independent of the source (a Steam shortcut can run an emulator,
@@ -55,7 +55,17 @@ export interface DownloadProgress {
 }
 
 /** Where we learned about this game. Local-only detection is NOT the full owned library. */
-export type Provenance = 'familyShared' | 'localManifest' | 'accountApi' | 'steamShortcut' | 'demo' | 'emustartServer' | 'emustartGog'
+export type Provenance =
+  | 'familyShared'
+  | 'localManifest'
+  | 'accountApi'
+  | 'steamShortcut'
+  | 'demo'
+  | 'emustartServer'
+  | 'emustartGog'
+  | 'xboxLocal'
+  | 'xboxGamePass'
+  | 'xboxAccount'
 
 export interface Game {
   id: string
@@ -93,6 +103,8 @@ export interface Game {
   emu?: EmuGameInfo
   /** only for GOG games (source 'gog') */
   gog?: GogGameInfo
+  /** only for Xbox / Microsoft Store games (source 'xbox'; Game.id = xbox:<StoreId>) */
+  xbox?: XboxGameInfo
   /** PC games: genre, developer, year, players for the filters (renderer: tv/facts.ts) */
   facts?: GameFacts
   /** family and platform in the library hierarchy (set by the main process for every game) */
@@ -111,6 +123,32 @@ export interface IgdbSeries {
   release: number
   /** grupa nad serią — franczyza IGDB (Dungeons & Dragons nad Eye of the Beholder); seria to kolekcja */
   group?: string
+}
+
+/** Gra Xbox / Microsoft Store (etap 19): zainstalowana (pakiet Sklepu), z Game Pass, z konta. */
+export interface XboxGameInfo {
+  storeId: string
+  /** nazwa rodziny pakietu (zainstalowana albo z katalogu) */
+  pfn?: string
+  /** <rodzina>!<aplikacja> — uruchomienie przez Windows; tylko zainstalowana */
+  aumid?: string
+  titleId?: string
+  /** w katalogu PC Game Pass */
+  gamePass: boolean
+  /** na koncie Xbox gracza (kupiona / grana) */
+  owned: boolean
+  year?: number
+}
+
+/** Stan źródła Xbox w migawce (Ustawienia → Xbox). */
+export interface XboxSummary {
+  installed: number
+  gamePass: number
+  owned: number
+  /** kiedy pobrano katalog (ms) */
+  catalogAt: number
+  error?: string
+  account?: { gamertag: string } | null
 }
 
 /** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */
@@ -241,6 +279,8 @@ export interface LibrarySnapshot {
   emustart: EmustartSummary
   /** GOG games from the EmuStart server: catalog state */
   gog: GogSummary
+  /** Xbox / Microsoft Store (etap 19) */
+  xbox?: XboxSummary
   /** known emulated platforms (classification of Steam shortcuts by their tags); empty until the engine ran once */
   platforms: PlatformInfo[]
 }

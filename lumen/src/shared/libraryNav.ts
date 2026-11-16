@@ -53,6 +53,9 @@ export function platformForTag(tag: string, catalog: PlatformInfo[]): PlatformIn
 /** Family and subgroup of a game. Never merges by title; never turns the source into a category. */
 export function classify(game: Game, ctx: ClassifyContext): GamePlatform {
   if (game.source === 'gog') return { family: 'pc', id: 'gog', label: 'GOG' }
+  // Xbox: zainstalowane i z konta — „Xbox”; tylko z katalogu Game Pass — osobno, żeby 500 gier nie zasłoniło własnych
+  if (game.source === 'xbox')
+    return game.installed || game.xbox?.owned ? { family: 'pc', id: 'xbox', label: 'Xbox' } : { family: 'pc', id: 'gamepass', label: 'Game Pass' }
   if (game.source === 'steam' || game.source === 'demo') return { family: 'pc', id: 'steam', label: 'Steam' }
   if (game.source === 'emustart' && game.emu) return platformOf(game.emu.es, ctx)
   if (game.source === 'shortcut') {
@@ -99,8 +102,8 @@ const collator = new Intl.Collator('pl', { sensitivity: 'base' })
 export const compareText = (a: string, b: string): number => collator.compare(a, b)
 export const byName = (a: Game, b: Game): number => collator.compare(a.sortName, b.sortName)
 
-const PC_ORDER = ['steam', 'gog', 'shortcut']
-const PC_LABEL: Record<string, string> = { steam: 'Steam', gog: 'GOG', shortcut: 'Skróty Steam' }
+const PC_ORDER = ['steam', 'gog', 'xbox', 'gamepass', 'shortcut']
+const PC_LABEL: Record<string, string> = { steam: 'Steam', gog: 'GOG', xbox: 'Xbox', gamepass: 'Game Pass', shortcut: 'Skróty Steam' }
 
 /** Games of a Lumen category or a Steam collection (no smart categories — they became fixed groups). */
 export function collectionGames(cat: Category, games: Game[], prefs: Prefs, collections: SteamCollection[] | null): Game[] {

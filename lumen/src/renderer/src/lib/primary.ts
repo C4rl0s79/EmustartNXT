@@ -158,6 +158,17 @@ export function gogPrimary(game: Game, emu: EmustartSummary | undefined, wrap: W
   }
 }
 
+/** Xbox / Microsoft Store (etap 19): zainstalowana — start przez Windows; spoza tego PC — strona gry w Sklepie. */
+export function xboxPrimary(game: Game, wrap: Wrap): PrimaryAction {
+  const x = game.xbox!
+  if (game.installed) return { label: 'Graj', run: wrap(() => api().game.play(game.id)), play: true, note: `Xbox · uruchamia Windows${x.gamePass ? ' · Game Pass' : ''}` }
+  return {
+    label: 'Zainstaluj',
+    run: wrap(() => api().game.install(game.id)),
+    note: x.gamePass && !x.owned ? 'Gra z PC Game Pass — instalacja w Sklepie Microsoft / aplikacji Xbox (wymaga subskrypcji).' : 'Instalacja w Sklepie Microsoft / aplikacji Xbox.'
+  }
+}
+
 /** what primaryFor needs to know about the library — from the store (the hook) or read once (the Deck) */
 export interface PrimaryContext {
   steamStatus: string | undefined
@@ -179,6 +190,7 @@ export function primaryFor(game: Game, ctx: PrimaryContext): PrimaryAction {
   if (game.source === 'demo') return { label: 'Gra demonstracyjna', disabled: true, note: 'Dane demonstracyjne — akcje są wyłączone.' }
   if (game.emu) return emuPrimary(game, emuSummary, ready, installing, setBusy)
   if (game.gog) return gogPrimary(game, emuSummary, wrap)
+  if (game.xbox) return xboxPrimary(game, wrap)
   if (steamStatus === 'notInstalled') return { label: 'Steam niedostępny', disabled: true, note: 'Nie znaleziono klienta Steam na tym komputerze.' }
   const play = wrap(() => api().game.play(game.id))
   const downloads = wrap(() => api().game.openInSteam(game.id, 'downloads'))

@@ -498,7 +498,17 @@ function TvDesc({ game, details: dr, className }: { game: Game; details: Details
           <p key={i}>{p}</p>
         ))}
         {game.source !== 'emustart' && !desc.length && (
-          <p>{game.source === 'gog' ? 'Gra GOG z archiwum serwera EmuStart.' : game.source === 'shortcut' ? 'Skrót Steam do gry spoza sklepu.' : 'Gra z biblioteki Steam.'}</p>
+          <p>
+            {game.source === 'gog'
+              ? 'Gra GOG z archiwum serwera EmuStart.'
+              : game.source === 'xbox'
+                ? game.xbox?.gamePass && !game.installed && !game.xbox.owned
+                  ? 'Gra z PC Game Pass.'
+                  : 'Gra Xbox / Microsoft Store.'
+                : game.source === 'shortcut'
+                  ? 'Skrót Steam do gry spoza sklepu.'
+                  : 'Gra z biblioteki Steam.'}
+          </p>
         )}
       </div>
     </div>
