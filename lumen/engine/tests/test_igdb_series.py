@@ -47,7 +47,8 @@ class FakeIgdb:
             raise IgdbError("429")
         if endpoint == "external_games":
             if self.ext_fail:
-                return []                    # nieścisłe pytanie: błąd IGDB to pusta lista
+                from emustart.art_sources import IgdbError
+                raise IgdbError("400")       # pytanie po identyfikatorze nie działa
             # Steam 777 → gra 5 (nowe pole źródła), GOG 888 → gra 1 (stare pole category), Steam 999 → brak
             links = [{"uid": "777", "external_game_source": 1, "game": 5}, {"uid": "888", "category": 5, "game": 1},
                      {"uid": "888", "category": 1, "game": 6}]        # ten sam numer w innym sklepie — pominięty
@@ -230,7 +231,8 @@ def test_routes_need_the_server_key(srv, fake_server):  # noqa: F811
 def test_series_is_collection_group_is_franchise():
     """Zgłoszenie 2026-11-16: franczyza (Dungeons & Dragons) nie jest serią — seria to kolekcja; bez kolekcji —
     pusta nazwa (Lumen bierze serię z tytułu), franczyza jako grupa; bez obu — gra spoza serii."""
-    row = lambda fr, co: ("pc|x", "X", "pc", 7, "X", fr, co, 1, 1, 1.0, 0.0)                 # noqa: E731
+    def row(fr, co):
+        return ("pc|x", "X", "pc", 7, "X", fr, co, 1, 1, 1.0, 0.0)
     r = S._result(row("Dungeons & Dragons", "Eye of the Beholder"))
     assert (r["name"], r["group"]) == ("Eye of the Beholder", "Dungeons & Dragons")
     r = S._result(row("Dungeons & Dragons", None))
@@ -247,8 +249,13 @@ def test_store_id_wins_over_title():
              {"key": "steam|999", "title": "Yakuza Kiwami", "platform": "pc", "store": "steam", "ext": "999"}]
     by = {r[0]: r for r in S.detect(q_of(FakeIgdb()), games)}
     assert by["steam|777"][3] == 5 and by["gog|888"][3] == 1 and by["steam|999"][3] == 2
+    S._ext_fails["n"] = 0
     by = {r[0]: r for r in S.detect(q_of(FakeIgdb(ext_fail=True)), games)}
-    assert by["steam|777"][3] == 1                          # po tytule „Yakuza 0”
+    assert set(by) == set()                                 # chwilowy błąd: gry ze sklepu później, nic nie zapisane
+    for _ in range(S.EXT_GIVE_UP):
+        by = {r[0]: r for r in S.detect(q_of(FakeIgdb(ext_fail=True)), games)}
+    assert by["steam|777"][3] == 1                          # pytanie nie działa — po tytule „Yakuza 0”
+    S._ext_fails["n"] = 0
     want = S._want([{"title": "Tomb Raider", "platform": "pc", "store": "steam", "id": "203160"},
                     {"title": "Tomb Raider", "platform": "pc"}, {"title": "X", "store": "steam", "id": "1; drop"}])
     assert set(want) == {"steam|203160", "pc|tomb raider", "pc|x"}

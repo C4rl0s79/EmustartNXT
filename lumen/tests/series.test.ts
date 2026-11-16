@@ -173,6 +173,9 @@ describe('serie wg zgłoszenia 2026-11-16', () => {
     expect(orderSeries([e2, e1], {}).map((x) => x.id)).toEqual(['e1', 'e2'])
     const b = (id: string, n: string, y: number) => gi(id, n, ig('BioShock', y))
     expect(names(orderSeries([b('i', 'BioShock Infinite', 2013), b('2', 'BioShock 2', 2010), b('1', 'BioShock', 2007)], {}))).toEqual(['BioShock', 'BioShock 2', 'BioShock Infinite'])
+    // BioShock 2 bez danych z IGDB: „BioShock Infinite” nie jest częścią 1 — 2 zostaje przed Infinite (code review)
+    const b2 = gi('2', 'BioShock 2', undefined)
+    expect(names(orderSeries([b('i', 'BioShock Infinite', 2013), b2, b('1', 'BioShock', 2007)], {}))).toEqual(['BioShock', 'BioShock 2', 'BioShock Infinite'])
   })
 
   it('nazwa kolekcji z małych liter — zapisana jak w tytule', () => {

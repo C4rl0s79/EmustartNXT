@@ -106,18 +106,26 @@ GAME_FIELDS = ("id,name,platforms,collections,franchises,franchise,first_release
                "alternative_names.name")
 
 
-def _by_store_id(q, games: list) -> dict:
+EXT_GIVE_UP = 3          # tyle nieudanych pytań po identyfikatorze sklepu z rzędu — dalej po tytule (pytanie nie działa)
+_ext_fails = {"n": 0}
+
+
+def _by_store_id(q, games: list) -> dict | None:
     """{(sklep, identyfikator): gra IGDB} — wydanie ze Steam / GOG po identyfikatorze sklepu, nie po tytule.
-    Każdy błąd tego pytania (nieznane pole, limit) to pusty wynik: te gry dopasuje tytuł, jak dotąd."""
+    None — pytanie nieudane (sieć, limit): tych gier nie zapisujemy teraz (dopasowanie po tytule zostałoby na stałe
+    pod kluczem sklepu), wrócą przy następnym pytaniu Lumena. Po EXT_GIVE_UP porażkach z rzędu (pytanie nie działa —
+    np. inne pole w IGDB) — pusty wynik: te gry dopasuje tytuł, jak dotąd."""
+    from emustart.art_sources import IgdbError
     out: dict = {}
     want = {(g["store"], g["ext"]) for g in games}
     if not want:
         return out
     try:
         links: dict = {}
-        for part in _chunks(sorted({e for _, e in want}), 50):
+        # po 10 identyfikatorów: ten sam numer bywa w wielu sklepach — limit 500 wierszy nie obcina Steam / GOG
+        for part in _chunks(sorted({e for _, e in want}), 10):
             uids = ",".join(f'"{u}"' for u in part)
-            for r in q("external_games", f"fields *; where uid = ({uids}); limit 500;", False) or []:
+            for r in q("external_games", f"fields *; where uid = ({uids}); limit 500;", True) or []:
                 src = r.get("external_game_source") or r.get("category")
                 store = next((s for s, n in STORES.items() if n == src), None)
                 game = r.get("game")
@@ -126,14 +134,22 @@ def _by_store_id(q, games: list) -> dict:
                     links[(store, str(r.get("uid")))] = int(game)
         rows: dict = {}
         for part in _chunks(sorted(set(links.values())), 100):
-            for r in q("games", f'fields {GAME_FIELDS}; where id = ({",".join(map(str, part))}); limit 100;', False) or []:
+            for r in q("games", f'fields {GAME_FIELDS}; where id = ({",".join(map(str, part))}); limit 100;', True) or []:
                 rows[r["id"]] = r
         for k, gid in links.items():
             if gid in rows:
                 out[k] = rows[gid]
-    except Exception:
-        log.info("serie IGDB: dopasowanie po identyfikatorze sklepu nieudane — po tytule", exc_info=True)
+    except IgdbError as ex:
+        _ext_fails["n"] += 1
+        if _ext_fails["n"] < EXT_GIVE_UP:
+            log.info("serie IGDB: identyfikatory sklepu — %s, te gry później", ex)
+            return None
+        log.info("serie IGDB: identyfikatory sklepu nie działają (%s) — po tytule", ex)
         return {}
+    except (KeyError, TypeError, ValueError):
+        log.info("serie IGDB: nieoczekiwana odpowiedź external_games — po tytule", exc_info=True)
+        return {}
+    _ext_fails["n"] = 0
     return out
 
 
@@ -250,15 +266,16 @@ def detect(q, games: list) -> list:
     found = []
     by_ext = _by_store_id(q, [g for g in games if g.get("store") and g.get("ext")])
     for g in games:
-        best, sim = by_ext.get((g.get("store"), g.get("ext"))), 1.0
+        if by_ext is None and g.get("store"):
+            continue                                 # pytanie po identyfikatorze nieudane — ta gra później
+        best, sim = (by_ext or {}).get((g.get("store"), g.get("ext"))), 1.0
         if best is not None:
             found.append((g, best, sim))
             continue
         sim = 0.0
         for phrase, compare in name_variants(g["title"]):
             esc = phrase.replace('"', " ")
-            rows = q("games", f'search "{esc}"; fields id,name,platforms,collections,franchises,franchise,'
-                              f'first_release_date,version_parent,game_type,alternative_names.name; limit 50;')
+            rows = q("games", f'search "{esc}"; fields {GAME_FIELDS}; limit 50;')
             best, sim = pick_game(g["title"], platform_of(g["platform"]), rows, alt=phrase if compare else "")
             if best is not None:
                 break
@@ -300,8 +317,8 @@ def detect(q, games: list) -> list:
         f_ids = _franchises(best) or _franchises(par)
         # najwęższa kolekcja z co najmniej dwiema grami (jednoelementowa — np. „Yakuza Prequels” — zostawiłaby grę
         # samą); jednoelementowa tylko, gdy innej nie ma
-        size = lambda c: colls.get(c, ("", 10**9))[1]                          # noqa: E731
-        c_id = min(c_ids, key=lambda c: (size(c) < 2, size(c))) if c_ids else None
+        c_id = min(c_ids, key=lambda c: (colls.get(c, ("", 10**9))[1] < 2, colls.get(c, ("", 10**9))[1])) \
+            if c_ids else None
         f_id = f_ids[0] if f_ids else None
         rel = best.get("first_release_date")
         order = original_ts.get(best["id"]) or par.get("first_release_date") or rel

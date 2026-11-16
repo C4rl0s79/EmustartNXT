@@ -20,11 +20,21 @@ export function seriesSummary(game: Game, all: Game[], prefs: SeriesPrefs | unde
   return `${s.name} · ${members.findIndex((x) => x.games.some((g) => g.id === game.id)) + 1} z ${members.length}`
 }
 
+/** tytuł bez znaczków i dopisków w nawiasach (regiony: „(USA)”, „(Europe)”) — wersje jednej gry; nie scala różnych
+ * gier o podobnej nazwie („Sid Meier's Pirates!” i „Pirates!” zostają osobno) */
+const versionKey = (name: string): string =>
+  name
+    .replace(/[™®©]/g, '')
+    .replace(/\s*[([][^)\]]*[)\]]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+
 /** Wersje jednej gry (regiony, kopie na serwerze) jako jedna pozycja — ta z opcji gry na przedzie. */
 function onePerGame(members: Game[], current: string): { games: Game[]; lead: Game }[] {
   const by = new Map<string, Game[]>()
   for (const g of members) {
-    const k = seriesKey(g.name)
+    const k = versionKey(g.name)
     const arr = by.get(k)
     if (arr) arr.push(g)
     else by.set(k, [g])
@@ -63,8 +73,14 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   }, [picking])
 
   const set = (changes: Record<string, SeriesPrefs[string] | null>): void => void attempt(api().prefs.setSeries(changes))
-  /** zmiana jednej gry z zachowaniem reszty jej ustawień (miejsce, grupa) */
-  const patchOwn = (p: SeriesPref): void => set({ [game.id]: { ...own, none: undefined, ...p } })
+  /** zmiana jednej gry z zachowaniem reszty jej ustawień (grupa); w innej serii — bez miejsca ze starej */
+  const patchOwn = (p: SeriesPref): void => set({ [game.id]: { ...own, none: undefined, ...(p.name !== undefined ? { order: undefined } : {}), ...p } })
+  /** grupa nad całą serią: każda gra serii (każda wersja) dostaje ją do swoich ustawień */
+  const setGroup = (group: string): void => {
+    const out: SeriesPrefs = {}
+    for (const g of inSeries ? members : [game]) out[g.id] = { ...series?.[g.id], none: undefined, group }
+    set(out)
+  }
   // Przyciski nie wyłączają się na krańcu listy: wyłączony przycisk oddawał fokus sąsiedniemu („Później”) i kolejne
   // naciśnięcie przesuwało grę z powrotem — gry zamieniały się w pętli (zgłoszenie 2026-11-16).
   const move = (dir: -1 | 1): void => {
@@ -87,7 +103,7 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
         current={picking === 'series' ? s?.name : s?.group}
         onPick={(name) => {
           if (picking === 'series') patchOwn({ name })
-          else patchOwn({ group: name })
+          else setGroup(name)
           setPicking(null)
         }}
         onClose={() => setPicking(null)}

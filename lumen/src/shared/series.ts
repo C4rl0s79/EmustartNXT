@@ -172,7 +172,13 @@ const yearOfTs = (t: number): number => new Date(t * 1000).getUTCFullYear()
  */
 export function orderSeries(members: Game[], prefs: SeriesPrefs | undefined): Game[] {
   const known = members.filter((g) => (igdbOf(g)?.order ?? 0) > 0)
-  const num = (g: Game): number => parseSeries(g.name).num ?? UNKNOWN
+  // numer części tylko z tytułu, który zaczyna się od nazwy serii („BioShock Infinite” w serii BioShock nie jest
+  // częścią 1 — code review 2026-11-16: fałszywa jedynka przestawiała kolejność)
+  const num = (g: Game): number => {
+    const p = parseSeries(g.name)
+    const s = seriesOf(g, prefs)
+    return p.num !== undefined && (!s || seriesKey(p.base) === seriesKey(s.name)) ? p.num : UNKNOWN
+  }
   let when: (g: Game) => number
   if (known.length) {
     // numer części → data: najpóźniejsza znana część o numerze nie większym (+1 s), inaczej tuż przed najwcześniejszą
