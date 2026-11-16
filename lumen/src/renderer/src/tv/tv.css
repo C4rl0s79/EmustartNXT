@@ -1206,3 +1206,154 @@
 .tv-jobs .download__bar {
   margin-top: 0.25em;
 }
+
+/* ---------- the game's page (TvGamePage: A on the game list) ----------
+   over the list, in the screen's area (the top bar and the hints stay): the game's background, clearer than
+   behind the ribbon; on the left the logo, the actions and the description; on the right the facts in cards */
+.tv-gamepage {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 3vw;
+  padding: 2vh 5vw 3vh;
+  background: var(--tv-bg);
+  animation: tv-backdrop-in 0.25s ease both;
+}
+.tv-gamepage > .tv-backdrop {
+  position: absolute;
+  opacity: 0.7;
+}
+/* the text stands on the left: the background darkens towards it, the right side shows the art */
+.tv-gamepage > .tv-backdrop::after {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tv-bg) 88%, transparent) 0%, color-mix(in srgb, var(--tv-bg) 55%, transparent) 50%, transparent 80%),
+    linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--tv-bg) 85%, transparent) 100%);
+}
+.tv-gamepage__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2.2vh;
+  min-height: 0;
+}
+.tv-gamepage__logo {
+  display: flex;
+  align-items: flex-end;
+  min-height: 16vh;
+}
+.tv-gamepage__logo h1 {
+  margin: 0;
+  font-size: calc(2.6em * var(--tv-fs-title));
+  font-weight: 600;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+.tv-gamepage__logo .tv-logo .tv-logo__img {
+  height: 18vh;
+  max-width: 42vw;
+  object-position: left bottom;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.85));
+}
+.tv-gamepage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1vh 1vw;
+}
+/* the page's buttons: large, the focused one lifted and ringed in the theme's accent (part of the pad contract) */
+.tv-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.7em 1.3em;
+  border: 1px solid var(--tv-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tv-panel) 85%, transparent);
+  color: var(--tv-text);
+  font: inherit;
+  font-size: calc(1.05em * var(--tv-fs-menu));
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+}
+.tv-act svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.tv-act--play {
+  background: var(--tv-accent);
+  border-color: transparent;
+  color: #fff;
+}
+.tv-act.is-on {
+  color: var(--tv-accent);
+}
+.tv-act:focus-visible,
+.tv-act:focus {
+  outline: none;
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 3px var(--tv-accent),
+    0 0 28px color-mix(in srgb, var(--tv-accent) 50%, transparent);
+}
+.tv-act:disabled {
+  opacity: 0.45;
+}
+/* the description: room for ~10 lines, longer ones scroll by themselves (useDescScroll) */
+.tv-desc.tv-gamepage__desc {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  max-width: 60em;
+  color: var(--tv-text);
+  font-size: calc(1.05em * var(--tv-fs-desc));
+  line-height: 1.55;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+.tv-gamepage__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 2vh;
+}
+.tv-card {
+  padding: 1.4vh 1.4vw;
+  background: color-mix(in srgb, var(--tv-panel) 88%, transparent);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+}
+.tv-card h2 {
+  margin: 0 0 0.5em;
+  font-size: calc(0.85em * var(--tv-fs-meta));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tv-accent);
+}
+.tv-card dl {
+  display: grid;
+  gap: 0.35em;
+  margin: 0;
+  font-size: calc(0.95em * var(--tv-fs-meta));
+}
+.tv-card .tv-dlrow dt {
+  flex: 0 0 8.5em;
+  color: var(--tv-dim);
+}
+.tv-card .tv-dlrow dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tv-card .st-c {
+  color: var(--tv-ok);
+}
+.tv-card .st-n {
+  color: var(--tv-accent2);
+}

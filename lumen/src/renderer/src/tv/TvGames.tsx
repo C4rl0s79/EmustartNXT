@@ -1,15 +1,12 @@
-import { useGameJob } from '../components/Jobs'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { DetailsResult, Game } from '@shared/types'
 import { api, askText, attempt, useStore } from '../store'
-import { readyArt } from '../lib/artCache'
 import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
 import { Icon } from '../components/Icon'
 import { SystemLogo } from './SystemLogo'
-import { GameOptions } from '../components/GameOptions'
 import { usePrimaryAction } from '../lib/primary'
-import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel, versionCountLabel } from '../lib/format'
+import { plural, versionCountLabel } from '../lib/format'
 import type { TvSystem } from './data'
 import { TvFilters } from './TvFilters'
 import { useRatings } from './ratings'
@@ -20,37 +17,14 @@ import { listTop } from './listWindow'
 import { letterJump } from './letters'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
+import { LogoTitle, TvBackdrop, TvDesc, TvInfo, useDetails } from './gameParts'
+import { TvGamePage } from './TvGamePage'
 
 // Game list of one system (EmuStart look): titles on the left, cover | details | screenshot on the
-// right, the description below. The main action is the same as in the desktop details
-// (usePrimaryAction); "Opcje gry" (X) opens the same details (saves, art, versions, favourite) for
-// now. View is not used: View+Start switches the interface.
+// right, the description below. A opens the game's page (TvGamePage: actions, description, facts,
+// "Opcje gry"); X starts the game at once (the same main action as the desktop details, usePrimaryAction);
+// Y — filters. View is not used: View+Start switches the interface.
 
-const details: Record<string, DetailsResult> = {}
-
-function useDetails(game: Game | undefined): DetailsResult | null {
-  const [d, setD] = useState<DetailsResult | null>(null)
-  useEffect(() => {
-    if (!game) return setD(null)
-    if (details[game.id]) return setD(details[game.id])
-    setD(null)
-    let alive = true
-    const t = setTimeout(() => {
-      void api()
-        .game.details(game.id)
-        .then((r) => {
-          details[game.id] = r
-          if (alive) setD(r)
-        })
-        .catch(() => undefined)
-    }, 220) // fast scrolling does not fetch every row on the way
-    return () => {
-      alive = false
-      clearTimeout(t)
-    }
-  }, [game])
-  return d
-}
 
 export function TvGames({
   system,
@@ -79,8 +53,9 @@ export function TvGames({
     setIdx(0)
   }
   const [filters, setFilters] = useState(false)
-  const [options, setOptions] = useState(false)
-  const [infoRev, setInfoRev] = useState(0) // the details bar reads EmuStart's data again after "Opcje gry"
+  // the game's page over the list (A); the list stays mounted under it, on the same game
+  const [gamePage, setGamePage] = useState(false)
+  const [infoRev, setInfoRev] = useState(0) // the details bar reads EmuStart's data again after the game's page
   const isFav = (id: string): boolean => !!favorites?.includes(id)
   const ratings = useRatings(system.games, filter.sort)
   const { games: known, missing } = useFacts(system.games, filters || needsFacts(filter))
@@ -160,6 +135,10 @@ export function TvGames({
     return true
   }
   const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir)) : true)
+  const openPage = (): boolean => {
+    if (sel) setGamePage(true)
+    return true
+  }
   const play = (): boolean => {
     if (!primary || busy) return true
     if (primary.disabled || !primary.run) useStore.getState().toast(primary.note ?? primary.label, 'info')
@@ -178,14 +157,10 @@ export function TvGames({
       rb: () => go(idx + page),
       lt: () => jumpLetter(-1),
       rt: () => jumpLetter(1),
-      confirm: play,
-      x: () => {
-        setFilters(true)
-        return true
-      },
+      confirm: openPage,
+      x: play,
       y: () => {
-        // one "Opcje gry" window for EmuStart and Steam games (rows differ by what the game supports)
-        if (sel) setOptions(true)
+        setFilters(true)
         return true
       },
       ls: () => {
@@ -207,12 +182,12 @@ export function TvGames({
       }
     },
     {
-      enabled: active && !filters && !options,
+      enabled: active && !filters && !gamePage,
       hints: [
         ...(flow ? [{ action: 'left' as const, label: 'Gra' }] : []),
-        { action: 'confirm', label: primary?.label ?? 'Graj' },
-        { action: 'x', label: activeFilters.length ? `Filtry (${activeFilters.length})` : 'Filtry' },
-        { action: 'y', label: 'Opcje gry' },
+        { action: 'confirm', label: 'Szczegóły' },
+        { action: 'x', label: primary?.label ?? 'Graj' },
+        { action: 'y', label: activeFilters.length ? `Filtry (${activeFilters.length})` : 'Filtry' },
         { action: 'ls', label: 'Szukaj' },
         { action: 'rs', label: sel && isFav(sel.id) ? 'Usuń z ulubionych' : 'Ulubiona' },
         { action: 'lb', label: 'Strona' },
@@ -245,17 +220,17 @@ export function TvGames({
           </div>
         </div>
   )
-  const empty = <p className="tv-dim">Brak gier{activeFilters.length ? ' dla tych filtrów (X — zmień albo wyczyść)' : ''}.</p>
+  const empty = <p className="tv-dim">Brak gier{activeFilters.length ? ' dla tych filtrów (Y — zmień albo wyczyść)' : ''}.</p>
   const modals = (
     <>
-      {options && sel && (
-        <GameOptions
+      {gamePage && sel && (
+        <TvGamePage
           game={sel}
-          onClose={() => {
-            // emulator, saves or download may have changed there
-            for (const k of Object.keys(emuOptions)) if (k.startsWith(`${sel.id}|`)) delete emuOptions[k]
+          onMenu={onMenu}
+          onBack={() => {
+            // the facts may have changed there (emulator, saves, download)
             setInfoRev((r) => r + 1)
-            setOptions(false)
+            setGamePage(false)
           }}
         />
       )}
@@ -271,7 +246,7 @@ export function TvGames({
         {backdrop && <TvBackdrop key={backdrop.id} game={backdrop} />}
         {head}
         {games.length ? (
-          <TvCoverflow games={games} pos={pos} animate={backdrop?.id === sel?.id} onPick={(i) => (i === idx ? play() : setIdx(i))} reflection={!!theme.games.reflection} />
+          <TvCoverflow games={games} pos={pos} animate={backdrop?.id === sel?.id} onPick={(i) => (i === idx ? openPage() : setIdx(i))} reflection={!!theme.games.reflection} />
         ) : (
           <div className="tv-flow">{empty}</div>
         )}
@@ -303,7 +278,7 @@ export function TvGames({
               sel={top + i === idx}
               fav={!!favorites?.includes(g.id)}
               asLogo={asLogo}
-              onClick={() => (top + i === idx ? play() : setIdx(top + i))}
+              onClick={() => (top + i === idx ? openPage() : setIdx(top + i))}
             />
           ))}
           {!games.length && empty}
@@ -356,63 +331,6 @@ function useGamesLogo(): boolean {
       .catch(() => undefined)
   }, [emuSnap])
   return asLogo
-}
-
-/** The game's logo instead of its title; the title stays until the logo has loaded (and when there is none). */
-function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
-  const [ok, setOk] = useState(false)
-  // logo (mała kopia) — znane z pamięci od razu, nowe dopiero gdy wybór stanie na ~350 ms: przy przytrzymanym
-  // kierunku nie wczytuje się logo każdej mijanej gry (pomiar: logo przy każdym kroku, pełne pliki)
-  const rev = useStore((s) => s.artRev[game.id] ?? 0)
-  const [show, setShow] = useState(() => !!readyArt(api().art.url(game.id, 'logo', rev, 'tv', true)))
-  useEffect(() => {
-    if (show) return
-    const t = setTimeout(() => setShow(true), 350)
-    return () => clearTimeout(t)
-  }, [show])
-  return (
-    <>
-      {!ok && text}
-      {show && (
-        <span className={`tv-logo ${ok ? '' : 'is-wait'}`}>
-          <Art gameId={game.id} name={game.name} kind="logo" className="tv-logo__img" fallback="none" eager layout="tv" thumb onState={setOk} />
-        </span>
-      )}
-    </>
-  )
-}
-
-/**
- * A description longer than its box: marked "is-cut" (the CSS fades the last line) and, after a pause
- * on the game, scrolled slowly to its end and back (tv.css: --tv-desc-d distance, --tv-desc-t time) —
- * about two seconds per line, so it can be read from the couch without pressing anything.
- */
-function useDescScroll(): (el: HTMLDivElement | null) => void {
-  const [el, setEl] = useState<HTMLDivElement | null>(null)
-  useEffect(() => {
-    if (!el) return
-    const check = (): void => {
-      const inner = el.firstElementChild as HTMLElement | null
-      const over = (inner?.scrollHeight ?? el.scrollHeight) - el.clientHeight
-      const cut = over > 1
-      el.classList.toggle('is-cut', cut)
-      if (!cut) return
-      const line = parseFloat(getComputedStyle(el).lineHeight) || 24
-      el.style.setProperty('--tv-desc-d', `${Math.ceil(over)}px`)
-      // the move takes 80% of one way (pauses at both ends), at ~2 s per line
-      el.style.setProperty('--tv-desc-t', `${Math.max(6, ((over / line) * 2) / 0.8).toFixed(1)}s`)
-    }
-    check()
-    const ro = new ResizeObserver(check)
-    ro.observe(el)
-    const mo = new MutationObserver(check)
-    mo.observe(el, { childList: true, subtree: true, characterData: true })
-    return () => {
-      ro.disconnect()
-      mo.disconnect()
-    }
-  }, [el])
-  return setEl
 }
 
 /** Height for the cover and the screenshot so that both, at their shapes, fit the preview's width side by side. */
@@ -481,153 +399,6 @@ function TvPreview({ game, details: dr }: { game: Game; details: DetailsResult |
         )}
       </div>
       <TvDesc game={game} details={dr} />
-    </div>
-  )
-}
-
-/** The game's description; longer than its box it scrolls slowly after a pause (useDescScroll). */
-function TvDesc({ game, details: dr, className }: { game: Game; details: DetailsResult | null; className?: string }) {
-  const d = dr?.ok ? dr.details : undefined
-  const descRef = useDescScroll()
-  const desc = d?.descriptionText ? d.descriptionText.split(/\n+/) : d?.descriptionHtml ? htmlToParagraphs(d.descriptionHtml, 20) : d?.shortDescription ? [d.shortDescription] : []
-  return (
-    <div className={`tv-desc ${className ?? ''}`} ref={descRef}>
-      {/* keyed by game: a new game starts its description from the top (and its scroll from the pause) */}
-      <div className="tv-desc__in" key={game.id}>
-        {desc.slice(0, 20).map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-        {game.source !== 'emustart' && !desc.length && (
-          <p>
-            {game.source === 'gog'
-              ? 'Gra GOG z archiwum serwera EmuStart.'
-              : game.source === 'xbox'
-                ? game.xbox?.gamePass && !game.installed && !game.xbox.owned
-                  ? 'Gra z PC Game Pass.'
-                  : 'Gra Xbox / Microsoft Store.'
-                : game.source === 'shortcut'
-                  ? 'Skrót Steam do gry spoza sklepu.'
-                  : 'Gra z biblioteki Steam.'}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/** The selected game's background art over the whole screen (ribbon layout), faded into the theme. */
-function TvBackdrop({ game }: { game: Game }) {
-  return (
-    <div className="tv-backdrop" aria-hidden="true">
-      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager layout="tv" thumb />
-    </div>
-  )
-}
-
-/** EmuStart's own data of the shown game (emulator, saves, bytes on this PC) — after a short pause on it */
-const emuOptions: Record<string, EmuGameOptions> = {}
-function useEmuOptions(game: Game, rev: number): EmuGameOptions | null {
-  const [o, setO] = useState<EmuGameOptions | null>(null)
-  // remembered per download state: after a download ends (or the copy is removed) it is read again
-  const e = game.emu
-  const key = e ? `${game.id}|${e.cached}|${e.copying}|${e.pinned}` : ''
-  useEffect(() => {
-    if (!key) return setO(null)
-    if (emuOptions[key]) return setO(emuOptions[key])
-    setO(null)
-    let alive = true
-    const t = setTimeout(() => {
-      void api()
-        .emustart.gameOptions(game.id)
-        .then((r) => {
-          emuOptions[key] = r
-          if (alive) setO(r)
-        })
-        .catch(() => undefined)
-    }, 300)
-    return () => {
-      alive = false
-      clearTimeout(t)
-    }
-  }, [key, rev]) // eslint-disable-line react-hooks/exhaustive-deps
-  return o
-}
-
-function saveLine(o: EmuGameOptions): string {
-  const s = o.sync
-  const st = s.state === 'synced' ? 'zsynchronizowane' : s.state === 'pending' ? 'czekają na wysłanie' : 'jeszcze nie synchronizowane'
-  return `${o.states ? `${o.states} ${plural(o.states, 'stan', 'stany', 'stanów')} · ` : ''}${st}`
-}
-
-/**
- * The bar at the bottom of the screen, across its whole width: the game's logo on the left (always —
- * its title when there is none), the details next to it in a few lines.
- */
-function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details: DetailsResult | null; note?: string; rev: number; noLogo?: boolean }) {
-  const d = dr?.ok ? dr.details : undefined
-  const e = game.emu
-  const job = useGameJob(game.id)
-  const status = e
-    ? e.copying
-      ? 'pobieranie…'
-      : e.pinned
-        ? 'zachowana na dysku'
-        : e.cached
-          ? 'pobrana'
-          : 'na serwerze'
-    : job
-      ? `${job.phase}${job.progress?.total ? ` · ${Math.floor((job.progress.done / job.progress.total) * 100)}%` : ''}`
-      : stateLabel(game)
-  const o = useEmuOptions(game, rev)
-  const size = e ? e.size : game.sizeOnDisk
-  const local = o?.local ?? 0
-  const rows: [string, string | undefined][] = [
-    ['Status', status],
-    ['Dodatki', game.gog?.extras?.length ? `${game.gog.extras.length} — Opcje gry (Y)` : undefined],
-    ['Źródło', game.familyShared ? 'Family Sharing' : undefined],
-    ['Oznaczenia', e?.tags],
-    ['System', o?.system || (e ? e.system : undefined) || d?.platform],
-    ['Rozmiar', formatBytes(size)],
-    ['Pobrano', e && local > 0 && size && local < size ? `${formatBytes(local)} z ${formatBytes(size)}` : undefined],
-    ['Ostatnio', formatLastPlayed(game.lastPlayed) ?? 'nigdy'],
-    ['Czas gry', formatPlaytime(game.playtimeMinutes) ?? '–'],
-    ['Uruchomienia', d?.plays ? String(d.plays) : undefined],
-    ['Gatunek', d?.genres?.join(', ') || e?.genre],
-    ['Rok', d?.releaseDate || e?.year],
-    ['Producent', d?.developers?.join(', ')],
-    ['Wydawca', d?.publishers?.join(', ')],
-    ['Gracze', d?.players],
-    ['Kooperacja', d?.coop === undefined ? undefined : d.coop ? 'tak' : 'nie'],
-    ['Wiek', d?.esrb],
-    ['Ocena LaunchBox', d?.rating ? `★ ${d.rating.toFixed(1).replace('.', ',')}/5${d.ratingCount ? ` · ${d.ratingCount} ${plural(d.ratingCount, 'głos', 'głosy', 'głosów')}` : ''}` : undefined],
-    ['Krytycy', d?.criticScore ? `Metacritic ${d.criticScore}` : undefined],
-    ['Recenzje Steam', d?.playerScore !== undefined && d.playerReviews ? `${d.playerScore}% pozytywnych · ${d.playerReviews.toLocaleString('pl-PL')}` : undefined],
-    ['Wydanie', d?.releaseType && !/^released$/i.test(d.releaseType) ? d.releaseType : undefined],
-    ['Emulator', o ? o.emulator.label || 'brak emulatora' : undefined],
-    ['Zapisy', o ? saveLine(o) : undefined],
-    ['Płyty', e && e.discs > 1 ? String(e.discs) : undefined],
-    ['Wersje', e?.versions ? `${e.versions.length} — wybór w opcjach gry` : undefined]
-  ]
-  return (
-    <div className="tv-info">
-      {!noLogo && (
-        <div className="tv-info__logo">
-          <LogoTitle key={game.id} game={game} text={<h1>{game.name}</h1>} />
-        </div>
-      )}
-      <div className="tv-info__body">
-        <dl>
-          {rows
-            .filter((r): r is [string, string] => !!r[1])
-            .map(([k, v]) => (
-              <div key={k} className="tv-dlrow">
-                <dt>{k}</dt>
-                <dd className={k === 'Status' ? (e?.cached || game.installed ? 'st-c' : 'st-n') : undefined}>{v}</dd>
-              </div>
-            ))}
-        </dl>
-        {note && <p className="tv-note">{note}</p>}
-      </div>
     </div>
   )
 }

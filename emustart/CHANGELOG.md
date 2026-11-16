@@ -6,6 +6,26 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: przebudowa trybu TV Lumena — przejrzystość (zaakceptowana przez użytkownika 2026-11-16)
+
+Propozycja z 2026-11-16 zaakceptowana w całości. Decyzje użytkownika: A na liście otwiera stronę gry („dobra zmiana”);
+lista tekstowa EmuStart zostaje; Deck zostaje w Ustawieniach TV; rzeczy przeniesione do „Zaawansowane” muszą być
+wyraźnie opisane; krótkie poradniki zdobycia kluczy API z linkami w aplikacji; kopiuj / wklej w całym interfejsie.
+Ekran: projektor 150″ — rozmiary czcionek bez dokładnego strojenia.
+
+Nie dotyka: pulpitu Lumena (poza menu kopiuj / wklej i poradnikami kluczy, wspólnymi dla obu trybów), Decka,
+silnika i serwera EmuStart, API `/v1/…`, motywów-paczek (format bez zmian), okna „Opcje gry” (zostaje, otwierane ze
+strony gry), skoku po literach, filtrów (zawartość okna bez zmian), animowanych plakatów (zasada: animowane zawsze).
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 20a | **Strona gry w TV** — nowy ekran po A na liście (oba układy: lista i wstęga): tło gry, logo, rząd akcji (Graj — fokus na start, Graj od początku dla gier EmuStart, Opcje gry…, Ulubiona), opis 8–10 linii (przewijany jak dziś), szczegóły w 3 kartach (Na tym komputerze / Twoja gra / O grze; puste pola ukryte; oceny w jednej linii), „Dodatki” i „Wersje” jako przyciski do opcji gry. Lista: A — Szczegóły, X — Graj od razu, Y — Filtry (dotąd X), opcje gry — ze strony gry; B na stronie gry wraca na listę w to samo miejsce | zrobione (typy, testy Lumena 420; na żywo z profilem testowym: lista Steam → strona gry, fokus na „Graj”, Opcje gry i powrót, B na tę samą grę); niesprawdzone padem i w układzie wstęgi |
+| 20b | **Lista bez nadmiaru szczegółów** — pasek `TvInfo` (do 25 pól) zastąpiony linią faktów (status, czas gry / „nigdy”, rok, system) pod logo; układ „Plakaty” (trzeci obok listy i wstęgi): logo w lewym górnym rogu, wyraźniejsze tło, plakaty na dole, wybrany powiększony; licznik i aktywne filtry w rogu; znaczniki stanu jako jedna ikona; opis tylko na stronie gry | do zrobienia |
+| 20c | **Układ listy niezależny od motywu** — wybór dla grupy (Steam, GOG, Xbox, każdy system): Lista / Wstęga / Plakaty / „z motywu”; domyślnie z motywu (jak dotąd); motyw dalej decyduje o wyglądzie | do zrobienia |
+| 20d | **Ustawienia: 6 grup** (Wygląd, Biblioteka, Konta i sklepy, Pady, Zachowanie i dane, Aktualizacja) zamiast 14 zakładek, w obu trybach; Motyw, Wygląd, Kolejność padów, Kontrolery także w Ustawieniach; Deck zostaje. „Zaawansowane” (zwinięte, z opisem na górze sekcji, co tam przeniesiono i dlaczego): pola do wpisywania kluczy i identyfikatorów (Steam Web API, SteamGridDB, IGDB, TheGamesDB, Azure, inne SteamID64, przenoszenie kluczy). Menu Start w TV: Ustawienia, Motyw, Zmień profil, Wyjdź (reszta w Ustawieniach) | do zrobienia |
+| 20e | **Poradniki kluczy API** — przy każdym kluczu „Jak zdobyć klucz?”: krótkie kroki i przycisk otwierający stronę (Steam Web API, SteamGridDB, IGDB/Twitch, TheGamesDB, aplikacja Azure dla Xbox); linki przez `app.openExternal` (jak dotąd, bez uprawnień administratora) | do zrobienia |
+| 20f | **Kopiuj / wklej wszędzie** — menu prawego przycisku (Wytnij / Kopiuj / Wklej / Zaznacz wszystko) w polach tekstowych i przy zaznaczonym tekście; Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A także przy otwartej klawiaturze ekranowej (dziś przechwytuje klawisze) i klawisz „Wklej” na klawiaturze ekranowej (pad); tekst do odczytu (opisy, wartości szczegółów i ustawień, adresy) zaznaczalny myszą — przyciski i listy dalej bez zaznaczania (pad) | do zrobienia |
+
 ### Plan: zgłoszenia 2026-11-16 (pamięć serwera, gry bez launchera, serie, DOSBox) — **wydane: EmuStart 0.65.0, Lumen 1.0.64** (etapy 1–5, 10, 11); etapy 6–9 — następne
 
 Zgłoszenia użytkownika (2026-11-16): serwer prawie nieużywany zajmuje ~1 GB po dniu i ~20 GB po kilku dniach;

@@ -65,13 +65,16 @@ function useSeriesValue(game: Game): string {
   return useMemo(() => seriesSummary(game, all ?? [game], series), [game, all, series])
 }
 
-export function GameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
-  return game.emu ? <EmuGameOptions game={game} onClose={onClose} /> : <LibraryGameOptions game={game} onClose={onClose} />
+/** where the window opens: its main list, or straight on the game's extras (GOG) / regional versions (EmuStart) */
+export type OptionsStart = 'main' | 'extras' | 'versions'
+
+export function GameOptions({ game, onClose, start = 'main' }: { game: Game; onClose: () => void; start?: OptionsStart }) {
+  return game.emu ? <EmuGameOptions game={game} onClose={onClose} start={start} /> : <LibraryGameOptions game={game} onClose={onClose} start={start} />
 }
 
 /** Steam games and non-Steam shortcuts: the same window and rows as an EmuStart game's options. */
-function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
-  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | 'gogsaves' | 'gogextras' | 'series' | null>(null)
+function LibraryGameOptions({ game, onClose, start }: { game: Game; onClose: () => void; start: OptionsStart }) {
+  const [sub, setSub] = useState<'categories' | 'art' | 'pads' | 'gogsaves' | 'gogextras' | 'series' | null>(start === 'extras' ? 'gogextras' : null)
   const series = useSeriesValue(game)
   const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
   const cats = useStore((s) => s.prefs?.gameCategories[game.id]?.length ?? 0)
@@ -197,10 +200,10 @@ function LibraryGameOptions({ game, onClose }: { game: Game; onClose: () => void
   )
 }
 
-function EmuGameOptions({ game, onClose }: { game: Game; onClose: () => void }) {
+function EmuGameOptions({ game, onClose, start }: { game: Game; onClose: () => void; start: OptionsStart }) {
   const [o, setO] = useState<EmuGameOptions | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState<Page>('main')
+  const [page, setPage] = useState<Page>(start === 'versions' && game.emu?.versions ? 'versions' : 'main')
   const [hist, setHist] = useState<EmuSettingsChange[] | null>(null)
   const [confirm, setConfirm] = useState<string | null>(null)
   const [sub, setSub] = useState<'saves' | 'art' | 'pads' | 'series' | null>(null)

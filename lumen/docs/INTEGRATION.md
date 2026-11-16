@@ -410,6 +410,11 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   `tv/filters.ts`: szukaj w tytule, gatunek, dekada, gracze, region z nazwy, producent, co pokazać,
   sortowanie; zapamiętane dla każdego systemu w `localStorage`; Steam — tylko szukaj, co pokazać i
   sortowanie bez roku), Y — opcje gry (Steam: szczegóły), L3 / Z — szukaj, R3 / U — ulubiona.
+- **Strona gry w układzie TV** (etap 20a, `tv/TvGamePage.tsx`): od tej wersji A na liście otwiera stronę gry
+  (tło, logo, rząd akcji: Graj — fokus na start, Graj od początku dla gier EmuStart, Opcje gry…, Ulubiona, Dodatki,
+  Wersje; opis z miejscem na ~10 linii; fakty w kartach „Na tym komputerze / Twoja gra / O grze” — `tv/gameParts.tsx`
+  `useGameFacts`). Na liście: X — Graj od razu, Y — filtry (dotąd X); opcje gry tylko ze strony gry (Y albo przycisk).
+  B na stronie gry wraca na listę na tę samą grę.
 - **Szczegóły i oceny** (lista TV — pasek na dole: logo z lewej, szczegóły obok):
   - LaunchBox (baza w schemacie 3, przebudowuje się sama): ocena społeczności i liczba głosów, ESRB,
     kooperacja, typ wydania, maks. liczba graczy;
