@@ -50,7 +50,7 @@ import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
 import { isAnimated } from './art/animated'
-import { deckCandidates, layoutFor, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
+import { deckCandidates, layoutFor, onThisPc, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -310,7 +310,43 @@ const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.lib
 function send(channel: string, ...args: unknown[]): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
   const d = deck?.window
-  if (d && DECK_CHANNELS.has(channel)) d.webContents.send(channel, ...args)
+  if (!d || !DECK_CHANNELS.has(channel)) return
+  if (channel === IPC.librarySnapshot) return sendDeckSnapshot(args[0] as LibrarySnapshot)
+  d.webContents.send(channel, ...args)
+}
+
+/**
+ * Deck pokazuje tylko gry z tego komputera (onThisPc) — dostaje migawkę tylko z nimi, nie całą bibliotekę (ponad
+ * 40 tys. gier przy każdej zmianie: serializacja w procesie głównym i przeliczanie list w Decku). Seria migawek w
+ * krótkim odstępie (kilka skanów biblioteki przy starcie gry) trafia do Decka jako jedna — ostatnia (etap 9b).
+ */
+const DECK_SNAPSHOT_MS = 300
+let deckPending: LibrarySnapshot | null = null
+let deckSnapTimer: NodeJS.Timeout | undefined
+function deckView(s: LibrarySnapshot): LibrarySnapshot {
+  return { ...s, games: s.games.filter(onThisPc) }
+}
+function sendDeckSnapshot(s: LibrarySnapshot): void {
+  deckPending = s
+  if (deckSnapTimer) return
+  deckSnapTimer = setTimeout(() => {
+    deckSnapTimer = undefined
+    const d = deck?.window
+    const snap = deckPending
+    deckPending = null
+    if (d && !d.isDestroyed() && snap) timed('migawka do Decka', () => d.webContents.send(IPC.librarySnapshot, deckView(snap)))
+  }, DECK_SNAPSHOT_MS)
+}
+
+/** Praca procesu głównego dłuższa niż 200 ms → log (dane do zawieszeń, etap 9a / 9b). */
+function timed<T>(what: string, fn: () => T): T {
+  const t = performance.now()
+  try {
+    return fn()
+  } finally {
+    const ms = Math.round(performance.now() - t)
+    if (ms > 200) log.info('perf', `proces główny: ${what} ${ms} ms`)
+  }
 }
 
 /** Deck switched on or off: its window follows; with Deck off a hidden main window comes back (nothing else is on screen). */
@@ -1398,7 +1434,8 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
 }
 
 function registerIpc(): void {
-  handle(IPC.libraryGet, () => unified.current)
+  // Deck: tylko gry z tego komputera (deckView) — jak w migawkach wysyłanych do niego
+  ipcMain.handle(IPC.libraryGet, (e) => (e.sender === deck?.window?.webContents ? deckView(unified.current) : unified.current))
   handle(IPC.libraryRatings, async (ids: string[]) => {
     const ratings: Record<string, GameRatings> = {}
     const missing: number[] = []
@@ -1956,7 +1993,7 @@ app.whenReady().then(async () => {
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {
-    send(IPC.librarySnapshot, s)
+    timed(`migawka biblioteki (${s.games.length} gier) do okna`, () => send(IPC.librarySnapshot, s))
     scheduleDeckSync()
     // EmuStart platforms as group tabs — only from a live engine library, never from an empty one
     const systems = s.emustart.systems

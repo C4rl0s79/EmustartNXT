@@ -5,6 +5,7 @@ import type { LibraryService } from '../library/service'
 import type { EmustartProvider } from '../emustart/provider'
 import type { GogProvider } from '../gog/provider'
 import { emuJobs, steamJobs } from './jobs'
+import { log } from '../logger'
 import { gogJobs } from '../gog/provider'
 
 export interface UnifiedOptions {
@@ -58,7 +59,10 @@ export class UnifiedLibrary extends EventEmitter {
 
   /** re-run after a classification input changed (a platform override, the platform catalog) */
   update(): void {
+    const t = performance.now()
     this.snap = this.compose()
+    const ms = Math.round(performance.now() - t)
+    if (ms > 200) log.info('perf', `proces główny: budowa migawki biblioteki (${this.snap.games.length} gier) ${ms} ms`)
     this.byId = new Map(this.snap.games.map((g) => [g.id, g]))
     this.emit('snapshot', this.snap)
     this.updateJobs()
