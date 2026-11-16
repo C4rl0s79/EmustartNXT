@@ -601,6 +601,12 @@ export interface Settings {
   tvAnim: TvAnim
   /** the optional desktop interface (shared/deck.ts); off by default */
   deck: DeckSettings
+  /** identyfikator aplikacji Azure gracza do logowania kontem Microsoft / Xbox (etap 19c) */
+  xboxClientId?: string
+  /** pokazuj katalog PC Game Pass (grupa PC → Game Pass) */
+  xboxGamePass: boolean
+  /** zalogowano do konta Xbox (token odświeżania zapisany) */
+  hasXboxLogin?: boolean
   hasSgdbKey: boolean
   hasSteamWebKey: boolean
   hasIgdbId: boolean
@@ -631,13 +637,15 @@ export type SettingsPatch = Partial<
     | 'tvAnim'
     | 'gogInstallDir'
     | 'gogLanguages'
+    | 'xboxClientId'
+    | 'xboxGamePass'
   >
 > & {
   /** only the fields given change (the main window and the Deck window both edit the Deck settings) */
   deck?: Partial<DeckSettings>
 }
 
-export type SecretName = 'sgdbApiKey' | 'steamWebApiKey' | 'igdbClientId' | 'igdbClientSecret' | 'tgdbApiKey'
+export type SecretName = 'sgdbApiKey' | 'steamWebApiKey' | 'igdbClientId' | 'igdbClientSecret' | 'tgdbApiKey' | 'xboxRefreshToken'
 
 export interface SgdbGame {
   id: number

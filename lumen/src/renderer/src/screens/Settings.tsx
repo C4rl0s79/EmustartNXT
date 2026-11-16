@@ -25,6 +25,7 @@ const PAGES: { id: string; label: string; render: () => ReactNode }[] = [
   { id: 'steam', label: 'Steam', render: () => <SteamSection /> },
   { id: 'emustart', label: 'EmuStart', render: () => <EmustartSection /> },
   { id: 'gog', label: 'Gry GOG', render: () => <GogSection /> },
+  { id: 'xbox', label: 'Xbox', render: () => <XboxSection /> },
   {
     id: 'library',
     label: 'Biblioteka EmuStart',
@@ -597,6 +598,82 @@ function CategoriesSection() {
           </div>
         </Modal>
       )}
+    </Section>
+  )
+}
+
+/** Xbox / Microsoft Store (etap 19): gry zainstalowane, katalog PC Game Pass, konto Xbox (logowanie przez własną
+ *  aplikację Azure gracza — decyzja 2026-11-16). */
+function XboxSection() {
+  const settings = useStore((s) => s.settings)!
+  const x = useStore((s) => s.snapshot?.xbox)
+  const [clientId, setClientId] = useState(settings.xboxClientId ?? '')
+  const [busy, setBusy] = useState(false)
+  const run = async (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>): Promise<void> => {
+    setBusy(true)
+    const r = await attempt(fn())
+    setBusy(false)
+    if (r) useStore.getState().toast(r.ok ? (r.message ?? 'Gotowe') : (r.error ?? 'Błąd'), r.ok ? 'info' : 'error')
+  }
+  const at = x?.catalogAt ? new Date(x.catalogAt).toLocaleString('pl-PL') : 'jeszcze nie'
+  return (
+    <Section
+      title="Xbox i Microsoft Store"
+      desc="Gry zainstalowane przez aplikację Xbox / Sklep Microsoft (start przez Windows), katalog PC Game Pass (instalacja w Sklepie) i gry z Twojego konta Xbox. Gry nie są łączone z wydaniami Steam / GOG o tym samym tytule."
+    >
+      <dl className="facts facts--compact">
+        <div className="facts__row">
+          <dt>Na tym komputerze</dt>
+          <dd>{x?.installed ?? 0} gier</dd>
+        </div>
+        <div className="facts__row">
+          <dt>Katalog PC Game Pass</dt>
+          <dd>
+            {x?.gamePass ?? 0} gier · pobrany: {at}
+          </dd>
+        </div>
+        <div className="facts__row">
+          <dt>Konto Xbox</dt>
+          <dd>{x?.account ? `${x.account.gamertag} · gier z konta: ${x.owned}` : settings.hasXboxLogin ? 'zalogowano — synchronizacja…' : 'nie zalogowano'}</dd>
+        </div>
+        {x?.error && (
+          <div className="facts__row">
+            <dt>Problem</dt>
+            <dd>{x.error}</dd>
+          </div>
+        )}
+      </dl>
+      <Toggle
+        label="Pokazuj katalog PC Game Pass"
+        desc="Gry z Game Pass spoza tego komputera w grupie PC → Game Pass; wyłączone — tylko gry zainstalowane i z konta."
+        value={settings.xboxGamePass}
+        onChange={(v) => void patch({ xboxGamePass: v })}
+      />
+      <h3 className="cats__heading">Konto Xbox</h3>
+      <p className="card__desc">
+        Logowanie wymaga Twojej aplikacji w Azure (jednorazowo, za darmo): portal.azure.com → Microsoft Entra ID → Rejestracje aplikacji → Nowa
+        rejestracja → typy kont: „Tylko osobiste konta Microsoft”; Identyfikator URI przekierowania: platforma „Klient publiczny/natywny (aplikacje
+        mobilne i klasyczne)”, adres https://login.microsoftonline.com/common/oauth2/nativeclient. Skopiuj „Identyfikator aplikacji (klienta)” poniżej.
+      </p>
+      <TextField label="Identyfikator aplikacji (klienta) Azure" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
+      <div className="modal__row">
+        <button className="btn" data-nav disabled={busy || clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
+          Zapisz identyfikator
+        </button>
+        <button className="btn btn--primary" data-nav disabled={busy || !settings.xboxClientId} onClick={() => void run(() => api().xbox.login())}>
+          Zaloguj kontem Microsoft
+        </button>
+        {settings.hasXboxLogin && (
+          <>
+            <button className="btn" data-nav disabled={busy} onClick={() => void run(() => api().xbox.sync())}>
+              Odśwież gry z konta
+            </button>
+            <button className="btn" data-nav disabled={busy} onClick={() => void run(() => api().xbox.logout())}>
+              Wyloguj
+            </button>
+          </>
+        )}
+      </div>
     </Section>
   )
 }

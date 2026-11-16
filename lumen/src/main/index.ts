@@ -8,6 +8,7 @@ import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
 import { XboxProvider } from './xbox/provider'
+import { accountTitles, clearLoginSession, loginWindow, refreshTokens, xblIdentity, type MsTokens } from './xbox/account'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
@@ -161,7 +162,7 @@ const engine = new EmustartEngine({
 const emu = new EmustartProvider(engine, paths.emustartLibrary, () => ({ order: settings.get().regionOrder, choices: prefs.get().versions }))
 const gog = new GogProvider(engine, paths.gogLibrary)
 // gry Xbox / Microsoft Store (etap 19): zainstalowane, katalog PC Game Pass, konto Xbox
-const xbox = new XboxProvider(path.join(userData, 'xbox-catalog.json'))
+const xbox = new XboxProvider(path.join(userData, 'xbox-catalog.json'), () => settings.get().xboxGamePass)
 // motywy trybu TV z serwera (pobiera i sprawdza silnik) — LumenData/themes
 const themeStore = new ThemeStore(path.join(userData, 'themes'), engine)
 const platformsFile = new JsonFile<PlatformInfo[]>(paths.platforms, () => [])
@@ -1493,6 +1494,62 @@ async function updatePrefs(fn: (p: Prefs) => Prefs): Promise<Prefs> {
 }
 
 /** One way to change the settings (IPC and the Deck menu): save, then react to what changed and tell both windows. */
+// ---- konto Xbox (etap 19c): token odświeżania (zaszyfrowany) → Xbox Live → gry z konta ----
+let xboxSyncing: Promise<ActionResult> | null = null
+const XBOX_EVERY = 6 * 3600_000
+
+async function xboxWithTokens(t: MsTokens): Promise<ActionResult> {
+  await settings.setSecret('xboxRefreshToken', t.refresh)          // Microsoft wydaje nowy token odświeżania
+  send(IPC.settingsChanged, settings.get())                    // „zalogowano” w Ustawieniach
+  const id = await xblIdentity(t.access)
+  const titles = await accountTitles(id)
+  const ids = [...new Set(titles.map((x) => x.storeId ?? (x.pfn ? xbox.storeIdByPfn(x.pfn) : undefined)).filter((x): x is string => !!x))]
+  xbox.setOwned(ids, { gamertag: id.gamertag })
+  log.info('xbox', `konto ${id.gamertag}: ${titles.length} tytułów na PC, ${ids.length} rozpoznanych w Sklepie`)
+  return { ok: true, message: `Konto Xbox ${id.gamertag}: ${ids.length} gier.` }
+}
+
+/** gry z konta Xbox — z zapisanego logowania (przy starcie, co 6 h, na żądanie) */
+function xboxSync(): Promise<ActionResult> {
+  if (xboxSyncing) return xboxSyncing
+  xboxSyncing = (async (): Promise<ActionResult> => {
+    const clientId = settings.get().xboxClientId
+    const refresh = settings.getSecret('xboxRefreshToken')
+    if (!clientId || !refresh) return { ok: false, error: 'Nie zalogowano do konta Xbox.' }
+    try {
+      return await xboxWithTokens(await refreshTokens(clientId, refresh))
+    } catch (e) {
+      const msg = (e as Error).message
+      log.warn('xbox', `konto: ${msg}`)
+      xbox.setOwned(null, xbox.summary().account ?? null, msg)
+      return { ok: false, error: `Konto Xbox: ${msg}` }
+    } finally {
+      xboxSyncing = null
+    }
+  })()
+  return xboxSyncing
+}
+
+async function xboxLogin(): Promise<ActionResult> {
+  const clientId = settings.get().xboxClientId
+  if (!clientId) return { ok: false, error: 'Najpierw wpisz identyfikator aplikacji Azure (Ustawienia → Xbox).' }
+  try {
+    return await xboxWithTokens(await loginWindow(win, clientId))
+  } catch (e) {
+    const msg = (e as Error).message
+    log.warn('xbox', `logowanie: ${msg}`)
+    return { ok: false, error: `Logowanie do Xbox: ${msg}` }
+  }
+}
+
+async function xboxLogout(): Promise<ActionResult> {
+  await settings.setSecret('xboxRefreshToken', null)
+  send(IPC.settingsChanged, settings.get())
+  await clearLoginSession().catch(() => undefined)
+  xbox.setOwned([], null)
+  return { ok: true, message: 'Wylogowano z konta Xbox.' }
+}
+
 async function patchSettings(patch: SettingsPatch): Promise<Settings> {
   const before = settings.get()
   const after = await settings.patch(patch)
@@ -1513,6 +1570,7 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
     if (after.emustartEnabled) void engine.restart()
     else void engine.stop()
   }
+  if (before.xboxGamePass !== after.xboxGamePass) xbox.reapply()
   if (before.deck.enabled !== after.deck.enabled || JSON.stringify(before.deck.screens) !== JSON.stringify(after.deck.screens) || before.deck.opacity !== after.deck.opacity)
     applyDeck()
   // the settings as they are now — a slower patch finishing after a newer one must not send older ones
@@ -1702,6 +1760,9 @@ function registerIpc(): void {
 
   handle(IPC.settingsGet, () => settings.get())
   handle(IPC.settingsPatch, (patch: SettingsPatch) => patchSettings(patch))
+  handle(IPC.xboxLogin, () => xboxLogin())
+  handle(IPC.xboxLogout, () => xboxLogout())
+  handle(IPC.xboxSync, () => xboxSync())
   handle(IPC.settingsSecret, async (name: SecretName, value: string | null) => {
     if (!['sgdbApiKey', 'steamWebApiKey', 'igdbClientId', 'igdbClientSecret', 'tgdbApiKey'].includes(name)) throw new Error('Unknown secret')
     await settings.setSecret(name, value)
@@ -2080,7 +2141,8 @@ app.whenReady().then(async () => {
   themeStore.on('change', (list) => send(IPC.themesChanged, list))
   watchMainLag()
   registerIpc()
-  void xbox.refresh()                                // gry Xbox: zainstalowane teraz, katalog Microsoft raz na dobę
+  void xbox.refresh().then(() => xboxSync())         // gry Xbox: zainstalowane, katalog Microsoft (doba), konto
+  setInterval(() => void xboxSync(), XBOX_EVERY).unref?.()
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {

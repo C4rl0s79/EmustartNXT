@@ -73,3 +73,37 @@ describe('gry Xbox w bibliotece', () => {
     expect(xboxGames([FF6], cache, new Set(), false).map((g) => g.id)).toEqual(['xbox:9N255K81XBD3']) // bez katalogu Game Pass
   })
 })
+
+vi.mock('electron', () => ({ BrowserWindow: class {}, session: { fromPartition: () => ({ clearStorageData: async () => undefined }) } }))
+
+describe('konto Xbox (etap 19c)', () => {
+  it('adres logowania z PKCE; powrót: kod, błąd, obcy state', async () => {
+    const { authorizeUrl, redirectResult, REDIRECT } = await import('../src/main/xbox/account')
+    const { url, state } = authorizeUrl('11111111-2222-3333-4444-555555555555')
+    const q = new URL(url).searchParams
+    expect(q.get('client_id')).toBe('11111111-2222-3333-4444-555555555555')
+    expect(q.get('code_challenge_method')).toBe('S256')
+    expect(q.get('scope')).toBe('XboxLive.signin offline_access')
+    expect(redirectResult('https://login.live.com/x', state)).toBeNull()
+    expect(redirectResult(`${REDIRECT}?code=abc&state=${state}`, state)).toEqual({ code: 'abc' })
+    expect(redirectResult(`${REDIRECT}?code=abc&state=inny`, state)?.error).toMatch(/state/)
+    expect(redirectResult(`${REDIRECT}?error=access_denied&error_description=Odmowa`, state)).toEqual({ error: 'Odmowa' })
+  })
+
+  it('historia tytułów: tylko gry na PC, StoreId z dostępności albo rodzina pakietu', async () => {
+    const { parseTitles } = await import('../src/main/xbox/account')
+    expect(
+      parseTitles({
+        titles: [
+          { name: 'Halo MCC', type: 'Game', devices: ['XboxOne', 'PC'], detail: { availabilities: [{ ProductId: '9nblggh4rk76' }] } },
+          { name: 'Forza (konsola)', type: 'Game', devices: ['XboxSeries'], productId: '9NXXXXXXXXXX' },
+          { name: 'Aplikacja', type: 'App', devices: ['PC'] },
+          { name: 'FF6', type: 'Game', devices: ['PC'], pfn: '39EA002F.FF6DF_n746a19ndrrjg' }
+        ]
+      })
+    ).toEqual([
+      { storeId: '9NBLGGH4RK76', name: 'Halo MCC' },
+      { pfn: '39EA002F.FF6DF_n746a19ndrrjg', name: 'FF6' }
+    ])
+  })
+})

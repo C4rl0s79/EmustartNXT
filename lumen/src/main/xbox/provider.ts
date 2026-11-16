@@ -69,6 +69,7 @@ export class XboxProvider extends EventEmitter {
   private error = ''
   private busy: Promise<void> | null = null
   private account: { gamertag: string } | null = null
+  private accountError = ''
 
   constructor(
     cacheFile: string,
@@ -88,7 +89,7 @@ export class XboxProvider extends EventEmitter {
       gamePass: this.cache.gamePass.length,
       owned: this.owned.size,
       catalogAt: this.cache.at,
-      ...(this.error ? { error: this.error } : {}),
+      ...(this.error || this.accountError ? { error: [this.error, this.accountError].filter(Boolean).join(' · ') } : {}),
       account: this.account
     }
   }
@@ -98,11 +99,26 @@ export class XboxProvider extends EventEmitter {
     return this.cache.products[storeId]
   }
 
-  /** gry z konta Xbox (etap 19c) */
-  setOwned(ids: string[], account: { gamertag: string } | null): void {
-    this.owned = new Set(ids.map((x) => x.toUpperCase()))
+  /** gry z konta Xbox (etap 19c); `error` — synchronizacja nieudana (zostaje poprzednia lista) */
+  setOwned(ids: string[] | null, account: { gamertag: string } | null, error = ''): void {
+    if (ids) this.owned = new Set(ids.map((x) => x.toUpperCase()))
     this.account = account
-    void this.ensureProducts([...this.owned]).finally(() => this.apply())
+    this.accountError = error ? `Konto Xbox: ${error}` : ''
+    void this.ensureProducts([...this.owned]).finally(() => {
+      this.apply()
+      this.emit('library')                          // stan konta w migawce (Ustawienia), także bez zmiany gier
+    })
+  }
+
+  /** StoreId produktu z katalogu po rodzinie pakietu (gra z konta bez StoreId w historii) */
+  storeIdByPfn(pfn: string): string | undefined {
+    const k = pfn.toLowerCase()
+    return Object.values(this.cache.products).find((p) => p.pfn?.toLowerCase() === k)?.storeId ?? this.installed.find((i) => i.pfn.toLowerCase() === k)?.storeId
+  }
+
+  /** ponownie po zmianie ustawień (pokazywanie katalogu Game Pass) */
+  reapply(): void {
+    this.apply()
   }
 
   /** Zainstalowane teraz, katalog — gdy starszy niż doba (albo `force`). */

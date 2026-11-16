@@ -160,6 +160,11 @@ const api: LumenApi = {
     series: () => invoke(IPC.activitySeries),
     onSeries: (cb) => subscribe(IPC.activitySeriesChanged, cb)
   },
+  xbox: {
+    login: () => invoke(IPC.xboxLogin),
+    logout: () => invoke(IPC.xboxLogout),
+    sync: () => invoke(IPC.xboxSync)
+  },
   jobs: {
     get: () => invoke(IPC.jobsGet),
     cancel: (id) => invoke(IPC.jobsCancel, id),

@@ -7,7 +7,7 @@ import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
 import { isValidSteamId64 } from '../steam/local'
 
-type StoredSettings = Omit<Settings, 'hasSgdbKey' | 'hasSteamWebKey' | 'hasIgdbId' | 'hasIgdbSecret' | 'hasTgdbKey' | 'secretsEncrypted'>
+type StoredSettings = Omit<Settings, 'hasSgdbKey' | 'hasSteamWebKey' | 'hasIgdbId' | 'hasIgdbSecret' | 'hasTgdbKey' | 'hasXboxLogin' | 'secretsEncrypted'>
 
 const defaults = (): StoredSettings => ({
   version: 1,
@@ -28,6 +28,7 @@ const defaults = (): StoredSettings => ({
   tvAnim: 'med',
   gogInstallDir: defaultGogDir(),
   gogLanguages: ['pl', 'en'],
+  xboxGamePass: true,
   deck: defaultDeckSettings()
 })
 
@@ -73,6 +74,9 @@ function cleanLooks(v: unknown): Record<string, Record<string, number | string>>
 
 const cleanPath = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() && v.length < 1024 ? v.trim() : undefined)
 
+/** identyfikator aplikacji Azure (GUID) */
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function migrate(raw: unknown): StoredSettings {
   const d = defaults()
   if (!raw || typeof raw !== 'object') return d
@@ -98,6 +102,8 @@ function migrate(raw: unknown): StoredSettings {
     tvAnim: r.tvAnim === 'off' || r.tvAnim === 'low' || r.tvAnim === 'high' ? r.tvAnim : 'med',
     gogInstallDir: cleanAbsDir(r.gogInstallDir) ?? d.gogInstallDir,
     gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages),
+    xboxClientId: typeof r.xboxClientId === 'string' && GUID.test(r.xboxClientId.trim()) ? r.xboxClientId.trim().toLowerCase() : undefined,
+    xboxGamePass: r.xboxGamePass !== false,
     deck: cleanDeckSettings(r.deck)
   }
 }
@@ -142,6 +148,7 @@ export class SettingsStore {
       hasIgdbId: !!this.secrets.igdbClientId,
       hasIgdbSecret: !!this.secrets.igdbClientSecret,
       hasTgdbKey: !!this.secrets.tgdbApiKey,
+      hasXboxLogin: !!this.secrets.xboxRefreshToken,
       secretsEncrypted: safeStorage.isEncryptionAvailable(),
       ...this.runtime
     }
@@ -158,6 +165,8 @@ export class SettingsStore {
     if (p.gogInstallDir === '') p = { ...p, gogInstallDir: defaultGogDir() }   // "Przywróć domyślny"
     if (p.gogInstallDir !== undefined && !cleanAbsDir(p.gogInstallDir)) throw new Error('Podaj pełną ścieżkę folderu gier GOG (np. D:\\Gry\\GOG).')
     if (p.gogLanguages !== undefined && !cleanLangs(p.gogLanguages).length) throw new Error('Wybierz co najmniej jeden język.')
+    if (p.xboxClientId !== undefined && p.xboxClientId.trim() !== '' && !GUID.test(p.xboxClientId.trim()))
+      throw new Error('Identyfikator aplikacji Azure ma postać xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.')
     if (p.steamIdOverride !== undefined && p.steamIdOverride !== '' && !isValidSteamId64(p.steamIdOverride))
       throw new Error('SteamID64 musi mieć 17 cyfr (np. 7656119…).')
     const next = migrate({ ...this.value, ...p, deck: mergeDeck(this.value.deck, p.deck), steamIdOverride: p.steamIdOverride === '' ? undefined : (p.steamIdOverride ?? this.value.steamIdOverride) })
@@ -173,7 +182,9 @@ export class SettingsStore {
   async setSecret(name: SecretName, value: string | null): Promise<void> {
     const clean = value?.trim()
     if (clean) {
-      if (!/^[A-Za-z0-9-]{16,64}$/.test(clean)) throw new Error('Klucz ma nieprawidłowy format.')
+      // token odświeżania Microsoft — długi, z innymi znakami; pozostałe sekrety to klucze API
+      const ok = name === 'xboxRefreshToken' ? /^\S{20,8192}$/.test(clean) : /^[A-Za-z0-9-]{16,64}$/.test(clean)
+      if (!ok) throw new Error('Klucz ma nieprawidłowy format.')
       this.secrets[name] = clean
       registerSecret(clean)
     } else {

@@ -277,6 +277,12 @@ export interface LumenApi {
     series(): Promise<SeriesStatus>
     onSeries(cb: (s: SeriesStatus) => void): () => void
   }
+  /** konto Xbox (etap 19c): logowanie kontem Microsoft (identyfikator aplikacji Azure w ustawieniach), lista gier z konta */
+  xbox: {
+    login(): Promise<ActionResult>
+    logout(): Promise<ActionResult>
+    sync(): Promise<ActionResult>
+  }
   jobs: {
     get(): Promise<JobsSnapshot>
     cancel(jobId: string): Promise<EmuActionResult>
@@ -497,6 +503,9 @@ export const IPC = {
   activityChanged: 'activity:changed',
   activitySeries: 'activity:series',
   activitySeriesChanged: 'activity:seriesChanged',
+  xboxLogin: 'xbox:login',
+  xboxLogout: 'xbox:logout',
+  xboxSync: 'xbox:sync',
   jobsGet: 'jobs:get',
   jobsCancel: 'jobs:cancel',
   jobsChanged: 'jobs:changed',
