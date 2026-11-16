@@ -651,16 +651,17 @@ function XboxSection() {
       />
       <h3 className="cats__heading">Konto Xbox</h3>
       <p className="card__desc">
-        Logowanie wymaga Twojej aplikacji w Azure (jednorazowo, za darmo): portal.azure.com → Microsoft Entra ID → Rejestracje aplikacji → Nowa
-        rejestracja → typy kont: „Tylko osobiste konta Microsoft”; Identyfikator URI przekierowania: platforma „Klient publiczny/natywny (aplikacje
-        mobilne i klasyczne)”, adres https://login.microsoftonline.com/common/oauth2/nativeclient. Skopiuj „Identyfikator aplikacji (klienta)” poniżej.
+        Każdy loguje się własnym kontem Microsoft — na stronie Microsoft, Lumen nie widzi hasła. Domyślnie przez publiczny identyfikator aplikacji Xbox
+        (bez konfiguracji; Microsoft może go kiedyś wyłączyć dla programów zewnętrznych). Opcjonalnie własna aplikacja Azure: portal.azure.com →
+        Microsoft Entra ID → Rejestracje aplikacji → „Tylko osobiste konta Microsoft”, przekierowanie „Klient publiczny/natywny”:
+        https://login.microsoftonline.com/common/oauth2/nativeclient — jej identyfikator poniżej (po zmianie trzeba zalogować się ponownie).
       </p>
-      <TextField label="Identyfikator aplikacji (klienta) Azure" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
+      <TextField label="Identyfikator aplikacji (klienta) Azure — opcjonalnie" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={clientId} onChange={setClientId} onSubmit={(v) => void patch({ xboxClientId: v.trim() })} />
       <div className="modal__row">
         <button className="btn" data-nav disabled={busy || clientId.trim() === (settings.xboxClientId ?? '')} onClick={() => void patch({ xboxClientId: clientId.trim() })}>
           Zapisz identyfikator
         </button>
-        <button className="btn btn--primary" data-nav disabled={busy || !settings.xboxClientId} onClick={() => void run(() => api().xbox.login())}>
+        <button className="btn btn--primary" data-nav disabled={busy} onClick={() => void run(() => api().xbox.login())}>
           Zaloguj kontem Microsoft
         </button>
         {settings.hasXboxLogin && (

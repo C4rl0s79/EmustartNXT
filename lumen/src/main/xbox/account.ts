@@ -5,15 +5,64 @@ import { log, registerSecret } from '../logger'
 import { isStoreId } from './catalog'
 
 /**
- * Konto Xbox (etap 19c, decyzja użytkownika 2026-11-16: własna rejestracja aplikacji w Azure): logowanie kontem
- * Microsoft na stronie Microsoft w osobnym oknie (Lumen nie widzi hasła), kod z PKCE → tokeny Microsoft → Xbox Live
- * (XBL → XSTS) → historia tytułów konta (titlehub). Zapisany jest tylko token odświeżania — zaszyfrowany jak inne sekrety.
+ * Konto Xbox (etap 19c): logowanie kontem Microsoft na stronie Microsoft w osobnym oknie (Lumen nie widzi hasła) →
+ * tokeny Microsoft → Xbox Live (XBL → XSTS) → historia tytułów konta (titlehub). Zapisany jest tylko token odświeżania
+ * — zaszyfrowany jak inne sekrety. Dwa sposoby (decyzja użytkownika 2026-11-16, bez Azure):
+ *  • domyślnie — publiczny identyfikator aplikacji Xbox od Microsoft (login.live.com, bez rejestracji; Microsoft może
+ *    go kiedyś wyłączyć dla programów zewnętrznych),
+ *  • własna aplikacja Azure gracza (Ustawienia → Xbox → identyfikator) — login.microsoftonline.com, PKCE.
+ * Każdy loguje się własnym kontem; identyfikator oznacza program, nie osobę.
  */
-export const REDIRECT = 'https://login.microsoftonline.com/common/oauth2/nativeclient'
-const AUTHORIZE = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize'
-const TOKEN = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token'
-const SCOPE = 'XboxLive.signin offline_access'
+export const XBOX_PUBLIC_CLIENT = '0000000048093EE3'
 const PARTITION = 'persist:xbox-login'
+
+interface Flow {
+  clientId: string
+  authorize: string
+  token: string
+  redirect: string
+  scope: string
+  /** przedrostek biletu RPS dla user.auth.xboxlive.com: „t=” (login.live.com), „d=” (Azure) */
+  rps: 't=' | 'd='
+  pkce: boolean
+}
+
+/** sposób logowania: własna aplikacja Azure albo publiczny identyfikator Xbox */
+export function flowFor(clientId?: string): Flow {
+  if (clientId)
+    return {
+      clientId,
+      authorize: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+      token: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
+      redirect: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
+      scope: 'XboxLive.signin offline_access',
+      rps: 'd=',
+      pkce: true
+    }
+  return {
+    clientId: XBOX_PUBLIC_CLIENT,
+    authorize: 'https://login.live.com/oauth20_authorize.srf',
+    token: 'https://login.live.com/oauth20_token.srf',
+    redirect: 'https://login.live.com/oauth20_desktop.srf',
+    scope: 'service::user.auth.xboxlive.com::MBI_SSL',
+    rps: 't=',
+    pkce: false
+  }
+}
+
+/** zapisane logowanie: „<identyfikator>|<token odświeżania>” — zmiana identyfikatora wymaga ponownego logowania */
+export function packLogin(clientId: string, refresh: string): string {
+  return `${clientId}|${refresh}`
+}
+
+export function unpackLogin(stored: string | undefined): { clientId: string; refresh: string } | null {
+  const i = stored?.indexOf('|') ?? -1
+  if (!stored || i <= 0) return null
+  return { clientId: stored.slice(0, i), refresh: stored.slice(i + 1) }
+}
+
+/** dawny adres powrotu (testy, porównania) */
+export const REDIRECT = flowFor('x').redirect
 
 const b64url = (b: Buffer): string => b.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
@@ -29,27 +78,27 @@ export interface XblIdentity {
   token: string
 }
 
-/** adres strony logowania i weryfikator PKCE */
-export function authorizeUrl(clientId: string): { url: string; verifier: string; state: string } {
+/** adres strony logowania i weryfikator PKCE (bez Azure — bez PKCE, jak aplikacja Xbox) */
+export function authorizeUrl(clientId: string | Flow): { url: string; verifier: string; state: string } {
+  const f = typeof clientId === 'string' ? flowFor(clientId) : clientId
   const verifier = b64url(randomBytes(48))
   const challenge = b64url(createHash('sha256').update(verifier).digest())
   const state = b64url(randomBytes(16))
   const q = new URLSearchParams({
-    client_id: clientId,
+    client_id: f.clientId,
     response_type: 'code',
-    redirect_uri: REDIRECT,
-    scope: SCOPE,
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
+    redirect_uri: f.redirect,
+    scope: f.scope,
+    ...(f.pkce ? { code_challenge: challenge, code_challenge_method: 'S256' } : {}),
     state,
     prompt: 'select_account'
   })
-  return { url: `${AUTHORIZE}?${q}`, verifier, state }
+  return { url: `${f.authorize}?${q}`, verifier, state }
 }
 
 /** adres powrotu → kod albo błąd (null — to jeszcze nie powrót) */
-export function redirectResult(url: string, state: string): { code?: string; error?: string } | null {
-  if (!url.startsWith(REDIRECT)) return null
+export function redirectResult(url: string, state: string, redirect: string = REDIRECT): { code?: string; error?: string } | null {
+  if (!url.startsWith(redirect)) return null
   const q = new URL(url).searchParams
   if (q.get('error')) return { error: q.get('error_description') || q.get('error') || 'odmowa' }
   if (q.get('state') !== state) return { error: 'niezgodny parametr state' }
@@ -57,8 +106,8 @@ export function redirectResult(url: string, state: string): { code?: string; err
   return code ? { code } : { error: 'brak kodu logowania' }
 }
 
-async function tokenCall(body: Record<string, string>): Promise<MsTokens> {
-  const r = await fetchWithTimeout(TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body).toString() }, 30_000)
+async function tokenCall(url: string, body: Record<string, string>): Promise<MsTokens> {
+  const r = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body).toString() }, 30_000)
   const d = (await r.json()) as { access_token?: string; refresh_token?: string }
   if (!d.access_token || !d.refresh_token) throw new Error('Microsoft nie zwrócił tokenów')
   registerSecret(d.access_token)
@@ -66,21 +115,28 @@ async function tokenCall(body: Record<string, string>): Promise<MsTokens> {
   return { access: d.access_token, refresh: d.refresh_token }
 }
 
-export const exchangeCode = (clientId: string, code: string, verifier: string): Promise<MsTokens> =>
-  tokenCall({ client_id: clientId, grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: verifier, scope: SCOPE })
+export const exchangeCode = (f: Flow, code: string, verifier: string): Promise<MsTokens> =>
+  tokenCall(f.token, {
+    client_id: f.clientId,
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: f.redirect,
+    scope: f.scope,
+    ...(f.pkce ? { code_verifier: verifier } : {})
+  })
 
-export const refreshTokens = (clientId: string, refresh: string): Promise<MsTokens> =>
-  tokenCall({ client_id: clientId, grant_type: 'refresh_token', refresh_token: refresh, scope: SCOPE })
+export const refreshTokens = (f: Flow, refresh: string): Promise<MsTokens> =>
+  tokenCall(f.token, { client_id: f.clientId, grant_type: 'refresh_token', refresh_token: refresh, scope: f.scope, ...(f.pkce ? {} : { redirect_uri: f.redirect }) })
 
 /** token Microsoft → tożsamość Xbox Live (uhs, xuid, gamertag, token XSTS dla xboxlive.com) */
-export async function xblIdentity(access: string): Promise<XblIdentity> {
+export async function xblIdentity(access: string, rps: Flow['rps'] = 'd='): Promise<XblIdentity> {
   const json = { 'Content-Type': 'application/json', Accept: 'application/json', 'x-xbl-contract-version': '1' }
   const u = await fetchWithTimeout(
     'https://user.auth.xboxlive.com/user/authenticate',
     {
       method: 'POST',
       headers: json,
-      body: JSON.stringify({ Properties: { AuthMethod: 'RPS', SiteName: 'user.auth.xboxlive.com', RpsTicket: `d=${access}` }, RelyingParty: 'http://auth.xboxlive.com', TokenType: 'JWT' })
+      body: JSON.stringify({ Properties: { AuthMethod: 'RPS', SiteName: 'user.auth.xboxlive.com', RpsTicket: `${rps}${access}` }, RelyingParty: 'http://auth.xboxlive.com', TokenType: 'JWT' })
     },
     30_000
   )
@@ -134,8 +190,8 @@ export async function accountTitles(id: XblIdentity): Promise<AccountTitle[]> {
 }
 
 /** Strona logowania Microsoft w osobnym oknie; kończy się kodem (wymiana na tokeny) albo zamknięciem okna. */
-export function loginWindow(parent: BrowserWindow | null, clientId: string): Promise<MsTokens> {
-  const { url, verifier, state } = authorizeUrl(clientId)
+export function loginWindow(parent: BrowserWindow | null, f: Flow): Promise<MsTokens> {
+  const { url, verifier, state } = authorizeUrl(f)
   return new Promise((resolve, reject) => {
     const w = new BrowserWindow({
       width: 520,
@@ -152,10 +208,10 @@ export function loginWindow(parent: BrowserWindow | null, clientId: string): Pro
       done = true
       if (!w.isDestroyed()) w.close()
       if (!r.code) return reject(new Error(r.error ?? 'Logowanie przerwane'))
-      exchangeCode(clientId, r.code, verifier).then(resolve, reject)
+      exchangeCode(f, r.code, verifier).then(resolve, reject)
     }
     const check = (e: Electron.Event, target: string): void => {
-      const r = redirectResult(target, state)
+      const r = redirectResult(target, state, f.redirect)
       if (!r) return
       e.preventDefault()
       finish(r)

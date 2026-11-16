@@ -9,7 +9,7 @@ import { ThemeStore } from './themes'
 import { SeriesService } from './series'
 import { XboxProvider } from './xbox/provider'
 import { isStoreId } from './xbox/catalog'
-import { accountTitles, clearLoginSession, loginWindow, refreshTokens, xblIdentity, type MsTokens } from './xbox/account'
+import { accountTitles, clearLoginSession, flowFor, loginWindow, packLogin, refreshTokens, unpackLogin, xblIdentity, type MsTokens } from './xbox/account'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
@@ -1508,11 +1508,11 @@ let xboxSyncing: Promise<ActionResult> | null = null
 let xboxGen = 0
 const XBOX_EVERY = 6 * 3600_000
 
-async function xboxWithTokens(t: MsTokens, gen = xboxGen): Promise<ActionResult> {
+async function xboxWithTokens(t: MsTokens, gen: number, clientId: string, rps: 't=' | 'd='): Promise<ActionResult> {
   if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
-  await settings.setSecret('xboxRefreshToken', t.refresh)          // Microsoft wydaje nowy token odświeżania
+  await settings.setSecret('xboxRefreshToken', packLogin(clientId, t.refresh)) // Microsoft wydaje nowy token odświeżania
   send(IPC.settingsChanged, settings.get())                    // „zalogowano” w Ustawieniach
-  const id = await xblIdentity(t.access)
+  const id = await xblIdentity(t.access, rps)
   const titles = await accountTitles(id)
   if (gen !== xboxGen) return { ok: false, error: 'Wylogowano w trakcie synchronizacji.' }
   const ids = [...new Set(titles.map((x) => x.storeId ?? (x.pfn ? xbox.storeIdByPfn(x.pfn) : undefined)).filter((x): x is string => !!x))]
@@ -1525,12 +1525,17 @@ async function xboxWithTokens(t: MsTokens, gen = xboxGen): Promise<ActionResult>
 function xboxSync(): Promise<ActionResult> {
   if (xboxSyncing) return xboxSyncing
   xboxSyncing = (async (): Promise<ActionResult> => {
-    const clientId = settings.get().xboxClientId
-    const refresh = settings.getSecret('xboxRefreshToken')
-    if (!clientId || !refresh) return { ok: false, error: 'Nie zalogowano do konta Xbox.' }
+    const saved = unpackLogin(settings.getSecret('xboxRefreshToken'))
+    if (!saved) return { ok: false, error: 'Nie zalogowano do konta Xbox.' }
+    // logowanie innym identyfikatorem niż teraz w Ustawieniach (zmiana Azure ↔ bez Azure) — trzeba zalogować się ponownie
+    const want = flowFor(settings.get().xboxClientId)
+    if (saved.clientId !== want.clientId) {
+      xbox.setOwned(null, null, 'zmieniono sposób logowania — zaloguj się ponownie')
+      return { ok: false, error: 'Zmieniono identyfikator aplikacji — zaloguj się ponownie (Ustawienia → Xbox).' }
+    }
     const gen = xboxGen
     try {
-      return await xboxWithTokens(await refreshTokens(clientId, refresh), gen)
+      return await xboxWithTokens(await refreshTokens(want, saved.refresh), gen, want.clientId, want.rps)
     } catch (e) {
       const msg = (e as Error).message
       log.warn('xbox', `konto: ${msg}`)
@@ -1544,11 +1549,10 @@ function xboxSync(): Promise<ActionResult> {
 }
 
 async function xboxLogin(): Promise<ActionResult> {
-  const clientId = settings.get().xboxClientId
-  if (!clientId) return { ok: false, error: 'Najpierw wpisz identyfikator aplikacji Azure (Ustawienia → Xbox).' }
+  const f = flowFor(settings.get().xboxClientId)          // bez identyfikatora Azure — publiczny identyfikator Xbox
   const gen = xboxGen
   try {
-    return await xboxWithTokens(await loginWindow(win, clientId), gen)
+    return await xboxWithTokens(await loginWindow(win, f), gen, f.clientId, f.rps)
   } catch (e) {
     const msg = (e as Error).message
     log.warn('xbox', `logowanie: ${msg}`)
