@@ -26,7 +26,8 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   // gra przesuwana przyciskami „Wcześniej / Później” — wybierana na liście serii (na początku: ta z opcji gry)
   const [picked, setPicked] = useState(game.id)
   const listRef = useRef<HTMLDivElement>(null)
-  const members = useMemo(() => seriesMembers(game, all ?? [game], series), [game, all, series])
+  const igdbRev = useStore((s) => s.igdbRev) // serie z IGDB (osobny kanał) — lista od nowa po zmianie
+  const members = useMemo(() => seriesMembers(game, all ?? [game], series), [game, all, series, igdbRev]) // eslint-disable-line react-hooks/exhaustive-deps
   const own = series?.[game.id]
   const s = seriesOf(game, series)
   const inSeries = !!s && members.length > 1

@@ -1,10 +1,11 @@
 import { EventEmitter } from 'node:events'
-import type { Game, IgdbSeries, JobsSnapshot, LibrarySnapshot, PlatformInfo } from '@shared/types'
+import type { Game, JobsSnapshot, LibrarySnapshot, PlatformInfo } from '@shared/types'
 import { classify, classifyContext } from '@shared/libraryNav'
 import type { LibraryService } from '../library/service'
 import type { EmustartProvider } from '../emustart/provider'
 import type { GogProvider } from '../gog/provider'
 import { emuJobs, steamJobs } from './jobs'
+import { timed } from '../perfTime'
 import { gogJobs } from '../gog/provider'
 
 export interface UnifiedOptions {
@@ -12,8 +13,6 @@ export interface UnifiedOptions {
   overrides: () => Record<string, string>
   /** EmuStart's system catalog (classification of shortcuts by their Steam tags) */
   platforms: () => PlatformInfo[]
-  /** series from IGDB via the EmuStart server (main/series.ts) */
-  series?: (g: Game) => IgdbSeries | undefined
 }
 
 /**
@@ -48,17 +47,13 @@ export class UnifiedLibrary extends EventEmitter {
     const emustart = this.emu.summary()
     const platforms = this.opts.platforms()
     const ctx = classifyContext(emustart.systems, platforms, this.opts.overrides())
-    const series = this.opts.series
-    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames].map((g) => {
-      const igdb = series?.(g)
-      return { ...g, platform: classify(g, ctx), ...(igdb ? { igdbSeries: igdb } : {}) }
-    })
+    const games = [...s.games, ...this.emu.currentGames, ...this.gog.currentGames].map((g) => ({ ...g, platform: classify(g, ctx) }))
     return { ...s, games, emustart, gog: this.gog.summary(), platforms }
   }
 
   /** re-run after a classification input changed (a platform override, the platform catalog) */
   update(): void {
-    this.snap = this.compose()
+    this.snap = timed('budowa migawki biblioteki', () => this.compose())
     this.byId = new Map(this.snap.games.map((g) => [g.id, g]))
     this.emit('snapshot', this.snap)
     this.updateJobs()

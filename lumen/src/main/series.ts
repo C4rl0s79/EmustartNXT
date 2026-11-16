@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
 import type { Game, IgdbSeries } from '@shared/types'
-import { seriesLookupKey } from '@shared/series'
 import type { EmustartEngine } from './emustart/engine'
 import { JsonFile } from './store/jsonFile'
 import { log } from './logger'
@@ -46,14 +45,22 @@ export class SeriesService extends EventEmitter {
     this.file = new JsonFile<Stored>(dataFile, () => ({ at: 0, series: {} }), (raw) => clean(raw))
   }
 
-  async load(): Promise<void> {
-    this.data = await this.file.load()
-    if (Object.keys(this.data.series).length) this.emit('change')
+  private loading: Promise<void> | null = null
+
+  /** Plik z dysku — raz; all() i sync() czekają na niego (bez nadpisania nowszych danych starszymi). */
+  load(): Promise<void> {
+    if (!this.loading) {
+      this.loading = this.file.load().then((d) => {
+        this.data = d
+      })
+    }
+    return this.loading
   }
 
-  /** Seria gry z IGDB albo nic (serwer jej nie zna albo gra nie jest w serii). */
-  of(g: Game): IgdbSeries | undefined {
-    return this.data.series[seriesLookupKey(g)]
+  /** Wszystkie znane serie (okno pobiera raz, potem tylko zmiany: zdarzenie „change”). */
+  async all(): Promise<Record<string, IgdbSeries>> {
+    await this.load()
+    return this.data.series
   }
 
   /** Pytanie serwera teraz, potem co EVERY (co WHILE_PENDING, dopóki serwer sprawdza gry). */
@@ -65,6 +72,7 @@ export class SeriesService extends EventEmitter {
   async sync(): Promise<void> {
     if (this.busy || this.engine.state !== 'ready') return this.schedule(EVERY)
     this.busy = true
+    await this.load()
     let next = EVERY
     try {
       const extra = steamTitles(this.games())
@@ -79,12 +87,18 @@ export class SeriesService extends EventEmitter {
       }
       for (const k of r.standalone ?? []) if (typeof k === 'string' && !series[k]) series[k] = { name: '', order: 0, release: 0 }
       if (r.own_pending) next = WHILE_PENDING          // szybciej tylko, gdy serwer sprawdza gry TEGO Lumena
-      if (JSON.stringify(series) !== JSON.stringify(this.data.series)) {
+      const changes: Record<string, IgdbSeries | null> = {}
+      for (const [k, v] of Object.entries(series)) {
+        const old = this.data.series[k]
+        if (!old || old.name !== v.name || old.order !== v.order || old.release !== v.release) changes[k] = v
+      }
+      for (const k of Object.keys(this.data.series)) if (!(k in series)) changes[k] = null
+      if (Object.keys(changes).length) {
         this.data = { at: Date.now(), series }
         await this.file.save(this.data)
         const inSeries = Object.values(series).filter((s) => s.name).length
         log.info('series', `serie z IGDB: ${inSeries} gier w seriach${r.pending ? `, serwer sprawdza jeszcze ${r.pending}` : ''}`)
-        this.emit('change')
+        this.emit('change', changes)           // tylko zmiany — małe zdarzenie, bez migawki biblioteki
       }
     } catch (e) {
       log.warn('series', `serie z serwera: ${(e as Error).message}`)

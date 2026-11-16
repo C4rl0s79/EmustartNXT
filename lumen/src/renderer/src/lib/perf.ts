@@ -7,19 +7,25 @@ function context(): string {
   return `ekran ${screen}${sel ? `, gra „${sel}”` : ''}, obrazów w drodze: ${loading}`
 }
 
-export function installPerfWatch(): void {
+/** `scope` — przedrostek w logu („interfejs” — główne okno, „deck” — okno Decka). */
+export function installPerfWatch(scope = 'interfejs'): void {
   try {
     new PerformanceObserver((l) => {
-      for (const e of l.getEntries()) if (e.duration > 150) console.warn(`[perf] interfejs: zadanie ${Math.round(e.duration)} ms (${context()})`)
+      for (const e of l.getEntries()) if (e.duration > 150) console.warn(`[perf] ${scope}: zadanie ${Math.round(e.duration)} ms (${context()})`)
     }).observe({ type: 'longtask', buffered: false })
   } catch {
     /* brak longtask — zostaje pomiar pętli */
   }
   let last = performance.now()
+  // czas, gdy strona była ukryta (okno schowane przy włączonym Decku — Chromium budzi wtedy liczniki raz na minutę), to
+  // nie zacięcie: pomiar zaczyna się od nowa po pokazaniu (wcześniej fałszywe „pętla spóźniona ~59 s”)
+  document.addEventListener('visibilitychange', () => {
+    last = performance.now()
+  })
   setInterval(() => {
     const now = performance.now()
     const lag = now - last - 100
     last = now
-    if (lag > 250 && !document.hidden) console.warn(`[perf] interfejs: pętla spóźniona ${Math.round(lag)} ms (${context()})`)
+    if (lag > 250 && !document.hidden) console.warn(`[perf] ${scope}: pętla spóźniona ${Math.round(lag)} ms (${context()})`)
   }, 100)
 }

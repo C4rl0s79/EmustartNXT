@@ -7,6 +7,8 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
+import { watchProcesses, watchWindow } from './hangWatch'
+import { timed } from './perfTime'
 import { isModeCombo } from '@shared/pad'
 import type { IgdbSeries, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
@@ -49,7 +51,7 @@ import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
 import { isAnimated } from './art/animated'
-import { deckCandidates, layoutFor, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
+import { deckCandidates, layoutFor, onThisPc, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -163,10 +165,11 @@ let platformCatalog: PlatformInfo[] = []
 const seriesService: SeriesService = new SeriesService(path.join(userData, 'series.json'), engine, (): Game[] => unified.current.games)
 const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
   overrides: () => prefs.get().platformOverrides,
-  platforms: () => platformCatalog,
-  series: (g: Game): IgdbSeries | undefined => seriesService.of(g)
+  platforms: () => platformCatalog
 })
-seriesService.on('change', () => unified.update())
+// serie z IGDB osobnym kanałem: okna pobierają je raz (IPC.librarySeries), potem dostają tylko zmiany — bez pełnej
+// migawki biblioteki (40 tys. gier do obu okien, także Decka). Ręczne zmiany gracza idą jak dotąd z preferencjami.
+seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(IPC.librarySeriesChanged, changes))
 void seriesService.load()
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
@@ -303,13 +306,52 @@ let hiddenWatchdog: NodeJS.Timeout | undefined
 const artRev = new Map<string, number>()
 
 /** what the Deck window listens to — the library, prefs, settings and art; never pad state, focus or modes */
-const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
+const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.librarySeriesChanged, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
 
 function send(channel: string, ...args: unknown[]): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
   const d = deck?.window
-  if (d && DECK_CHANNELS.has(channel)) d.webContents.send(channel, ...args)
+  if (!d || !DECK_CHANNELS.has(channel)) return
+  if (channel === IPC.librarySnapshot) return sendDeckSnapshot(args[0] as LibrarySnapshot)
+  d.webContents.send(channel, ...args)
 }
+
+/**
+ * Deck pokazuje tylko gry z tego komputera (onThisPc) — dostaje migawkę tylko z nimi, nie całą bibliotekę (ponad
+ * 40 tys. gier przy każdej zmianie: serializacja w procesie głównym i przeliczanie list w Decku). Seria migawek w
+ * krótkim odstępie (kilka skanów biblioteki przy starcie gry) trafia do Decka jako jedna — ostatnia (etap 9b).
+ */
+const DECK_SNAPSHOT_MS = 300
+let deckPending: LibrarySnapshot | null = null
+let deckSnapTimer: NodeJS.Timeout | undefined
+function deckView(s: LibrarySnapshot): LibrarySnapshot {
+  // + ostatnio grane z całej biblioteki: zakładka „Ostatnio grane” (buildNav, 40 gier) liczy się z tego samego zbioru
+  // co dotąd — Deck i tak pokazuje z niej tylko gry z tego komputera
+  const recent = new Set(
+    s.games
+      .filter((g) => g.lastPlayed)
+      .sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))
+      .slice(0, 40)
+      .map((g) => g.id)
+  )
+  return { ...s, games: s.games.filter((g) => onThisPc(g) || recent.has(g.id)) }
+}
+/** Migawka dla nadawcy zapytania: Deck — deckView, główne okno — całość. */
+function snapshotFor(sender: Electron.WebContents): LibrarySnapshot {
+  return sender === deck?.window?.webContents ? deckView(unified.current) : unified.current
+}
+function sendDeckSnapshot(s: LibrarySnapshot): void {
+  deckPending = s
+  if (deckSnapTimer) return
+  deckSnapTimer = setTimeout(() => {
+    deckSnapTimer = undefined
+    const d = deck?.window
+    const snap = deckPending
+    deckPending = null
+    if (d && !d.isDestroyed() && snap) timed('migawka do Decka', () => d.webContents.send(IPC.librarySnapshot, deckView(snap)))
+  }, DECK_SNAPSHOT_MS)
+}
+
 
 /** Deck switched on or off: its window follows; with Deck off a hidden main window comes back (nothing else is on screen). */
 function applyDeck(): void {
@@ -552,11 +594,9 @@ function createWindow(): void {
   })
   win.webContents.on('before-input-event', (_e, input) => hotkeys(input, win!.webContents))
   win.webContents.on('render-process-gone', (_e, d) => log.error('app', `renderer gone: ${d.reason}`))
-  // czujnik zacięć interfejsu (lib/perf.ts) — jego komunikaty „[perf] …” do logu Lumena
-  win.webContents.on('console-message', (e: unknown, ...rest: unknown[]) => {
-    const msg = String((e as { message?: string }).message ?? rest[1] ?? '')
-    if (msg.startsWith('[perf] ')) log.info('perf', msg.slice(7))
-  })
+  // czujnik zacięć interfejsu (lib/perf.ts) do logu, „nie odpowiada / znów odpowiada”, awarie procesów i pamięć (etap 9a)
+  watchWindow(win.webContents, 'okno')
+  watchProcesses()
 
   if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
@@ -1345,6 +1385,18 @@ async function openInSteam(gameId: string, view: 'details' | 'store' | 'download
 
 // ---------------- IPC ----------------
 
+/** Jak handle(), ale z nadawcą (okno albo Deck) — ten sam zapis błędów. */
+function handleFrom<A extends unknown[], R>(channel: string, fn: (sender: Electron.WebContents, ...args: A) => Promise<R> | R): void {
+  ipcMain.handle(channel, async (e, ...args) => {
+    try {
+      return await fn(e.sender, ...(args as A))
+    } catch (err) {
+      log.error('ipc', `${channel} failed`, err)
+      throw new Error((err as Error).message)
+    }
+  })
+}
+
 function handle<A extends unknown[], R>(channel: string, fn: (...args: A) => Promise<R> | R): void {
   ipcMain.handle(channel, async (_e, ...args) => {
     try {
@@ -1398,7 +1450,8 @@ async function patchSettings(patch: SettingsPatch): Promise<Settings> {
 }
 
 function registerIpc(): void {
-  handle(IPC.libraryGet, () => unified.current)
+  // Deck: tylko gry z tego komputera (deckView) — jak w migawkach wysyłanych do niego
+  handleFrom(IPC.libraryGet, (sender) => snapshotFor(sender))
   handle(IPC.libraryRatings, async (ids: string[]) => {
     const ratings: Record<string, GameRatings> = {}
     const missing: number[] = []
@@ -1429,6 +1482,7 @@ function registerIpc(): void {
     lbFacts.set(g.id, f)
     return f
   }
+  handle(IPC.librarySeries, () => seriesService.all()) // serie z IGDB — raz; zmiany: IPC.librarySeriesChanged
   handle(IPC.libraryFacts, async (ids: string[]) => {
     const facts: Record<string, GameFacts> = {}
     const missing: number[] = []
@@ -1468,6 +1522,7 @@ function registerIpc(): void {
     await Promise.all([library.scan(), engine.state === 'ready' ? emu.refresh() : undefined])
     return unified.current
   })
+  // (Deck nie odświeża biblioteki; gdyby zaczął — odpowiedź przez snapshotFor jak w library:get)
 
   handle(IPC.gamePlay, (gameId: string) => playSteam(gameId))
   handle(IPC.gameInstall, (gameId: string) => installSteam(gameId))
@@ -1955,7 +2010,7 @@ app.whenReady().then(async () => {
 
   launchbox.on('changed', () => void launchbox.status().then((st) => send(IPC.launchboxChanged, st)))
   unified.on('snapshot', (s: LibrarySnapshot) => {
-    send(IPC.librarySnapshot, s)
+    timed(`migawka biblioteki (${s.games.length} gier) do okna`, () => send(IPC.librarySnapshot, s))
     scheduleDeckSync()
     // EmuStart platforms as group tabs — only from a live engine library, never from an empty one
     const systems = s.emustart.systems
