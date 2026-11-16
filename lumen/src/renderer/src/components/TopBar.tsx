@@ -3,6 +3,7 @@ import { useStore, type Tab } from '../store'
 import { findSub, pinLabel, useNav } from '../lib/nav'
 import { Glyph } from './Hints'
 import { JobsPill } from './Jobs'
+import { ActivityList } from './Activity'
 import { UpdatePill } from './Update'
 import { api } from '../store'
 import { Icon } from './Icon'
@@ -90,9 +91,13 @@ export function TopBar({ tabs }: { tabs: Tab[] }) {
         <UpdatePill />
         <JobsPill />
         {emuLabel && (
-          <span className={`pill pill--steam ${emuOk ? 'is-running' : emu?.engine === 'starting' || emu?.server?.checking ? 'is-notRunning' : 'is-warn'}`} title={emu?.message ?? emuLabel}>
-            <i />
-            {emuLabel}
+          <span className="topbar__emu">
+            <span className={`pill pill--steam ${emuOk ? 'is-running' : emu?.engine === 'starting' || emu?.server?.checking ? 'is-notRunning' : 'is-warn'}`} title={emu?.message ?? emuLabel}>
+              <i />
+              {emuLabel}
+            </span>
+            {/* wymiana z serwerem w toku — pod pigułką, jedna pod drugą (pobieranie gier: JobsPill obok) */}
+            <ActivityList className="activity-list--top" />
           </span>
         )}
         <span className={`pill pill--steam is-${steam}`} title={steamLabel}>

@@ -164,6 +164,17 @@ $("dKind").addEventListener("change", drawDefaults);
 $("dReload").addEventListener("click", loadDefaults);
 $("dClear").addEventListener("click", () => setDefaultArt("", ""));
 let artDefaultsLoaded = false;
+// serie z IGDB (prośba 2026-11-16): bieżący przebieg (sprawdzone z wszystkich w nim), cała baza, ostatnia porcja, błąd
+function drawSeries(s) {
+  const p = s?.progress, n = (x) => (x || 0).toLocaleString("pl-PL");
+  if (!s?.ok || !p) { $("seriesInfo").textContent = s?.reason ? "Serie z IGDB: " + s.reason : ""; $("seriesBarWrap").hidden = true; return; }
+  const total = Math.max(p.total, p.done), ago = p.last_batch ? new Date(p.last_batch * 1000).toLocaleString("pl-PL") : "jeszcze żadnej";
+  $("seriesInfo").textContent = !s.enabled ? "Serie z IGDB: brak kluczy IGDB — Lumen układa serie tylko z tytułów."
+    : (p.running ? `Serie z IGDB: sprawdzam ${n(p.done)} z ${n(total)} (w kolejce ${n(s.pending)})` : "Serie z IGDB: nic teraz nie sprawdzam") +
+      ` · sprawdzone razem ${n(p.checked)}, w seriach ${n(p.in_series)} · ostatnia porcja: ${ago}` + (p.error ? ` · ${p.error}` : "");
+  $("seriesBarWrap").hidden = !(s.enabled && p.running && total);
+  $("seriesBar").style.width = total ? (100 * p.done / total).toFixed(0) + "%" : "0%";
+}
 async function refreshArt() {
   if (!artDefaultsLoaded) { artDefaultsLoaded = true; loadDefaults(); }
   const d = await admin("art").catch(() => null);
@@ -198,6 +209,7 @@ async function refreshArt() {
   $("artSystems").querySelectorAll("[data-sys]").forEach((b) => b.addEventListener("click", () => artStart("all", b.dataset.sys)));
   $("artSources").innerHTML = Object.entries(SRC).map(([k, l]) =>
     `${esc(l)}: <span class="${d.sources[k] ? "on" : "off"}">${d.sources[k] ? "aktywne" : "brak klucza"}</span>`).join(" · ");
+  drawSeries(d.series);
   const lb = d.launchbox || {};
   $("lbInfo").textContent = lb.ready ? `Baza LaunchBox (opisy, logo, metadane offline): ${lb.games.toLocaleString("pl-PL")} gier, z ${lb.updated}.`
                                      : "Baza LaunchBox (opisy, logo, metadane offline): nie pobrana (108 MB).";

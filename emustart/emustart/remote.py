@@ -381,6 +381,9 @@ def handle(handler) -> None:
         if parts == ["series"]:                        # serie gier z IGDB (emustart/igdbseries.py, Lumen)
             from emustart import igdbseries
             return _json(handler, igdbseries.all_series((lambda: API._cfg) if API is not None else None))
+        if parts == ["series", "progress"]:            # sam postęp sprawdzania (pasek w Lumenie)
+            from emustart import igdbseries
+            return _json(handler, igdbseries.status((lambda: API._cfg) if API is not None else None))
         if parts and parts[0] == "gog":
             return _gog(handler, parts[1:])
         if parts and parts[0] == "themes":

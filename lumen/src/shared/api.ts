@@ -21,6 +21,8 @@ import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSe
   FsListOptions,
   SaveChoice,
   JobsSnapshot,
+  SeriesStatus,
+  ServerActivity,
   UiMode,
   LaunchBoxStatus,
   LbTitleInfo,
@@ -266,6 +268,13 @@ export interface LumenApi {
     /** game with several versions (regions): which one to show and play; null = automatic */
     chooseVersion(gameId: string, versionId: string | null): Promise<Prefs>
   }
+  /** wymiana z serwerem EmuStart w toku (paski pod „EmuStart”) i stan serii z IGDB */
+  activity: {
+    get(): Promise<ServerActivity[]>
+    onChange(cb: (list: ServerActivity[]) => void): () => void
+    series(): Promise<SeriesStatus>
+    onSeries(cb: (s: SeriesStatus) => void): () => void
+  }
   jobs: {
     get(): Promise<JobsSnapshot>
     cancel(jobId: string): Promise<EmuActionResult>
@@ -481,6 +490,10 @@ export const IPC = {
   uiOpenSettings: 'ui:openSettings',
   themesSync: 'themes:sync',
   themesChanged: 'themes:changed',
+  activityGet: 'activity:get',
+  activityChanged: 'activity:changed',
+  activitySeries: 'activity:series',
+  activitySeriesChanged: 'activity:seriesChanged',
   jobsGet: 'jobs:get',
   jobsCancel: 'jobs:cancel',
   jobsChanged: 'jobs:changed',

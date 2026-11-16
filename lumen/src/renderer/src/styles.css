@@ -2516,3 +2516,68 @@ html.no-pointer body {
   font-size: 0.95em;
   opacity: 0.8;
 }
+
+/* wymiana z serwerem EmuStart w toku (components/Activity.tsx): małe paski z opisem, jeden pod drugim */
+.topbar__emu {
+  position: relative;
+  display: inline-flex;
+}
+.activity-list--top {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max(260px, 100%);
+  padding: 6px 10px 8px;
+  border-radius: 10px;
+  background: rgba(12, 14, 20, 0.86);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 6;
+  font-size: 0.78em;
+  color: var(--text-2);
+}
+.activity + .activity {
+  margin-top: 6px;
+}
+.activity__text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity__text b {
+  color: var(--text);
+  font-weight: 600;
+}
+.activity__bar {
+  height: 3px;
+  margin-top: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.activity__bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.6s ease;
+}
+/* bez procentu — wiadomo tylko, że trwa */
+.activity__bar.is-busy i {
+  width: 30%;
+  animation: activity-busy 1.4s ease-in-out infinite;
+}
+@keyframes activity-busy {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity__bar.is-busy i {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}

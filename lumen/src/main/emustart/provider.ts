@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type { EmuLaunchStatus, EmuRuntime, EmustartSummary, Game, RegionOrder } from '@shared/types'
 import { log } from '../logger'
+import { serverActivity } from '../serverActivity'
 import { JsonFile } from '../store/jsonFile'
 import type { EmustartEngine } from './engine'
 import { emuGames, emuSystem, isEmuGameId, type EmuLibrary, type EmuLibraryRow } from './mapping'
@@ -259,12 +260,14 @@ export class EmustartProvider extends EventEmitter {
           this.want = { full: false, systems: new Set() }
           try {
             if (full) {
-              const lib = await this.engine.call<EmuLibrary>('lumen_library', [], 120_000)
+              const lib = await serverActivity.track('library', 'Lista gier z serwera', () => this.engine.call<EmuLibrary>('lumen_library', [], 120_000))
               this.fromCache = false
               this.setLib(lib)
               await this.cache.save(lib)          // offline copy: full reads only
             } else {
-              const part = await this.engine.call<EmuLibrary & { only?: string[] }>('lumen_library', [[...systems]], 60_000)
+              const part = await serverActivity.track('library', 'Lista gier z serwera', () =>
+                this.engine.call<EmuLibrary & { only?: string[] }>('lumen_library', [[...systems]], 60_000)
+              )
               // nothing (or only the offline copy) to merge into, or new server data meanwhile: read everything
               if (this.fromCache || !this.lib.games.length || part.lib_version !== this.lib.lib_version) this.want.full = true
               else this.setLib(mergeLibrary(this.lib, part))

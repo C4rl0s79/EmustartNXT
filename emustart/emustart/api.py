@@ -880,7 +880,32 @@ class Api:
                 own_pending = sum(1 for g in ask if igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
                                   not in got)
         return {"ok": True, "enabled": bool(d.get("enabled")), "series": series, "standalone": sorted(standalone),
-                "pending": int(d.get("pending") or 0), "own_pending": own_pending}
+                "pending": int(d.get("pending") or 0), "own_pending": own_pending,
+                "progress": d.get("progress") if isinstance(d.get("progress"), dict) else None}
+
+    def series_progress(self) -> dict:
+        """Lumen: sam postęp sprawdzania serii na serwerze (pasek pod „EmuStart”, Ustawienia) — bez listy serii.
+        → {"ok", "enabled", "progress": {running, done, total, checked, in_series, last_batch, error}} albo
+        {"ok": False, "reason"} (serwer bez tej funkcji, brak połączenia)."""
+        import json as _json
+        from emustart import netsrc
+        ep = netsrc.endpoint(self._cfg)
+        if not ep:
+            return {"ok": False, "reason": "To urządzenie nie jest połączone z serwerem EmuStart."}
+        try:
+            st, body, _t = netsrc._request(ep, "/v1/series/progress", timeout=15)
+        except OSError:
+            return {"ok": False, "reason": "Brak połączenia z serwerem EmuStart."}
+        if st == 404:
+            return {"ok": False, "reason": "Serwer ma starszą wersję EmuStart — zaktualizuj go w panelu serwera."}
+        try:
+            d = _json.loads(body or b"{}") if st == 200 else {}
+        except ValueError:
+            d = {}
+        if not isinstance(d, dict) or not d.get("ok"):
+            return {"ok": False, "reason": f"Serwer odpowiedział {st}."}
+        return {"ok": True, "enabled": bool(d.get("enabled")),
+                "progress": d.get("progress") if isinstance(d.get("progress"), dict) else None}
 
     def themes_sync(self, dest: str) -> dict:
         """Lumen: motywy trybu TV z serwera do `dest` (LumenData/themes) — emustart/themes.py: tylko zmienione pliki,

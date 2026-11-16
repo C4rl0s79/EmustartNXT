@@ -1,4 +1,5 @@
 import { JobsStrip } from '../components/Jobs'
+import { ActivityList } from '../components/Activity'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { api, attempt, useStore } from '../store'
 import { useActions, useHints, type Action } from '../nav/input'
@@ -229,7 +230,11 @@ function TvTopBar() {
       <div className="tv-brand">
         Lu<b>men</b>
       </div>
-      <JobsStrip />
+      <div className="tv-mid">
+        <JobsStrip />
+        {/* wymiana z serwerem w toku — pod paskiem pobierania */}
+        <ActivityList className="activity-list--tv" />
+      </div>
       <div className="tv-status">
         {emu?.profile && (
           <span className="tv-pill">

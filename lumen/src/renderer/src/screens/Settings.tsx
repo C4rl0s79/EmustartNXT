@@ -891,7 +891,42 @@ function EmustartSection() {
         pick={{ kind: 'file', title: 'Python (python.exe) dla silnika EmuStart', extensions: ['exe'] }}
         onChange={(v) => void patch({ pythonPath: v })}
       />
+      <SeriesStatusCard />
     </Section>
+  )
+}
+
+/** Serie z IGDB (prośba 2026-11-16): postęp sprawdzania na serwerze albo powód, czemu serii nie ma. */
+function SeriesStatusCard() {
+  const s = useStore((st) => st.seriesStatus)
+  const n = (x?: number): string => (x ?? 0).toLocaleString('pl-PL')
+  const ago = (ms?: number): string => {
+    if (!ms) return 'jeszcze żadnej'
+    const m = Math.round((Date.now() - ms) / 60_000)
+    return m < 1 ? 'przed chwilą' : m < 60 ? `${m} min temu` : m < 48 * 60 ? `${Math.round(m / 60)} h temu` : `${Math.round(m / 1440)} dni temu`
+  }
+  const total = Math.max(s.total ?? 0, s.done ?? 0)
+  const pct = s.running && total ? Math.min(100, Math.floor(((s.done ?? 0) / total) * 100)) : null
+  return (
+    <>
+      <h3 className="cats__heading">Serie z IGDB</h3>
+      {s.state === 'unknown' && <p className="card__desc">Sprawdzam stan na serwerze…</p>}
+      {(s.state === 'error' || s.state === 'nokeys') && <p className="card__desc">⚠ {s.reason}</p>}
+      {s.state === 'ok' && (
+        <>
+          <p className="card__desc">
+            {s.running ? `Serwer sprawdza gry: ${n(s.done)} z ${n(total)}${pct !== null ? ` (${pct}%)` : ''}.` : 'Serwer nic teraz nie sprawdza.'}{' '}
+            Sprawdzone razem: {n(s.checked)} gier, w seriach: {n(s.inSeries)}. Ostatnia porcja: {ago(s.lastBatch)}.
+          </p>
+          {pct !== null && (
+            <div className="download__bar">
+              <i style={{ width: `${pct}%` }} />
+            </div>
+          )}
+          {s.error && <p className="card__desc">⚠ {s.error}</p>}
+        </>
+      )}
+    </>
   )
 }
 

@@ -163,8 +163,32 @@ def test_without_keys_nothing_is_queued(tmp_path, monkeypatch):
     monkeypatch.setattr(S, "_client", lambda: None)
     S._queue.clear()
     r = S.lookup([{"title": "Yakuza 0", "platform": "pc"}], lambda: {})
-    assert r == {"ok": True, "enabled": False, "series": {}, "pending": 0}
+    assert {k: v for k, v in r.items() if k != "progress"} == {"ok": True, "enabled": False, "series": {}, "pending": 0}
+    assert r["progress"]["checked"] == 0 and not r["progress"]["running"]
     assert not S._queue
+
+
+def test_progress_counts_run_and_database(tmp_path, monkeypatch):
+    """Pasek w Lumenie i panelu serwera (2026-11-16): przebieg (done z total), cała baza, ostatnia porcja, błąd."""
+    monkeypatch.setattr(paths, "DATA", tmp_path)
+    monkeypatch.setattr(S, "_conn", {})
+    with S._db_lock, S._db() as con:
+        con.executemany("INSERT INTO series VALUES (?,?,?,?,?,?,?,?,?,?,?)", [
+            ("pc|a", "A", "pc", 1, "A", "Saga", "", 0, 0, 1.0, 100.0),
+            ("pc|b", "B", "pc", 2, "B", "", "", 0, 0, 1.0, 200.0),      # IGDB zna, bez serii
+            ("pc|c", "C", "pc", None, "", "", "", 0, 0, 0.0, 150.0),    # nie znaleziono
+        ])
+    monkeypatch.setattr(S, "_worker", {"thread": object(), "done": 40, "busy": True, "batch": [{}] * 40,
+                                       "error": "IGDB: 429"})
+    S._queue.clear()
+    S._queue.extend([{"key": "x"}] * 20)
+    try:
+        with S._db_lock, S._db() as con:
+            p = S.progress(con)
+    finally:
+        S._queue.clear()
+    assert p == {"running": True, "done": 40, "total": 100, "checked": 3, "in_series": 1, "last_batch": 200.0,
+                 "error": "IGDB: 429"}
 
 
 def test_routes_need_the_server_key(srv, fake_server):  # noqa: F811
@@ -176,5 +200,10 @@ def test_routes_need_the_server_key(srv, fake_server):  # noqa: F811
     _wait_idle()
     st, r = _req(srv, "GET", "/v1/series", key)
     assert st == 200 and r["series"]["pc|yakuza 0"]["name"] == "Yakuza"
+    assert r["progress"]["checked"] == 1 and r["progress"]["in_series"] == 1
+    st, _ = _req(srv, "GET", "/v1/series/progress")
+    assert st == 401
+    st, r = _req(srv, "GET", "/v1/series/progress", key)
+    assert st == 200 and r["ok"] and "series" not in r and r["progress"]["checked"] == 1
     st, info = _req(srv, "GET", "/v1/info", key)
     assert "series" in info["features"]

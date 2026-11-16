@@ -46,3 +46,24 @@ def test_without_server_keys_nothing_is_posted(monkeypatch):
         200, b'{"ok": true, "enabled": false, "series": {}, "pending": 0}', 0))
     monkeypatch.setattr(netsrc, "authed_post", lambda *a: (_ for _ in ()).throw(AssertionError("bez kluczy IGDB")))
     assert Api.series_sync(_api(), [{"title": "Yakuza 0", "platform": "pc"}])["enabled"] is False
+
+
+def test_series_progress(monkeypatch):
+    """Pasek „Serie z IGDB” (2026-11-16): sam postęp z serwera; stary serwer i brak sieci — powód."""
+    prog = {"running": True, "done": 40, "total": 100, "checked": 3, "in_series": 1, "last_batch": 1.0, "error": ""}
+    monkeypatch.setattr(netsrc, "endpoint", lambda cfg: ("h", 1, "k"))
+    seen = []
+
+    def req(ep, path, timeout=5, gzip=False):
+        seen.append(path)
+        return 200, json.dumps({"ok": True, "enabled": True, "pending": 60, "progress": prog}).encode(), 0
+    monkeypatch.setattr(netsrc, "_request", req)
+    assert Api.series_progress(_api()) == {"ok": True, "enabled": True, "progress": prog}
+    assert seen == ["/v1/series/progress"]
+    monkeypatch.setattr(netsrc, "_request", lambda ep, path, timeout=5, gzip=False: (404, b"", 0))
+    assert "starszą" in Api.series_progress(_api())["reason"]
+
+    def down(ep, path, timeout=5, gzip=False):
+        raise ConnectionRefusedError()
+    monkeypatch.setattr(netsrc, "_request", down)
+    assert Api.series_progress(_api()) == {"ok": False, "reason": "Brak połączenia z serwerem EmuStart."}

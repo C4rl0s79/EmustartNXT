@@ -153,6 +153,12 @@ const api: LumenApi = {
     emulatorOptions: (es) => invoke(IPC.emuEmulatorOptions, es),
     setSystem: (es, change) => invoke(IPC.emuSetSystem, es, change)
   },
+  activity: {
+    get: () => invoke(IPC.activityGet),
+    onChange: (cb) => subscribe(IPC.activityChanged, cb),
+    series: () => invoke(IPC.activitySeries),
+    onSeries: (cb) => subscribe(IPC.activitySeriesChanged, cb)
+  },
   jobs: {
     get: () => invoke(IPC.jobsGet),
     cancel: (id) => invoke(IPC.jobsCancel, id),

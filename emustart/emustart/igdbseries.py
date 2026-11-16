@@ -301,6 +301,22 @@ def _status() -> int:
         return len(_queue) + (1 if _worker.get("busy") else 0)
 
 
+def progress(con) -> dict:
+    """Postęp dla Lumena i panelu serwera (prośba 2026-11-16: „skąd mam wiedzieć, że działa?”): bieżący przebieg
+    (`done` z `total` — sprawdzone w nim i ich suma z kolejką), cała baza (`checked`, `in_series`), czas ostatniej
+    porcji i ostatni błąd IGDB (pusty, gdy następna porcja przeszła)."""
+    checked, in_series, last = con.execute(
+        "SELECT COUNT(*), SUM(CASE WHEN igdb_id IS NOT NULL AND (COALESCE(franchise, '') <> '' "
+        "OR COALESCE(collection, '') <> '') THEN 1 ELSE 0 END), MAX(ts) FROM series").fetchone()
+    with _lock:
+        pending = len(_queue) + (len(_worker.get("batch") or ()) if _worker.get("busy") else 0)
+        done = int(_worker.get("done") or 0)
+        error = str(_worker.get("error") or "")
+        running = _worker.get("thread") is not None
+    return {"running": running, "done": done, "total": done + pending, "checked": int(checked or 0),
+            "in_series": int(in_series or 0), "last_batch": float(last or 0), "error": error}
+
+
 def lookup(games: list, cfg_fn=None) -> dict:
     """POST: games [{"title", "platform"}] — tytuły spoza serwera (gry Steam) → {"ok", "enabled", "series":
     {klucz: wynik | None}, "pending"}. Niesprawdzone nie mają klucza w "series" — idą na początek kolejki."""
@@ -312,7 +328,9 @@ def lookup(games: list, cfg_fn=None) -> dict:
     todo = [g for k, g in want.items() if k not in series]
     if enabled and todo:
         _enqueue(todo, front=True)
-    return {"ok": True, "enabled": enabled, "series": series, "pending": _status()}
+    with _db_lock, _db() as con:
+        prog = progress(con)
+    return {"ok": True, "enabled": enabled, "series": series, "pending": _status(), "progress": prog}
 
 
 def all_series(cfg_fn=None) -> dict:
@@ -327,8 +345,17 @@ def all_series(cfg_fn=None) -> dict:
                 standalone.append(r[0])     # IGDB zna grę, ale bez serii — Lumen nie zgaduje jej z tytułu
             else:
                 series[r[0]] = res
+        prog = progress(con)
     return {"ok": True, "enabled": _client() is not None, "series": series, "standalone": standalone,
-            "pending": _status()}
+            "pending": _status(), "progress": prog}
+
+
+def status(cfg_fn=None) -> dict:
+    """GET /v1/series/progress: sam postęp, bez listy serii — Lumen pyta o niego co chwilę, gdy pasek jest widoczny."""
+    _set_cfg(cfg_fn)
+    with _db_lock, _db() as con:
+        prog = progress(con)
+    return {"ok": True, "enabled": _client() is not None, "pending": _status(), "progress": prog}
 
 
 def _set_cfg(cfg_fn) -> None:
@@ -403,6 +430,7 @@ def _enqueue(games: list, front: bool = False) -> None:
                     _queue.append(g)
         t = _worker.get("thread")
         if t is None or not t.is_alive():
+            _worker["done"] = 0                      # nowy przebieg — pasek od zera
             _worker["thread"] = threading.Thread(target=_run, daemon=True, name="serie-igdb")
             _worker["thread"].start()
 
@@ -423,6 +451,7 @@ def _run() -> None:
         with _lock:
             batch = [_queue.popleft() for _ in range(min(40, len(_queue)))]
             _worker["busy"] = bool(batch)
+            _worker["batch"] = batch
             if not batch:
                 _worker["thread"] = None             # pod blokadą: _enqueue po tym miejscu uruchomi nowy wątek
                 if done:
@@ -438,6 +467,8 @@ def _run() -> None:
                 for g in batch:
                     _queued.discard(g["key"])
                 _worker["busy"] = False
+                _worker["done"] = int(_worker.get("done") or 0) + len(batch)
+                _worker["error"] = ""
         except Exception as ex:
             # błąd IGDB to nie „nie znaleziono”: nic nie zapisujemy, porcja na koniec kolejki, przerwa
             fails += 1
@@ -445,12 +476,14 @@ def _run() -> None:
             with _lock:
                 _queue.extend(batch)
                 _worker["busy"] = False
+                _worker["error"] = f"IGDB: {ex}"[:200]
             if fails >= 5:
                 with _lock:
                     for g in list(_queue):
                         _queued.discard(g["key"])
                     _queue.clear()
                     _worker["thread"] = None
+                    _worker["error"] = "IGDB niedostępne — ponowię przy następnym sprawdzeniu (raz na dobę)"
                 log.info("serie IGDB: IGDB niedostępne — wracam przy następnym sprawdzeniu")
                 return
             time.sleep(RETRY_PAUSE)
