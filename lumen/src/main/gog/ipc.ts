@@ -96,7 +96,9 @@ export function registerGogIpc(handle: Handle, ctx: Ctx): void {
     return { ok: !r.bad_count, checked: r.checked, badCount: r.bad_count ?? 0, bad: r.bad }
   })
   handle(IPC.gogLaunch, async (gameId: string, task?: number, choice?: string) => {
-    const t = typeof task === 'number' && Number.isInteger(task) && task >= 0 && task < 64 ? task : -1
+    // ≥ 0 — zadanie z gog_play_tasks; -2 i -100…-163 — „Uruchom z diagnostyką” (gry DOSBox, gogfinal.DIAG_*)
+    const diag = task === -2 || (typeof task === 'number' && task <= -100 && task >= -163)
+    const t = typeof task === 'number' && Number.isInteger(task) && ((task >= 0 && task < 64) || diag) ? task : -1
     if (process.env.LUMEN_DRY_RUN === '1') return fail('Tryb testowy (LUMEN_DRY_RUN=1): uruchamianie gier jest wyłączone.')
     // saves are synced with the EmuStart server before the game (2 min: a large set over a slow link)
     const r = await call<RawLaunch>('gog_launch', [pidOf(gameId), t, saveChoice(choice)], 120_000)

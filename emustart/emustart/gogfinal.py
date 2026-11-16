@@ -801,8 +801,11 @@ def play_tasks(app: Path, pid: str) -> list:
         if exe.suffix.lower() in RUNNABLE and exe.is_file() and (not t.get("isHidden") or t is best):
             out.append({"index": i, "name": str(t.get("name") or exe.stem), "category": str(t.get("category") or ""),
                         "default": t is best})
-    if best is not None and Path(str(best["path"]).replace("\\", "/")).name.lower() == "dosbox.exe":
-        out.append({"index": DIAG_TASK, "name": DIAG_NAME, "category": "diagnostic", "default": False})
+    dos = [x for x in out if Path(str(tasks[x["index"]]["path"]).replace("\\", "/")).name.lower() == "dosbox.exe"]
+    for x in dos:                                  # każda część kompilacji (Wing Commander 1 / 2) osobno
+        out.append({"index": DIAG_TASK if x["default"] else DIAG_BASE - x["index"],
+                    "name": DIAG_NAME if len(dos) == 1 else f"{x['name']} — {DIAG_NAME.lower()}",
+                    "category": "diagnostic", "default": False})
     return out
 
 
@@ -821,7 +824,7 @@ def _launcher_skipped(tasks: list, want) -> bool:
 
 def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
     """Zadanie bez workingDir, a pliki z argumentów (DOSBox: -conf x.conf) leżą w głównym folderze gry, nie obok programu."""
-    names = [a or b for a, b in re.findall(r'"([^"]+)"|(\S+)', args) if "." in (a or b) and not (a or b).startswith("-")]
+    names = [x for x in _tokens(args) if "." in x and not x.startswith("-")]
     def inside(base: Path, n: str) -> bool:
         try:
             return safe_join(base, n).is_file()
@@ -833,8 +836,8 @@ def _args_in_root(args: str, app: Path, exe_dir: Path) -> bool:
 def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
     """{"exe", "args", "cwd", "name"} z goggame-<pid>.info — ścieżki tylko wewnątrz katalogu gry, tylko .exe.
     `task` — numer zadania z play_tasks (domyślnie zadanie gry przed launcherem)."""
-    if task == DIAG_TASK:
-        spec = launch_spec(app, pid, None)
+    if is_diag(task):
+        spec = launch_spec(app, pid, None if task == DIAG_TASK else DIAG_BASE - task)
         if not is_dosbox(spec):
             raise FinalizeError("start z diagnostyką jest tylko dla gier DOSBox")
         return dosbox_diag(app, pid, spec)
@@ -877,17 +880,23 @@ def launch_spec(app: Path, pid: str, task: int | None = None) -> dict:
 # ── „Uruchom z diagnostyką” (gry DOSBox) ────────────────────────────────────────
 # Skrypty startowe gier GOG kończą się `exit` (autoexec i pliki .bat gry), więc gdy gra przerwie się z błędem, DOSBox
 # zamyka się natychmiast i komunikatu nie da się przeczytać (zgłoszenie 2026-11-16, Eye of the Beholder III). Start
-# diagnostyczny: kopie plików konfiguracji w folderze tymczasowym — `exit` → `pause`, wywołane .bat gry z kopii bez
-# `exit` (dysk Y:), okno zamiast pełnego ekranu, widoczna konsola DOSBoxa (bez -noconsole). Pliki gry bez zmian.
+# diagnostyczny: kopie plików konfiguracji w podfolderze gry `.emustart-diag` (ścieżka względna: DOSBox 0.74 nie
+# zamontuje ścieżki z „ł” w nazwie użytkownika z %TEMP%) — `exit` → `pause`, wywołane .bat gry (także bez rozszerzenia
+# i zagnieżdżone) z kopii bez `exit` (dysk Y:), okno zamiast pełnego ekranu, widoczna konsola DOSBoxa (bez -noconsole).
+# Pliki gry bez zmian. Każde zadanie DOSBoxa ma swój wariant: DIAG_TASK (domyślne) albo DIAG_BASE - numer zadania.
 
 DIAG_TASK = -2
+DIAG_BASE = -100
 DIAG_NAME = "Uruchom z diagnostyką"
-_BAT_LINE = re.compile(r"^(\s*@?\s*)(?:call\s+)?([A-Za-z0-9_\-~]{1,8}\.bat)(\s.*)?$", re.IGNORECASE)
+DIAG_DIR = ".emustart-diag"
+_BAT_LINE = re.compile(r"^(\s*@?\s*)(?:call\s+)?([A-Za-z0-9_\-~]{1,8})(\.bat)?(\s.*)?$", re.IGNORECASE)
+_AUTOEXEC = re.compile(r"^\s*\[autoexec\]\s*$", re.IGNORECASE | re.MULTILINE)
+_MOUNT_C = re.compile(r'^\s*@?\s*mount\s+c\s+(?:"([^"]+)"|(\S+))\s*$', re.IGNORECASE)
+_EXIT = ("exit", "@exit")
 
 
-def _diag_root() -> Path:
-    import tempfile
-    return Path(tempfile.gettempdir()) / "emustart" / "dosbox-diag"
+def is_diag(task) -> bool:
+    return task == DIAG_TASK or (isinstance(task, int) and DIAG_BASE - 63 <= task <= DIAG_BASE)
 
 
 def is_dosbox(spec: dict) -> bool:
@@ -895,6 +904,7 @@ def is_dosbox(spec: dict) -> bool:
 
 
 def _tokens(args: str) -> list:
+    """Argumenty linii poleceń: "w cudzysłowie" albo bez — jedna reguła dla odczytu i diagnostyki."""
     return [a if a else b for a, b in re.findall(r'"([^"]*)"|(\S+)', args)]
 
 
@@ -902,36 +912,72 @@ def _quote(t: str) -> str:
     return f'"{t}"' if (" " in t or not t) else t
 
 
-def _diag_autoexec(lines: list, app: Path, out: Path) -> list:
-    """[autoexec]: `exit` → `pause`, wywołanie .bat gry → `call Y:\\NAZWA.BAT` (kopia bez exit)."""
-    res = []
-    for ln in lines:
-        s = ln.strip()
-        if s.lower() in ("exit", "@exit"):
-            res.append("pause")
-            continue
-        m = _BAT_LINE.match(ln)
-        if m and (app / m.group(2)).is_file():
-            name = m.group(2).upper()
-            bat = (app / m.group(2)).read_text(encoding="latin-1").splitlines()
-            fixed = ["pause" if x.strip().lower() in ("exit", "@exit") else x for x in bat]
-            (out / name).write_text("\r\n".join(fixed) + "\r\n", encoding="latin-1")
-            res.append(f"{m.group(1)}call Y:\\{name}{m.group(3) or ''}")
-            continue
-        res.append(ln)
-    return res
+class _Diag:
+    """Przepisanie skryptów: `exit` → `pause`, .bat gry z dysku C: → kopia bez exit na Y: (rekurencyjnie)."""
+
+    def __init__(self, out: Path, c_root: Path):
+        self.out, self.c_root, self.done = out, c_root, set()
+
+    def lines(self, lines: list) -> list:
+        res = []
+        for ln in lines:
+            s = ln.strip()
+            if s.lower() in _EXIT:
+                res.append("pause")
+                continue
+            m = _BAT_LINE.match(ln)
+            if m:
+                name = (m.group(2) + ".bat").upper()
+                src = next((p for p in self.c_root.glob("*") if p.name.upper() == name and p.is_file()), None) \
+                    if self.c_root.is_dir() else None
+                if src is not None:
+                    self.copy(src)
+                    res.append(f"{m.group(1)}call Y:\\{name}{m.group(4) or ''}")
+                    continue
+            res.append(ln)
+        return res
+
+    def copy(self, src: Path) -> None:
+        name = src.name.upper()
+        if name in self.done:
+            return
+        self.done.add(name)
+        body = self.lines(src.read_text(encoding="latin-1").splitlines())
+        (self.out / name).write_text("\r\n".join(body) + "\r\n", encoding="latin-1")
+
+
+def _c_root(texts: list, cwd: Path, app: Path) -> Path:
+    """Folder dysku C: — pierwsze `mount c` (bez nakładki) ze skryptów; inaczej katalog gry."""
+    for t in texts:
+        for ln in t.splitlines():
+            m = _MOUNT_C.match(ln)
+            if m:
+                return (cwd / (m.group(1) or m.group(2))).resolve()
+    return app
 
 
 def dosbox_diag(app: Path, pid: str, spec: dict) -> dict:
     """Spec DOSBoxa z kopiami konfiguracji do odczytania błędu gry (pliki gry nietknięte)."""
-    out = _diag_root() / str(pid)
-    if out.exists():
-        import shutil
-        shutil.rmtree(out, ignore_errors=True)
+    import os
+    import shutil
+    out = app / DIAG_DIR
+    shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True, exist_ok=True)
     cwd = Path(spec["cwd"])
     toks = _tokens(spec["args"])
-    new, i, mounted = [], 0, False
+    confs = []
+    for i, t in enumerate(toks):
+        if t.lower() == "-conf" and i + 1 < len(toks):
+            try:
+                confs.append((cwd / toks[i + 1]).resolve().read_text(encoding="latin-1").replace("\r\n", "\n"))
+            except OSError:
+                confs.append("")
+    diag = _Diag(out, _c_root(confs, cwd, app))
+    try:
+        rel_out = os.path.relpath(out, cwd)               # ten sam dysk co gra (ścieżka bez znaków spoza ASCII)
+    except ValueError:
+        rel_out = str(out)
+    new, i, k, mounted = [], 0, 0, False
     while i < len(toks):
         t = toks[i]
         if t.lower() == "-noconsole":
@@ -941,30 +987,25 @@ def dosbox_diag(app: Path, pid: str, spec: dict) -> dict:
             i += 2
             continue
         if t.lower() == "-conf" and i + 1 < len(toks):
-            src = (cwd / toks[i + 1]).resolve()
-            try:
-                text = src.read_text(encoding="latin-1")
-            except OSError:
-                new += [t, toks[i + 1]]
-                i += 2
-                continue
-            head, sep, auto = text.replace("\r\n", "\n").partition("[autoexec]")
-            if sep:
-                body = _diag_autoexec(auto.split("\n"), app, out)
+            text = confs[k]
+            k += 1
+            m = _AUTOEXEC.search(text)
+            if m:
+                body = diag.lines(text[m.end():].split("\n"))
                 if not mounted:
-                    body.insert(1, f'mount Y "{out}"')     # kopie .bat gry (przed pierwszym poleceniem autoexec)
+                    body.insert(1, f'mount Y "{rel_out}"')   # kopie .bat (przed pierwszym poleceniem autoexec)
                     mounted = True
-                text = head + sep + "\n".join(body)
-            dst = out / src.name
-            dst.write_text(text, encoding="latin-1")
-            new += [t, str(dst)]
+                text = text[:m.end()] + "\n".join(body)
+            dst = out / f"{k:02d}-{Path(toks[i + 1]).name}"   # dwa pliki o tej samej nazwie z różnych folderów
+            dst.write_text(text, encoding="latin-1", errors="replace")
+            new += [t, os.path.relpath(dst, cwd) if rel_out != str(out) else str(dst)]
             i += 2
             continue
         new.append(t)
         i += 1
     extra = out / "diagnostyka.conf"
     extra.write_text("[sdl]\nfullscreen=false\n", encoding="latin-1")
-    new += ["-conf", str(extra)]
+    new += ["-conf", os.path.relpath(extra, cwd) if rel_out != str(out) else str(extra)]
     return {**spec, "args": " ".join(_quote(t) for t in new), "name": f"{spec.get('name') or ''} — diagnostyka"}
 
 

@@ -750,7 +750,9 @@ class Api:
         """Zainstalowana gra (bez serwera); `task` — zadanie z gog_play_tasks (-1 = domyślne); `sync_choice` —
         decyzja gracza przy konflikcie zapisów (local | remote | both | skip)."""
         try:
-            return self._gog.launch(pid, int(task) if int(task) >= 0 else None, str(sync_choice or ""))
+            from emustart import gogfinal
+            t = int(task)                                  # ≥ 0 zadanie, -1 domyślne, ujemne diagnostyki DOSBoxa
+            return self._gog.launch(pid, t if t >= 0 or gogfinal.is_diag(t) else None, str(sync_choice or ""))
         except (TypeError, ValueError) as ex:
             return {"ok": False, "reason": str(ex)}
 
