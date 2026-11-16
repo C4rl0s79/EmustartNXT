@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { ThemePackage } from '@shared/types'
 import type { EmustartEngine } from './emustart/engine'
 import { log } from './logger'
+import { serverActivity } from './serverActivity'
 
 /**
  * Motywy trybu TV z paczek wgranych na serwer EmuStart (etap 14). Pobiera i sprawdza je silnik (themes_sync —
@@ -119,6 +120,10 @@ export class ThemeStore extends EventEmitter {
   /** Motywy z serwera (silnik). Zmiana — zdarzenie „change” z nową listą. */
   async sync(): Promise<{ ok: boolean; reason?: string }> {
     if (this.busy || this.engine.state !== 'ready') return { ok: false, reason: 'silnik EmuStart nie działa' }
+    return serverActivity.track('themes', 'Motywy TV', () => this.syncNow())
+  }
+
+  private async syncNow(): Promise<{ ok: boolean; reason?: string }> {
     this.busy = true
     try {
       const before = JSON.stringify(this.list().map((t) => [t.id, t.rev]))

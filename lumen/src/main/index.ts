@@ -7,10 +7,11 @@ import { pathToFileURL } from 'node:url'
 import { ART_SCHEME, IPC, THEME_SCHEME } from '@shared/api'
 import { ThemeStore } from './themes'
 import { SeriesService } from './series'
+import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
 import { timed } from './perfTime'
 import { isModeCombo } from '@shared/pad'
-import type { IgdbSeries, UserArtItem } from '@shared/types'
+import type { IgdbSeries, SeriesStatus, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
 import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
@@ -171,6 +172,18 @@ const unified: UnifiedLibrary = new UnifiedLibrary(library, emu, gog, {
 // migawki biblioteki (40 tys. gier do obu okien, także Decka). Ręczne zmiany gracza idą jak dotąd z preferencjami.
 seriesService.on('change', (changes: Record<string, IgdbSeries | null>) => send(IPC.librarySeriesChanged, changes))
 void seriesService.load()
+// wymiana z serwerem w toku (paski pod „EmuStart”) i stan serii z IGDB — tylko główne okno (nie ma ich w DECK_CHANNELS)
+serverActivity.on('change', (list) => send(IPC.activityChanged, list))
+serverActivity.on('series', (s: SeriesStatus) => {
+  send(IPC.activitySeriesChanged, s)
+  seriesDuringPass(s)
+})
+seriesService.on('running', () => serverActivity.pokeSeries(1000))
+serverActivity.start(engine)
+const seriesPass = new SeriesPassWatch()
+function seriesDuringPass(s: SeriesStatus): void {
+  if (seriesPass.refetch(s)) seriesService.schedule(0)
+}
 /** GOG game started from Lumen (restore the window when it ends, like Steam games) */
 let launchedGog: string | undefined
 const updater = new Updater({
@@ -1051,7 +1064,7 @@ let artSyncing = false
 
 function scheduleArtSync(ms = 2000): void {
   clearTimeout(artSyncTimer)
-  artSyncTimer = setTimeout(() => void syncArt(), ms)
+  artSyncTimer = setTimeout(() => void serverActivity.track('art', 'Grafiki gracza', syncArt), ms)
 }
 
 async function syncArt(): Promise<void> {
@@ -1483,6 +1496,8 @@ function registerIpc(): void {
     return f
   }
   handle(IPC.librarySeries, () => seriesService.all()) // serie z IGDB — raz; zmiany: IPC.librarySeriesChanged
+  handle(IPC.activityGet, () => serverActivity.list())
+  handle(IPC.activitySeries, () => serverActivity.series())
   handle(IPC.libraryFacts, async (ids: string[]) => {
     const facts: Record<string, GameFacts> = {}
     const missing: number[] = []
@@ -2036,6 +2051,7 @@ app.whenReady().then(async () => {
     if (st === 'ready') scheduleArtSync(8000)
     if (st !== 'ready') return
     seriesService.schedule(15_000)                   // serie z IGDB z serwera (main/series.ts)
+    serverActivity.pokeSeries(5000)                  // postęp serii i powód, gdy ich nie ma (Ustawienia, pasek)
     void emustartDefaults()
     // EmuStart's system catalog (families, names, plat codes) — classifies Steam shortcuts by their tags
     void engine

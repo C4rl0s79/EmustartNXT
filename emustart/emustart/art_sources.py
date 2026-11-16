@@ -295,7 +295,7 @@ class Igdb:
     def query(self, endpoint: str, body: str, strict: bool = False) -> list:
         """Zapytanie apicalypse do endpointu IGDB (games, collections, franchises…) — z limitem 4/s.
         `strict` — brak odpowiedzi (sieć, limit, token) to IgdbError, nie pusta lista."""
-        if endpoint not in ("games", "collections", "franchises"):
+        if endpoint not in ("games", "collections", "franchises", "external_games"):
             raise ValueError(f"nieobsługiwany endpoint IGDB: {endpoint}")
         tok = self._token() if self.cid and self.secret else ""
         if not tok:

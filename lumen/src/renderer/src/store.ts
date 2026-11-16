@@ -1,16 +1,17 @@
 import { create } from 'zustand'
 import type { LumenApi, PickPathOptions } from '@shared/api'
 import type { UiMode, Category, Game, JobsSnapshot, LibrarySnapshot, Prefs, Settings, SteamCollection } from '@shared/types'
-import { seriesLookupKey, setIgdbResolver } from '@shared/series'
-import type { IgdbSeries } from '@shared/types'
+import { seriesLookupKey, seriesStoreKey, setIgdbResolver } from '@shared/series'
+import type { IgdbSeries, SeriesStatus, ServerActivity } from '@shared/types'
 
 // serie z IGDB tego okna (patchIgdb) — źródło dla shared/series.ts
 let igdbMap = new Map<string, IgdbSeries>()
-const keyOf = new WeakMap<object, string>() // klucz gry policzony raz (listy pytają setki tysięcy razy na przeliczenie)
+// klucze gry policzone raz (listy pytają setki tysięcy razy na przeliczenie): po identyfikatorze sklepu, po tytule
+const keyOf = new WeakMap<object, [string | undefined, string]>()
 setIgdbResolver((g) => {
   let k = keyOf.get(g)
-  if (k === undefined) keyOf.set(g, (k = seriesLookupKey(g)))
-  return igdbMap.get(k)
+  if (k === undefined) keyOf.set(g, (k = [seriesStoreKey(g), seriesLookupKey(g)]))
+  return (k[0] !== undefined ? igdbMap.get(k[0]) : undefined) ?? igdbMap.get(k[1])
 })
 
 declare global {
@@ -41,6 +42,10 @@ interface State {
   jobs: JobsSnapshot
   /** jobs panel open */
   jobsOpen: boolean
+  /** wymiana z serwerem EmuStart w toku (paski pod „EmuStart”, main/serverActivity.ts) */
+  activity: ServerActivity[]
+  /** stan serii z IGDB (Ustawienia → EmuStart) */
+  seriesStatus: SeriesStatus
   /** in-app path picker request (modals/PathPicker.tsx) */
   picker: { id: number; opts: PickPathOptions; resolve: (path: string | null) => void } | null
   finishPick(path: string | null): void
@@ -78,6 +83,8 @@ interface State {
   patchIgdb(changes: Record<string, IgdbSeries | null>): void
   setJobs(j: JobsSnapshot): void
   setJobsOpen(open: boolean): void
+  setActivity(a: ServerActivity[]): void
+  setSeriesStatus(s: SeriesStatus): void
   setPrefs(p: Prefs): void
   setSettings(s: Settings): void
   bumpArt(gameId: string, rev: number): void
@@ -105,6 +112,8 @@ export const useStore = create<State>((set) => ({
   igdbRev: 0,
   jobs: { jobs: [], emu: null },
   jobsOpen: false,
+  activity: [],
+  seriesStatus: { state: 'unknown' },
   picker: null,
   finishPick: (path) =>
     set((s) => {
@@ -146,6 +155,8 @@ export const useStore = create<State>((set) => ({
   },
   setJobs: (jobs) => set({ jobs }),
   setJobsOpen: (jobsOpen) => set({ jobsOpen }),
+  setActivity: (activity) => set({ activity }),
+  setSeriesStatus: (seriesStatus) => set({ seriesStatus }),
   setPrefs: (prefs) => set({ prefs }),
   setSettings: (settings) => set({ settings }),
   bumpArt: (gameId, rev) => set((s) => ({ artRev: { ...s.artRev, [gameId]: rev } })),

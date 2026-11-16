@@ -109,6 +109,8 @@ export interface IgdbSeries {
   order: number
   /** unix seconds: release of this very edition (tie-break: arcade before its port) */
   release: number
+  /** grupa nad serią — franczyza IGDB (Dungeons & Dragons nad Eye of the Beholder); seria to kolekcja */
+  group?: string
 }
 
 /** Install state of a GOG game in the EmuStart engine's local registry (emustart/goginstall.py). */
@@ -1056,6 +1058,36 @@ export interface EmuRuntime {
   postPending: string
   conflicts: SaveConflict[]
   server: EmuServerState | null
+}
+
+/**
+ * Trwająca wymiana „systemowa” z serwerem EmuStart (prośba 2026-11-16) — mały pasek z opisem pod „EmuStart” na
+ * górnym pasku i w trybie TV; kilka naraz, jedna pod drugą. Pobieranie gier — osobno (Job). Bez `total` — pasek bez
+ * procentu (wiadomo tylko, że trwa).
+ */
+export interface ServerActivity {
+  id: string
+  label: string
+  detail?: string
+  done?: number
+  total?: number
+}
+
+/** Stan serii z IGDB (Ustawienia → EmuStart): postęp sprawdzania na serwerze albo powód, czemu ich nie ma. */
+export interface SeriesStatus {
+  state: 'unknown' | 'ok' | 'nokeys' | 'error'
+  reason?: string
+  running?: boolean
+  done?: number
+  total?: number
+  checked?: number
+  inSeries?: number
+  /** ostatnia sprawdzona porcja na serwerze (ms) */
+  lastBatch?: number
+  /** ostatni błąd IGDB na serwerze (pusty, gdy następna porcja przeszła) */
+  error?: string
+  /** ostatnie pytanie Lumena o postęp (ms) */
+  at?: number
 }
 
 export interface JobsSnapshot {

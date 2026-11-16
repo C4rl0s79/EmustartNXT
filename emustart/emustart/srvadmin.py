@@ -596,7 +596,13 @@ def config_set(api, args: dict) -> dict:
 
 # ── grafiki i opisy (pobiera serwer; urządzenia biorą je od niego) ──
 def art_overview(api) -> dict:
-    return {"ok": True, **api.art_overview()}
+    out = {"ok": True, **api.art_overview()}
+    try:                     # postęp serii z IGDB (prośba 2026-11-16) — pod źródłami grafik, obok kluczy IGDB
+        from emustart import igdbseries
+        out["series"] = igdbseries.status(lambda: api._cfg)
+    except Exception as ex:  # baza serii niedostępna — reszta karty działa
+        out["series"] = {"ok": False, "reason": str(ex)}
+    return out
 
 
 def art_start(api, args: dict) -> dict:

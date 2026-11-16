@@ -845,31 +845,54 @@ class Api:
         from emustart import goginstall as gi
         return {"ok": True, "games": self._gog.admin_pending(), "undo": len(gi.pending_undo())}
 
-    def series_sync(self, extra: list) -> dict:
-        """Lumen: serie gier z IGDB z serwera (emustart/igdbseries.py). Gry serwera (emulatory, GOG) sprawdza sam
-        serwer; `extra` — [{"title", "platform": "pc"}] gier, których serwer nie zna (Steam, skróty).
-        → {"ok", "enabled", "series": {"<system|tytuł>": {"name", "order_ts", "release_ts"…}}, "pending"}."""
+    def _series_get(self, path: str, timeout: float, gzip: bool = False) -> dict:
+        """GET serii z serwera → odpowiedź serwera (ok=True) albo {"ok": False, "reason"} — wspólne dla series_sync
+        i series_progress (każdy błąd sieci jako czytelny powód)."""
         import json as _json
         from emustart import netsrc
         ep = netsrc.endpoint(self._cfg)
         if not ep:
             return {"ok": False, "reason": "To urządzenie nie jest połączone z serwerem EmuStart."}
-        st, body, _t = netsrc._request(ep, "/v1/series", timeout=30, gzip=True)
+        try:
+            st, body, _t = netsrc._request(ep, path, timeout=timeout, gzip=gzip)
+        except Exception:
+            return {"ok": False, "reason": "Brak połączenia z serwerem EmuStart."}
         if st == 404:
-            return {"ok": False, "reason": "Serwer ma starszą wersję EmuStart — bez serii z IGDB."}
+            return {"ok": False, "reason": "Serwer ma starszą wersję EmuStart — zaktualizuj go w panelu serwera."}
         try:
             d = _json.loads(body or b"{}") if st == 200 else {}
         except ValueError:
             d = {}
         if not isinstance(d, dict) or not d.get("ok"):
             return {"ok": False, "reason": f"Serwer odpowiedział {st}."}
+        return d
+
+    def series_sync(self, extra: list) -> dict:
+        """Lumen: serie gier z IGDB z serwera (emustart/igdbseries.py). Gry serwera (emulatory, GOG) sprawdza sam
+        serwer; `extra` — [{"title", "platform": "pc"}] gier, których serwer nie zna (Steam, skróty).
+        → {"ok", "enabled", "series": {"<system|tytuł>": {"name", "order_ts", "release_ts"…}}, "pending"}."""
+        from emustart import netsrc
+        d = self._series_get("/v1/series", 30, gzip=True)
+        if not d.get("ok"):
+            return d
         from emustart import igdbseries
         series = dict(d.get("series") or {})
         standalone = set(d.get("standalone") or [])
-        # tylko tytuły, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu)
-        ask = [g for g in (extra or []) if isinstance(g, dict) and g.get("title")
-               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in series
-               and igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc")) not in standalone][:20000]
+        # tylko gry, których serwer jeszcze nie zna (Steam, skróty, GOG pod innym tytułem niż w katalogu); gra ze
+        # sklepu — po identyfikatorze („steam|203160”), inne po tytule
+        # serwer < 0.66 nie zna kluczy sklepu i odpowiada po tytule — znana gra to ta pod którymkolwiek z kluczy
+        keyed = []
+        for g in (extra or []):
+            if not isinstance(g, dict) or not g.get("title"):
+                continue
+            keys = {igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))}
+            store, ext = str(g.get("store") or "").lower(), str(g.get("id") or "").strip()
+            if store in igdbseries.STORES and ext.isdigit() and len(ext) <= 20:
+                keys.add(igdbseries.store_key(store, ext))
+            if not keys & series.keys() and not keys & standalone:
+                keyed.append((keys, g))
+        keyed = keyed[:20000]
+        ask = [g for _k, g in keyed]
         own_pending = 0
         if ask and d.get("enabled"):
             r = netsrc.authed_post(self._cfg, "/v1/series", {"games": ask})
@@ -877,10 +900,20 @@ class Api:
                 got = r.get("series") or {}
                 series.update({k: v for k, v in got.items() if v})
                 standalone.update(k for k, v in got.items() if v is None)
-                own_pending = sum(1 for g in ask if igdbseries.key_of(str(g["title"]), str(g.get("platform") or "pc"))
-                                  not in got)
+                own_pending = sum(1 for keys, _g in keyed if not keys & got.keys())
         return {"ok": True, "enabled": bool(d.get("enabled")), "series": series, "standalone": sorted(standalone),
-                "pending": int(d.get("pending") or 0), "own_pending": own_pending}
+                "pending": int(d.get("pending") or 0), "own_pending": own_pending,
+                "progress": d.get("progress") if isinstance(d.get("progress"), dict) else None}
+
+    def series_progress(self) -> dict:
+        """Lumen: sam postęp sprawdzania serii na serwerze (pasek pod „EmuStart”, Ustawienia) — bez listy serii.
+        → {"ok", "enabled", "progress": {running, done, total, checked, in_series, last_batch, error}} albo
+        {"ok": False, "reason"} (serwer bez tej funkcji, brak połączenia)."""
+        d = self._series_get("/v1/series/progress", 15)
+        if not d.get("ok"):
+            return d
+        return {"ok": True, "enabled": bool(d.get("enabled")),
+                "progress": d.get("progress") if isinstance(d.get("progress"), dict) else None}
 
     def themes_sync(self, dest: str) -> dict:
         """Lumen: motywy trybu TV z serwera do `dest` (LumenData/themes) — emustart/themes.py: tylko zmienione pliki,
@@ -1412,8 +1445,11 @@ class Api:
                 "sync": self._sync_kind(g, emu), "slots": slots}
 
     def sync_progress(self) -> dict:
-        """Postęp trwającej wysyłki / pobierania zapisów (pasek postępu): {active, op, done, total, eta}."""
-        return syncclient.progress()
+        """Postęp trwającej wysyłki / pobierania zapisów (pasek postępu): {active, op, done, total, eta, text}."""
+        p = syncclient.progress()
+        if p.get("active"):
+            p["text"] = syncclient.progress_text()        # ten sam opis co w oknie uruchamiania (pasek w Lumenie)
+        return p
 
     def _sync_kind(self, g: dict, emu: dict) -> dict:
         """Stan synchronizacji; emulator bez paczek zapisów: „folder” (cały folder zapisów
