@@ -16,6 +16,7 @@ function viewOf(group: NavGroup, sub: NavSub, pinned: string[], chips: boolean):
   const isPinned = pinned.includes(sub.id)
   return {
     key: `nav:${sub.id}`,
+    filterId: sub.id,
     title: chips || sub.id.endsWith('/all') ? group.label : pinLabel(group, sub),
     games: sub.games,
     badge: group.id === 'col' ? undefined : sub.id === 'pc/gog' ? 'serwer EmuStart' : sub.es ? 'EmuStart' : undefined,

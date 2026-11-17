@@ -39,7 +39,7 @@ def test_refuses_unknown_host_and_non_image(data, monkeypatch):
         ownart.choose({}, 1, "snes", "Doom", "box", URL)
 
 
-def test_sync_sends_as_tv_choices_and_takes_newer(data, monkeypatch):
+def test_sync_sends_shared_choices_and_takes_newer(data, monkeypatch):
     ownart.choose({}, 1, "snes", "Doom", "box", URL)
     gk = ownart.game_key("snes", "Doom")
     sent = {}
@@ -49,13 +49,14 @@ def test_sync_sends_as_tv_choices_and_takes_newer(data, monkeypatch):
         return {"choices": {f"tv|{gk}|hero": {"choice": {"type": "web", "url": URL}, "at": 9e9},
                             f"tv|{gk}|grid": {"choice": None, "at": 1},        # starszy: nie rusza
                             f"desktop|{gk}|logo": {"choice": {"type": "web", "url": URL}, "at": 9e9},
+                            f"tv|{gk}|logo": {"choice": {"type": "web", "url": URL}, "at": 9e9},   # ten sam wybór
                             f"tv|steam:1|grid": {"choice": {"type": "web", "url": URL}, "at": 9e9}}}
     monkeypatch.setattr(artsync, "sync", fake)
-    assert ownart.sync({}, 1) == 1
-    assert sent["items"][0]["key"] == f"tv|{gk}|grid" and sent["items"][0]["choice"]["type"] == "web"
+    assert ownart.sync({}, 1) == 2                                     # tło i logo (pulpit = TV), logo raz
+    assert sent["items"][0]["key"] == f"desktop|{gk}|grid" and sent["items"][0]["choice"]["type"] == "web"
     rows = [{"name": "Doom", "box": "", "snap": "", "logo": ""}]
     ownart.apply(rows, "snes", 1)
-    assert rows[0]["box"] and rows[0]["snap"] and not rows[0]["logo"]
+    assert rows[0]["box"] and rows[0]["snap"] and rows[0]["logo"]
 
 
 def test_key_file_round_trip_and_wrong_password(tmp_path):

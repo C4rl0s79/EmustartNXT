@@ -126,7 +126,6 @@ describe('prefs v4', () => {
       gameCategories: { 'steam:1': ['cat:a'] },
       favorites: ['steam:1', 'emu:ps2/x'],
       art: { 'steam:1': { grid: { type: 'steam' } } },
-      artTv: {},
       versions: { 'emugrp:a': 'emu:b' }
     }
     const p = migratePrefs(v3)

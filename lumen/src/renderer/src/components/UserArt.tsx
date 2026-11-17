@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { ArtKind, ArtLayout, UserArtGallery } from '@shared/types'
+import type { ArtKind, UserArtGallery } from '@shared/types'
 import { api, attempt, useStore } from '../store'
 
 // Images uploaded to the EmuStart server by the accounts of this server, one more source of art: picking somebody's
 // image copies it to your account's choices (their image, your choice — it stays even if they remove theirs).
 // Always on screen, so it is clear what the server holds: this game's images, or everything of this kind.
 
-export function UserArtSection({ gameId, kind, layout, label, onChosen }: { gameId: string; kind: ArtKind; layout?: ArtLayout; label?: string; onChosen?: () => void }) {
+export function UserArtSection({ gameId, kind, label, onChosen }: { gameId: string; kind: ArtKind; label?: string; onChosen?: () => void }) {
   const [all, setAll] = useState(false)
   const [res, setRes] = useState<UserArtGallery | null>(null)
   const toast = useStore((s) => s.toast)
@@ -43,7 +43,7 @@ export function UserArtSection({ gameId, kind, layout, label, onChosen }: { game
               data-nav
               title={`${o.mine ? 'Twoja grafika' : `Wgrał(a): ${o.by}`}${all ? ` · ${o.game}` : ''}`}
               onClick={() =>
-                void attempt(api().art.chooseUser(gameId, kind, o.sha, o.ext, layout)).then((p) => {
+                void attempt(api().art.chooseUser(gameId, kind, o.sha, o.ext)).then((p) => {
                   if (p) {
                     toast('Zapisano wybór grafiki')
                     onChosen?.()

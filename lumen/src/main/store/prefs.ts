@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ArtChoice, ArtKind, ArtLayout, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
+import type { ArtChoice, ArtKind, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
 import { cleanSeriesPrefs, type SeriesPref } from '@shared/series'
 import { JsonFile } from './jsonFile'
 
@@ -19,7 +19,7 @@ const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
 }
 
 export function migratePrefs(raw: unknown): Prefs {
@@ -47,7 +47,6 @@ export function migratePrefs(raw: unknown): Prefs {
     gameCategories: isRecord(r.gameCategories) ? sanitizeGameCategories(r.gameCategories) : {},
     favorites: Array.isArray(r.favorites) ? r.favorites.filter((x) => typeof x === 'string') : [],
     art: isRecord(r.art) ? (r.art as Record<string, GameArtPrefs>) : {},
-    artTv: isRecord(r.artTv) ? (r.artTv as Record<string, GameArtPrefs>) : {},
     artDefaults: isRecord(r.artDefaults) ? (r.artDefaults as Prefs['artDefaults']) : {},
     artStamps: isRecord(r.artStamps) ? Object.fromEntries(Object.entries(r.artStamps).filter((e): e is [string, number] => typeof e[1] === 'number')) : {},
     versions: isRecord(r.versions)
@@ -70,7 +69,39 @@ export function migratePrefs(raw: unknown): Prefs {
       .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
       .map((c) => `col/${c.id}`)
   }
-  return normalizeOrder(prefs)
+  return normalizeOrder(mergeTvArt(prefs, (r as { artTv?: unknown }).artTv))
+}
+
+const ART_KIND_KEYS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
+
+/**
+ * One art per game (and library group) for every view — desktop, Deck and TV only show it differently (user
+ * 2026-11-17). Lumen 1.0.9 – 1.0.75 kept TV choices apart (`artTv`); they are moved into `art` here. With both, the
+ * newer choice stays (its stamp; unstamped = older than any sync, so the desktop's stays) — the rule between devices.
+ */
+export function mergeTvArt(p: Prefs, rawTv: unknown): Prefs {
+  const tvChoices = isRecord(rawTv) ? (rawTv as Record<string, GameArtPrefs>) : {}
+  const tvStamps = Object.keys(p.artStamps).filter((k) => k.startsWith('tv|'))
+  if (!Object.keys(tvChoices).length && !tvStamps.length) return p
+  const art = { ...p.art }
+  const artStamps = { ...p.artStamps }
+  for (const [gameId, tv] of Object.entries(tvChoices)) {
+    if (!isRecord(tv)) continue
+    const cur: GameArtPrefs = { ...(art[gameId] ?? {}) }
+    for (const kind of ART_KIND_KEYS) {
+      const choice = (tv as GameArtPrefs)[kind]
+      if (!choice) continue
+      const tvAt = p.artStamps[`tv|${gameId}|${kind}`] ?? 1
+      const deskAt = artStamps[`desktop|${gameId}|${kind}`] ?? (cur[kind] ? 1 : 0)
+      // a stamp without a desktop choice: "automatic" picked there later — also newer
+      if (tvAt <= deskAt) continue
+      cur[kind] = choice
+      artStamps[`desktop|${gameId}|${kind}`] = tvAt
+    }
+    art[gameId] = cur
+  }
+  for (const k of tvStamps) delete artStamps[k]
+  return { ...p, art, artStamps }
 }
 
 /** LaunchBox names from the server: GOG games and shortcuts only, non-empty names */
@@ -313,12 +344,11 @@ export const ops = {
     return { ...p, favorites }
   },
 
-  setArt(p: Prefs, gameId: string, kind: ArtKind, choice: ArtChoice | undefined, layout: ArtLayout = 'desktop'): Prefs {
-    const key = layout === 'tv' ? 'artTv' : 'art'
-    const current = { ...(p[key][gameId] ?? {}) }
+  setArt(p: Prefs, gameId: string, kind: ArtKind, choice: ArtChoice | undefined): Prefs {
+    const current = { ...(p.art[gameId] ?? {}) }
     if (choice) current[kind] = choice
     else delete current[kind]
-    return { ...p, [key]: { ...p[key], [gameId]: current }, artStamps: { ...p.artStamps, [`${layout}|${gameId}|${kind}`]: Date.now() / 1000 } }
+    return { ...p, art: { ...p.art, [gameId]: current }, artStamps: { ...p.artStamps, [`desktop|${gameId}|${kind}`]: Date.now() / 1000 } }
   },
 
   setSgdbMatch(p: Prefs, gameId: string, sgdbGameId: number | undefined, name?: string): Prefs {

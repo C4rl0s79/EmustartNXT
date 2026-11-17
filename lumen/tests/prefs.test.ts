@@ -173,19 +173,38 @@ describe('log redaction', () => {
   })
 })
 
-describe('art choices per layout', () => {
-  it('keeps the TV layout choices apart from the desktop ones (and older prefs without them load)', () => {
-    let p = ops.setArt(defaultPrefs(), 'emu:g1', 'hero', { type: 'launchbox', url: 'https://images.launchbox-app.com/a.jpg' }, 'tv')
-    expect(p.artTv['emu:g1']?.hero?.type).toBe('launchbox')
-    expect(p.art['emu:g1']).toBeUndefined()
-    p = ops.setArt(p, 'emu:g1', 'hero', { type: 'steam' })
-    expect(p.art['emu:g1']?.hero?.type).toBe('steam')
-    expect(p.artTv['emu:g1']?.hero?.type).toBe('launchbox')
-    p = ops.setArt(p, 'emu:g1', 'hero', undefined, 'tv')
-    expect(p.artTv['emu:g1']?.hero).toBeUndefined()
-    expect(p.art['emu:g1']?.hero?.type).toBe('steam')
-    const { artTv: _drop, ...old } = defaultPrefs()
-    expect(migratePrefs(old).artTv).toEqual({})
+describe('jedne grafiki dla pulpitu, Decka i trybu TV', () => {
+  const lb = { type: 'launchbox', url: 'https://images.launchbox-app.com/a.jpg' } as const
+  it('jeden zbiór wyborów — gry i grupy biblioteki', () => {
+    let p = ops.setArt(defaultPrefs(), 'emu:g1', 'hero', lb)
+    expect(p.art['emu:g1']?.hero).toEqual(lb)
+    expect(p.artStamps['desktop|emu:g1|hero']).toBeGreaterThan(0)
+    p = ops.setArt(p, 'emu:g1', 'hero', undefined)
+    expect(p.art['emu:g1']?.hero).toBeUndefined()
+    expect('artTv' in migratePrefs(p)).toBe(false)
+  })
+  it('stare wybory TV przechodzą do wspólnych: bez wyboru pulpitu — wybór TV, przy obu — nowszy', () => {
+    const steam = { type: 'steam' } as const
+    const p = migratePrefs({
+      ...defaultPrefs(),
+      art: { 'emu:a': { grid: steam }, 'emu:b': { grid: steam }, 'emu:c': { grid: steam } },
+      artTv: {
+        'emu:a': { grid: lb, logo: lb },
+        'emu:b': { grid: lb },
+        'emu:c': { grid: lb },
+        'emu:d': { hero: lb },
+        'navgrp:grp:pc': { logo: lb }
+      },
+      artStamps: { 'tv|emu:a|grid': 20, 'desktop|emu:a|grid': 10, 'tv|emu:b|grid': 10, 'desktop|emu:b|grid': 20, 'tv|emu:x|grid': 5, 'tv|navgrp:grp:pc|logo': 7 }
+    })
+    expect(p.art['emu:a']).toEqual({ grid: lb, logo: lb }) // TV nowszy; logo tylko w TV
+    expect(p.art['emu:b']).toEqual({ grid: steam }) // pulpit nowszy
+    expect(p.art['emu:c']).toEqual({ grid: steam }) // oba bez znacznika — zostaje pulpit
+    expect(p.art['emu:d']).toEqual({ hero: lb })
+    expect(p.art['navgrp:grp:pc']).toEqual({ logo: lb })
+    expect('artTv' in p).toBe(false)
+    expect(p.artStamps).toEqual({ 'desktop|emu:a|grid': 20, 'desktop|emu:b|grid': 20, 'desktop|emu:a|logo': 1, 'desktop|emu:d|hero': 1, 'desktop|navgrp:grp:pc|logo': 7 })
+    expect(migratePrefs(p)).toEqual(p)
   })
 })
 
@@ -194,19 +213,24 @@ describe('wybory grafik między urządzeniami', () => {
   it('nowszy wygrywa, starszy z serwera niczego nie zmienia, usunięcie też przechodzi', async () => {
     const { applyServer } = await import('../src/main/art/artSync')
     const u = { type: 'user', sha: 'a'.repeat(64), ext: 'png' } as const
-    const p = base({ artTv: { 'gog:1': { grid: { type: 'none' } } }, artStamps: { 'tv|gog:1|grid': 50 } })
+    const p = base({ art: { 'gog:1': { grid: { type: 'none' } } }, artStamps: { 'desktop|gog:1|grid': 50 } })
     expect(applyServer(p, { 'tv|gog:1|grid': { choice: u, at: 40 } }).changed).toEqual([])
+    // wybór TV gry ze starszego Lumena na innym komputerze liczy się jako wspólny
     const r = applyServer(p, { 'tv|gog:1|grid': { choice: u, at: 60 }, 'desktop|gog:2|logo': { choice: u, at: 5 } })
-    expect(r.prefs.artTv['gog:1'].grid).toEqual(u)
+    expect(r.prefs.art['gog:1'].grid).toEqual(u)
+    expect(r.prefs.artStamps['desktop|gog:1|grid']).toBe(60)
     expect(r.prefs.art['gog:2'].logo).toEqual(u)
     expect(r.changed.sort()).toEqual(['gog:1', 'gog:2'])
-    expect(applyServer(r.prefs, { 'tv|gog:1|grid': { choice: null, at: 70 } }).prefs.artTv['gog:1'].grid).toBeUndefined()
+    expect(applyServer(r.prefs, { 'desktop|gog:1|grid': { choice: null, at: 70 } }).prefs.art['gog:1'].grid).toBeUndefined()
+    // ten sam wybór z obu kluczy serwera: nowszy wygrywa niezależnie od kolejności
+    const both = applyServer(base(), { 'tv|gog:3|grid': { choice: u, at: 80 }, 'desktop|gog:3|grid': { choice: { type: 'none' }, at: 30 } })
+    expect(both.prefs.art['gog:3'].grid).toEqual(u)
   })
   it('ścieżka lokalna nie wychodzi z urządzenia; czeka na wgranie i nie jest nadpisywana', async () => {
     const { applyServer, localItems, pendingFiles } = await import('../src/main/art/artSync')
-    const p = ops.setArt(base(), 'navgrp:grp:pc', 'logo', { type: 'file', file: 'C:/moje/logo.png' }, 'tv')
+    const p = ops.setArt(base(), 'navgrp:grp:pc', 'logo', { type: 'file', file: 'C:/moje/logo.png' })
     expect(localItems(p)).toEqual([])
-    expect(pendingFiles(p)).toEqual([['tv', 'navgrp:grp:pc', 'logo', 'C:/moje/logo.png']])
+    expect(pendingFiles(p)).toEqual([['navgrp:grp:pc', 'logo', 'C:/moje/logo.png']])
     expect(applyServer(p, { 'tv|navgrp:grp:pc|logo': { choice: { type: 'none' }, at: 9e9 } }).changed).toEqual([])
   })
   it('nazwy kolekcji dla panelu serwera: tylko grupy „Kolekcje” widoczne w bibliotece, z ich etykietą', async () => {

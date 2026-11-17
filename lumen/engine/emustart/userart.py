@@ -2,7 +2,10 @@
 
 Pliki: `<dane serwera>/userart/files/<sha256>.<ext>` — adresowane treścią, ta sama grafika od kilku osób to jeden plik.
 Indeks: `<dane serwera>/userart/index.json` — dla każdego konta `uploads` (co wgrało: sha, ext, gra, rodzaj) i `choices`
-(wybór grafiki: klucz `<układ>|<gra>|<rodzaj>` → {choice, at}; nowszy wygrywa, choice null = wybór usunięty).
+(wybór grafiki: klucz `desktop|<gra>|<rodzaj>` → {choice, at}; nowszy wygrywa, choice null = wybór usunięty).
+Jedna grafika na grę i rodzaj — pulpit, Deck i tryb TV to tylko inne widoki (użytkownik 2026-11-17). Klucze `tv|…`
+(Lumen ≤ 1.0.75, klient EmuStart ≤ 0.67.0) są zapisywane jako ten sam wybór; w odpowiedzi wybór idzie też pod `tv|…`,
+bo starsze klienty czytają tylko te klucze (kopia tylko w odpowiedzi, nie w indeksie).
 
 Konto zawsze z tokenu urządzenia (remote._sync_identity), nigdy z treści. Galeria pokazuje wgrane grafiki danej gry
 wszystkim kontom serwera: „skopiowanie” cudzej grafiki to zapisanie jej sha jako własnego wyboru. Plik nie znika, gdy
@@ -283,6 +286,29 @@ def group_names() -> dict:
     return names
 
 
+def _one_key(key: str) -> str:
+    """Klucz wyboru bez widoku: `tv|gra|rodzaj` → `desktop|gra|rodzaj`."""
+    return "desktop|" + key[3:] if key.startswith("tv|") else key
+
+
+def _fold_views(choices: dict) -> bool:
+    """Wybory `tv|…` z indeksu połączone z `desktop|…` (nowszy zostaje). True, gdy coś zmieniono."""
+    old = [k for k in choices if isinstance(k, str) and k.startswith("tv|")]
+    for k in old:
+        e = choices.pop(k)
+        one = _one_key(k)
+        if one not in choices or _at(e) > _at(choices[one]):
+            choices[one] = e
+    return bool(old)
+
+
+def _with_old_keys(choices: dict) -> dict:
+    """Odpowiedź dla klientów: każdy wybór pod `desktop|…` i `tv|…` (starsze klienty czytają tylko jeden z nich)."""
+    out = dict(choices)
+    out.update({"tv|" + k[8:]: v for k, v in choices.items() if k.startswith("desktop|")})
+    return out
+
+
 def sync(account: str, items: list, names=None, device: str = "") -> dict:
     """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
     `names` — wszystkie kolekcje widoczne w bibliotece Lumena na tym urządzeniu; zastępują poprzedni zestaw tego
@@ -294,7 +320,7 @@ def sync(account: str, items: list, names=None, device: str = "") -> dict:
     with _lock:
         d = _load()
         a = _acc(d, account)
-        changed = False
+        changed = _fold_views(a["choices"])
         if names is not None:
             by_dev = a.get("group_names_by_device")
             if not isinstance(by_dev, dict):
@@ -315,11 +341,11 @@ def sync(account: str, items: list, names=None, device: str = "") -> dict:
                 changed = True
         for it in items:
             try:
-                key = str(it["key"])
-                lay, game, kind = key.split("|")
+                lay, game, kind = str(it["key"]).split("|")
                 _check(game, kind)
                 if lay not in LAYOUTS:
                     continue
+                key = _one_key(f"{lay}|{game}|{kind}")
                 at = float(it.get("at") or 0)
                 if at > time.time() + 86400:           # zegar urządzenia z przyszłości nie zablokuje późniejszych zmian
                     at = time.time()
@@ -331,4 +357,4 @@ def sync(account: str, items: list, names=None, device: str = "") -> dict:
                 continue
         if changed:
             _save(d)
-        return {"ok": True, "choices": dict(a["choices"])}
+        return {"ok": True, "choices": _with_old_keys(a["choices"])}

@@ -1,8 +1,9 @@
-import type { ArtChoice, ArtKind, ArtLayout, Prefs } from '@shared/types'
+import type { ArtChoice, ArtKind, Prefs } from '@shared/types'
 import type { NavGroup } from '@shared/libraryNav'
 
 // Art choices and the player's own images across devices (engine/emustart/artsync.py, server: userart.py).
-// Key: <layout>|<game>|<kind>. Newest choice wins; a removed choice travels as null. Local files are uploaded
+// Key: desktop|<game>|<kind> (one art for every view; tv|… keys come only from Lumen ≤ 1.0.75 and count as the same
+// art). Newest choice wins; a removed choice travels as null. Local files are uploaded
 // first and become `user` choices — a path on this computer never leaves it.
 
 export const KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -15,52 +16,51 @@ export interface SyncItem {
 
 export type ServerChoices = Record<string, { choice: ArtChoice | null; at: number }>
 
-const key = (layout: ArtLayout, gameId: string, kind: ArtKind): string => `${layout}|${gameId}|${kind}`
+const key = (gameId: string, kind: ArtKind): string => `desktop|${gameId}|${kind}`
 
 /** every choice of this device. Choices older than the sync have no stamp: at = 1, older than anything synced */
 export function localItems(p: Prefs): SyncItem[] {
   const out: SyncItem[] = []
   const seen = new Set<string>()
-  for (const [layout, map] of [['desktop', p.art], ['tv', p.artTv]] as const)
-    for (const [gameId, a] of Object.entries(map))
-      for (const kind of KINDS) {
-        const c = a[kind]
-        if (!c || c.type === 'file') continue // uploaded first, then sent as a `user` choice
-        const k = key(layout, gameId, kind)
-        seen.add(k)
-        out.push({ key: k, choice: c, at: p.artStamps[k] ?? 1 })
-      }
+  for (const [gameId, a] of Object.entries(p.art))
+    for (const kind of KINDS) {
+      const c = a[kind]
+      if (!c || c.type === 'file') continue // uploaded first, then sent as a `user` choice
+      const k = key(gameId, kind)
+      seen.add(k)
+      out.push({ key: k, choice: c, at: p.artStamps[k] ?? 1 })
+    }
   // stamps without a choice: removed here
   for (const [k, at] of Object.entries(p.artStamps)) if (!seen.has(k) && !isFileChoice(p, k)) out.push({ key: k, choice: null, at })
   return out
 }
 
 function isFileChoice(p: Prefs, k: string): boolean {
-  const [layout, gameId, kind] = k.split('|')
-  return (layout === 'tv' ? p.artTv : p.art)[gameId]?.[kind as ArtKind]?.type === 'file'
+  const [, gameId, kind] = k.split('|')
+  return p.art[gameId]?.[kind as ArtKind]?.type === 'file'
 }
 
 /** the server's newer choices applied to the prefs; `changed` — games whose art must reload */
 export function applyServer(p: Prefs, server: ServerChoices): { prefs: Prefs; changed: string[] } {
   const art = { ...p.art }
-  const artTv = { ...p.artTv }
   const artStamps = { ...p.artStamps }
   const changed = new Set<string>()
-  for (const [k, v] of Object.entries(server)) {
-    const [layout, gameId, kind] = k.split('|') as [ArtLayout, string, ArtKind]
-    if (!gameId || !KINDS.includes(kind) || (layout !== 'desktop' && layout !== 'tv')) continue
-    const map = layout === 'tv' ? artTv : art
-    if (map[gameId]?.[kind]?.type === 'file') continue // waits for its upload; the local pick is newer
-    const local = artStamps[k] ?? (map[gameId]?.[kind] ? 1 : 0)
+  for (const [serverKey, v] of Object.entries(server)) {
+    const [view, gameId, kind] = serverKey.split('|') as [string, string, ArtKind]
+    if (!gameId || !KINDS.includes(kind) || (view !== 'desktop' && view !== 'tv')) continue
+    // a TV choice from an older Lumen is the same art (newer wins)
+    const k = key(gameId, kind)
+    if (art[gameId]?.[kind]?.type === 'file') continue // waits for its upload; the local pick is newer
+    const local = artStamps[k] ?? (art[gameId]?.[kind] ? 1 : 0)
     if (v.at <= local) continue
     artStamps[k] = v.at
-    const cur = { ...(map[gameId] ?? {}) }
+    const cur = { ...(art[gameId] ?? {}) }
     if (v.choice) cur[kind] = v.choice
     else delete cur[kind]
-    map[gameId] = cur
+    art[gameId] = cur
     changed.add(gameId)
   }
-  return changed.size ? { prefs: { ...p, art, artTv, artStamps }, changed: [...changed] } : { prefs: p, changed: [] }
+  return changed.size ? { prefs: { ...p, art, artStamps }, changed: [...changed] } : { prefs: p, changed: [] }
 }
 
 /** the server's default art of groups (panel of the server), only what can be shown */
@@ -114,14 +114,13 @@ export function emuCollections(p: Prefs, sidsOf: (gameId: string) => string[]): 
   })
 }
 
-/** `file` choices waiting for upload: [layout, game, kind, path] */
-export function pendingFiles(p: Prefs): [ArtLayout, string, ArtKind, string][] {
-  const out: [ArtLayout, string, ArtKind, string][] = []
-  for (const [layout, map] of [['desktop', p.art], ['tv', p.artTv]] as const)
-    for (const [gameId, a] of Object.entries(map))
-      for (const kind of KINDS) {
-        const c = a[kind]
-        if (c?.type === 'file') out.push([layout, gameId, kind, c.file])
-      }
+/** `file` choices waiting for upload: [game, kind, path] */
+export function pendingFiles(p: Prefs): [string, ArtKind, string][] {
+  const out: [string, ArtKind, string][] = []
+  for (const [gameId, a] of Object.entries(p.art))
+    for (const kind of KINDS) {
+      const c = a[kind]
+      if (c?.type === 'file') out.push([gameId, kind, c.file])
+    }
   return out
 }

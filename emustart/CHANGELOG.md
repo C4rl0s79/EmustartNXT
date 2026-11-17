@@ -6,6 +6,24 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: jedne grafiki i filtry dla pulpitu i trybu TV (prośba użytkownika 2026-11-17) — **wydane: EmuStart 0.68.0, Lumen 1.0.76**
+
+Zgłoszenie: Deck (jak pulpit) i tryb TV pokazywały inne plakaty gier FBA niż sobie nawzajem. Przyczyna: od Lumena
+1.0.9 tryb TV miał własne wybory grafik (`prefs.artTv`) i własną kolejność źródeł dla gier EmuStart (`tvArt`:
+LaunchBox najpierw, potem serwer), a pulpit i Deck — inną (`emuArt`: SteamGridDB, serwer, LaunchBox). Osobnych danych
+nikt nie ustalał — użytkownik prosił w 1.0.9 o możliwość zmiany grafiki także z trybu TV, a nie o osobne grafiki
+(użytkownik 2026-11-17: „chodziło o możliwość zmiany grafiki z poziomu desktop oraz TV, ale dotyczy to tej samej
+grafiki”; „tv i desktop to tylko inne przedstawienie wyświetlania, prawie wszystko powinno być wspólne”).
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 22a | **Jedne grafiki dla każdego widoku:** jeden zbiór wyborów `art` czytany przez pulpit, Decka i tryb TV (bez `artTv` i bez parametru „układ” — także grafiki grup biblioteki); tryb TV bierze plakat, tło i logo tą samą drogą co pulpit (wybór gracza → kolejność z Ustawienia → Grafiki); okno grafik z trybu TV zmienia te same grafiki. **Stare wybory TV** przechodzą do wspólnych (bez wyboru pulpitu — wybór TV; przy obu — nowszy wg znacznika czasu). **Serwer** (prośba użytkownika: „niepotrzebnie serwer trzyma dwie grafiki na tytuł”): jeden wpis na grę i rodzaj (`desktop|…`); `tv|…` od starszych klientów zapisywane jako ten sam wybór (nowszy wygrywa), stare wpisy `tv|…` łączone przy synchronizacji konta; w odpowiedzi wybór także pod `tv|…` (tylko w odpowiedzi — starsze Lumeny i klienty EmuStart czytają tylko ten klucz). Klient EmuStart (`ownart.py`) wysyła `desktop|…` | zrobione — Lumen: `prefs.ts` (`setArt`, `mergeTvArt`), `art/artSync.ts`, `main/index.ts` (`groupArt` zamiast `tvArt`, handlery bez układu), `api.ts` / `preload`, `Art.tsx`, `ArtPicker.tsx`, `UserArt.tsx`, `GroupArt.tsx`, komponenty TV i Decka; serwer: `userart.py`, `ownart.py` (obie kopie). Testy: EmuStart 896, silnik 948, Lumen 439, typy. Próba na prawdziwych ustawieniach (bez zapisu): 237 gier z wyborami TV — 369 wyborów przechodzi do wspólnych, w 18 zostaje nowszy wybór pulpitu. **Niesprawdzone na żywo** (zbudowany Lumen, serwer z tą wersją) |
+| 22b | **Wspólne filtry i sortowanie grupy** (prośba użytkownika 2026-11-17: „połącz filtry i sortowanie”): jeden zapis filtrów na grupę biblioteki (klucz = id podgrupy, np. `console/emu:snes`, `pc/gog`; poziom grupy w TV = `<grupa>/all`), czytany przez pulpit i tryb TV. Filtr instalacji z paska pulpitu (Wszystkie / Zainstalowane / Niezainstalowane) to pole „pokaż” filtrów TV (dochodzi „tylko niezainstalowane” — w TV widoczne w oknie filtrów); sortowanie z pulpitu (Nazwa / Ostatnio grane / Nowo dodane / Czas gry) to sortowanie filtrów TV (dochodzi „nowo dodane” — w TV widoczne w oknie filtrów); oba widoki sortują tą samą funkcją. Stare zapisy: pierwszy odczyt bierze zapis TV tej grupy, a bez niego — pulpitu; potem tylko wspólny. Nie dotyka: pola „Szukaj” na pulpicie (nie jest zapisywane, jak dotąd), układu listy TV (Lista / Wstęga / Plakaty — wygląd), wyglądu paska i okna filtrów poza nowymi pozycjami | zrobione — `filterId` / `loadFilter` / `apply` (`lumen/src/renderer/src/tv/filters.ts`), `screens/Group.tsx` (pasek pulpitu zapisuje do wspólnego rekordu), `screens/Nav.tsx` (`filterId: sub.id`), `tv/TvGames.tsx` (`oldTvKeys` — dawne klucze TV); testy Lumena 442 (nowe w `tv.test.ts`: klucz, odczyt starych zapisów, „niezainstalowane”, „nowo dodane”), typy. **Niesprawdzone na żywo** (działający Lumen użytkownika — druga kopia otworzyłaby okno wyboru) |
+
+**Czego NIE dotyka.** Logo i zdjęć platform z serwera, domyślnych grafik grup z panelu serwera, wyglądu trybu TV
+(okładka w całości, odbicia, wstęga), układów i motywów, Decka, kolejności źródeł na pulpicie, galerii grafik wgranych
+na serwer.
+
 ### Plan: serie i kolekcje w APK (decyzje użytkownika 2026-11-17) — **wydane: EmuStart 0.67.0, Lumen 1.0.75**
 
 Decyzje: kolekcje = kategorie Lumena przesłane przez serwer (te same na PC i telefonie); tylko APK (klient Windows
@@ -404,6 +422,35 @@ dokumentacji Lumena, wydanie.
 10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
+## [0.68.0] — 2026-11-17
+
+Zakres: serwer (`userart.py`), klient EmuStart (`ownart.py`); te same pliki w kopii silnika Lumena (`lumen/engine/`).
+Lumen 1.0.76: jedne grafiki i jedne filtry dla pulpitu, Decka i trybu TV.
+
+### Poprawione
+- **Jedna grafika gry dla każdego widoku** (zgłoszenie: Deck i pulpit pokazywały inne plakaty gier FBA niż tryb TV).
+  Od Lumena 1.0.9 tryb TV miał osobne wybory grafik i inną kolejność źródeł (LaunchBox najpierw), a serwer trzymał
+  dwa wybory na tytuł (`desktop|…` i `tv|…`). Teraz pulpit, Deck i TV czytają te same wybory i tę samą kolejność
+  źródeł; okno grafik z trybu TV zmienia te same grafiki co na pulpicie (także grafiki grup biblioteki).
+  - **Lumen 1.0.76:** stare wybory TV przechodzą do wspólnych przy pierwszym uruchomieniu (gra z wyborem tylko w TV —
+    ten wybór; z oboma — nowszy). Gry EmuStart bez wyboru gracza wyglądają w TV jak na pulpicie (np. plakat
+    SteamGridDB zamiast pudełka LaunchBox przy „SteamGridDB najpierw”).
+  - **Serwer:** jeden wpis na grę i rodzaj; `tv|…` od starszych klientów zapisywane jako ten sam wybór (nowszy
+    wygrywa), stare wpisy łączone przy synchronizacji konta. W odpowiedzi wybór także pod `tv|…` dla starszych
+    Lumenów i klientów EmuStart (tylko w odpowiedzi, nie w danych serwera).
+  - **Klient EmuStart:** własne grafiki gier synchronizowane jako te same wybory co w Lumenie.
+- **Lumen 1.0.76: wspólne filtry i sortowanie grupy** — filtry ustawione w grupie na pulpicie działają w trybie TV
+  i odwrotnie. Filtr instalacji z paska pulpitu i „Sortuj” zapisują do tych samych filtrów; w oknie filtrów TV dochodzą
+  „tylko niezainstalowane” (EmuStart: „tylko poza cache”) i sortowanie „nowo dodane”. Stare zapisy: najpierw TV,
+  potem pulpit.
+
+**Czego NIE dotyka.** Logo i zdjęć platform, domyślnych grafik grup z panelu serwera, wyglądu trybu TV (okładka
+w całości, odbicia, wstęga, układy, motywy), pola „Szukaj” na pulpicie, galerii grafik na serwerze.
+
+**Sprawdzone:** testy EmuStart 896, silnik 948, Lumen 442, typy Lumena, mypy bez nowych błędów w zmienionych plikach;
+próba przeniesienia wyborów na prawdziwych ustawieniach (237 gier z wyborami TV, 369 przeniesionych, w 18 został
+nowszy wybór pulpitu). **Niesprawdzone przed wydaniem:** zbudowany Lumen na żywo, serwer z tą wersją.
 
 ## [0.67.0] — 2026-11-17
 

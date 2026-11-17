@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { forgetArt, loadArt, readyArt } from "../lib/artCache";
-import type { ArtKind, ArtLayout } from "@shared/types";
+import type { ArtKind } from "@shared/types";
 import { api, useStore } from "../store";
 import { hueOf } from "../lib/format";
 
@@ -15,8 +15,6 @@ interface Props {
   onState?: (ok: boolean) => void;
   /** the loaded image's width / height */
   onRatio?: (ratio: number) => void;
-  /** "tv": the TV layout's own art (its choices; LaunchBox first for EmuStart games) */
-  layout?: ArtLayout;
   /** small copy for lists */
   thumb?: boolean;
   /** with thumb: an animated image as it is (it moves), not its list copy (first frame) */
@@ -82,16 +80,15 @@ export const Art = memo(function Art({
   eager,
   onState,
   onRatio,
-  layout,
   thumb,
   anim,
 }: Props) {
   const rev = useStore((s) => s.artRev[gameId] ?? 0);
-  const wanted = api().art.url(gameId, kind, rev, layout, thumb, anim);
+  const wanted = api().art.url(gameId, kind, rev, thumb, anim);
   // A new version of the same image (the player picked other art): the old one stays on screen until the
   // new one is downloaded and decoded — a large / animated file is not an empty frame for seconds.
   // Another game in this slot switches at once.
-  const slot = `${gameId}|${kind}|${layout ?? ""}`;
+  const slot = `${gameId}|${kind}`;
   const [cur, setCur] = useState({ slot, src: wanted });
   let src = cur.src;
   if (cur.slot !== slot) {

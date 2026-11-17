@@ -506,15 +506,13 @@ export interface Prefs {
   gameCategories: Record<string, string[]>
   favorites: string[]
   art: Record<string, GameArtPrefs>
-  /** when each art choice was made (<layout>|<game>|<kind> → seconds): the newest wins across devices */
+  /**
+   * when each art choice was made (desktop|<game>|<kind> → seconds): the newest wins across devices. The
+   * "desktop|" prefix is only the key format on the server; the art is one for the desktop, the Deck and TV
+   */
   /** default art of library groups, set by the server's administrator (a player's own choice wins) */
   artDefaults: Record<string, { logo?: ArtChoice; hero?: ArtChoice }>
   artStamps: Record<string, number>
-  /**
-   * the TV layout's own art choices (cover / screenshot / logo shown differently than the desktop's
-   * poster / background) — separate from `art`
-   */
-  artTv: Record<string, GameArtPrefs>
   /** game with several versions (emugrp:…) → the version the player chose (emu:<sid>) */
   versions: Record<string, string>
   /** Steam shortcut → platform chosen by the player: 'pc' | 'other' | 'emu:<es>' (ambiguous shortcuts) */
@@ -540,8 +538,6 @@ export interface GameRatings {
   players?: number
 }
 
-/** which layout an art choice belongs to (the TV layout keeps its own) */
-export type ArtLayout = 'desktop' | 'tv'
 
 export type ArtSourcePriority = 'sgdbFirst' | 'steamFirst'
 /** where a game's own art and data come from: Steam, the EmuStart server's GOG folder, EmuStart games (server + LaunchBox) */

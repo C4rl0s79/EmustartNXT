@@ -193,7 +193,7 @@ const FlowItem = memo(function FlowItem({
             gier Steam (pomiar na danych gracza). Animowane — w ruchu, gdy wybór stoi (ustalenie z graczem: animowane cały
             czas, mogą stanąć tylko podczas przewijania); animowana wersja wczytuje się w tle, do tego czasu pierwsza
             klatka (components/Art.tsx: stary obraz zostaje do gotowości nowego), potem z pamięci od razu */}
-        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim={animate} onRatio={(r) => setRatio(game.id, r)} />
+        <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} thumb anim={animate} onRatio={(r) => setRatio(game.id, r)} />
         {/* posters: the game's state as one dot in the corner (ready / downloading / playing) */}
         {tag && <span className={`tv-flow__state tv-flow__state--${tag.kind}`} aria-label={tag.label} />}
       </div>
@@ -202,7 +202,7 @@ const FlowItem = memo(function FlowItem({
           (lib/artCache.ts) i jedna animacja, więc kopia rusza się razem z okładką */}
       {mirror && (
         <div className="tv-flow__mirror" aria-hidden="true">
-          <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim={animate} />
+          <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} thumb anim={animate} />
         </div>
       )}
     </div>
