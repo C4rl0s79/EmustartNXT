@@ -48,7 +48,9 @@ export function applyServer(p: Prefs, server: ServerChoices): { prefs: Prefs; ch
   for (const [serverKey, v] of Object.entries(server)) {
     const [view, gameId, kind] = serverKey.split('|') as [string, string, ArtKind]
     if (!gameId || !KINDS.includes(kind) || (view !== 'desktop' && view !== 'tv')) continue
-    // a TV choice from an older Lumen is the same art (newer wins)
+    // a TV choice from an older Lumen is the same art (newer wins); its empty one meant "no TV art of its own, as
+    // on the desktop" — not a removal of the art
+    if (view === 'tv' && !v.choice) continue
     const k = key(gameId, kind)
     if (art[gameId]?.[kind]?.type === 'file') continue // waits for its upload; the local pick is newer
     const local = artStamps[k] ?? (art[gameId]?.[kind] ? 1 : 0)

@@ -18,13 +18,6 @@ import { letterJump } from './letters'
 import { placedSeriesKeys } from '@shared/series'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
-
-/** ids the TV layout kept this group's filters under until Lumen 1.0.75 (platform, Steam, pin, group item) */
-function oldTvKeys(sys: TvSystem): string[] {
-  const keys = [sys.key, sys.es, sys.sub?.id === 'pc/steam' ? 'steam' : undefined, sys.sub ? `pin:${sys.sub.id}` : undefined]
-  if (!sys.sub && sys.group) keys.push(`grp:${sys.group.id}`)
-  return [...new Set(keys.filter((k): k is string => !!k))]
-}
 import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails, usePrefetchLogos } from './gameParts'
 import { TvGamePage } from './TvGamePage'
 
@@ -60,7 +53,7 @@ export function TvGames({
   const steam = !system.es
   // EmuStart's filters (X), the group's — the same as on the desktop; search (L3) is the filter's first field
   const fid = filterId(system.sub, system.group, system.key)
-  const [filter, setFilterState] = useState<Filter>(() => loadFilter(fid, oldTvKeys(system)))
+  const [filter, setFilterState] = useState<Filter>(() => loadFilter(fid, system.es))
   const setFilter = (f: Filter): void => {
     setFilterState(f)
     saveFilter(fid, f)
@@ -418,7 +411,6 @@ function TvPreview({ game, details: dr, note }: { game: Game; details: DetailsRe
             className="tv-snapart"
             fallback="none"
             eager
-           
             onState={setSnapOk}
             onRatio={setSnapRatio}
           />

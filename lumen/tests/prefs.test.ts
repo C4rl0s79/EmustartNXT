@@ -222,6 +222,8 @@ describe('wybory grafik między urządzeniami', () => {
     expect(r.prefs.art['gog:2'].logo).toEqual(u)
     expect(r.changed.sort()).toEqual(['gog:1', 'gog:2'])
     expect(applyServer(r.prefs, { 'desktop|gog:1|grid': { choice: null, at: 70 } }).prefs.art['gog:1'].grid).toBeUndefined()
+    // pusty wybór TV starszego Lumena („TV bez własnej grafiki”) nie usuwa wspólnej
+    expect(applyServer(r.prefs, { 'tv|gog:1|grid': { choice: null, at: 9e9 } }).changed).toEqual([])
     // ten sam wybór z obu kluczy serwera: nowszy wygrywa niezależnie od kolejności
     const both = applyServer(base(), { 'tv|gog:3|grid': { choice: u, at: 80 }, 'desktop|gog:3|grid': { choice: { type: 'none' }, at: 30 } })
     expect(both.prefs.art['gog:3'].grid).toEqual(u)

@@ -58,9 +58,20 @@ def test_one_choice_per_title_for_desktop_and_tv(data):
     assert r["choices"]["tv|emu:a|grid"] == r["choices"]["desktop|emu:a|grid"]
 
 
+def test_empty_tv_choice_of_older_client_keeps_shared_art(data):
+    """Pusty `tv|…` (Lumen ≤ 1.0.75: „TV bez własnej grafiki”) nie usuwa wspólnego wyboru — ani z indeksu, ani z zapytania."""
+    u = {"type": "launchbox", "url": "https://images.launchbox-app.com/a.jpg"}
+    userart._save({"accounts": {"Ala": {"uploads": [], "choices": {"desktop|g:1|grid": {"choice": u, "at": 100},
+                                                                   "tv|g:1|grid": {"choice": None, "at": 200}}}}})
+    r = userart.sync("Ala", [{"key": "tv|g:1|grid", "choice": None, "at": 300}])
+    assert r["choices"]["desktop|g:1|grid"]["choice"] == u
+    stored = json.loads((paths.DATA / "userart" / "index.json").read_text(encoding="utf-8"))["accounts"]["Ala"]["choices"]
+    assert stored == {"desktop|g:1|grid": {"choice": u, "at": 100}}
+
+
 def test_choices_newest_wins_per_account_and_no_local_paths(data):
     sha = userart.upload("Ala", "gog:1", "grid", PNG)["sha"]
-    key = "tv|gog:1|grid"
+    key = "desktop|gog:1|grid"
     u = {"type": "user", "sha": sha, "ext": "png"}
     assert userart.sync("Ala", [{"key": key, "choice": u, "at": 10}])["choices"][key]["choice"] == u
     r = userart.sync("Ala", [{"key": key, "choice": {"type": "none"}, "at": 5}])    # starszy — bez zmian
@@ -69,7 +80,7 @@ def test_choices_newest_wins_per_account_and_no_local_paths(data):
     assert r["choices"][key] == {"choice": None, "at": 20.0}
     r = userart.sync("Ala", [{"key": "desktop|gog:1|grid", "choice": {"type": "file", "file": "C:/x.png"}, "at": 30},
                              {"key": "zly", "choice": u, "at": 30}, {"key": "tv|../x|grid", "choice": u, "at": 30}])
-    assert set(r["choices"]) == {key, "desktop|gog:1|grid"}         # ścieżka lokalna i błędne klucze odrzucone (jeden wybór, dwa klucze w odpowiedzi)
+    assert set(r["choices"]) == {key, "tv|gog:1|grid"}         # ścieżka lokalna i błędne klucze odrzucone (jeden wybór, dwa klucze w odpowiedzi)
     assert userart.sync("Bob", [])["choices"] == {}                 # inne konto — osobne wybory
 
 

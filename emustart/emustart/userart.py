@@ -291,12 +291,20 @@ def _one_key(key: str) -> str:
     return "desktop|" + key[3:] if key.startswith("tv|") else key
 
 
+def _no_tv_override(key: str, choice) -> bool:
+    """Pusty wybór `tv|…` starszego klienta znaczył „TV bez własnej grafiki, jak pulpit” — nie usunięcie grafiki."""
+    return key.startswith("tv|") and choice is None
+
+
 def _fold_views(choices: dict) -> bool:
-    """Wybory `tv|…` z indeksu połączone z `desktop|…` (nowszy zostaje). True, gdy coś zmieniono."""
+    """Wybory `tv|…` z indeksu połączone z `desktop|…` (nowszy zostaje; pusty `tv|…` po prostu znika). True, gdy coś
+    zmieniono."""
     old = [k for k in choices if isinstance(k, str) and k.startswith("tv|")]
     for k in old:
         e = choices.pop(k)
         one = _one_key(k)
+        if _no_tv_override(k, e.get("choice") if isinstance(e, dict) else None):
+            continue
         if one not in choices or _at(e) > _at(choices[one]):
             choices[one] = e
     return bool(old)
@@ -344,6 +352,8 @@ def sync(account: str, items: list, names=None, device: str = "") -> dict:
                 lay, game, kind = str(it["key"]).split("|")
                 _check(game, kind)
                 if lay not in LAYOUTS:
+                    continue
+                if _no_tv_override(f"{lay}|", it.get("choice")):
                     continue
                 key = _one_key(f"{lay}|{game}|{kind}")
                 at = float(it.get("at") or 0)

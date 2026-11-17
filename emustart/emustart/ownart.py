@@ -169,6 +169,8 @@ def sync(cfg: dict, pid: int) -> int:
         # pulpit i TV to ta sama grafika: starszy serwer może mieć oba klucze — nowszy wygrywa (porównanie niżej)
         if lay not in ("desktop", "tv") or not rest.startswith("emu:") or rest.rpartition("|")[2] not in BACK:
             continue
+        if lay == "tv" and v.get("choice") is None:          # starszy klient: „TV bez własnej grafiki” — nie usunięcie
+            continue
         if float(v.get("at") or 0) <= float((mine.get(rest) or {}).get("at") or 0):
             continue
         try:

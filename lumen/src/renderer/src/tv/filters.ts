@@ -153,6 +153,15 @@ export function filterId(sub: { id: string } | undefined, group: { id: string } 
   return sub?.id ?? (group ? `${group.id}/all` : fallback)
 }
 
+/**
+ * ids the TV layout kept a group's filters under until Lumen 1.0.75: the platform (EmuStart), 'steam', the pin,
+ * the whole group on the carousel — and the subgroup id itself (other groups)
+ */
+export function oldTvKeys(id: string, es?: string): string[] {
+  const keys = [es, id === 'pc/steam' ? 'steam' : undefined, `pin:${id}`, id.endsWith('/all') ? `grp:${id.slice(0, -4)}` : undefined]
+  return keys.filter((k): k is string => !!k)
+}
+
 /** a desktop view's own install filter and order, kept apart until Lumen 1.0.75 */
 const OLD_DESKTOP_SHOW: Record<string, Filter['show']> = { installed: 'local', notInstalled: 'notlocal' }
 const OLD_DESKTOP_SORT: Record<string, Filter['sort']> = { name: 'title', recent: 'last', added: 'added', playtime: 'time' }
@@ -162,24 +171,34 @@ function read(key: string): Partial<Filter> | null {
   return raw === null ? null : (JSON.parse(raw) as Partial<Filter>)
 }
 
+/** the old separate records of a group: the TV's first (its old ids), then the desktop's; null — none */
+function oldFilter(id: string, es?: string): Filter | null {
+  for (const k of oldTvKeys(id, es)) {
+    const tv = read(KEY(k))
+    if (tv) return { ...FILTER_DEFAULT, ...tv }
+  }
+  const desk = read(KEY(`group:nav:${id}`))
+  const rawView = localStorage.getItem(`lumen.group.nav:${id}`)
+  if (!desk && rawView === null) return null
+  const view = JSON.parse(rawView ?? '{}') as { filter?: string; sort?: string }
+  const f: Filter = { ...FILTER_DEFAULT, ...(desk ?? {}) }
+  if (f.show === 'all' && view.filter && OLD_DESKTOP_SHOW[view.filter]) f.show = OLD_DESKTOP_SHOW[view.filter]
+  if (f.sort === 'title' && view.sort && OLD_DESKTOP_SORT[view.sort]) f.sort = OLD_DESKTOP_SORT[view.sort]
+  return f
+}
+
 /**
- * The group's filters. Until Lumen 1.0.75 each view kept its own; with no shared record yet the TV's comes first
- * (`tvKeys`: its old ids), then the desktop's (its window's filters, install filter and order).
+ * The group's filters — one record for the desktop and the TV layout. Until Lumen 1.0.75 each view kept its own;
+ * the first read takes the old TV record, else the desktop's, and saves it as the shared one, so both views (and
+ * later reads) see the same.
  */
-export function loadFilter(id: string, tvKeys: string[] = []): Filter {
+export function loadFilter(id: string, es?: string): Filter {
   try {
     const own = read(KEY(id))
     if (own) return { ...FILTER_DEFAULT, ...own }
-    for (const k of tvKeys) {
-      const tv = read(KEY(k))
-      if (tv) return { ...FILTER_DEFAULT, ...tv }
-    }
-    const desk = read(KEY(`group:nav:${id}`))
-    const view = JSON.parse(localStorage.getItem(`lumen.group.nav:${id}`) ?? '{}') as { filter?: string; sort?: string }
-    const f: Filter = { ...FILTER_DEFAULT, ...(desk ?? {}) }
-    if (f.show === 'all' && view.filter && OLD_DESKTOP_SHOW[view.filter]) f.show = OLD_DESKTOP_SHOW[view.filter]
-    if (f.sort === 'title' && view.sort && OLD_DESKTOP_SORT[view.sort]) f.sort = OLD_DESKTOP_SORT[view.sort]
-    return f
+    const old = oldFilter(id, es)
+    if (old) saveFilter(id, old)
+    return old ?? { ...FILTER_DEFAULT }
   } catch {
     return { ...FILTER_DEFAULT }
   }

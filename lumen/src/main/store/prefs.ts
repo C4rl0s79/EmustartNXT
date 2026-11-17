@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { ArtChoice, ArtKind, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
 import { cleanSeriesPrefs, type SeriesPref } from '@shared/series'
 import { JsonFile } from './jsonFile'
+import { KINDS } from '../art/artSync'
 
 // User library preferences: categories, favourites, artwork choices.
 // Pure functions below are unit-tested; PrefsStore adds persistence.
@@ -72,8 +73,6 @@ export function migratePrefs(raw: unknown): Prefs {
   return normalizeOrder(mergeTvArt(prefs, (r as { artTv?: unknown }).artTv))
 }
 
-const ART_KIND_KEYS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
-
 /**
  * One art per game (and library group) for every view — desktop, Deck and TV only show it differently (user
  * 2026-11-17). Lumen 1.0.9 – 1.0.75 kept TV choices apart (`artTv`); they are moved into `art` here. With both, the
@@ -88,7 +87,7 @@ export function mergeTvArt(p: Prefs, rawTv: unknown): Prefs {
   for (const [gameId, tv] of Object.entries(tvChoices)) {
     if (!isRecord(tv)) continue
     const cur: GameArtPrefs = { ...(art[gameId] ?? {}) }
-    for (const kind of ART_KIND_KEYS) {
+    for (const kind of KINDS) {
       const choice = (tv as GameArtPrefs)[kind]
       if (!choice) continue
       const tvAt = p.artStamps[`tv|${gameId}|${kind}`] ?? 1

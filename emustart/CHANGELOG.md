@@ -448,7 +448,14 @@ Lumen 1.0.76: jedne grafiki i jedne filtry dla pulpitu, Decka i trybu TV.
 **Czego NIE dotyka.** Logo i zdjęć platform, domyślnych grafik grup z panelu serwera, wyglądu trybu TV (okładka
 w całości, odbicia, wstęga, układy, motywy), pola „Szukaj” na pulpicie, galerii grafik na serwerze.
 
-**Sprawdzone:** testy EmuStart 896, silnik 948, Lumen 442, typy Lumena, mypy bez nowych błędów w zmienionych plikach;
+**Code review PR #49 (10 uwag):** poprawione — pusty wybór `tv|…` starszego klienta („TV bez własnej grafiki”)
+nie usuwa wspólnej grafiki (serwer, Lumen, klient EmuStart); pulpit czyta stare filtry TV tej samej grupy, a pierwszy
+odczyt zapisuje wspólny rekord (oba widoki od razu widzą to samo); znacznik filtra instalacji nie jest pokazywany, gdy
+filtr nie działa (grupa bez stanu instalacji); jedna lista rodzajów grafik, porządki w kodzie. Zostawione: filtr
+instalacji z paska i „Pokaż” w oknie filtrów to jedno pole, więc „Zainstalowane” zastępuje np. „tylko ulubione”
+(dotąd dało się je łączyć); plik własnej grafiki odrzuconego wyboru TV zostaje w folderze danych Lumena.
+
+**Sprawdzone:** testy EmuStart 897, silnik 949, Lumen 442, typy Lumena, mypy bez nowych błędów w zmienionych plikach;
 próba przeniesienia wyborów na prawdziwych ustawieniach (237 gier z wyborami TV, 369 przeniesionych, w 18 został
 nowszy wybór pulpitu). **Niesprawdzone przed wydaniem:** zbudowany Lumen na żywo, serwer z tą wersją.
 

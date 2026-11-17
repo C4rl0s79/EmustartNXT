@@ -26,6 +26,8 @@ export interface GroupView {
   key: string
   /** id of the group's filters and order — the same in the TV layout (tv/filters.ts: filterId) */
   filterId: string
+  /** EmuStart platform of the view (its old TV filter record) */
+  es?: string
   title: string
   games: Game[]
   badge?: string
@@ -72,8 +74,8 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
   const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   // the group's filters and order (filter window, install filter, Sortuj) — one record with the TV layout
-  const [more, setMoreState] = useState<GameFilter>(() => loadFilter(view.filterId))
-  useEffect(() => setMoreState(loadFilter(view.filterId)), [view.filterId])
+  const [more, setMoreState] = useState<GameFilter>(() => loadFilter(view.filterId, view.es))
+  useEffect(() => setMoreState(loadFilter(view.filterId, view.es)), [view.filterId, view.es])
   const setMore = (f: GameFilter): void => {
     setMoreState(f)
     saveFilter(view.filterId, f)
@@ -88,7 +90,7 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
   const hasInstallState = all.some((g) => g.source !== 'shortcut')
   // the install filter is shown on the toolbar, not among the active filters; without install state it does nothing
   const installShown = more.show === 'local' || more.show === 'notlocal'
-  const applied: GameFilter = !hasInstallState && installShown ? { ...more, show: 'all' } : more
+  const applied: GameFilter = useMemo(() => (!hasInstallState && installShown ? { ...more, show: 'all' } : more), [more, hasInstallState, installShown])
   const has = {
     recent: all.some((g) => g.lastPlayed),
     added: all.some((g) => g.addedAt),
@@ -96,7 +98,7 @@ export function GroupScreen({ view, active }: { view: GroupView; active: boolean
   }
 
   const noMeta = !all.some((g) => g.emu)
-  const moreParts = activeParts(hasInstallState && installShown ? { ...more, show: 'all' } : more, noMeta)
+  const moreParts = activeParts(installShown ? { ...more, show: 'all' } : more, noMeta)
   const ratings = useRatings(all, more.sort)
   const { games: known, missing } = useFacts(all, filtersOpen || needsFacts(more))
   const games = useMemo(() => {
