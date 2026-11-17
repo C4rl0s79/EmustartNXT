@@ -254,7 +254,8 @@ function blockName(arr: Game[], prefs: SeriesPrefs | undefined): string {
  * Tomb Raider przy „Rise of the Tomb Raider”), w kolejności serii. Gry spoza serii (i serie z jedną grą na tej
  * liście) zostają, gdzie były. Scalanie dwóch posortowanych list — działa dla dziesiątek tysięcy gier.
  */
-export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): Game[] {
+/** bloki serii listy (seria z co najmniej dwiema grami na tej liście) i klucz sortowania, pod którym blok stoi */
+function seriesBlocks(sorted: Game[], prefs: SeriesPrefs | undefined): { blocks: { sk: string; games: Game[] }[]; inBlock: (g: Game) => boolean } {
   const groups = new Map<string, Game[]>()
   const keyByGame = new Map<Game, string>()
   for (const g of sorted) {
@@ -267,9 +268,25 @@ export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): G
   }
   const blocks: { sk: string; games: Game[] }[] = []
   for (const arr of groups.values()) if (arr.length > 1) blocks.push({ sk: sortLike(arr[0], blockName(arr, prefs)), games: arr })
+  const inBlock = (g: Game): boolean => (groups.get(keyByGame.get(g) ?? '')?.length ?? 0) > 1
+  return { blocks, inBlock }
+}
+
+/**
+ * Klucz sortowania, pod którym gra stoi na liście z `arrangeSeries` (ta sama lista po tytule): gra w bloku serii —
+ * klucz nazwy serii, nie własny tytuł („Magicland Dizzy” stoi przy D). Gry spoza bloków nie ma w mapie (własny sortName).
+ * Skok po literach (tv/letters.ts) bierze z niego literę — inaczej zatrzymywał się w środku bloku serii.
+ */
+export function seriesSortKeys(sorted: Game[], prefs: SeriesPrefs | undefined): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const b of seriesBlocks(sorted, prefs).blocks) for (const g of b.games) out.set(g.id, b.sk)
+  return out
+}
+
+export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): Game[] {
+  const { blocks, inBlock } = seriesBlocks(sorted, prefs)
   if (!blocks.length) return sorted
   blocks.sort((a, b) => collator.compare(a.sk, b.sk))
-  const inBlock = (g: Game): boolean => (groups.get(keyByGame.get(g) ?? '')?.length ?? 0) > 1
   const out: Game[] = []
   let b = 0
   for (const g of sorted) {

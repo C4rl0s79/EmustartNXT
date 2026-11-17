@@ -15,6 +15,7 @@ import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter } f
 import { useLook } from './look'
 import { listTop } from './listWindow'
 import { letterJump } from './letters'
+import { seriesSortKeys } from '@shared/series'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
 import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails, usePrefetchLogos } from './gameParts'
@@ -145,7 +146,11 @@ export function TvGames({
     setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
     return true
   }
-  const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir)) : true)
+  // litera gry w bloku serii = litera serii (lista stawia serię pod jej nazwą — shared/series.ts); z pełnej listy grupy,
+  // bo filtr zostawia grę na miejscu bloku, nawet gdy z jej serii nic więcej nie zostało
+  const seriesPrefs = useStore((s) => s.prefs?.series)
+  const seriesKeys = useMemo(() => seriesSortKeys(system.games, seriesPrefs), [system.games, seriesPrefs])
+  const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir, (g) => seriesKeys.get(g.id))) : true)
   const openPage = (): boolean => {
     if (sel) setPageId(sel.id)
     return true
