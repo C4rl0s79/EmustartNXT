@@ -5,10 +5,12 @@ description: "Budowa Lumena: proces główny Electron, preload window.lumen, ren
 tags: [lumen, electron, react, deck, updater, architecture]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T16:11:28.167Z
 sources:
   - id: openwiki-source-0e32751ee2661d39a58dab3e
     resource: repo://lumen/electron-builder.yml
+  - id: openwiki-source-dd19cbf3973f6a821a32df97
+    resource: repo://lumen/src/main/core/jobs.ts
   - id: openwiki-source-5a39473792996e9404198864
     resource: repo://lumen/src/main/core/uiMode.ts
   - id: openwiki-source-ea05cc17602f2ac1fc801500
@@ -27,9 +29,13 @@ sources:
     resource: repo://lumen/src/main/updater.ts
   - id: openwiki-source-1ad07c49b6016e10a33d1af2
     resource: repo://lumen/src/preload/index.ts
+  - id: openwiki-source-dc5952af8e1e43cd550b6c95
+    resource: repo://lumen/src/renderer/src/deck/DeckPanel.tsx
   - id: openwiki-source-7bdeef8798e03468fa7ab86d
     resource: repo://lumen/src/renderer/src/lib/artCache.ts
-generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
+  - id: openwiki-source-de906671f09d6ccb0be869a2
+    resource: repo://lumen/src/shared/deck.ts
+generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
 ---
 
 # Lumen — launcher Electron
@@ -78,8 +84,10 @@ Serie gier (z IGDB przez serwer) idą do okien osobnym kanałem, nie w migawce b
 Identyfikatory: `steam:<appid>`, `shortcut:<appid32>`, `emu:<game_id>` (id z serwera, takie samo na
 każdym urządzeniu) — `lumen/docs/INTEGRATION.md` §3.
 
-Wspólna lista zadań (pobieranie Steam, uruchamianie/pobieranie/emulatory/zapisy EmuStart) jest
-w `src/main/core/jobs.ts`.
+Wspólna lista zadań (pobieranie Steam, uruchamianie/pobieranie/emulatory/zapisy EmuStart, instalacje GOG) jest
+w `src/main/core/jobs.ts`. Pobieranie Steam ma bajty z `appmanifest_<id>.acf`; prędkość i czas do końca liczy
+`RateMeter` z kolejnych odczytów (okno 30 s, zegar monotoniczny, liczniki stojące dłużej niż okno — bez prędkości),
+a `UnifiedLibrary` odświeża zadania co 10 s, gdy trwa pobieranie Steam.
 
 ## Dwa układy jednego interfejsu
 
@@ -95,7 +103,9 @@ układu, F11 — pełny ekran okna, F12 — DevTools (w trybie deweloperskim).
 `DeckWindow` (`src/main/deckWindow.ts`) to opcjonalny interfejs na pulpicie: belka nad tapetą i pod
 oknami aplikacji (`desktopLayer.ts`), bez fokusu, poza Alt+Tab i paskiem zadań, na ekranie głównym.
 Okno istnieje tylko, gdy Deck jest włączony w ustawieniach. Deck dostaje migawkę tylko z gier na tym
-komputerze i 40 ostatnio granych. Autostart z Windows (`--deck`): w wersji zainstalowanej, działającej jako
+komputerze, gier w trakcie pobierania (`onDeck` w `src/shared/deck.ts`) i 40 ostatnio granych, oraz listę zadań
+(kanał `jobsChanged`): kafelek pobieranej gry ma pasek z procentem, prędkością i czasem do końca (`tileProgress`
+w `deck/DeckPanel.tsx`; każdy kafelek śledzi tylko swoje zadanie). Autostart z Windows (`--deck`): w wersji zainstalowanej, działającej jako
 administrator — zadanie Harmonogramu z najwyższymi uprawnieniami i opóźnieniem po zalogowaniu
 (`elevation.ts`; wpis Run nie uruchomiłby programu wymagającego uprawnień), ze źródeł — wpis Run w rejestrze
 użytkownika.

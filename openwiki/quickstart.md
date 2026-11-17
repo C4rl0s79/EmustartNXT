@@ -15,7 +15,7 @@ sources:
     resource: repo://lumen/README.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
+generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
 ---
 
 # Szybki start — mapa wiki EmustartNXT

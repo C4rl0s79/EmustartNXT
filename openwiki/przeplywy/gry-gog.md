@@ -5,7 +5,7 @@ description: "Gry GOG w Lumenie bez GOG Galaxy i bez CDN GOG: archiwum depotów 
 tags: [gog, server, lumen, engine, install, uac, saves]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T16:11:28.167Z
 sources:
   - id: openwiki-source-b06ce04c9f503411e93f380d
     resource: repo://emustart/emustart/gogadmin.py
@@ -19,7 +19,9 @@ sources:
     resource: repo://emustart/emustart/goginstall.py
   - id: openwiki-source-4f8116fc21f8acbfcb3dc65d
     resource: repo://emustart/emustart/gogsaves.py
-generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
+  - id: openwiki-source-8bd3c9138154900e2ed25a05
+    resource: repo://lumen/src/main/gog/provider.ts
+generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
 ---
 
 # Gry GOG z archiwum serwera
@@ -80,6 +82,19 @@ a zgodą. Proces podniesiony przyjmuje tylko znane rodzaje kroków (`reg_set`, `
 `HKLM\Software\…`. Przed wykonaniem `capture` zapamiętuje poprzednie wartości, a deinstalator je przywraca albo
 usuwa dodane (`undo_steps`); deinstalator przywraca też HKCU sprzed instalacji, a pliki poza folderem gry
 (Dokumenty, AppData) usuwa tylko na wybór gracza.
+
+**Naprawa rejestru `GOG.com\Games` (etap 6, EmuStart 0.66.3 / Lumen 1.0.74).** Wpisy `HKLM\Software\GOG.com\Games\<id>`
+(nazwa, ścieżka, plik gry — czytają je PyLinks, łatki i narzędzia GOG) dostaje każda nowa instalacja jako kroki
+„compat”. Gry zainstalowane wcześniej (przed Lumenem 1.0.58) ich nie miały. Lumen jako administrator raz przy
+starcie woła `gog_repair_registry` (`api.py` → `goglib.repair_registry` → `goginstall.repair_registry`, przed
+`gog_admin_pending` / `gog_finish_admin_all` w `lumen/src/main/gog/provider.ts`):
+- gra EmuStart, która nigdy nie miała kroków „compat” rejestru, a jej klucz jest niekompletny (brak nazwy, ścieżki
+  albo pliku gry, albo ścieżka do innego folderu), dostaje te same kroki co nowa instalacja (`registry_repair_acts`;
+  gry z zadaniem w toku — przy następnym starcie);
+- martwy klucz gry spoza EmuStart (nie gra EmuStart, nie jej DLC, nie klucz zapisany jej skryptem) — bez `PATH`
+  albo z `PATH` do folderu, którego nie ma, gdy jego dysk jest podłączony — jest usuwany od razu
+  (`orphan_registry_steps`); usunięte wartości trafiają do `<dane>/gog/admin/removed-keys.json`.
+Bez uprawnień administratora (klient EmuStart) wywołanie nic nie robi.
 
 ## Uruchamianie
 
