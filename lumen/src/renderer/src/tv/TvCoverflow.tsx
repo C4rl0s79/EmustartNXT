@@ -129,7 +129,17 @@ export function TvCoverflow({
     <div className={`tv-flow ${reflection ? 'tv-flow--mirror' : ''} ${flat ? 'tv-flow--flat' : ''}`}>
       <div className="tv-flow__stage">
         {items.map((it, k) => (
-          <FlowItem key={`${games[it.i].id}#${it.copy}`} game={games[it.i]} d={it.d} x={x[k]} box={boxes[k]} animate={animate} flat={flat} onPick={() => onPick(it.i)} />
+          <FlowItem
+            key={`${games[it.i].id}#${it.copy}`}
+            game={games[it.i]}
+            d={it.d}
+            x={x[k]}
+            box={boxes[k]}
+            animate={animate}
+            flat={flat}
+            mirror={reflection}
+            onPick={() => onPick(it.i)}
+          />
         ))}
       </div>
     </div>
@@ -143,6 +153,7 @@ const FlowItem = memo(function FlowItem({
   box,
   animate,
   flat,
+  mirror,
   onPick
 }: {
   game: Game
@@ -151,6 +162,7 @@ const FlowItem = memo(function FlowItem({
   box: [number, number]
   animate: boolean
   flat: boolean
+  mirror: boolean
   onPick: () => void
 }) {
   const a = Math.abs(d)
@@ -185,6 +197,14 @@ const FlowItem = memo(function FlowItem({
         {/* posters: the game's state as one dot in the corner (ready / downloading / playing) */}
         {tag && <span className={`tv-flow__state tv-flow__state--${tag.kind}`} aria-label={tag.label} />}
       </div>
+      {/* odbicie: druga kopia tej samej okładki, odwrócona (tv.css .tv-flow__mirror). -webkit-box-reflect w Chromium
+          zapamiętuje jedną klatkę, więc odbicie animowanej okładki stało. Ten sam adres = ten sam obraz z pamięci
+          (lib/artCache.ts) i jedna animacja, więc kopia rusza się razem z okładką */}
+      {mirror && (
+        <div className="tv-flow__mirror" aria-hidden="true">
+          <Art gameId={game.id} name={game.name} kind="grid" fallback="poster" eager={a <= 2} layout="tv" thumb anim={animate} />
+        </div>
+      )}
     </div>
   )
 })

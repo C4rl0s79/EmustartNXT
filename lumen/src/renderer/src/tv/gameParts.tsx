@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
 import { api, useStore } from '../store'
-import { readyArt } from '../lib/artCache'
+import { loadArt, readyArt } from '../lib/artCache'
 import { Art } from '../components/Art'
 import { useGameJob } from '../components/Jobs'
 import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel } from '../lib/format'
@@ -58,6 +58,40 @@ export function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
       )}
     </>
   )
+}
+
+// logo bez pliku (404): nie pobierać go przy każdym zatrzymaniu wyboru obok (do ponownego uruchomienia okna)
+const noLogo = new Set<string>()
+
+/** gry obok wybranej (`idx`), do `around` z każdej strony; lista idzie w kółko */
+export function neighbourGames(games: Game[], idx: number, around: number): Game[] {
+  const count = games.length
+  const out: Game[] = []
+  for (let step = 1; step <= around; step++)
+    for (const pos of [idx + step, idx - step]) out.push(games[((pos % count) + count) % count])
+  return out
+}
+
+/** logo do pamięci obrazów, chyba że już tam jest albo go nie ma (404); inny błąd (sieć, 5xx) — następnym razem od nowa */
+export function prefetchLogo(url: string): void {
+  if (noLogo.has(url) || readyArt(url)) return
+  loadArt(url).catch((err: unknown) => {
+    if (err instanceof Error && err.message === 'HTTP 404') noLogo.add(url)
+  })
+}
+
+/**
+ * Logo gier obok wybranej, wczytane do pamięci obrazów, gdy wybór stoi (`settled`) — jak okładki na wstędze:
+ * krok w bok pokazuje logo od razu (LogoTitle bierze je z pamięci bez czekania), zamiast pobierać je dopiero
+ * po wyświetleniu gry. Przy przytrzymanym kierunku nic się nie pobiera (wybór nie stoi).
+ */
+export function usePrefetchLogos(games: Game[], idx: number, settled: boolean, around = 2): void {
+  useEffect(() => {
+    if (!settled || games.length < 2) return
+    // wersje grafik czytane tu, bez subskrypcji: zmiana grafiki dowolnej gry nie rysuje od nowa całej listy
+    const artRev = useStore.getState().artRev
+    for (const game of neighbourGames(games, idx, around)) prefetchLogo(api().art.url(game.id, 'logo', artRev[game.id] ?? 0, 'tv', true))
+  }, [settled, idx, games, around])
 }
 
 /**
