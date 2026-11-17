@@ -56,7 +56,7 @@ import { UiModeManager } from './core/uiMode'
 import { DeckWindow, deckScreen } from './deckWindow'
 import { LocalMedia } from './localMedia'
 import { isAnimated } from './art/animated'
-import { deckCandidates, layoutFor, onThisPc, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
+import { deckCandidates, layoutFor, onDeck, moveDeckGroup, setDeckLayout, setDeckPanelHeight, syncGroups, type DeckGroupOp, type DeckLayoutStep, type DeckSettings } from '@shared/deck'
 import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
@@ -331,7 +331,8 @@ let hiddenWatchdog: NodeJS.Timeout | undefined
 const artRev = new Map<string, number>()
 
 /** what the Deck window listens to — the library, prefs, settings and art; never pad state, focus or modes */
-const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.librarySeriesChanged, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged])
+// jobsChanged: pasek pobierania na kafelkach Decka (etap 7) — mała migawka zadań, nie biblioteka
+const DECK_CHANNELS: ReadonlySet<string> = new Set([IPC.librarySnapshot, IPC.librarySeriesChanged, IPC.prefsChanged, IPC.settingsChanged, IPC.artChanged, IPC.jobsChanged])
 
 function send(channel: string, ...args: unknown[]): void {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
@@ -359,7 +360,7 @@ function deckView(s: LibrarySnapshot): LibrarySnapshot {
       .slice(0, 40)
       .map((g) => g.id)
   )
-  return { ...s, games: s.games.filter((g) => onThisPc(g) || recent.has(g.id)) }
+  return { ...s, games: s.games.filter((g) => onDeck(g) || recent.has(g.id)) }
 }
 /** Migawka dla nadawcy zapytania: Deck — deckView, główne okno — całość. */
 function snapshotFor(sender: Electron.WebContents): LibrarySnapshot {

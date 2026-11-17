@@ -5,7 +5,7 @@ import type { LibraryService } from '../library/service'
 import type { EmustartProvider } from '../emustart/provider'
 import type { GogProvider } from '../gog/provider'
 import type { XboxProvider } from '../xbox/provider'
-import { emuJobs, steamJobs } from './jobs'
+import { RateMeter, emuJobs, steamJobs } from './jobs'
 import { timed } from '../perfTime'
 import { gogJobs } from '../gog/provider'
 
@@ -26,6 +26,8 @@ export interface UnifiedOptions {
 export class UnifiedLibrary extends EventEmitter {
   private snap: LibrarySnapshot
   private jobsSnap: JobsSnapshot = { jobs: [], emu: null }
+  /** prędkość i czas do końca pobierań Steam (Steam ich nie podaje — etap 7) */
+  private steamRate = new RateMeter()
   private byId = new Map<string, Game>()
 
   constructor(
@@ -66,7 +68,7 @@ export class UnifiedLibrary extends EventEmitter {
   }
 
   private updateJobs(): void {
-    const jobs = [...steamJobs(this.steam.current.games), ...emuJobs(this.emu.raw, (n) => this.emu.lumenId(n)), ...gogJobs(this.gog.raw)]
+    const jobs = [...steamJobs(this.steam.current.games, this.steamRate), ...emuJobs(this.emu.raw, (n) => this.emu.lumenId(n)), ...gogJobs(this.gog.raw)]
     const next: JobsSnapshot = { jobs, emu: this.emu.runtime() }
     if (JSON.stringify(next) === JSON.stringify(this.jobsSnap)) return
     this.jobsSnap = next

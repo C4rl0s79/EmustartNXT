@@ -24,8 +24,43 @@ const STEAM_PHASE: Partial<Record<Game['installState'], string>> = {
   updatePaused: 'Wstrzymane w Steam'
 }
 
-export function steamJobs(games: Game[]): Job[] {
+/**
+ * Prędkość i czas do końca pobierania z kolejnych odczytów licznika bajtów (etap 7): Steam zapisuje liczniki
+ * w manifeście co kilka sekund i nie podaje prędkości. Okno ostatnich `windowMs`; mniejszy licznik albo inna
+ * wielkość pobierania (nowa aktualizacja) — liczenie od nowa.
+ */
+export class RateMeter {
+  private samples = new Map<string, { t: number; done: number; total: number }[]>()
+
+  constructor(
+    private windowMs = 30_000,
+    private now: () => number = () => Date.now()
+  ) {}
+
+  sample(key: string, done: number, total: number): { speed?: number; eta?: number } {
+    const t = this.now()
+    let arr = this.samples.get(key) ?? []
+    const last = arr[arr.length - 1]
+    if (last && (done < last.done || total !== last.total)) arr = []
+    if (!last || t > last.t) arr.push({ t, done, total })
+    arr = arr.filter((s, i) => i === arr.length - 1 || t - s.t <= this.windowMs)
+    this.samples.set(key, arr)
+    const first = arr[0]
+    const secs = (t - first.t) / 1000
+    if (secs < 2 || done <= first.done) return {}
+    const speed = (done - first.done) / secs
+    return { speed: Math.round(speed), eta: Math.round(Math.max(0, total - done) / speed) }
+  }
+
+  /** zapomina klucze spoza `keys` (pobieranie skończone) */
+  retain(keys: Set<string>): void {
+    for (const k of this.samples.keys()) if (!keys.has(k)) this.samples.delete(k)
+  }
+}
+
+export function steamJobs(games: Game[], meter?: RateMeter): Job[] {
   const out: Job[] = []
+  const live = new Set<string>()
   for (const g of games) {
     if (g.source !== 'steam') continue
     const phase = STEAM_PHASE[g.installState]
@@ -33,6 +68,10 @@ export function steamJobs(games: Game[]): Job[] {
     const p = g.progress
     const total = p ? p.bytesToDownload || p.bytesToStage : 0
     const done = p ? (p.bytesToDownload ? p.bytesDownloaded : p.bytesStaged) : 0
+    const key = `steam:${g.appId}`
+    live.add(key)
+    // wstrzymane w Steam: bez prędkości (liczniki stoją)
+    const rate = meter && total > 0 && g.installState !== 'updatePaused' ? meter.sample(key, done, total) : {}
     out.push({
       id: `steam:${g.appId}`,
       kind: 'steamDownload',
@@ -41,12 +80,13 @@ export function steamJobs(games: Game[]): Job[] {
       title: g.name,
       phase,
       state: g.installState === 'updatePaused' ? 'queued' : 'active',
-      progress: total > 0 ? { done, total } : undefined,
+      progress: total > 0 ? { done, total, ...rate } : undefined,
       message: total > 0 ? undefined : 'Steam nie podaje jeszcze postępu (kolejka pobierania Steam).',
       cancellable: false,
       managedBySteam: true
     })
   }
+  meter?.retain(live)
   return out
 }
 

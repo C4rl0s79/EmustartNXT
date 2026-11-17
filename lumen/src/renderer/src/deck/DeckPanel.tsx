@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import type { Game } from '@shared/types'
+import type { Game, Job } from '@shared/types'
 import { DECK_TILE_GAP, clampCols, type DeckAspect } from '@shared/deck'
 import { api, useStore } from '../store'
+import { formatBytes, formatEta } from '../lib/format'
 
 // The games panel under the dock (PyLinksDeck panel.py / tiles.py): the active tab's games as tiles. The
 // tile size is a number of columns (Ctrl + wheel: one column more / fewer) — the tiles stretch to fill the
@@ -31,6 +32,16 @@ export function tileMetrics(width: number, cols: number, aspect: DeckAspect, lab
   const rowH = tileH + (labels ? LABEL_H : 0) + DECK_TILE_GAP
   const rows = Math.ceil(count / cols)
   return { tileW, tileH, rowH, rows, content: rows ? rows * rowH - DECK_TILE_GAP + 2 * PAD : 2 * PAD + 40 }
+}
+
+/** Pasek pobierania na kafelku (etap 7): procent, prędkość i czas do końca jak w szczegółach gry; bez liczb — etap. */
+export function tileProgress(job: Job | undefined): { pct: number | null; text: string } | null {
+  if (!job || job.kind === 'emuLaunch' || (job.state !== 'active' && job.state !== 'queued')) return null
+  const p = job.progress
+  const pct = p?.total ? Math.min(100, Math.floor((p.done / p.total) * 100)) : null
+  const eta = formatEta(p?.eta)
+  const text = [pct !== null ? `${pct}%` : job.phase, p?.speed ? `${formatBytes(p.speed)}/s` : '', eta ? eta : ''].filter(Boolean).join(' · ')
+  return { pct, text }
 }
 
 export function DeckPanel({
@@ -65,6 +76,8 @@ export function DeckPanel({
   }, [])
   const m = tileMetrics(inner ?? width, cols, aspect, showLabels, games.length)
   const artRev = useStore((s) => s.artRev)
+  const jobs = useStore((s) => s.jobs.jobs)
+  const jobOf = new Map(jobs.filter((j) => j.gameId).map((j) => [j.gameId as string, j]))
   const v = useVirtualizer({ count: m.rows, getScrollElement: () => ref.current, estimateSize: () => m.rowH, overscan: 2 })
   useEffect(() => v.measure(), [m.rowH, v])
 
@@ -98,6 +111,7 @@ export function DeckPanel({
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     {/* list copy, but an animated poster moves (anim=1: its original — shown as chosen) */}
                     <img decoding="async" src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />
+                    <TileProgress job={jobOf.get(g.id)} />
                   </div>
                   {showLabels && <div className="deck-tile-name">{g.name}</div>}
                 </div>
@@ -108,6 +122,19 @@ export function DeckPanel({
       ) : (
         <div className="deck-panel-empty">Brak gier w tej zakładce</div>
       )}
+    </div>
+  )
+}
+
+function TileProgress({ job }: { job: Job | undefined }) {
+  const t = tileProgress(job)
+  if (!t) return null
+  return (
+    <div className="deck-tile-dl" title={job?.phase}>
+      <span>{t.text}</span>
+      <div className="deck-tile-dl__bar">
+        <i style={{ width: `${t.pct ?? 0}%` }} />
+      </div>
     </div>
   )
 }
