@@ -23,7 +23,7 @@ sources:
     resource: repo://README.md
   - id: openwiki-source-ee4b9047b69765a31df0868a
     resource: repo://scripts/publish_wiki.py
-generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
+generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
 ---
 
 # Przegląd systemu: serwer, klienci i Lumen

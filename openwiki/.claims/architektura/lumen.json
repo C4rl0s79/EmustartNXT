@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:661fb4bd9163efd207b633d7f133e2ed469d84156d657ffa901941614baa41a3",
+  "pageVersion": "sha256:cd00fd58cd9724d558cc46bb926784b1ecec2bcba94d588e95a825abf1a62d8e",
   "claims": [
     {
       "id": "claim_306e709c34e14457af6d392686268821",
       "statement": "UnifiedLibrary zestawia gry Steam, EmuStart, GOG z serwera EmuStart i (gdy jest) Xbox w jednej bibliotece i nigdy nie łączy ich po tytule.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L19-L57",
-          "version": "repo-lines-v1:sha256:945a0862b4631ee9fe82d91c0977be34e1a1e3f67b852ef76f2f8e680293fa54:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZGFmMGRjY2VkOTdiMGUzMmM2YjIxYjFkM2E5NjAyNDlkM2NhMzNiMzEwZjZhY2Y0NmFiMzkxMmYyMTQzNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlOWIxMDUxY2RhZjk4MmE1OTNmMTZkYTY4NjMyMGRlY2ZlMWM0OGY1MjcyN2Q0ZTVlYTM1NDIxODNjZDk3OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ODA0YjVhNmJhN2MwMmFhNDc3OTkzNjU1NWI3ZjYxZDY5NmI2NWZiNjk0OGQ0NjM0NDE0MDU5NTA1NjRhNjkifQ"
+          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L19-L60",
+          "version": "repo-lines-v1:sha256:0cf735832f901f1299f841565d7dd9b0e2e47e791c7c6a96ddeac651806e0c2e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjY2NmMDdlODU4ODFlM2VjODBhOGFiNzc0ODQ4YzBmODc4NmViZmVhYzIxY2UxNDllMWI0NWUzODQxYzAxZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlOWIxMDUxY2RhZjk4MmE1OTNmMTZkYTY4NjMyMGRlY2ZlMWM0OGY1MjcyN2Q0ZTVlYTM1NDIxODNjZDk3OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2OGI2MWIzYWIwOGE5MDQ5MDQ2ZTE5ODNkZTNiNmM0YzU0YmZhOTg4M2YwNmE5ZTcxMWUwZDQwNGQwNzMzNGMifQ"
         }
       ]
     },
@@ -21,7 +21,7 @@
           "version": "repo-lines-v1:sha256:29c7b1e8f44bbb748fee0b35ca9521b4f99e7209deb45e93b033e9d62c4ae043:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzYmE4ODM0OTRkNTE3YjEyYmE2OWIzYmQxYjllMjBjOTBiNmZiNmI0NTBjNDFmYzBmMDIzMjE0YzgyM2M0ZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMzkzNWU1ZjA2ODBmMGVjN2U5NzQ4MzRmYzlkN2IxOWM5NzY2ZWYwNjk2NmYzNzkwMThiOGZmNWVkMmNlMmUifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L631-L637",
+          "resource": "repo://lumen/src/main/index.ts#L632-L638",
           "version": "repo-lines-v1:sha256:fde4fa9ae7f33ebda49aa6cea752e24d878a4ae035565675dd60da65470d7633:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWIwNjMwYTdlOTA1ZWMzMTgxYzU4MDhmYTI3MGZhY2M2OGY1YTRiY2Q5YjNhZjFmOTRkOThmOGJkZjc3NTIwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E2MDFmYjMyMjc1M2E5ZTg1ZTBhNTM4YmIzNWE0OGU0MzUzNmQzZjg4YWVlMzZlNDhiYjg3NmI4MDQwOThkNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjk2MGYxNGU2NjkzZThlOTc3MTVjOTA3YzdjNTQxODczMTgxYjk4NjE5ODVhNjBkYjkwMzQwZmE1NDU4YzkwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2M5ZjcwMGVhZWE4MjNiOGYxNjE1N2Q0NzQ1YWY1NThkMjZkYjlmMTRhMWUwYzUxYzZiNWY4YjZlNWNkNWY3MiJ9"
         }
       ]
@@ -55,7 +55,7 @@
       "statement": "Gdy Deck jest włączony i działa, zamknięcie okna głównego chowa Lumena do zasobnika zamiast kończyć program.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L394-L397",
+          "resource": "repo://lumen/src/main/index.ts#L395-L398",
           "version": "repo-lines-v1:sha256:9fa39c898ecdb02e53d1e632c2a2874e8e77a16cd8756f9a035d0d4d1938423b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGFkOTBhMWE0NjM4ZmE4NGMzNjcwNWVhMmI0YTVlNDI1ZmYxMDM0YTQwOTFiNDI2ZjYyMTBkZmJkMmJmOTMwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQ1NTU5YTFlOTdiMDMyNmI4OTQ0ZjI2MGY4OTIwZjMyNTQ2MDg1YmQ3ZjMxYWNiOWVjMjFkMTQ3ZmUwOTY1OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2VkODgyMzgwMDQxZWZlYzIwODgwMzVmODBiYjAyNTlmMThjNmU1NGNlYTQzNjFhODY2ODQyZjA0NGI1MDJlZSJ9"
         }
       ]
@@ -116,11 +116,15 @@
     },
     {
       "id": "claim_dcacc602301c4c5eb5eff56312c0ed60",
-      "statement": "Deck dostaje migawkę biblioteki ograniczoną do gier na tym komputerze i 40 ostatnio granych.",
+      "statement": "Deck dostaje migawkę biblioteki ograniczoną do gier na tym komputerze, gier w trakcie pobierania i 40 ostatnio granych.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L343-L362",
-          "version": "repo-lines-v1:sha256:7a3de9dbb51159cca095aca739241db49a71a94ec22aff7e61b205a0812884c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2MwZTgxY2ZiOTFhMTRmNzY0YTEzYmEzODI3ODFhZTgwMmMzZTM4ZjFkMWI0OWYyMjk5NmVhMTg5ZWExZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5MWU4MjA4N2E2ZTM4OTRjMzc3OWZlYWRkMGZhMWQyZWFmZDM1ZjA4NGQwM2RjZTY3ZjFkN2UwYThmZjI1MzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4MzAzZDRiZjUyOWFlNDlkNDc5ODg1OGVjY2QwYzA5ZjFhZjE3NGRlNWNkNDY1M2UwMzhkMTE2ZmU0MTk3ODcifQ"
+          "resource": "repo://lumen/src/main/index.ts#L346-L364",
+          "version": "repo-lines-v1:sha256:b8e2b92dbd20b7d8948c846ec5783a510eb9707302a4d26011b62496a187b34e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1ZjJiMDYyMjk0ODMxMTQ2ODg1YzVlYzIzNDQ0M2JmZjg5MzZkMzgxYTk5OTU4MmNhZjRmZjM5YWQ2NmQ0YjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzYTRkMDM1ZTU5MDIyNGFhZDhkNWVlMzRlMWQ0MTlmY2NkYTQwNzA1ZGFmZTY3YTE2ZTkwYzEzNGZhZTI0YjcifQ"
+        },
+        {
+          "resource": "repo://lumen/src/shared/deck.ts#L189-L196",
+          "version": "repo-lines-v1:sha256:a5a10ded74fa50650979f62cc3aeb3244332c42fd9d32dcccd39ab71e348936b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjQ0MmE0ZTdmZWEyMTliOTg1YzRkMmFkMmUyNTgwYTNjNTRmOGYwYmExYmM4OTE2MGNlN2MyMGYwZDlhZGQ2YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzYyMDdiMTRkMGJkYmI3Njk0YjQ3ZGNiZDVjMDEyYzZiMjE3YWQ5NWVjNjRiM2RkOTZkOTc3NzIzYmQ2YmE2ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFiNWEwMGUyNGNhNGEzY2QzNDJjYzliYzNkNDY4N2Y3MzkxOTgxMzZjNWNhZThjYTk3MjVkMThlZjI4NGJiOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWZmMDFkNmQyOTZhZGYwMGUzNTAzZTJlYzE1YjY2M2MzMzY4MDU3MTdiMTQ1NTdhNDE5YjFjNjRmZjAxNDBmYSJ9"
         }
       ]
     },
@@ -133,10 +137,38 @@
           "version": "repo-lines-v1:sha256:d5a6397b3b4eaf78b28cfb8091223f03e297255a49812273e7f7de9f719bb7ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlYjM2MTE0OWZjOTQxYTExZTA2YWVjYTRiNmRmMThkOTc4YWI3NmNlNGFhZGMzZWQ1ZjlmNzRkNTdkNjJhMzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YTk5MjhkYzk0MDRkYmQ2OWJjYzdmZjBhY2U5MDQ2YjVlMWM2N2UwMDdjZDNlZTQzODcyNjAxOWIyMjM4OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3ODNlMDBhZWFkZGVlZDQyNDMyODg3NGY3MzFjY2U1OThkMWU2ZGE4NGYxOTBlOTkwOTc4Y2ZmZTgxZGNkM2EifQ"
         }
       ]
+    },
+    {
+      "id": "claim_81da98bbabe84ae790e8ebb2bad6c146",
+      "statement": "Prędkość i czas do końca pobierania Steam liczy RateMeter z kolejnych odczytów liczników manifestu, a UnifiedLibrary odświeża zadania co 10 s, gdy trwa pobieranie Steam.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/core/jobs.ts#L27-L80",
+          "version": "repo-lines-v1:sha256:00f11ab4d989fc712ab68bf5426a202df636128ed5dcb37102ece3885abc7679:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MWEyNDUxZjMyNWEwNTdiZTU4YmNhZDY5MDk1OTU3MjllYjcxNzNlYzVjODVjMzNiYjI1YTFhNjU1NWYxZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiNzRiMmEwM2JmMzQxN2M4NDYyNTU1OTMzMjJjMjYzMGRhN2QwNjllOTJiMzkyYWRhZGFkMTMyM2ZkNjY5YzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhNDg4NTcwNmRmMDA0ZmEzYmI4Zjc1NDNjMjhhZTdkYzM0YTczZDAyMGEyMDQ5NDJmYTNlODdmODY0YzllYWEifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L70-L85",
+          "version": "repo-lines-v1:sha256:b3b9f5091b14ba3e5ca1994c883353615187cbcdee48c5769ec0acd36aa43d57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2NmZiMTgwMjlmNDU0NWRlNDdlZTUyZDRkODhjMmY0Zjc5NDQyNDhkYjg1NTQzM2RmYzI0N2QzNzU4OTJhNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmMTQwOGFlNzc2OTBhMmY3OWM3ZTQ2ZDVlNDIxOTNkZjBhYjY0NjMyNTAxNmZlYTc1OGFhYzZlNmQ1MmE4YzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmODNmNjJiNTJiZjk0NDEyOGZmMzNhYmUyYzg4MTYxZjMwYjhkYmU3ZWI3MDZhYmY4YzViZmEzNzA4MGEwNmQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_42469211949e4d97b2f337a1645f41b0",
+      "statement": "Deck dostaje listę zadań kanałem jobsChanged i na kafelku pobieranej gry rysuje pasek z procentem, prędkością i czasem do końca; każdy kafelek śledzi tylko swoje zadanie.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L334-L336",
+          "version": "repo-lines-v1:sha256:b086cc466d38fc8bca42e7a435b5e289f6cdd2711117b51d9f808c34fc9d3a85:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzdjYmU2OWZkMmI3NzEwYjQwODQ3ZmZjNTkwMTRmZTIyZGZhNjY5ODQwZWQ4Y2M4YWU0NWI2Y2VjZDdmZTVjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTUwOGMxMDVkNmU5NWM2NDAxNjQzNmE3ZGE4OTQwZTM5YzE3M2I3Njg5ZWMzNWM0ZjAwMjY2NjllOTk4NTNjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzViN2ZmODVmM2JkYzRiOTMzYjY2NGJkNzhlZDAyNDU1NjI4M2VkNWNlYWY2OTc3MWE4YjU0ZWZmNjA5ZTNjYyJ9"
+        },
+        {
+          "resource": "repo://lumen/src/renderer/src/deck/DeckPanel.tsx#L35-L60",
+          "version": "repo-lines-v1:sha256:4e970d56ca626c3761f02d3f946c83a89bd77c6c2d8e8b88aba17619e86f1ad5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMGMyNmNhZTFjNGIyMzI3MWQ5ZDhkY2JlYmYwMjkzYmRjZjFhYjM2YTFkYTI5YThkNGE0MDNjOWQwYjFjNzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlhYzBlZTU5NjUxMDY0NjkxNmVjOWY4NGE3YmU3NDhiYTY0ZTAxODM2OTUyMTAwY2U4ODdhYTdlYmE3NjZiOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NWE0ODA1ZDU1NWQ4YTg4OWRiZDU2ZjE0YTQ5MTRiNDYzMjQ4Y2I3YWJjMDU1ZDM0MDQxYWYyMWRkZmE0NzQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T16:11:28.167Z"
   }
 }

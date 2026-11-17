@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:252c15e8d5462268e052070b97096e4c29e872210d633f756cbacdbcd32d9f9f",
+  "pageVersion": "sha256:09dcbaafde16357a8f6ede5940a480383d3387da23c689310a7fc31d0ba71eec",
   "claims": [
     {
       "id": "claim_e72a897129d544878c3b6949de8d1aa4",
@@ -35,7 +35,7 @@
           "version": "repo-lines-v1:sha256:e8c3a30804657dd5a330cd35780d0ddf7afabd4d9ab01670baed1618dbb6446e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMjMwYmYzNGVmMDM0NTIwZDA1OWFhOWY0NDM3MzI2NDdlZGYyYjQ1YjUwNGRjNzJlMjU4YjIyMjYwMTg3OGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNmJmY2VjMGQzMGRkYTgxZTIyZjAwYjA1ODRlYTM3M2EwMzdkMjgzNWU2ZWE0YzkzZjMzNTZlYWY1NjNjMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1Y2NmMzdjNzhlNTFmZTM0ZDI1MjUxNzE0MWE1YjA0ZDk5NWNlMDkzZmNiMGE3ODI3OTUxYmUzZDkzYTRkZmYifQ"
         },
         {
-          "resource": "repo://emustart/emustart/gogadmin.py#L208-L225",
+          "resource": "repo://emustart/emustart/gogadmin.py#L230-L247",
           "version": "repo-lines-v1:sha256:6c9670b07fc1aa5e40ae0a793cfe2ec7c52396d3a4386ca228b53711dd9e0475:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NzQ3YmY3MTcyMmYzMDNiZTkzY2Q3ZWNiNDliM2NhOGEwYWM4OTNkYjljMmMxNTQyMGQ3NDU5N2QzOWI3M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkMDkxMDdkNDQ4YzJmOTcyMWFiMDc1ZjFiZDVjYjg3ODkyOTFiOWU5MWE1YjJiMDg1MjgxMTliNmIwOWU2NjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3ZTVhMWY2YmNhZDBmNWMwOWE4YTI1MzRkOTIxMzQyMTJkMDFhNjY2YWZkZWQ3ODYwYjNjMWYzYjMwNzRkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2OWU3N2Y3MWY0MjZhMzdiMGNjYTUwOGMzM2JmZmMwYjdjMTBmZWZjZWE3YzdjMjFlYzgyMTFhZjcxNjdlMzkifQ"
         }
       ]
@@ -69,10 +69,44 @@
           "version": "repo-lines-v1:sha256:4aab58a490d71e8a93ebe194c76e997ee42c97085aab377cca1d568bbd03e1d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ZjZkZTQ3Y2NhYzk4YjJlZjAyMjIzYzIwNzk1MGNlODIxNDlhNTkyZGYyMTA2ZTk4MzljM2MwZmI4NmVmYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3NWQ0NTg5ZTkxY2M4Y2I5NzQ4ODlkYWIwMWRlMTVkYjE1NzRjYTEwZWVjNzI5MGExMDliZjU4OGM5NGUwMWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0MzBhMDhmOTllNzNjOTUwNjE0MWUyY2IwZGY2Y2RkOTM2NWVkZGE5ZjQwY2IwZWUwY2IzYTdjZGRhYTFhMjIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_38b9dd921b3045f587060f4b17782860",
+      "statement": "Lumen jako administrator raz przy starcie woła gog_repair_registry przed gog_admin_pending, a bez uprawnień administratora naprawa rejestru nic nie robi.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/goginstall.py#L1283-L1300",
+          "version": "repo-lines-v1:sha256:3ffa1bcc4b45e18899c06451e4853577f7c028cb749e0ee80002c7314972a496:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkMDdlMTZmODdkYmQ4NzY0ZDVkNDg4NTRkNzNmNTUyNmI0OTVjMWJiZGJmZWM1MWUzODU0OGM1MjhiMWU5YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MTdiMDg1ZmNmYzFhMzhlMTg5MzIyOTY1N2U1Y2Y4ZGFkN2FlMzQ4MTIzZWM5YTBmMDQ1YTY1NTkwNzRjNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3MTEzYzM4NjBiMGUxMDY3YTMwNmIxMThkOTliMWE0M2Y2ODRmYTFhNWYwOGM2NDQyNTcxYTcyNmYwM2YzMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzM2IyMjM3YTFiMTk4YzcxZDVmZWE4ZDlkYTE4ZTNmNmM2ZDRjODEwMDA3MDQ1Nzc2OGI1MDlkMzczMDE1ZjUifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/gog/provider.ts#L181-L195",
+          "version": "repo-lines-v1:sha256:020c0e0c96a45974ca7bf8fc38b20d37f1bd166215b0b94754c17755c1d979ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2ODI1NzcwMDhmZmI3MjE1MDZiZjM0ZTNmOGFhNThkN2QyZjcwMTZiZTczNTg5NzJhMzg0ZmYyYjFjZTQ4ZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljNzlmNjZkZTFhMGY2NmIwZWU2MzVhNDc5OTI2MTJhMzZkMjA2YWEyMzcxODY0M2E4ZTFjMDQxYzM5YTNkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY5YmI4OWM3OWI0YjFiNzg0ZTRhZDI5YWM3MDQzMDE3MzVhYWRmNDdiOGJlZGEzYTllY2Y2NDUyMzY5Mjc2ODkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f63b3aa411e4433b898d8c836f22b8e6",
+      "statement": "Gra EmuStart, która nigdy nie miała kroków compat rejestru GOG.com\\\\Games i ma niekompletny klucz, dostaje te same kroki co nowa instalacja.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/goginstall.py#L1150-L1200",
+          "version": "repo-lines-v1:sha256:1503f1608e1aa2d540b0b718d89ecd52d2a5625cb3a6a6aa4afa4ae9ba77f076:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMzFjN2JkN2RlYjZkNGZmYzZmOWEyMjcxZTEyYjNiMDg3ZDIzYTU1MmI0ODEzZjYyZmZlMmY5NzM3ZWUwNDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkZGMyMzM2MjJmZDg1MjhkNWFjMjZmMmEyZjRlODdjYTliNjQyNzVlNjdiYTZmNWQ4MjlmMjg3YjRiNGZiODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3MmQ3ZDMwOGM5MDZhNjkyZDU4ZjlkMGJkNzhlYzE2ZTM5ZmI1NTk3ZjI2NmFlMDIwYjVhZDZhODcwNWVlZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzMzAyODlkNjNjMTBjZmEyZjNlOTdmYTU5M2RlZWY2MmRlMzhlYmZiMGJmYmM5MWU4MzJhYzcyZDIwNTE3NDkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c6276032c773489793bb427c3328a807",
+      "statement": "Martwy klucz GOG.com\\\\Games gry spoza EmuStart (bez PATH albo z PATH do nieistniejącego folderu na podłączonym dysku) jest usuwany, a usunięte wartości trafiają do removed-keys.json; klucze gry EmuStart, jej DLC i zapisane jej skryptem nie są ruszane.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/goginstall.py#L1203-L1281",
+          "version": "repo-lines-v1:sha256:67a01cc564133a533496ab3500a7fd2203f7b217af1ebabeeacdabf55d34daa1:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiMTZmZTVlZTNjMGI2ZDNlNDg5ZmYyMDE5Y2VlOWMzZjMxYzEzNzQ1YjQ1ODQ1YTI5ZDM3ZDJiMjlmZDFjOTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1NTVlMmJiMWQ5ODQ4OGFiMWZiMzUwYjAyMzE1ODdlYzA4YTczMjZlNjFmODcxOTRhNzcxMzMyYjMxYjdmOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMWFiOGE4NDEzZTc0ZGY4MGRjNmM1NGUzMzc2ODFiNzVlMWVkZGE3MTliOTM3YzFiZDEzMzlkMzBkNDQ5NzYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T16:11:28.167Z"
   }
 }
