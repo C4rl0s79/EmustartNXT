@@ -16,7 +16,7 @@ import time
 from collections import deque
 from pathlib import Path
 
-from emustart import config, gogadmin, gogfinal, goginstall as gi
+from emustart import config, gogfinal, goginstall as gi
 from emustart.gogarchive import BUILD_ID, PRODUCT_ID, UnsafePath, safe_rel
 
 log = logging.getLogger("emustart.goglib")
@@ -610,16 +610,19 @@ class GogService:
         return {"ok": True, "message": "Instalacja ukończona."}
 
     def admin_pending(self) -> list:
-        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG). Proces
-        z uprawnieniami (Lumen jako administrator) najpierw planuje naprawę `GOG.com\\Games` (etap 6: brakujące wpisy
-        gier sprzed Lumena 1.0.58, martwe klucze innych gier) — bez uprawnień nic nie dochodzi (bez okien UAC)."""
-        if gogadmin.is_elevated():
-            try:
-                gi.plan_registry_repair()
-            except Exception as ex:                 # noqa: BLE001 — naprawa nie blokuje zaległych kroków
-                log.warning("GOG: naprawa rejestru GOG.com\\Games: %s", ex)
+        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG)."""
         return [e["product_id"] for e in gi.entries()
                 if e.get("state") in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED) and (e.get("finalize") or {}).get("admin")]
+
+    def repair_registry(self) -> dict:
+        """Etap 6: wpisy `GOG.com\\Games` gier sprzed Lumena 1.0.58 i martwe klucze innych gier (PyLinks) — Lumen jako
+        administrator raz przy starcie, przed zaległymi krokami. Bez uprawnień nic nie robi."""
+        busy = set(self.running_ids()) | ({self._job["pid"]} if self._job else set())
+        try:
+            return {"ok": True, **gi.repair_registry(busy)}
+        except Exception as ex:                     # noqa: BLE001 — naprawa nie blokuje reszty startu
+            log.warning("GOG: naprawa rejestru GOG.com\\Games: %s", ex)
+            return {"ok": False, "reason": str(ex)}
 
     def finish_admin_all(self, elevate=None) -> dict:
         """Zaległe kroki administratora wszystkich gier jednym oknem UAC (Lumen: przy starcie, gdy gracz jest

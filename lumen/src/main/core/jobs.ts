@@ -31,23 +31,31 @@ const STEAM_PHASE: Partial<Record<Game['installState'], string>> = {
  */
 export class RateMeter {
   private samples = new Map<string, { t: number; done: number; total: number }[]>()
+  /** kiedy licznik ostatnio się zmienił — pobieranie, które stoi dłużej niż okno, nie ma prędkości */
+  private changed = new Map<string, number>()
 
   constructor(
     private windowMs = 30_000,
-    private now: () => number = () => Date.now()
+    // zegar monotoniczny: zegar systemowy może się cofnąć
+    private now: () => number = () => performance.now()
   ) {}
 
   sample(key: string, done: number, total: number): { speed?: number; eta?: number } {
     const t = this.now()
     let arr = this.samples.get(key) ?? []
-    const last = arr[arr.length - 1]
-    if (last && (done < last.done || total !== last.total)) arr = []
+    let last: { t: number; done: number; total: number } | undefined = arr[arr.length - 1]
+    if (last && (done < last.done || total !== last.total)) {
+      arr = [] // nowe pobieranie / inna aktualizacja — od nowa
+      last = undefined
+    }
+    if (!last || done !== last.done) this.changed.set(key, t)
     if (!last || t > last.t) arr.push({ t, done, total })
     arr = arr.filter((s, i) => i === arr.length - 1 || t - s.t <= this.windowMs)
     this.samples.set(key, arr)
     const first = arr[0]
+    if (!first) return {}
     const secs = (t - first.t) / 1000
-    if (secs < 2 || done <= first.done) return {}
+    if (secs < 2 || done <= first.done || t - (this.changed.get(key) ?? t) > this.windowMs) return {}
     const speed = (done - first.done) / secs
     return { speed: Math.round(speed), eta: Math.round(Math.max(0, total - done) / speed) }
   }
@@ -55,6 +63,7 @@ export class RateMeter {
   /** zapomina klucze spoza `keys` (pobieranie skończone) */
   retain(keys: Set<string>): void {
     for (const k of this.samples.keys()) if (!keys.has(k)) this.samples.delete(k)
+    for (const k of this.changed.keys()) if (!keys.has(k)) this.changed.delete(k)
   }
 }
 

@@ -35,6 +35,12 @@ export function tileMetrics(width: number, cols: number, aspect: DeckAspect, lab
 }
 
 /** Pasek pobierania na kafelku (etap 7): procent, prędkość i czas do końca jak w szczegółach gry; bez liczb — etap. */
+/** zadanie pokazywane na kafelku: pierwsze trwające (aktywne przed czekającym), bez uruchomienia gry */
+export function tileJob(jobs: Job[], gameId: string): Job | undefined {
+  const live = jobs.filter((j) => j.gameId === gameId && j.kind !== 'emuLaunch' && (j.state === 'active' || j.state === 'queued'))
+  return live.find((j) => j.state === 'active') ?? live[0]
+}
+
 export function tileProgress(job: Job | undefined): { pct: number | null; text: string } | null {
   if (!job || job.kind === 'emuLaunch' || (job.state !== 'active' && job.state !== 'queued')) return null
   const p = job.progress
@@ -76,8 +82,6 @@ export function DeckPanel({
   }, [])
   const m = tileMetrics(inner ?? width, cols, aspect, showLabels, games.length)
   const artRev = useStore((s) => s.artRev)
-  const jobs = useStore((s) => s.jobs.jobs)
-  const jobOf = new Map(jobs.filter((j) => j.gameId).map((j) => [j.gameId as string, j]))
   const v = useVirtualizer({ count: m.rows, getScrollElement: () => ref.current, estimateSize: () => m.rowH, overscan: 2 })
   useEffect(() => v.measure(), [m.rowH, v])
 
@@ -111,7 +115,7 @@ export function DeckPanel({
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     {/* list copy, but an animated poster moves (anim=1: its original — shown as chosen) */}
                     <img decoding="async" src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />
-                    <TileProgress job={jobOf.get(g.id)} />
+                    <TileProgress gameId={g.id} />
                   </div>
                   {showLabels && <div className="deck-tile-name">{g.name}</div>}
                 </div>
@@ -126,7 +130,9 @@ export function DeckPanel({
   )
 }
 
-function TileProgress({ job }: { job: Job | undefined }) {
+function TileProgress({ gameId }: { gameId: string }) {
+  // tylko ten kafelek śledzi swoje zadanie — zmiana zadań nie rysuje od nowa całej siatki
+  const job = useStore((s) => tileJob(s.jobs.jobs, gameId))
   const t = tileProgress(job)
   if (!t) return null
   return (

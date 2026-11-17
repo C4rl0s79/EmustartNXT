@@ -1141,35 +1141,39 @@ def run_pending_undo(elevate=None) -> bool:
     return not left
 
 
-# ── rejestr GOG.com\Games dla PyLinks i narzędzi GOG (etap 6, 2026-11-17) ───────────────────────────────────────
+# ── rejestr GOG.com\\Games dla PyLinks i narzędzi GOG (etap 6, 2026-11-17) ───────────────────────────────────────
 GOG_GAMES_KEY = "Software\\GOG.com\\Games"
 
 
-def _same_dir(a: str, b: str) -> bool:
-    return os.path.normcase(os.path.normpath(str(a).rstrip("\\/"))) == os.path.normcase(os.path.normpath(str(b).rstrip("\\/")))
+def _has_compat_registry(e: dict) -> bool:
+    """Gra dostała już kiedyś wpisy GOG.com\\Games jako kroki „compat” (zapisane, czekające albo nieudane)."""
+    fin = e.get("finalize") or {}
+    sub = f"{GOG_GAMES_KEY}\\{e.get('product_id')}".lower()
+    acts = [gogadmin._norm(d)["act"] for d in fin.get("admin_done") or []] + list(fin.get("admin") or []) \
+        + list(fin.get("admin_failed") or [])
+    return any(a.get("compat") and str(a.get("subkey") or "").lower() == sub for a in acts)
 
 
 def registry_repair_acts(e: dict) -> list:
-    """Wpisy `HKLM\\Software\\GOG.com\\Games\\<id>` dla gry zainstalowanej przez EmuStart, której ich brakuje albo
-    wskazują inny folder — np. instalacja sprzed zapisu tych wpisów (Lumen < 1.0.58) albo stary klucz po instalatorze
-    GOG. PyLinks bierze z nich nazwę (bez niej: numer gry), ścieżkę i plik gry. Te same kroki „compat” co przy nowej
-    instalacji; wartość, którą zapisuje skrypt gry, ma pierwszeństwo. Kompletne wpisy — []."""
+    """Wpisy `HKLM\\Software\\GOG.com\\Games\\<id>` dla gry zainstalowanej przez EmuStart przed zapisem tych wpisów
+    (Lumen < 1.0.58) — także gdy klucz został po instalatorze GOG bez ścieżki. PyLinks bierze z nich nazwę (bez niej:
+    numer gry), ścieżkę i plik gry. Te same kroki „compat” co przy nowej instalacji; wartości skryptu gry mają
+    pierwszeństwo. Gra, która już miała te kroki, nie jest ruszana (bez nadpisywania przy każdym starcie, bez walki
+    z innym instalatorem). Kompletne wpisy — []."""
     fin = e.get("finalize") or {}
     launch = e.get("launch") or {}
-    if e.get("state") != ST_INSTALLED or not launch.get("exe") or not e.get("install_dir"):
+    if e.get("state") != ST_INSTALLED or not launch.get("exe") or not e.get("install_dir") or _has_compat_registry(e):
         return []
     pid, root = str(e["product_id"]), Path(e["install_dir"])
     sub = f"{GOG_GAMES_KEY}\\{pid}"
-    done = [gogadmin._norm(d)["act"] for d in fin.get("admin_done") or []]
-    # wartości skryptu gry oraz kroki już czekające / nieudane — nie dokładane drugi raz
-    owned = [a for a in done if not a.get("compat")] + list(fin.get("admin") or []) + list(fin.get("admin_failed") or [])
+    owned = [gogadmin._norm(d)["act"] for d in fin.get("admin_done") or []] + list(fin.get("admin") or [])
     script_path = any(str(a.get("subkey") or "").lower() == sub.lower() and str(a.get("name") or "").lower() == "path"
-                      and not a.get("compat") for a in owned)
+                      for a in owned)
     for view in gogadmin.views():
         got = {n.lower(): v for n, _t, v in gogadmin.REG.values(view, sub)}
         if not all(got.get(n) for n in ("gamename", "path", "exe")):
             break
-        if not script_path and not _same_dir(str(got["path"]), str(root)):
+        if not script_path and not gogfinal.same_path(Path(str(got["path"])), root):
             break
     else:
         return []
@@ -1182,10 +1186,24 @@ def _dead_dir(p: str) -> bool:
     return bool(q.anchor) and Path(q.anchor).exists() and not q.is_dir()
 
 
+def _known_registry_ids(es: list) -> set:
+    """Klucze GOG.com\\Games należące do gier EmuStart: gra, jej DLC i każdy klucz, który zapisał jej skrypt."""
+    out = set()
+    for e in es:
+        out.add(str(e.get("product_id")))
+        out.update(str(d) for d in e.get("dlcs") or [])
+        fin = e.get("finalize") or {}
+        for a in [gogadmin._norm(d)["act"] for d in fin.get("admin_done") or []] + list(fin.get("admin") or []):
+            sub = str(a.get("subkey") or "")
+            if sub.lower().startswith(GOG_GAMES_KEY.lower() + "\\"):
+                out.add(sub[len(GOG_GAMES_KEY) + 1:].split("\\")[0])
+    return out
+
+
 def orphan_registry_steps(known: set) -> tuple:
     """Martwe klucze `GOG.com\\Games\\<id>` gier spoza EmuStart (np. po instalatorze GOG, gra usunięta): bez `PATH`
     albo z `PATH` do folderu, którego nie ma. PyLinks pokazywał je jako gry bez pliku do uruchomienia. → (kroki
-    reg_del dla każdej wartości w każdym widoku — pusty klucz znika, kopia usuwanych wartości)."""
+    reg_del dla każdej wartości w każdym widoku — pusty klucz znika, kopia usuwanych wartości w tej samej kolejności)."""
     steps, backup = [], []
     for view in gogadmin.views():
         for pid in gogadmin.REG.subkeys(view, GOG_GAMES_KEY):
@@ -1206,35 +1224,40 @@ def _removed_keys_path() -> Path:
     return gog_dir() / "admin" / "removed-keys.json"
 
 
-def plan_registry_repair() -> dict:
-    """Przy starcie Lumena (proces z uprawnieniami): brakujące wpisy gier EmuStart → zaległe kroki administratora,
-    martwe klucze innych gier → kroki do wykonania z cofaniem odinstalowanych (kopia wartości w removed-keys.json).
-    Wykonuje je finish_admin_all. → {"games": [id…], "orphans": [klucz…]}."""
+def repair_registry(busy: set) -> dict:
+    """Lumen jako administrator, raz przy starcie (przed zaległymi krokami): brakujące wpisy gier EmuStart →
+    zaległe kroki administratora (wykona je finish_admin_all); martwe klucze innych gier — usuwane od razu w tym
+    procesie, kopia usuniętych wartości w removed-keys.json. Bez uprawnień nic nie robi (bez okien UAC).
+    `busy` — gry z zadaniem w toku (ich wpisu nie zapisujemy pod zadaniem). → {"games": [id…], "orphans": [id…]}"""
+    if not gogadmin.is_elevated():
+        return {"games": [], "orphans": []}
     games = []
     all_entries = entries()
     for e in all_entries:
+        if str(e.get("product_id")) in busy:
+            continue
         acts = registry_repair_acts(e)
         if acts:
             e["finalize"]["admin"] = (e["finalize"].get("admin") or []) + acts
             save_entry(e)
             games.append(e["product_id"])
-    steps, backup = orphan_registry_steps({str(e.get("product_id")) for e in all_entries})
-    queued = {(s.get("kind"), s.get("view"), s.get("subkey"), s.get("name")) for s in pending_undo()}
-    steps = [s for s in steps if (s["kind"], s["view"], s["subkey"], s["name"]) not in queued]
-    if steps:
+    steps, backup = orphan_registry_steps(_known_registry_ids(all_entries))
+    res = gogadmin.run_here(steps) if steps else []
+    removed = [b for b, ok in zip(backup, res) if ok]
+    if removed:
         p = _removed_keys_path()
         try:
             old = json.loads(p.read_text(encoding="utf-8")).get("values") or []
         except (OSError, ValueError):
             old = []
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps({"values": old + [{**b, "removed": time.strftime("%Y-%m-%d %H:%M:%S")} for b in backup]},
-                                ensure_ascii=False, indent=1), encoding="utf-8")
-        add_pending_undo(steps)
-    orphans = sorted({s["subkey"] for s in steps})
-    if games or orphans:
-        log.info("GOG: rejestr GOG.com\\Games — do uzupełnienia %d gier, martwe klucze %d (%s)",
-                 len(games), len(orphans), ", ".join(o.rsplit("\\", 1)[-1] for o in orphans))
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        p.write_text(json.dumps({"values": old + [{**b, "removed": stamp} for b in removed]}, ensure_ascii=False, indent=1),
+                     encoding="utf-8")
+    orphans = sorted({b["subkey"].rsplit("\\", 1)[-1] for b in removed})
+    if games or steps:
+        log.info("GOG: rejestr GOG.com\\Games — uzupełnione wpisy %d gier, usunięte martwe klucze: %s%s", len(games),
+                 ", ".join(orphans) or "—", f" (nieudane: {len(steps) - len(removed)})" if len(removed) < len(steps) else "")
     return {"games": games, "orphans": orphans}
 
 

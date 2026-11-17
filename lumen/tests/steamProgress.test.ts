@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Game, Job } from '@shared/types'
 import { RateMeter, steamJobs } from '../src/main/core/jobs'
 import { downloadingNow, onDeck } from '@shared/deck'
-import { tileProgress } from '../src/renderer/src/deck/DeckPanel'
+import { tileJob, tileProgress } from '../src/renderer/src/deck/DeckPanel'
 
 // Etap 7 (2026-11-17): postęp pobierania Steam — prędkość i czas do końca z liczników manifestu; pasek na kafelku Decka.
 
@@ -89,5 +89,34 @@ describe('Deck: pobierane gry i pasek na kafelku', () => {
     expect(tileProgress({ ...job, kind: 'emuLaunch' })).toBeNull()
     expect(tileProgress({ ...job, state: 'done' })).toBeNull()
     expect(tileProgress(undefined)).toBeNull()
+  })
+
+  it('kafelek bierze trwające zadanie gry — aktywne przed czekającym, bez zakończonych i uruchomienia', () => {
+    const j = (kind: Job['kind'], state: Job['state'], phase: string): Job => ({ kind, state, phase, gameId: 'g' }) as Job
+    const jobs = [j('gogInstall', 'done', 'Koniec'), j('gogInstall', 'queued', 'Dodatki'), j('gogInstall', 'active', 'Instalacja'), j('emuLaunch', 'active', 'Gra')]
+    expect(tileJob(jobs, 'g')?.phase).toBe('Instalacja')
+    expect(tileJob(jobs.slice(0, 2), 'g')?.phase).toBe('Dodatki')
+    expect(tileJob(jobs, 'inna')).toBeUndefined()
+  })
+})
+
+describe('RateMeter — przypadki z code review', () => {
+  it('reset i ten sam moment (albo cofnięty zegar) nie wywraca licznika', () => {
+    let t = 1000
+    const m = new RateMeter(30_000, () => t)
+    m.sample('a', 50, 100)
+    expect(m.sample('a', 10, 100)).toEqual({}) // mniejszy licznik w tej samej chwili
+    t = 500
+    expect(m.sample('a', 5, 200)).toEqual({}) // zegar się cofnął
+  })
+
+  it('liczniki stoją dłużej niż okno — bez prędkości', () => {
+    let t = 0
+    const m = new RateMeter(10_000, () => t)
+    m.sample('a', 0, 1000)
+    t = 5000
+    expect(m.sample('a', 500, 1000).speed).toBe(100)
+    t = 16_000
+    expect(m.sample('a', 500, 1000)).toEqual({})
   })
 })
