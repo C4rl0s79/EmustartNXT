@@ -25,6 +25,13 @@ class FakeRegistry:
     def delete(self, view, subkey, name):
         self.data.pop((view, subkey, name), None)
 
+    def subkeys(self, view, subkey):
+        pre = subkey.lower() + "\\"
+        return sorted({k[len(pre):].split("\\")[0] for (v, k, _n) in self.data if v == view and k.lower().startswith(pre)})
+
+    def values(self, view, subkey):
+        return [(n, t, val) for (v, k, n), (t, val) in self.data.items() if v == view and k.lower() == subkey.lower()]
+
 
 def run_main(p: Path) -> int:
     """Proces podniesiony z poprawnym skrótem pliku kroków (jak z gogadmin.run)."""

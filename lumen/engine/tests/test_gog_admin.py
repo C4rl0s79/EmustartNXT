@@ -161,6 +161,88 @@ def test_elevated_lumen_applies_steps_at_install_without_uac(env, fake_reg, monk
 
 
 
+# ── etap 6 (2026-11-17): rejestr GOG.com\Games gier sprzed Lumena 1.0.58 i martwe klucze innych gier (PyLinks) ──
+
+def _old_install(env):
+    """Gra zainstalowana przed zapisem wpisów GOG.com Games (Lumen < 1.0.58): bez kroków „compat”."""
+    e, target, _ = _install(env)
+    e["finalize"]["admin"] = []
+    gi.save_entry(e)
+    return e, target
+
+
+def test_elevated_start_fills_missing_registry_of_old_install(env, fake_reg, monkeypatch):
+    _e, target = _old_install(env)
+    svc = goglib.GogService(lambda: {})
+    assert svc.repair_registry() == {"ok": True, "games": [], "orphans": []}   # bez uprawnień: nic
+    assert svc.admin_pending() == [] and fake_reg["reg"].data == {}
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: True)
+    assert svc.repair_registry()["games"] == [PID]
+    assert svc.admin_pending() == [PID]
+    assert svc.finish_admin_all()["ok"]
+    for view in ("64", "32"):
+        assert fake_reg["reg"].data[(view, KEY, "PATH")] == (gogadmin.REG_SZ, str(target))
+        assert fake_reg["reg"].data[(view, KEY, "GAMENAME")] == (gogadmin.REG_SZ, "Testowa Gra")
+    assert svc.repair_registry()["games"] == [] and svc.admin_pending() == []
+    # wartość zniknęła (inny program, ręczna zmiana) — gra, która miała już kroki „compat”, nie dostaje ich drugi raz
+    fake_reg["reg"].delete("32", KEY, "EXE")
+    assert svc.repair_registry()["games"] == [] and svc.admin_pending() == []
+    gi.uninstall(PID, remove_hkcu=lambda a: None)
+    assert fake_reg["reg"].data == {}
+
+
+def test_repair_skips_game_with_running_job(env, fake_reg, monkeypatch):
+    _old_install(env)
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: True)
+    assert gi.repair_registry({PID}) == {"games": [], "orphans": []}
+    assert gi.repair_registry(set())["games"] == [PID]
+
+
+def test_stale_installer_key_is_rewritten_and_removed_after_uninstall(env, fake_reg, monkeypatch, tmp_path):
+    """Front Mission 3: klucz po instalatorze GOG (nazwa bez ścieżki i pliku), grę zainstalował EmuStart."""
+    for view in ("64", "32"):
+        fake_reg["reg"].set(view, KEY, "gameName", gogadmin.REG_SZ, "Stara nazwa")
+        fake_reg["reg"].set(view, KEY, "exeFile", gogadmin.REG_SZ, "old.exe")
+    _e, target = _old_install(env)
+    monkeypatch.setattr(gogadmin, "is_elevated", lambda: True)
+    svc = goglib.GogService(lambda: {})
+    assert svc.repair_registry()["games"] == [PID]
+    assert svc.admin_pending() == [PID] and svc.finish_admin_all()["ok"]
+    assert fake_reg["reg"].get("32", KEY, "PATH") == (gogadmin.REG_SZ, str(target))
+    gi.uninstall(PID, remove_hkcu=lambda a: None)
+    # cofnięcie przywraca wartości sprzed zapisu — klucz bez ścieżki zostaje martwy…
+    assert fake_reg["reg"].get("32", KEY, "PATH") is None and fake_reg["reg"].get("32", KEY, "exeFile")
+    # …i znika przy następnym starcie (od razu, w procesie z uprawnieniami), z kopią usuniętych wartości
+    assert svc.repair_registry()["orphans"] == ["1001"]
+    assert not any(k == KEY for (_v, k, _n) in fake_reg["reg"].data)
+    saved = json.loads((gi.gog_dir() / "admin" / "removed-keys.json").read_text(encoding="utf-8"))["values"]
+    assert {(b["view"], b["name"]) for b in saved} >= {("32", "exeFile"), ("64", "exeFile")}
+
+
+def test_orphan_sweep_keeps_existing_folders_and_offline_drives(env, fake_reg, monkeypatch, tmp_path):
+    live = tmp_path / "Gra na dysku"
+    live.mkdir()
+    keys = {"2001": None, "2002": str(live), "2003": str(tmp_path / "usunięta"), "2004": "Q:\\Gry\\Na odłączonym"}
+    for pid, path in keys.items():
+        sub = f"{gi.GOG_GAMES_KEY}\\{pid}"
+        fake_reg["reg"].set("32", sub, "gameName", gogadmin.REG_SZ, f"Gra {pid}")
+        if path:
+            fake_reg["reg"].set("32", sub, "path", gogadmin.REG_SZ, path)
+    steps, backup = gi.orphan_registry_steps(set())
+    gone = {s["subkey"].rsplit("\\", 1)[-1] for s in steps}
+    expect = {"2001", "2003"} | ({"2004"} if Path("Q:\\").exists() else set())
+    assert gone == expect and len(backup) == len(steps)
+    assert gi.orphan_registry_steps({"2001", "2003", "2004"})[0] == []     # gry EmuStart nie są ruszane
+
+
+def test_dlc_and_script_keys_belong_to_emustart_game():
+    """Klucz DLC (skrypt DLC zapisuje GOG.com\\Games\\<dlc> bez PATH) i klucz zapisany skryptem gry nie są martwe."""
+    e = {"product_id": "1001", "dlcs": ["3001"], "finalize": {
+        "admin_done": [{"act": {"root": "HKLM", "subkey": f"{gi.GOG_GAMES_KEY}\\3002", "name": "x"}, "prev": None}],
+        "admin": [{"root": "HKLM", "subkey": f"{gi.GOG_GAMES_KEY}\\3003\\sub", "name": "y"}]}}
+    assert gi._known_registry_ids([e]) == {"1001", "3001", "3002", "3003"}
+
+
 # ── etap 3: installSDB (bazy poprawek zgodności Windows) ──
 
 GUID = "{08a9a822-ff12-493b-b219-f95350f7d937}"

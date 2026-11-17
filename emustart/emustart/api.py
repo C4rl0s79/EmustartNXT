@@ -863,6 +863,10 @@ class Api:
         except ValueError as ex:
             return {"ok": False, "reason": str(ex)}
 
+    def gog_repair_registry(self) -> dict:
+        """Etap 6: naprawa wpisów HKLM GOG.com\\Games (Lumen jako administrator, raz przy starcie)."""
+        return self._gog.repair_registry()
+
     def gog_admin_pending(self) -> dict:
         """Gry z zaległymi krokami administratora (Lumen: okno UAC przy starcie, gdy lista nie jest pusta)."""
         from emustart import goginstall as gi

@@ -243,3 +243,35 @@ body,
 .deck-resize:active::after {
   opacity: 1;
 }
+
+/* a download on the tile (etap 7): percent, speed and time left over a dark band, a thin bar under it */
+.deck-tile-dl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 5px 4px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 45%);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #fff;
+}
+.deck-tile-dl span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-tile-dl__bar {
+  height: 3px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+.deck-tile-dl__bar i {
+  display: block;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+}

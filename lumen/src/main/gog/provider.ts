@@ -182,6 +182,9 @@ export class GogProvider extends EventEmitter {
    *  kroki gier odinstalowanych — od razu przy starcie, bez okna UAC (silnik ma uprawnienia). */
   private async finishPendingAdmin(): Promise<void> {
     try {
+      // etap 6: wpisy GOG.com\Games gier sprzed 1.0.58 i martwe klucze innych gier (PyLinks) — raz, przed zaległymi krokami
+      const rr = await this.engine.call<{ ok: boolean; games?: string[]; orphans?: string[]; reason?: string }>('gog_repair_registry', [], 60_000)
+      if (rr.games?.length || rr.orphans?.length) log.info('gog', `rejestr GOG.com\\Games: do uzupełnienia ${rr.games?.length ?? 0} gier, usunięte martwe klucze: ${rr.orphans?.join(', ') || '—'}`)
       const p = await this.engine.call<{ games?: string[]; undo?: number }>('gog_admin_pending', [])
       if (!p.games?.length && !p.undo) return
       const r = await this.engine.call<{ ok: boolean; message?: string; reason?: string }>('gog_finish_admin_all', [], 10 * 60_000)

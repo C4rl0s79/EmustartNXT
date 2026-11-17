@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DECK_DEFAULT_COLS, DECK_HIDE_MS, activeGroup, clampCols, deckCandidates, onThisPc, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
+import { DECK_DEFAULT_COLS, DECK_HIDE_MS, activeGroup, clampCols, deckCandidates, onDeck, syncGroups, visibleGroups, type DeckGeometry } from '@shared/deck'
 import { api, useStore } from '../store'
 import { findSub, useNav } from '../lib/nav'
 import { subItem } from '../tv/data'
@@ -55,12 +55,14 @@ export function DeckApp() {
     void a.prefs.get().then(s.setPrefs)
     void a.settings.get().then(s.setSettings)
     void a.deck.getGeometry().then((g) => g && setGeo(g))
+    void a.jobs.get().then(s.setJobs) // pasek pobierania na kafelkach (etap 7)
     const offs = [
       a.library.onSnapshot(s.setSnapshot),
       a.library.onSeries(s.patchIgdb),
       a.prefs.onChange(s.setPrefs),
       a.settings.onChange(s.setSettings),
       a.art.onChanged(s.bumpArt),
+      a.jobs.onChange(s.setJobs),
       a.deck.onGeometry(setGeo),
       a.deck.onCollapse(() => closeRef.current())
     ]
@@ -104,7 +106,7 @@ export function DeckApp() {
 
   // the active tab's games and their tiles; the panel asks the main process for the height they need
   const group = active
-  const games = useMemo(() => (group ? (findSub(nav, group.id)?.sub.games ?? []).filter(onThisPc) : []), [nav, group])
+  const games = useMemo(() => (group ? (findSub(nav, group.id)?.sub.games ?? []).filter(onDeck) : []), [nav, group])
   const cols = group ? (localCols?.id === group.id ? localCols.cols : group.cols) : DECK_DEFAULT_COLS
   // the local columns give way only to the stored value that matches them (an older save arriving later
   // must not undo a newer notch) — or to another tab

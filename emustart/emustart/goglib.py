@@ -614,6 +614,16 @@ class GogService:
         return [e["product_id"] for e in gi.entries()
                 if e.get("state") in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED) and (e.get("finalize") or {}).get("admin")]
 
+    def repair_registry(self) -> dict:
+        """Etap 6: wpisy `GOG.com\\Games` gier sprzed Lumena 1.0.58 i martwe klucze innych gier (PyLinks) — Lumen jako
+        administrator raz przy starcie, przed zaległymi krokami. Bez uprawnień nic nie robi."""
+        busy = set(self.running_ids()) | ({self._job["pid"]} if self._job else set())
+        try:
+            return {"ok": True, **gi.repair_registry(busy)}
+        except Exception as ex:                     # noqa: BLE001 — naprawa nie blokuje reszty startu
+            log.warning("GOG: naprawa rejestru GOG.com\\Games: %s", ex)
+            return {"ok": False, "reason": str(ex)}
+
     def finish_admin_all(self, elevate=None) -> dict:
         """Zaległe kroki administratora wszystkich gier jednym oknem UAC (Lumen: przy starcie, gdy gracz jest
         jeszcze przy myszy/klawiaturze — okna UAC nie da się obsłużyć padem)."""

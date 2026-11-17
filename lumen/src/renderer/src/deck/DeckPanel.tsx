@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import type { Game } from '@shared/types'
+import type { Game, Job } from '@shared/types'
 import { DECK_TILE_GAP, clampCols, type DeckAspect } from '@shared/deck'
 import { api, useStore } from '../store'
+import { formatBytes, formatEta } from '../lib/format'
 
 // The games panel under the dock (PyLinksDeck panel.py / tiles.py): the active tab's games as tiles. The
 // tile size is a number of columns (Ctrl + wheel: one column more / fewer) — the tiles stretch to fill the
@@ -31,6 +32,22 @@ export function tileMetrics(width: number, cols: number, aspect: DeckAspect, lab
   const rowH = tileH + (labels ? LABEL_H : 0) + DECK_TILE_GAP
   const rows = Math.ceil(count / cols)
   return { tileW, tileH, rowH, rows, content: rows ? rows * rowH - DECK_TILE_GAP + 2 * PAD : 2 * PAD + 40 }
+}
+
+/** Pasek pobierania na kafelku (etap 7): procent, prędkość i czas do końca jak w szczegółach gry; bez liczb — etap. */
+/** zadanie pokazywane na kafelku: pierwsze trwające (aktywne przed czekającym), bez uruchomienia gry */
+export function tileJob(jobs: Job[], gameId: string): Job | undefined {
+  const live = jobs.filter((j) => j.gameId === gameId && j.kind !== 'emuLaunch' && (j.state === 'active' || j.state === 'queued'))
+  return live.find((j) => j.state === 'active') ?? live[0]
+}
+
+export function tileProgress(job: Job | undefined): { pct: number | null; text: string } | null {
+  if (!job || job.kind === 'emuLaunch' || (job.state !== 'active' && job.state !== 'queued')) return null
+  const prog = job.progress
+  const pct = prog?.total ? Math.min(100, Math.floor((prog.done / prog.total) * 100)) : null
+  const eta = formatEta(prog?.eta)
+  const text = [pct !== null ? `${pct}%` : job.phase, prog?.speed ? `${formatBytes(prog.speed)}/s` : '', eta ? eta : ''].filter(Boolean).join(' · ')
+  return { pct, text }
 }
 
 export function DeckPanel({
@@ -98,6 +115,7 @@ export function DeckPanel({
                   <div className="deck-tile-art" style={{ height: m.tileH }}>
                     {/* list copy, but an animated poster moves (anim=1: its original — shown as chosen) */}
                     <img decoding="async" src={api().art.url(g.id, 'grid', artRev[g.id] ?? 0, undefined, true, true)} alt="" draggable={false} loading="lazy" />
+                    <TileProgress gameId={g.id} />
                   </div>
                   {showLabels && <div className="deck-tile-name">{g.name}</div>}
                 </div>
@@ -108,6 +126,21 @@ export function DeckPanel({
       ) : (
         <div className="deck-panel-empty">Brak gier w tej zakładce</div>
       )}
+    </div>
+  )
+}
+
+function TileProgress({ gameId }: { gameId: string }) {
+  // tylko ten kafelek śledzi swoje zadanie — zmiana zadań nie rysuje od nowa całej siatki
+  const job = useStore((s) => tileJob(s.jobs.jobs, gameId))
+  const shown = tileProgress(job)
+  if (!shown) return null
+  return (
+    <div className="deck-tile-dl" title={job?.phase}>
+      <span>{shown.text}</span>
+      <div className="deck-tile-dl__bar">
+        <i style={{ width: `${shown.pct ?? 0}%` }} />
+      </div>
     </div>
   )
 }

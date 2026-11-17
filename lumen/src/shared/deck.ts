@@ -188,6 +188,13 @@ export function deckGeometry(area: DeckRect, lay: DeckScreenLayout, content: num
  */
 export const onThisPc = (g: Game): boolean => (g.emu ? !!g.emu.cached : g.installed)
 
+/** gra w trakcie pobierania (Steam: instalacja / aktualizacja / wstrzymana; GOG, EmuStart: instalacja) — etap 7 */
+export const downloadingNow = (g: Game): boolean =>
+  g.installState === 'installing' || g.installState === 'updating' || g.installState === 'updatePaused'
+
+/** gry kafelków Decka: na tym komputerze, a także pobierane (pasek postępu na kafelku, nawet przed instalacją) */
+export const onDeck = (g: Game): boolean => onThisPc(g) || downloadingNow(g)
+
 /** A library subgroup that can be a Deck tab, with its number of games on this PC. */
 export interface DeckCandidate {
   id: string
