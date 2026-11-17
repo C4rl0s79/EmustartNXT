@@ -43,10 +43,10 @@ export function tileJob(jobs: Job[], gameId: string): Job | undefined {
 
 export function tileProgress(job: Job | undefined): { pct: number | null; text: string } | null {
   if (!job || job.kind === 'emuLaunch' || (job.state !== 'active' && job.state !== 'queued')) return null
-  const p = job.progress
-  const pct = p?.total ? Math.min(100, Math.floor((p.done / p.total) * 100)) : null
-  const eta = formatEta(p?.eta)
-  const text = [pct !== null ? `${pct}%` : job.phase, p?.speed ? `${formatBytes(p.speed)}/s` : '', eta ? eta : ''].filter(Boolean).join(' · ')
+  const prog = job.progress
+  const pct = prog?.total ? Math.min(100, Math.floor((prog.done / prog.total) * 100)) : null
+  const eta = formatEta(prog?.eta)
+  const text = [pct !== null ? `${pct}%` : job.phase, prog?.speed ? `${formatBytes(prog.speed)}/s` : '', eta ? eta : ''].filter(Boolean).join(' · ')
   return { pct, text }
 }
 
@@ -133,13 +133,13 @@ export function DeckPanel({
 function TileProgress({ gameId }: { gameId: string }) {
   // tylko ten kafelek śledzi swoje zadanie — zmiana zadań nie rysuje od nowa całej siatki
   const job = useStore((s) => tileJob(s.jobs.jobs, gameId))
-  const t = tileProgress(job)
-  if (!t) return null
+  const shown = tileProgress(job)
+  if (!shown) return null
   return (
     <div className="deck-tile-dl" title={job?.phase}>
-      <span>{t.text}</span>
+      <span>{shown.text}</span>
       <div className="deck-tile-dl__bar">
-        <i style={{ width: `${t.pct ?? 0}%` }} />
+        <i style={{ width: `${shown.pct ?? 0}%` }} />
       </div>
     </div>
   )

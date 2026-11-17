@@ -41,21 +41,21 @@ export class RateMeter {
   ) {}
 
   sample(key: string, done: number, total: number): { speed?: number; eta?: number } {
-    const t = this.now()
+    const nowMs = this.now()
     let arr = this.samples.get(key) ?? []
     let last: { t: number; done: number; total: number } | undefined = arr[arr.length - 1]
     if (last && (done < last.done || total !== last.total)) {
       arr = [] // nowe pobieranie / inna aktualizacja — od nowa
       last = undefined
     }
-    if (!last || done !== last.done) this.changed.set(key, t)
-    if (!last || t > last.t) arr.push({ t, done, total })
-    arr = arr.filter((s, i) => i === arr.length - 1 || t - s.t <= this.windowMs)
+    if (!last || done !== last.done) this.changed.set(key, nowMs)
+    if (!last || nowMs > last.t) arr.push({ t: nowMs, done, total })
+    arr = arr.filter((s, i) => i === arr.length - 1 || nowMs - s.t <= this.windowMs)
     this.samples.set(key, arr)
     const first = arr[0]
     if (!first) return {}
-    const secs = (t - first.t) / 1000
-    if (secs < 2 || done <= first.done || t - (this.changed.get(key) ?? t) > this.windowMs) return {}
+    const secs = (nowMs - first.t) / 1000
+    if (secs < 2 || done <= first.done || nowMs - (this.changed.get(key) ?? nowMs) > this.windowMs) return {}
     const speed = (done - first.done) / secs
     return { speed: Math.round(speed), eta: Math.round(Math.max(0, total - done) / speed) }
   }
