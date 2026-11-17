@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3b8eb9af382254df1c0b6512c4c246e8f9f541ec9d28537ff48b32c5ba396564",
+  "claims": [
+    {
+      "id": "claim_5254db77d2cf4df4b62730d48c17f947",
+      "statement": "Układ listy gier w trybie TV to wybór gracza dla grupy (Settings.tvLayouts) albo, bez wyboru, układ motywu; układy list i wstęgi/plakatów różnią się sterowaniem kierunkami.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L43-L50",
+          "version": "repo-lines-v1:sha256:51ee743d11c56f07699c10bc2eb5636aeed856670212d762d03d34a059ffb5e1:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTNjYjliMmUxY2JjYjZjNGQ5M2E5NjM5MjBiMGIwMjU1M2RiMjY3MWQwNTZjNTM3OWU3NGZmMjkzMzA0YWVjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWNiYjQ4NTE5ZGI4MmRjOGU2MTQyNDM5MTYxNDdiNGMwZTNhY2I5YzRkYmM5NWNmY2Q2YzU1NWZlZmQ0NDlkZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNWFjZTFhNWUwZTI0ZDQ2YmIwZjU1YzgwNjJjNWMzNDQzYTZkM2U2OWY2Mjg2OTRjMzlkZTQ0ZWQ0ZGQ0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzVhOGQwNzQ2OGE4MWM2YjI1NTAwZDljZGM1YjA2Zjc3OTJjOTNiZWQ4YzAxNGI5YTdmMzRjMjE0ZDJjNWY4MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a43a5252e8894798af93cf1b241c0135",
+      "statement": "Na liście gier TV przycisk A otwiera stronę gry, X uruchamia główną akcję gry, a Y otwiera filtry.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L160-L170",
+          "version": "repo-lines-v1:sha256:84319daad0f8593ac81006ac39a1127d5d86037bfbaf3e1e095d4e12b5544505:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZTQyOGJmM2Q3ZmNkYmFjOTJjMjhjOWI4ZGY4NmIwNzhmMWRlNzRlM2JlMmQ1OGU4ZDZjM2I3MDE4YTRjOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjOGUzYjY0MGJlNDEyMDg5MmZhNjZlMjM0MzliNDQyOWJlNjgxMjM0MGM5MWYwZThmZTU3ZDgwZmY3Njk1YjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyNGNiNTUxZjRjNzhmY2FiZWFhZTYwZDc5ZjE0MGIyNzA1YjcyNWM4ZTM5Mjc2N2M3OGUzMTZjZDhjMTAyY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4MDY2Y2ZhYzRjMjZlNjZlMDJmMWNkY2IyNDUzYTRmNTU0YTJmNWY3MDUyMjhlMWE0MDBkODRhNGQ0NjlhYTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3bb1de3fe98b427986458408a5c7e333",
+      "statement": "Strona gry TV jest warstwą modalną z fokusem początkowym na przycisku Graj, a jej fakty pochodzą z useGameFacts pogrupowanych na trzy karty.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvGamePage.tsx#L50-L100",
+          "version": "repo-lines-v1:sha256:17d83e4992469adee746539884e7fdbc2844b92c8e755a5746d876b1cf8ec564:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4ODNlODNhNjM2NzFlMjhjOTVmZmVmZjA2NTA3ODE3MzU1Mzk3OTBlNTU4MTU1YTk1ZGZiYzJlYjA0ZTQ2NTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1Y2FmN2EyYWE4ZDdhOTFjY2QzNTFkYTNmNGRkNDY0NjJlYmY0MmQ0MmI1MzE1MTRlNzBkZWZlNTBlOTA5MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxODM4N2I0NmY4NjFmNzk0YWE1ZTI5ZDdiYjk2NzI3MzE3YTkyNWJjMmQ2Y2QyMWI5YjAzYWJkYTVhYmYwNzEifQ"
+        },
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L206-L265",
+          "version": "repo-lines-v1:sha256:0b2f1a3196eb76d5977b7f3fc9c6cd026c11fa9e21528b9d3558e251c70d3f59:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2NhYjM5ZWFmMjk5NzY2YzE4YmY2N2IwYjFjZmNhZWEyZmNjZDZjNmViOTJjNzIzNmFkM2RlMmY4NjY2NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5NzBiNTJmM2Y3YjNmNzg0YjBkNDYyZDIxMTg0MWJmZmYzZGJkMTVkYzM5ZWRiMTZlOTcxMDgwNzc0NmRhOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NDlkZmFkOTIwZjBkYjQ1OTdkNjJlNDMyYzY1MTVhMDg0ZDE0YThjYWMyYjM4NDc2NDQ5NTNkNDg5ODU0NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2MWQwOTQ2MmNlYzMyMzNhMjBhYmY0MjMzMmU0ZDgwMzVmYmM2OTJhMDc2MzczMDk1NDA0ZGIyM2E3M2FhNTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9aa0bfadd835455db88e69f4a02a7f7b",
+      "statement": "Ustawienia mają siedem działów, a dawne identyfikatory sekcji są mapowane na nowe działy przez PAGE_OF.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/screens/Settings.tsx#L25-L118",
+          "version": "repo-lines-v1:sha256:294abfa1588492f70e4aff074820cd53f38fed34baa86a7afb9415b357ffdb06:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NDQyYTQ0OTJhMWJjMWQyOTZiMTMxMmM2MzM0ZTBjNDgyYWIzMDc4ZTRjMTQ2NDhhYmY3ZjdhYmVjYTAxOTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzMWIxZDc1YThkMjU3ZTE5OGIxNjZhNTRkZTU4ZWI5MzA4MzI3ZmEzNGYzOTk5MjFjZDViMmY5YWY1NmY0ODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4MDczOTgwNmQ1YzdhMjUwMGVhNzczMGU3NThlNjg2ZDkzM2FiYzdhZGNiOWU1YWQyMjM5N2NkZTVlM2E2MTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cbfea44135684fe8937c4e7b2d7d2dd4",
+      "statement": "Menu prawego przycisku w oknie głównym pokazuje Wytnij/Kopiuj/Wklej/Zaznacz wszystko w polach edycyjnych i Kopiuj przy zaznaczonym tekście, a w pozostałych miejscach się nie pokazuje.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/editMenu.ts",
+          "version": "repo-file-v1:sha256:8a5b3363ff130bfc6edf8045407faa4fb0ec1bc52f07a81e3f2406c724134796"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f0838d8bd72416095256a0c3ce5b92f",
+      "statement": "Wbudowane motywy TV to emustart (lista, domyślny), fantasy/Kronika (lista) i sf/Horyzont (wstęga z odbiciem).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/themes.ts#L60-L110",
+          "version": "repo-lines-v1:sha256:3ef51625ea97e3013db442198d38572da5dc025c8ecd0228544531a2400acbfb:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkZTgzY2EyYjgyNWNkMzI2MTQ3Y2Y0NDM0YjdjYmE4ZjViMmQ4MzI3NmIyYTNhNTJkOTc4NDUxOTU0ZjY5NWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NTE5MmE3NmU5YTRmNWMxMGQ4OGNhNDBjNGQwZTdjYTg4ODZhNTU4MmU3MTRhYzU5M2QxZTI1YmIwMDM2YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM3MDAxNjg4YWM2YmQ2YzlkZDJjOGYwYzgwNTQwNmVlMGVkYWRkZGUyNTMwMTE2NmJjYWMzOGU0YTM5NzlkMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5ZTA0MTY0ZTE1MmUwYTFjYmM4M2ZiMjUyMGRmYTYzYWYxMDJlYzRkZjExODEzNzhkNjY3MmFjOTFiOTUwNmQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-16T23:16:42.429Z"
+  }
+}

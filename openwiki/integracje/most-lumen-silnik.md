@@ -5,7 +5,7 @@ description: "Jak Lumen uruchamia silnik EmuStart (EmuStartEngine.exe albo engin
 tags: [lumen, engine, ipc, integration, emustart, security]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:46:08.589Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
   - id: openwiki-source-40546d6d119f4cf5e98eb99f
     resource: repo://emustart/emustart/clientdist.py
@@ -17,9 +17,15 @@ sources:
     resource: repo://lumen/engine/engine_main.py
   - id: openwiki-source-2df32bc926e05bf8be1063ec
     resource: repo://lumen/src/main/emustart/engine.ts
+  - id: openwiki-source-aaa3b628d7e625dbfa8d86a7
+    resource: repo://lumen/src/main/emustart/provider.ts
+  - id: openwiki-source-5cd75a718b408900dd11b227
+    resource: repo://lumen/src/main/gog/ipc.ts
   - id: openwiki-source-d1b9ce3766cc38562686f8ba
     resource: repo://lumen/src/main/index.ts
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+  - id: openwiki-source-e675b383c011628ae63c821d
+    resource: repo://lumen/src/main/serverActivity.ts
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Most Lumen ↔ silnik EmuStart
@@ -41,6 +47,12 @@ i `LumenApi` (`lumen/engine/emustart/lumen.py`).
 
 Przed startem Lumen sprawdza, czy z tego samego folderu danych nie korzysta już samodzielny EmuStart
 (`emustartRunningFrom`) — wtedy stan `error` i prośba o zamknięcie go albo zmianę folderu.
+
+Ten sam plik wykonywalny ma też tryby jednorazowe bez serwera HTTP (`engine_main.py`): `--sdl-probe` (numery
+padów SDL) i `--gog-admin=<plik>` z `--gog-admin-sha=<skrót>` — kroki instalacji gry GOG wymagające uprawnień
+administratora (`gogadmin.main`), uruchamiane z okna UAC, gdy Lumen nie ma uprawnień
+([Gry GOG z archiwum serwera](../przeplywy/gry-gog.md)). Silnik dziedziczy uprawnienia administratora po
+zainstalowanym Lumenie, dlatego gry i emulatory uruchamia przez `unelevated.popen`.
 
 ## Start i handshake
 
@@ -86,8 +98,15 @@ w `lumen/docs/INTEGRATION.md` §2). Metody to `Api` z EmuStart oraz zestawienia 
 (m.in. `lumen_library`, `lumen_status`, `lumen_game_options`, `lumen_readiness`, `lumen_controllers`).
 
 Akcje dostępne dla interfejsu React są wystawione kanałami IPC w `lumen/src/main/emustart/ipc.ts`
-(lista dozwolonych akcji: gry, opcje gry, zapisy i stany, konto, profile); renderer nie woła silnika
-bezpośrednio. Bibliotekę i stan z silnika (z kopią offline) zestawia `provider.ts`, a model EmuStart
+(lista dozwolonych akcji: gry, opcje gry, zapisy i stany, konto, profile) i `lumen/src/main/gog/ipc.ts` (gry GOG:
+instalacja, sprawdzanie, uruchamianie z wyborem zadania i diagnostyką DOSBoxa, MIDI — `gog_midi`,
+`gog_midi_set`, `midi_ports_set`, `midi_apps_set`, `midi_warmup`, dodatki, zapisy, odinstalowanie); renderer nie
+woła silnika bezpośrednio. Argumenty są sprawdzane w procesie głównym (np. numer zadania gry GOG: 0–63 albo
+kody diagnostyki DOSBoxa, tryb MIDI z `GOG_MIDI_MODES`).
+
+Długie wymiany z serwerem (lista gier z serwera, zapisy, serie z IGDB, grafiki gracza, motywy) śledzi
+`lumen/src/main/serverActivity.ts` i pokazuje jako małe paski pod „EmuStart” (pasek widoczny po 0,7 s; tylko
+okno główne, nie Deck). Bibliotekę i stan z silnika (z kopią offline) zestawia `provider.ts`, a model EmuStart
 → wspólny `Game` mapuje `mapping.ts`.
 
 ## Awaria i zatrzymanie
@@ -121,9 +140,10 @@ pomija kopie wspólnych plików, więc ta wiki opisuje je tylko na podstawie `IN
 
 - **Przy przenosinach do EmustartNXT (2026-11-10)** obie kopie miały EmuStart 0.62.0 i różniły się
   tylko zamierzonymi zmianami silnika w `paths.py` i `server.py`.
-- **Po przenosinach** poprawki funkcji EmuStart 0.63.x (pad, indeks archiwum GOG, nazwy kolekcji)
-  wprowadzano w obu kopiach w tych samych commitach. Numer wersji silnika (`__init__.py`) zostaje 0.62.0
-  i nie jest podbijany przy wydaniach EmuStart.
+- **Po przenosinach** poprawki funkcji EmuStart (0.63.x: pad, indeks archiwum GOG, nazwy kolekcji; dalej m.in.
+  instalacja GOG, serie z IGDB, motywy, MIDI) wprowadza się w obu kopiach — zasada z `emustart/CLAUDE.md`; pełnej
+  zgodności plików po 2026-11-11 nie sprawdzano (**TODO: do weryfikacji**). Numer wersji silnika (`__init__.py`) zostaje
+  0.62.0 i nie jest podbijany przy wydaniach EmuStart (EmuStart ma dziś 0.66.1).
 - **Rozjazd z przenosin:** commit, który przestawił aktualizatory na EmustartNXT, zmienił
   `emustart/emustart/updater.py` i `emustart/emustart/clientdist.py` (tagi `emustart-v…`/`lumen-v…`,
   lista wydań), ale nie ich kopie w silniku — tam wciąż są dawne repozytoria `C4rl0s79/EmuStart`

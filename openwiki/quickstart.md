@@ -5,7 +5,7 @@ description: "Punkt wejścia do wiki EmustartNXT: czym jest system EmuStart + Lu
 tags: [quickstart, overview, navigation, emustart, lumen]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:54:21.084Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
   - id: openwiki-source-405b8b710d216259d5c49bbb
     resource: repo://.github/workflows/lumen.yml
@@ -15,7 +15,7 @@ sources:
     resource: repo://lumen/README.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Szybki start — mapa wiki EmustartNXT
@@ -50,19 +50,27 @@ GitHub Actions: EmuStart przy tagu `emustart-v…` (`.github/workflows/windows.y
 | Z czego składa się system i kto z kim rozmawia? | [Przegląd systemu](architektura/przeglad-systemu.md) |
 | Jak działa serwer, jego tryby, porty i zabezpieczenia? | [EmuStart Server](architektura/serwer-emustart.md) |
 | Jak działają klient Windows i aplikacja Android? | [Klienci EmuStart](architektura/klienci-emustart.md) |
-| Jak zbudowany jest Lumen (tryby, Deck, dane, aktualizacje)? | [Lumen — launcher Electron](architektura/lumen.md) |
+| Jak zbudowany jest Lumen (uprawnienia, druga kopia, Deck, dane, aktualizacje)? | [Lumen — launcher Electron](architektura/lumen.md) |
+| Jak działa tryb TV (listy, strona gry, motywy, pad), Ustawienia i kopiuj / wklej? | [Lumen — tryb TV i ustawienia](architektura/lumen-tryb-tv.md) |
+| Skąd są gry Xbox, Game Pass i jak działa logowanie kontem Xbox? | [Xbox i Microsoft Store](integracje/xbox-microsoft-store.md) |
 | Jak Lumen rozmawia z silnikiem EmuStart? | [Most Lumen ↔ silnik](integracje/most-lumen-silnik.md) |
 | Jakie są trasy `/v1`, jak logują się urządzenia, jak działa synchronizacja zapisów? | [API /v1](przeplywy/api-v1.md) |
+| Jak gry GOG trafiają z archiwum serwera na komputer (instalacja, UAC, uruchamianie)? | [Gry GOG z archiwum serwera](przeplywy/gry-gog.md) |
+| Skąd są serie gier i jak Lumen je układa? | [Serie gier](przeplywy/serie-gier.md) |
+| Jak działają motywy TV z serwera i co je zabezpiecza? | [Motywy trybu TV](przeplywy/motywy-tv.md) |
 | Gdzie są `config.json`, dane, logi; jakie porty i zmienne środowiskowe? | [Konfiguracja, porty, ścieżki i logi](operacje/konfiguracja-porty-i-sciezki.md) |
-| Jak zbudować, przetestować i wydać (tagi `emustart-v…`, `lumen-v…`)? | [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md) |
-| Urządzenie nie widzi serwera / silnik nie startuje? | [Rozwiązywanie problemów](operacje/rozwiazywanie-problemow.md) |
+| Jak zbudować, przetestować i wydać (tagi `emustart-v…`, `lumen-v…`), jak opublikować wiki GitHub? | [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md) |
+| Urządzenie nie widzi serwera / silnik nie startuje / Xbox odmawia / brak muzyki MIDI? | [Rozwiązywanie problemów](operacje/rozwiazywanie-problemow.md) |
 
 ## Inne źródła w repozytorium
 
-- `emustart/docs/wiki/` — dokumentacja użytkownika EmuStart (instalacja, serwer, Android, pady, …).
+- `emustart/docs/wiki/` i `lumen/docs/wiki/` — dokumentacja użytkownika EmuStart i Lumena; razem z tą wiki
+  publikowana na [wiki GitHub](https://github.com/C4rl0s79/EmustartNXT/wiki) (`scripts/publish_wiki.py`).
+- `lumen/docs/themes/README.md` — jak zrobić motyw trybu TV.
 - `emustart/docs/SAVE_SYNC_DESIGN.md`, `emustart/docs/GOG.md` — projekty synchronizacji zapisów i GOG.
 - `lumen/docs/INTEGRATION.md`, `ARCHITECTURE.md`, `MIGRATION.md`, `TESTING.md` — dokumentacja Lumena.
-- `emustart/CLAUDE.md` — zasady pracy (zakres zmian, sprawdzanie przed PR, wydania, „jeden ekosystem”).
+- `emustart/CLAUDE.md` — zasady pracy (zakres zmian, sprawdzanie przed PR, wydania, „jeden ekosystem”);
+  plan i stan prac — `emustart/CHANGELOG.md` → `[Nieopublikowane]`.
 
 ## Znane rozbieżności dokumentacji z kodem
 

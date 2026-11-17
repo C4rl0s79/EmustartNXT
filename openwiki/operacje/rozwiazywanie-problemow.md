@@ -5,21 +5,29 @@ description: "Diagnostyka typowych problemów systemu EmustartNXT: urządzenie n
 tags: [troubleshooting, network, firewall, logs, engine, server]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:46:08.589Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
+  - id: openwiki-source-b838c72bfa4df685685e38e9
+    resource: repo://emustart/emustart/gogfinal.py
   - id: openwiki-source-269bd79d82cebe60040832db
     resource: repo://emustart/emustart/hotkey.py
   - id: openwiki-source-39316019f7b366045ad545d4
     resource: repo://emustart/emustart/remote.py
   - id: openwiki-source-a124d623671267edfd450054
     resource: repo://emustart/emustart/server.py
+  - id: openwiki-source-8e86ad247bda3ba0a75ffbac
+    resource: repo://emustart/emustart/unelevated.py
   - id: openwiki-source-dc1c4e0ec4611cab17206a30
     resource: repo://emustart/server_main.py
   - id: openwiki-source-9733b1fd9c40323c5ddf4535
     resource: repo://lumen/engine/engine_main.py
   - id: openwiki-source-2df32bc926e05bf8be1063ec
     resource: repo://lumen/src/main/emustart/engine.ts
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+  - id: openwiki-source-fbeb3e45dda5bb14b4d19bef
+    resource: repo://lumen/src/main/hangWatch.ts
+  - id: openwiki-source-09cc82d5a5407fc108b34403
+    resource: repo://lumen/src/main/xbox/account.ts
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Rozwiązywanie problemów
@@ -114,9 +122,42 @@ we wszystkich emulatorach (`emustart/emustart/hotkey.py`, `emustart/CHANGELOG.md
 „LB + A” w `lumen/engine/engine_main.py` pochodzi sprzed tej zmiany. Skróty nie działają przy wyłączonej
 obsłudze padów (`--pady=brak`).
 
+## Lumen: logowanie do Xbox się nie udaje
+
+- Komunikat z przyczyną po polsku (konto bez profilu Xbox, konto dziecka, warunki, kraj, weryfikacja wieku) to kod
+  odmowy Xbox Live (`x-err` / `XErr`) przetłumaczony przez `xerrText` (`lumen/src/main/xbox/account.ts`); poprawia
+  się go na koncie Microsoft / xbox.com, nie w Lumenie.
+- Własna aplikacja Azure bez adresu przekierowania `https://login.microsoftonline.com/common/oauth2/nativeclient`
+  (platforma „Aplikacje mobilne i klasyczne”) kończy logowanie błędem dopiero po wpisaniu hasła — sama strona
+  logowania tego nie sprawdza (`emustart/CHANGELOG.md`, etap 19e). Pusty identyfikator w Ustawienia → Zaawansowane
+  przywraca domyślną aplikację „Lumen Launcher”.
+- Gry kupione, ale nigdy nieuruchomione, nie pojawiają się z konta — Lumen czyta historię tytułów (titlehub).
+  Zob. [Xbox i Microsoft Store](../integracje/xbox-microsoft-store.md).
+
+## Lumen: druga kopia, uprawnienia, zawieszenia
+
+- **Okno wyboru przy starcie** — działa już inny Lumen (inna wersja albo folder); nowa kopia przekazała prośbę przez
+  pliki w `%LOCALAPPDATA%\Lumen` (`instances.ts`). Osobny profil `LUMEN_USER_DATA` pomija ten mechanizm.
+- **Gra startuje z uprawnieniami administratora** — w logu silnika ostrzeżenie „nie uruchomiono bez uprawnień
+  administratora …”: uruchomienie z tokenem powłoki się nie udało i `unelevated.popen` uruchomił program zwykle
+  (`emustart/emustart/unelevated.py`).
+- **Okno albo Deck przestaje odpowiadać** — `lumen.log` zawiera wpisy `[hang]` („nie odpowiada”, „znów odpowiada”
+  z czasem, awarie procesów, pamięć procesów co 10 min — `hangWatch.ts`) i `[perf]` (zacięcia); to pierwsze miejsce
+  do sprawdzenia.
+
+## Gry DOSBox bez muzyki MT-32 / SC-55
+
+- Port MIDI wybiera się po nazwie (Opcje gry → MIDI → „Wyjścia MIDI…”); gdy żaden program nie gra tego portu
+  (np. loopMIDI bez Munt), gra jest cicha. Silnik uruchamia program grający port przed grą (Munt `mt32emu-qt.exe`
+  dla MT-32 albo program z `midi_mt32_app` / `midi_sc55_app`) tylko wtedy, gdy go znajdzie (`dosmidi.companion`).
+- Urządzenie w samej grze (SOUND.CFG, SETUP) ustawia się jej programem konfiguracji — EmuStart ustawia tylko port
+  DOSBoxa. Diagnostyka: „Uruchom… → Uruchom z diagnostyką” zostawia komunikat błędu gry na ekranie.
+
 ## Powiązane
 
 - [Konfiguracja, porty, ścieżki i logi](konfiguracja-porty-i-sciezki.md)
 - [API /v1](../przeplywy/api-v1.md)
 - [EmuStart Server](../architektura/serwer-emustart.md)
 - [Most Lumen ↔ silnik](../integracje/most-lumen-silnik.md)
+- [Xbox i Microsoft Store](../integracje/xbox-microsoft-store.md)
+- [Gry GOG z archiwum serwera](../przeplywy/gry-gog.md)

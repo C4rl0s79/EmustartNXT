@@ -410,6 +410,18 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   `tv/filters.ts`: szukaj w tytule, gatunek, dekada, gracze, region z nazwy, producent, co pokazać,
   sortowanie; zapamiętane dla każdego systemu w `localStorage`; Steam — tylko szukaj, co pokazać i
   sortowanie bez roku), Y — opcje gry (Steam: szczegóły), L3 / Z — szukaj, R3 / U — ulubiona.
+- **Strona gry w układzie TV** (etap 20a, `tv/TvGamePage.tsx`): od tej wersji A na liście otwiera stronę gry
+  (tło, logo, rząd akcji: Graj — fokus na start, Graj od początku dla gier EmuStart, Opcje gry…, Ulubiona, Dodatki,
+  Wersje; opis z miejscem na ~10 linii; fakty w kartach „Na tym komputerze / Twoja gra / O grze” — `tv/gameParts.tsx`
+  `useGameFacts`). Na liście: X — Graj od razu, Y — filtry (dotąd X); opcje gry tylko ze strony gry (Y albo przycisk).
+  B na stronie gry wraca na listę na tę samą grę.
+- **Układy listy TV** (etapy 20b–20c): Lista (EmuStart), Wstęga (3D), Plakaty (płaski rząd na dole, logo gry na
+  tle). Na liście zamiast paska szczegółów `TvSummary` — logo i jedna linia (status, czas gry, rok, system); reszta
+  na stronie gry. Układ wybiera się dla grupy w menu Start („Układ listy”), zapis `Settings.tvLayouts[klucz grupy]`;
+  bez wyboru — układ motywu.
+- **Ustawienia** (etap 20d–20f): 7 działów (`screens/Settings.tsx` PAGES; stare identyfikatory sekcji → `PAGE_OF`),
+  pola kluczy w „Zaawansowane” z poradnikami `components/KeyGuide.tsx` (linki do wiki GitHub). Kopiuj / wklej: menu
+  prawego przycisku `main/editMenu.ts`, klawiatura ekranowa — Ctrl+V / RB / „Wklej”. Wiki: `scripts/publish_wiki.py`.
 - **Szczegóły i oceny** (lista TV — pasek na dole: logo z lewej, szczegóły obok):
   - LaunchBox (baza w schemacie 3, przebudowuje się sama): ocena społeczności i liczba głosów, ESRB,
     kooperacja, typ wydania, maks. liczba graczy;

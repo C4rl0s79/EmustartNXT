@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3a187a60b22c17f9f0ac7fb443a86ab0406f37dfcd79a070da78a6201c098c21",
+  "pageVersion": "sha256:4664a22a48210b91aed33511fa00c41ea01bfd06704727283106a432e13a2ea8",
   "claims": [
     {
       "id": "claim_5fabdcc3128644edb39e7bc245ef8f65",
@@ -27,7 +27,7 @@
       "statement": "Silnik wypisuje na stdout {\"lumen_engine\": 1, \"port\", \"version\"} po starcie serwera na losowym porcie i kończy pracę po EOF na stdin.",
       "evidence": [
         {
-          "resource": "repo://lumen/engine/engine_main.py#L80-L109",
+          "resource": "repo://lumen/engine/engine_main.py#L86-L115",
           "version": "repo-lines-v1:sha256:fd6a6ef0588785fc8e363299073efad4ca7694e92bffaa790e46e0efabd73f3b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExNzc2YmQ2MjA5NDgzYTIxNTk1MmQ5Yzk4MmNhMzc0OGRlMzFlZDE2NDIwMTIxMDhlZGE4OWI2MzY1YzY1ZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZTk5MjMyY2QzYTMwOWY1MGNiZDZmNjYyMTI3ZWVhYWZjZTFmNzM2MjkyZGVmYjExM2Q5ODFhMjBjN2Q4NTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1YzFiZmQwZmIxNmRjOTIxYWY0NTI5M2IwNWFmYTViMDlmMmVlOWVmNGNjZTExMTNhZTEyZmFhODMxYTllOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
@@ -71,11 +71,11 @@
       "statement": "Domyślny katalog danych silnika to <userData Lumena>\\emustart, chyba że ustawiono emustartHome.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L110-L110",
+          "resource": "repo://lumen/src/main/index.ts#L132-L132",
           "version": "repo-lines-v1:sha256:0041bcbb8853edef7a2bfef9bfc96d375e77b25cfb7196e950cd7d49a0b8ccbb:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MWJjYmI4ODUzZWRlZjdhMmJmZWY5YmZjOTZkMzc1ZTc3YjI1Y2ZiNzE5NmU5NTBjZDdkNDlhMGI4Y2NiYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MWJjYmI4ODUzZWRlZjdhMmJmZWY5YmZjOTZkMzc1ZTc3YjI1Y2ZiNzE5NmU5NTBjZDdkNDlhMGI4Y2NiYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzMxNmRlYjVmZDg3MDZjODMzYmUzOTdmNjViNmE0NjViMzU5ZDYwY2UxYWMzMTU2YzY3ZGZkMTY4ZTMyZjVhMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWZkNTczZjQyNTcwMjY3YWNjMWZlMWE2N2U2ZDBmZTNkMDZlZjVhNDc3MzRmZWNlYzM0MjM2YzRiZTdmYmY3MCJ9"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L124-L124",
+          "resource": "repo://lumen/src/main/index.ts#L146-L146",
           "version": "repo-lines-v1:sha256:126a71707ec5bcccc7dcbc13ce0735add8d8a9afbf0d781a71a7dc2abd2e954b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI2YTcxNzA3ZWM1YmNjY2M3ZGNiYzEzY2UwNzM1YWRkOGQ4YTlhZmJmMGQ3ODFhNzFhN2RjMmFiZDJlOTU0YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI2YTcxNzA3ZWM1YmNjY2M3ZGNiYzEzY2UwNzM1YWRkOGQ4YTlhZmJmMGQ3ODFhNzFhN2RjMmFiZDJlOTU0YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWJkMGYzZWFmYTRmMWJhMWIzODE5NDI5NGFlM2IxYzJmNzQ2NzI4NmYwOWM2YTczNmMyMWYzZjAyNmNiMmM4MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGEyYTZiMGQyYWM0NGEwZjYyZDk5NDRlOGQyNzliMDZjODZkYzJhOGFiMTVhNWMwMzk4ZTFiNjY3YmJmYjI5NSJ9"
         }
       ]
@@ -109,10 +109,44 @@
           "version": "repo-lines-v1:sha256:f5c0798b99c335dfc83f13044d68702545f18cdce469c59e9378c04bdca75ae1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwOWZkNWRjZjUwMWMzNzZjMTdhZGQzYzUwZmVhZWU1MDY3YjE2ZDQ5Y2Y0MGM3OTA2YWUwODM4OTA2Mjc5ZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZGRmZTc3MjY4ZWY1ODI0NGI3MTAwNzVlNTYwNzhiNjg5M2Y5ZGY1YzBlNjk1MWI1ZjBkNTA4YmQ0NmVjMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyMDIyZjIxNmVhNWVmNjkxNDBlNjJmMDdiNTUyZTgyMDIxZWI1NzRlYTlkYzU4NzhjZTk4YWI2ZmI4NjJkNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjVmY2M3MGJiNmE1MzIyOTVkODg0ZTA4MzRiMDJjMWQxNjFlNDYzZWFhMTk2OWQ2NDc4MTNlNDVlYmRkY2MifQ"
         }
       ]
+    },
+    {
+      "id": "claim_a20ce4e9035b453fb5f32743155223c5",
+      "statement": "Silnik Lumena uruchomiony z argumentem --gog-admin wykonuje kroki administratora instalacji gry GOG (gogadmin.main) i kończy się, bez startu serwera HTTP.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/engine/engine_main.py#L31-L35",
+          "version": "repo-lines-v1:sha256:5eec546613035574be0240cb73f0e1db0e2377a4f6d11e9dfc2bc443adc57121:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY2NWI1MDc3NjM4YzA1OTA4OTY4MTY1MzBiNjZjNzM1MGI1NjNjM2Y0YTUwODI1NGFkNmJlMzhiMWI1ZDE0ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGIxYzAyODdkYWY3OWY3MzBhZDhmZjI2YWI1NzNkNzE4N2YyZWExYzBmZjA4ZmIyNDMwNDE1NTdiOTgyNGMwNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmRkOTM5MzI5OTIwOTcyNmQyM2M1MmZmZDY5NDg4NGZjN2EyM2FmYWJhZTY4NmIxZGVkYjE2YTQ3YWZiN2E4YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjZlYzZiMjg4YjI3NzQ2Zjc1ZWExNzQ1NTBkMGQ3MGJiMmJlNWRlNWY0NWE5ODNkZjZkYjFmMWY1ODQ5MGJkMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2be62666e450487e834f0dfea270f2f2",
+      "statement": "Proces główny Lumena sprawdza argumenty wywołań GOG przed przekazaniem do silnika: numer zadania 0–63 albo kody diagnostyki DOSBoxa, tryb MIDI z GOG_MIDI_MODES, a po zapisaniu programów MIDI wywołuje midi_warmup.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/gog/ipc.ts#L99-L170",
+          "version": "repo-lines-v1:sha256:c0cb19de4156f1c208157f86106cd47d8aeffc13c56f4916bbd34be551f2dc34:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3OGY0OWI3ZTQwYTY3MTliMjM1NTRkYzU4ZGU4ZWI5MzA3ZmI3MmViYzE2MmFkYmNkNWM3YWUwZWYyYWRiMzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1OThkYzdiZmYyYzVmMzIwM2NkNjgyNDhhY2M5M2U0MDRlNjEyZDZiMTRmYzZjZWI3M2ZlYzJiN2U2ZTYyNTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2NDQwZGM4MmI1Yzk0OWI4ZmI0ZWQwN2Q1ZDY5NDRhOGI3M2IxNDdiMDFkYWRlZDllZmNmNDg0ZThiYmI2NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkMTc3YTRiYThhMzdlNDQ1NThiYWY5ZDBhYTg1N2IxNzkzMzYzYzhiOWJhYjdmYmI1NzQzNWQ0MDJhZjk1NzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_beb0bb60edbf49a7aa3a264a5d5f054b",
+      "statement": "serverActivity śledzi wymianę systemową z serwerem (lista gier, zapisy, serie, grafiki gracza, motywy) i pokazuje ją w oknie głównym, gdy trwa dłużej niż 0,7 s.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/emustart/provider.ts#L260-L272",
+          "version": "repo-lines-v1:sha256:0d8092250364768b8d8e07c07d24f24ab6ca4208fc89a44e1db8e7db5122413c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzNjE4NzNhZWY1YTJiNjlkOGMzZDRjODk3Y2ZlN2U3MTU2YzkzYmExZGM5NjNkOTA0NzY0NzUxZTA3MjcxZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NGI1ZWEzMmE2M2VhNDU5MWE4MjRkYjQzY2FlMjUyM2MxNzAwY2IxNjg5YWJlZjIyZjIzZjY1N2VkN2EzYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI1NzEyMGZlMzgyY2ZlMDQzNDRlMDllZmNiZWU0NWNlNDY2MTJkNDEwNDNkNTllOTE2YjliYzllNzUwZTVhMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiZDliNmUzOGRlMzhkZDQ3ZTdjNTAzNzJiODhkNzVhN2Y1OTY5YjViMjlhOWZkY2E3NzY3YTNmMjFmMmMyMzgifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/serverActivity.ts#L1-L20",
+          "version": "repo-lines-v1:sha256:ab9213b244f5e71a89f52a4a09962887cecb5229dbb5d48906df3f0bad0b9e8d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMTQwOWQ3YWQ4Mzg4ZDA5MDU0ZmEyN2UyYzRiYjdkMmY4YTZiNDc1NzQzNDg3NDcwMDM5NmIxZDUzY2E4Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM2MTg0ZjRjM2QwNGNhYTU0MDIyM2UwMDY4OGI1MTgyOWFjNzUwNmJlYjZjOGYzOGEzMDRkMmJiMGJiNTAwZDcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:46:08.589Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

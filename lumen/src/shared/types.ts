@@ -591,6 +591,8 @@ export interface Settings {
   gogLanguages: string[]
   /** theme of the TV layout (renderer: tv/themes.ts); an unknown id falls back to the default */
   tvTheme: string
+  /** układ listy gier w trybie TV dla grupy (klucz systemu / grupy): lista, wstęga albo plakaty; brak — z motywu */
+  tvLayouts: Record<string, TvGamesLayout>
   /**
    * the look editor's values per TV theme (only what differs from the theme's defaults). The EmuStart
    * theme keeps its look in EmuStart's shared config; here only Lumen's own keys (typefaces).
@@ -633,6 +635,7 @@ export type SettingsPatch = Partial<
     | 'emustartHome'
     | 'pythonPath'
     | 'tvTheme'
+    | 'tvLayouts'
     | 'tvLooks'
     | 'tvAnim'
     | 'gogInstallDir'
@@ -644,6 +647,9 @@ export type SettingsPatch = Partial<
   /** only the fields given change (the main window and the Deck window both edit the Deck settings) */
   deck?: Partial<DeckSettings>
 }
+
+/** how the TV game list is shown (renderer: tv/themes.ts GamesLayout) */
+export type TvGamesLayout = 'list' | 'coverflow' | 'posters'
 
 export type SecretName = 'sgdbApiKey' | 'steamWebApiKey' | 'igdbClientId' | 'igdbClientSecret' | 'tgdbApiKey' | 'xboxRefreshToken'
 

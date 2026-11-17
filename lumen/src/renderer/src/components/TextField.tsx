@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Modal } from './Modal'
+import { useStore } from '../store'
 
 // Text input that works from the couch: with a controller, pressing A opens an on-screen
 // keyboard; with a physical keyboard the field is typed into directly. The D-pad's ←/→ moves the
@@ -134,8 +135,39 @@ export function OnScreenKeyboard({
     return true
   }
   const clear = (): void => apply({ text: '', caret: 0 })
+  // the clipboard at the cursor: one line (keys copied from a page often bring a line break or spaces around)
+  const paste = async (): Promise<void> => {
+    let clip = ''
+    try {
+      clip = await navigator.clipboard.readText()
+    } catch {
+      useStore.getState().toast('Nie udało się odczytać schowka.', 'error')
+      return
+    }
+    const one = clip.replace(/\s*[\r\n]+\s*/g, ' ').trim()
+    if (one) editRef.current(one)
+    else useStore.getState().toast('Schowek jest pusty.', 'info')
+  }
+  /** → true, gdy tekst jest w schowku (Ctrl+X czyści pole tylko wtedy) */
+  const copy = async (): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(edRef.current.text)
+      useStore.getState().toast('Skopiowano do schowka.', 'info')
+      return true
+    } catch {
+      useStore.getState().toast('Nie udało się skopiować.', 'error')
+      return false
+    }
+  }
   const editRef = useRef(edit)
   editRef.current = edit
+  const pasteRef = useRef(paste)
+  pasteRef.current = paste
+  const copyRef = useRef(copy)
+  copyRef.current = copy
+  // aktualne clear (z aktualnym onChange rodzica) dla obsługi klawiszy, która nie odświeża się przy każdym renderze
+  const clearRef = useRef(clear)
+  clearRef.current = clear
 
   // physical keys also work while the OSK is open: letters, space, Backspace; Enter submits (a
   // controller's A goes through the input layer instead and presses the focused key)
@@ -147,6 +179,21 @@ export function OnScreenKeyboard({
         onClose(true, edRef.current.text, edRef.current.caret)
         return
       }
+      // Ctrl+V / Shift+Insert — wklej, Ctrl+C — kopiuj (nie dla haseł i kluczy), Ctrl+X — kopiuj i wyczyść
+      const k = e.key.toLowerCase()
+      if ((e.ctrlKey && k === 'v') || (e.shiftKey && e.key === 'Insert')) {
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        void pasteRef.current()
+        return
+      }
+      if (e.ctrlKey && (k === 'c' || k === 'x')) {
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        if (secret) return
+        void copyRef.current().then((ok) => ok && k === 'x' && clearRef.current())
+        return
+      }
       const isChar = e.key.length === 1 && !e.ctrlKey && !e.altKey
       if (!isChar && e.key !== 'Backspace') return
       e.stopImmediatePropagation()
@@ -155,7 +202,7 @@ export function OnScreenKeyboard({
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  }, [onClose, secret]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Modal
@@ -172,6 +219,10 @@ export function OnScreenKeyboard({
           setShift((s) => !s)
           return true
         },
+        rb: () => {
+          void paste()
+          return true
+        },
         lt: () => caretBy(-1),
         rt: () => caretBy(1),
         menu: () => {
@@ -184,6 +235,7 @@ export function OnScreenKeyboard({
         { action: 'x', label: 'Usuń' },
         { action: 'y', label: 'Spacja' },
         { action: 'lb', label: 'Wielkie litery' },
+        { action: 'rb', label: 'Wklej' },
         { action: 'lt', label: 'Kursor ←' },
         { action: 'rt', label: 'Kursor →' },
         { action: 'menu', label: 'Gotowe' },
@@ -217,6 +269,9 @@ export function OnScreenKeyboard({
           </button>
           <button className="osk__key osk__key--wide" data-nav onClick={clear}>
             Wyczyść
+          </button>
+          <button className="osk__key osk__key--wide" data-nav onClick={() => void paste()}>
+            📋 Wklej
           </button>
           <button className="osk__key osk__key--wide osk__key--done" data-nav onClick={() => onClose(true, text, ed.caret)}>
             Gotowe

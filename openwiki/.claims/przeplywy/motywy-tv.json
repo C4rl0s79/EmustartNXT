@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:d968eb65ca2ee0953b0675dc6dbfff82bf4e14dd4c116a2778fe738160e4aa84",
+  "claims": [
+    {
+      "id": "claim_4119718f538046f5b936749035b8b272",
+      "statement": "Paczka motywu TV może zawierać tylko theme.json, theme.css, opcjonalnie layers.html i assets (obrazy, woff2), w limitach rozmiaru, a CSS, layers.html i SVG są sprawdzane pod kątem skryptów i odwołań spoza paczki; paleta musi mieć kontrast co najmniej 4,5:1 (akcent 3:1).",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/themes.py#L1-L52",
+          "version": "repo-lines-v1:sha256:3b706afb227cef84db171e71b1385968002112a7229749b9520c6660d7d8a7f8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1OGVhN2IyODM2MWE1OWQ2NTZiZjNmZTUyYzQzOGRkYTk4YTY0NGU0YzA4MjAzOTU3MGYyZDE1NzBlZTJkOTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5Njc5M2VjZjhhNWY3NzZlYmYwOWRmM2MzMzNkYTcwNDZkNDIyYTBhNzJjNzEzNzJhY2RiMjlkYjdiMGM2NGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MDgyM2Q0YzY0ZTU4MjZjMjZhZmI5YmY4YTRhYmM2ZDdjNWMxMzI3NzczODcxMGU2NzM5M2E4OTM4YTNkM2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3b498c151ad8439aa1d1e3b3f23ccbae",
+      "statement": "Silnik Lumena synchronizuje motywy metodą themes_sync do LumenData/themes, a proces główny powtarza synchronizację co 30 minut i wydaje przez lumen-theme:// tylko pliki z listy paczki.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/themes.ts#L78-L135",
+          "version": "repo-lines-v1:sha256:cd748ab18cdff5428c7eca48114048a9be671b2e522eca35e4a4a0f70e7beda2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MjYyNjE0ODYyYTc2M2YzOTNhZWFlOTJiMDZkMTM3OGQ5M2NiOGZiYzE0YTU4YzYzMjIwN2FjNjczMzYyYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiYTNmMjFmNTFmYjEzODZlOWM4NjFkZDY4YjAyMGZhYzY1YzI2MGU5Yzk3NDU4ZmM5NmJhMGNjMDQ5NmEyZmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkMzkyNmIzZWM1YThjNjVkYzhkMGIyOTRkMzUwZWRmMTJmZTJlNjg3ZDM2M2VjODY0OTEwYTViYTRmMDJlYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2YjQ3NWU4ZmI2MjA4ZDZjNmMzY2Y0ZTM4OThlMjZjMTViNWNlYWI3MDQ3M2ZiZTgyMzQyYWRhNTRmN2NmZTEifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/themes.ts#L9-L17",
+          "version": "repo-lines-v1:sha256:2017955f190a2f8ea78155009f70cec09230304dc86f6fd737c95f54056c750b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFmMjJjZjA3MzI1OTJjMjQ3MTQxY2JlNjFlZmExMTAxMjYxMmY1YTMxMjJiOWFmOWJiYWY1MmY1NzI0ZDE5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzFkNDE2MmNhZTQ3YjE5Y2M5MmRlZTk1ODVlNWRkZDc2ZGUxZWIxNTdkMjk2NTYwNzZiMmJmY2ZlZTdlZjFjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTVjODdiYzY3ZjhjZDQwZjM4ODBiZTBhMjcxMzhiMzFjNzI4ZWQ4ZDdjOTdjNDViNjYwN2RiY2M1MDM5MzZmZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTQwYjE0NjRhNjJhNmYwZGFmMjNiYTk5ODU0ZmJhYjAwZWMyMDMyNGQ5ZWRlNDY2MjgxZDM1YzQ0MDBlZDgwYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_68b751c8e0ab45a8a8c002ff850f599a",
+      "statement": "Dekoracje layers.html są wstawiane przez budowanie elementów od nowa z listy dozwolonych znaczników i atrybutów, bez wstawiania HTML z paczki.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/lib/themeLayers.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:76916fbfcf2bbcd25f396d2d5c6a29fbf4c69e16f66df2cc6fa5fecf19ff4e7b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjOTM0YTg2YWMzZjgyZmE4Yjc4MTQzMmZlMjlhM2E3MTNhN2NiY2E3MmQ0NjQ1NDdlNjAzODQ3MzY5MjkzMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ODFlN2EwZWY4ZThhMWNhNDUzNDA0OGZmYTQ5YjBjMGMwYjRiODEwZjFmZWQ2Y2M4Njk4MWQ1N2E3Mzg1ZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczMDdmYzFlNGMwZGI3NTM4NmNjNmZhODlhNGQ3MWY1OTc5ZGRlMDkxNGZhYmQ4ZThmYWFhYTY2OThlMTFjYjUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d888135b33844f139fd32402cdafd53a",
+      "statement": "Przy ograniczonym ruchu w systemie animacje motywów TV są wyłączone niezależnie od ustawienia tvAnim.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/usePackages.ts#L30-L43",
+          "version": "repo-lines-v1:sha256:4ce0519b6471c63b2af3dc40962ef1f412c5656ef5211a5626f3c895ce9d978c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0NGM3YzRlYzYwMzEzMGI5OTE1MGZmMzgyYjgwZmY2ZTgzN2Y4YjJmN2QxN2IyMmQzYjQyYzBmYmJlZTc3MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-16T23:16:42.429Z"
+  }
+}

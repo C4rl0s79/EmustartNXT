@@ -1,4 +1,4 @@
-import type { ThemePackage } from '@shared/types'
+import type { ThemePackage, TvGamesLayout } from '@shared/types'
 import { FONTS, LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from './look'
 
 // Themes of the TV layout. A theme is three layers on top of the look editor (look.ts):
@@ -12,7 +12,8 @@ import { FONTS, LOOK_SPEC, type LookChoice, type LookRow, type LookValues } from
 // Contract every theme keeps (the pad must always work): the selected game is clearly marked, the
 // hints bar and the top bar stay where they are, text has at least 4.5:1 contrast on its background.
 
-export type GamesLayout = 'list' | 'coverflow'
+/** list: titles in a column (EmuStart); coverflow: the 3D ribbon; posters: the game's logo and art above a flat row of posters */
+export type GamesLayout = TvGamesLayout
 
 export interface ThemePalette {
   /** page background (solid; gradients and art go on top of it) */

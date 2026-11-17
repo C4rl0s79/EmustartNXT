@@ -5,7 +5,7 @@ description: "Mapa całego systemu EmustartNXT: EmuStart Server, klient EmuStart
 tags: [architecture, overview, emustart, lumen, android, server]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
   - id: openwiki-source-39316019f7b366045ad545d4
     resource: repo://emustart/emustart/remote.py
@@ -21,7 +21,9 @@ sources:
     resource: repo://lumen/src/main/emustart/engine.ts
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+  - id: openwiki-source-ee4b9047b69765a31df0868a
+    resource: repo://scripts/publish_wiki.py
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Przegląd systemu: serwer, klienci i Lumen
@@ -59,12 +61,21 @@ Historia obu dawnych repozytoriów (`C4rl0s79/EmuStart`, `C4rl0s79/Launcher`) je
 | EmuStart Server | `emustart/server_main.py` (`EmuStartServer.exe`) | klientami przez `/v1/…`; panel serwera przez `127.0.0.1` (`/admin/…`) |
 | Klient Windows | `emustart/main.py` (`EmuStart.exe`) | serwerem przez `/v1/…`; własnym UI przez most pywebview |
 | Aplikacja Android | `emustart/android/…/MainActivity.kt` | serwerem przez `/v1/…` (`Server.kt`); UI przez most `EmuAndroid` |
-| Lumen | `lumen/src/main/index.ts` (`Lumen.exe`) | silnikiem przez `POST /api/<metoda>` na `127.0.0.1`; Steamem przez pliki i `steam://` |
+| Lumen | `lumen/src/main/index.ts` (`Lumen.exe`) | silnikiem przez `POST /api/<metoda>` na `127.0.0.1`; Steamem przez pliki i `steam://`; Xbox / Microsoft Store przez pakiety Windows i usługi Microsoft |
 | Silnik EmuStart | `lumen/engine/engine_main.py` (`EmuStartEngine.exe`) | serwerem przez `/v1/…` (jako urządzenie „Lumen”) |
 
 Szczegóły: [EmuStart Server](serwer-emustart.md), [Klienci EmuStart](klienci-emustart.md),
 [Lumen](lumen.md), [Most Lumen ↔ silnik](../integracje/most-lumen-silnik.md),
 [API /v1](../przeplywy/api-v1.md).
+
+## Źródła gier w Lumenie
+
+Lumen ma jedną bibliotekę z kilku źródeł, nigdy nie łącząc gier po tytule
+([Lumen](lumen.md)): Steam (pliki klienta Steam, opcjonalnie Web API konta), gry emulatorów z biblioteki serwera
+EmuStart, gry GOG z archiwum depotów na serwerze ([Gry GOG z archiwum serwera](../przeplywy/gry-gog.md)), gry
+Xbox / Microsoft Store zainstalowane na tym komputerze, katalog PC Game Pass i gry z konta Xbox
+([Xbox i Microsoft Store](../integracje/xbox-microsoft-store.md)). Od serwera przychodzą też serie gier z IGDB
+([Serie gier](../przeplywy/serie-gier.md)) i motywy trybu TV ([Motywy trybu TV](../przeplywy/motywy-tv.md)).
 
 ## Jeden interfejs EmuStart, trzy mosty
 
@@ -88,13 +99,24 @@ tylko most do kodu natywnego:
 - **Pliki lokalne czyta Lumen, nie silnik** (`README.md`, `lumen/docs/INTEGRATION.md`): grafiki gier,
   logotypy platform i wgrane grafiki czyta `lumen/src/main/localMedia.ts`; silnik służy do wymiany
   danych z serwerem i pobiera tylko brakujące pliki.
+- **Uprawnienia**: zainstalowany Lumen działa jako administrator (kroki instalacji gier GOG bez okna UAC),
+  a gry, emulatory, Steam i przeglądarka startują bez tych uprawnień ([Lumen](lumen.md),
+  [Klienci EmuStart](klienci-emustart.md)).
 
 ## Kopia silnika
 
 `lumen/engine/` to kopia `emustart/` (dawniej `git subtree`, `lumen/engine/UPSTREAM.md`) z kilkoma
-plikami własnymi Lumena. Obie kopie **nie są dziś identyczne**: `emustart/emustart/__init__.py` ma
-wersję 0.63.5, a `lumen/engine/emustart/__init__.py` — 0.62.0; różnią się też m.in. `paths.py`
+plikami własnymi Lumena. Numer wersji kopii nie nadąża za oryginałem — `emustart/emustart/__init__.py` ma
+0.66.1, a `lumen/engine/emustart/__init__.py` wciąż 0.62.0 — choć zmiany modułów są przenoszone do obu kopii
+(zasada z `emustart/CLAUDE.md`: ta sama poprawka w drugiej kopii pakietu); różnią się m.in. `paths.py`
 i `server.py` (zmiany na potrzeby silnika). Zob. [Most Lumen ↔ silnik](../integracje/most-lumen-silnik.md).
+
+## Dokumentacja
+
+Wiki GitHub ([github.com/C4rl0s79/EmustartNXT/wiki](https://github.com/C4rl0s79/EmustartNXT/wiki)) składa
+`scripts/publish_wiki.py` z trzech źródeł w repozytorium: strony gracza EmuStart (`emustart/docs/wiki/`) i Lumena
+(`lumen/docs/wiki/`) oraz ta dokumentacja techniczna (`openwiki/`) — `README.md`, sekcja „Wiki”. Zob.
+[Budowa, testy i wydania](../operacje/budowa-testy-i-wydania.md).
 
 ## Kierunek rozwoju
 

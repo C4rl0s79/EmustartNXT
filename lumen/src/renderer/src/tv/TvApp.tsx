@@ -2,6 +2,7 @@ import { JobsStrip } from '../components/Jobs'
 import { ActivityList } from '../components/Activity'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { api, attempt, useStore } from '../store'
+import type { TvGamesLayout } from '@shared/types'
 import { useActions, useHints, type Action } from '../nav/input'
 import { focusFirst } from '../nav/engine'
 import { SettingsScreen } from '../screens/Settings'
@@ -9,7 +10,6 @@ import { TvSystems } from './TvSystems'
 import { TvGames } from './TvGames'
 import { subItem, useTvNav, type TvSystem } from './data'
 import { lastSub, pinnable, rememberSub, togglePin } from '../lib/nav'
-import { loginFlow, logoutFlow } from '../lib/account'
 import { lookStyle, setLook, useEngineLook, useLook } from './look'
 import { TvLook, useLookSync } from './TvLook'
 import { TvThemes } from './TvThemes'
@@ -46,6 +46,16 @@ export function TvApp() {
   const [menu, setMenu] = useState(false)
   const [lookEd, setLookEd] = useState(false)
   const [themesOpen, setThemesOpen] = useState(false)
+  // Ustawienia → Wygląd → „Motyw…” / „Wygląd…”: the chooser and the editor draw over the screens (like from the menu)
+  useEffect(() => {
+    const on = (e: Event): void => {
+      setScreen((s) => (s === 'settings' ? 'top' : s))
+      if ((e as CustomEvent<string>).detail === 'look') setLookEd(true)
+      else setThemesOpen(true)
+    }
+    window.addEventListener('lumen:tv-open', on)
+    return () => window.removeEventListener('lumen:tv-open', on)
+  }, [])
   // the theme in use (Lumen's setting) or, while the chooser is open, the one being looked at
   const savedTheme = useStore((s) => s.settings?.tvTheme)
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
@@ -161,6 +171,8 @@ export function TvApp() {
       {menu && (
         <TvMenu
           themeName={theme.name}
+          themeLayout={theme.games.layout}
+          listOf={screen === 'games' && sys ? { key: sys.key, name: sys.display } : undefined}
           onTheme={() => {
             setMenu(false)
             if (screen === 'settings') setScreen('top') // the chooser shows each theme on the layout underneath
@@ -170,11 +182,6 @@ export function TvApp() {
           onSettings={() => {
             setMenu(false)
             setScreen('settings')
-          }}
-          onLook={() => {
-            setMenu(false)
-            if (screen === 'settings') setScreen('top') // the editor shows its changes on the layout underneath
-            setLookEd(true)
           }}
         />
       )}
@@ -301,20 +308,37 @@ function TvHints() {
   )
 }
 
+/** the TV game list layouts by name (menu "Układ listy") */
+const LAYOUT_NAMES: Record<TvGamesLayout, string> = { list: 'Lista', coverflow: 'Wstęga', posters: 'Plakaty' }
+
 function TvMenu({
   onClose,
   onSettings,
-  onLook,
   onTheme,
-  themeName
+  themeName,
+  themeLayout,
+  listOf
 }: {
   onClose: () => void
   onSettings: () => void
-  onLook: () => void
   onTheme: () => void
   themeName: string
+  themeLayout: TvGamesLayout
+  /** the game list under the menu: its layout can be changed here (kept for that group) */
+  listOf?: { key: string; name: string }
 }) {
-  const loggedIn = useStore((s) => !!s.snapshot?.emustart?.server)
+  const layouts = useStore((s) => s.settings?.tvLayouts)
+  const own = listOf ? layouts?.[listOf.key] : undefined
+  // z motywu → Lista → Wstęga → Plakaty → z motywu
+  const nextLayout = (): void => {
+    if (!listOf) return
+    const order: (TvGamesLayout | undefined)[] = [undefined, 'list', 'coverflow', 'posters']
+    const next = order[(order.indexOf(own) + 1) % order.length]
+    const all = { ...(layouts ?? {}) }
+    if (next) all[listOf.key] = next
+    else delete all[listOf.key]
+    void attempt(api().settings.patch({ tvLayouts: all })).then((st) => st && useStore.getState().setSettings(st))
+  }
   // with the Deck on Lumen keeps running in the tray (like closing the window): ask whether to hide or really quit
   const deckOn = useStore((s) => !!s.settings?.deck?.enabled)
   const [askExit, setAskExit] = useState(false)
@@ -339,9 +363,11 @@ function TvMenu({
     ['Anuluj', () => leaveExit()]
   ]
   const menuItems: [string, () => void][] = [
+    ...(listOf
+      ? ([[`Układ listy „${listOf.name}”: ${own ? LAYOUT_NAMES[own] : `z motywu (${LAYOUT_NAMES[themeLayout].toLowerCase()})`}  ·  A — zmień`, nextLayout]] as [string, () => void][])
+      : []),
     ['Ustawienia', onSettings],
     [`Motyw: ${themeName}`, onTheme],
-    ['Wygląd', onLook],
     [
       'Zmień profil',
       () => {
@@ -350,51 +376,10 @@ function TvMenu({
       }
     ],
     [
-      'Kolejność padów',
-      () => {
-        onClose()
-        useStore.getState().setPads(true)
-      }
-    ],
-    [
-      'Kontrolery',
-      () => {
-        onClose()
-        useStore.getState().setControllers(true)
-      }
-    ],
-    [
-      loggedIn ? 'Wyloguj z serwera' : 'Zaloguj do serwera',
-      () => {
-        onClose()
-        void (loggedIn ? logoutFlow() : loginFlow())
-      }
-    ],
-    [
       'Tryb pulpitu  ·  F10 / View+Start',
       () => {
         onClose()
         void api().ui.setMode('desktop')
-      }
-    ],
-    [
-      'Odśwież bibliotekę z serwera',
-      () => {
-        onClose()
-        void attempt(api().emustart.refreshLibrary()).then((r) => r && useStore.getState().toast(r.ok ? (r.message ?? 'Odświeżanie biblioteki…') : (r.error ?? 'Błąd'), r.ok ? 'info' : 'error'))
-      }
-    ],
-    [
-      'Sprawdź aktualizację Lumen',
-      () => {
-        onClose()
-        void attempt(api().update.check()).then((u) => {
-          if (!u) return
-          const t = useStore.getState().toast
-          if (u.phase === 'available' || u.phase === 'ready') t(`Dostępna wersja ${u.info?.version ?? ''} — Ustawienia → Aktualizacja Lumen.`, 'info')
-          else if (u.phase === 'none') t('Lumen jest aktualny.', 'info')
-          else if (u.phase === 'error') t(u.error ?? 'Nie udało się sprawdzić aktualizacji.', 'error')
-        })
       }
     ],
     [

@@ -219,3 +219,17 @@ export function primaryFor(game: Game, ctx: PrimaryContext): PrimaryAction {
       }
   }
 }
+
+/** The main action of a game (Graj / Zainstaluj / …): a disabled one says why instead (toast). One rule for the TV
+ *  list (X), the TV game page and the options window. */
+export function runPrimary(primary: PrimaryAction | null, busy: boolean): void {
+  if (!primary || busy) return
+  if (primary.disabled || !primary.run) useStore.getState().toast(primary.note ?? primary.label, 'info')
+  else void primary.run()
+}
+
+/** An EmuStart game from the beginning (no save state loaded) — „Graj od początku”. */
+export async function launchFromStart(gameId: string): Promise<void> {
+  const r = await attempt(api().emustart.launch(gameId, '__od_poczatku__'))
+  if (r && !r.ok) useStore.getState().toast(r.error ?? 'Nie udało się uruchomić gry.', 'error')
+}

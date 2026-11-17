@@ -18,7 +18,7 @@
 }
 
 /* display face (the look's "Czcionka nagłówków", Cinzel by default): names and titles only */
-.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1) {
+.tv[data-theme='fantasy'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-panel h2, .tv-summary__logo h1, .tv-gamepage__logo h1) {
   font-weight: 600;
   letter-spacing: 0.03em;
 }
@@ -71,7 +71,7 @@
 }
 
 /* panels: leather with a gold rule along the top */
-.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel) {
+.tv[data-theme='fantasy'] :is(.tv-panel) {
   position: relative;
   border-radius: 4px;
   border: 1px solid rgba(216, 164, 65, 0.3);
@@ -79,7 +79,7 @@
     linear-gradient(180deg, rgba(58, 36, 22, 0.55), transparent 60%),
     var(--tv-panel);
 }
-.tv[data-theme='fantasy'] :is(.tv-info, .tv-panel)::before {
+.tv[data-theme='fantasy'] :is(.tv-panel)::before {
   content: '';
   position: absolute;
   left: 6%;

@@ -5,7 +5,7 @@ description: "Jak zbudować i przetestować EmuStart (build.ps1, PyInstaller, Gr
 tags: [build, ci, release, testing, signing, github-actions, openwiki]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:54:21.084Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
   - id: openwiki-source-4e3e538728489e7a1208c697
     resource: repo://.github/workflows/android.yml
@@ -27,7 +27,9 @@ sources:
     resource: repo://lumen/README.md
   - id: openwiki-source-d69f512d6dbd56a78b25462c
     resource: repo://lumen/scripts/sign-release.mjs
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+  - id: openwiki-source-ee4b9047b69765a31df0868a
+    resource: repo://scripts/publish_wiki.py
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Budowa, testy i wydania
@@ -115,16 +117,21 @@ Skrypty z `lumen/package.json`:
 
 Silnik ze źródeł wymaga Pythona 3.12+ i `pip install -r engine/requirements.txt` (`lumen/README.md`).
 
+Zbudowany `Lumen.exe` ma w manifeście `requestedExecutionLevel: requireAdministrator` (`lumen/electron-builder.yml`)
+— jedno okno UAC przy starcie; gry, Steam i emulatory startują bez uprawnień (zob.
+[Lumen](../architektura/lumen.md)). Uruchomienie ze źródeł (`npm run dev`) działa bez uprawnień administratora.
+
 ### Testy
 
-- `npm test` — vitest; `npm run typecheck` — `tsc --noEmit`;
+- `npm test` — vitest; `npm run typecheck` — `tsc --noEmit`; w CI vitest działa z `--testTimeout=30000`
+  (pierwszy dynamiczny `import()` na maszynie CI potrafi trwać ponad domyślne 5 s);
 - `npm run test:engine` — `pytest` w `lumen/engine/tests`.
 
 ### CI i wydanie Lumena (`.github/workflows/lumen.yml`)
 
 | Zadanie | Wyzwalacz | Co robi |
 |---|---|---|
-| `test` | PR i push na `main` (zmiany w `lumen/**`), tag `lumen-v*`, ręcznie | `windows-latest`, Node 24, Python 3.14: `npm ci`, `npm run typecheck`, `npm test`, `pytest` w `lumen/engine/tests` |
+| `test` | PR i push na `main` (zmiany w `lumen/**`), tag `lumen-v*`, ręcznie | `windows-latest`, Node 24, Python 3.14 (+ `pillow` do testów grafik): `npm ci`, `npm run typecheck`, `npm test`, `pytest` w `lumen/engine/tests` |
 | `build` | tag `lumen-v*` albo ręcznie, po `test` | silnik (`python -m PyInstaller … lumen-engine.spec`) i Lumen (`electron-vite build`, `electron-builder --publish never`) |
 
 Przy tagu `lumen-vX.Y.Z` zadanie `build` dodatkowo:
@@ -157,6 +164,24 @@ Awaryjnie lokalnie: `npm run dist`, potem `scripts/sign-release.mjs` z kluczem w
   requests”.
 
 Bez dostawcy w CI wiki aktualizuje się lokalnie (Claude Code z integracją OpenWiki).
+
+## Wiki GitHub (`scripts/publish_wiki.py`)
+
+Wiki projektu na GitHubie (`C4rl0s79/EmustartNXT.wiki.git`) jest składana z plików repozytorium i nie edytuje się
+jej ręcznie (`README.md`, sekcja „Wiki”):
+
+- `emustart/docs/wiki/*.md` — strony gracza EmuStart; ich `Home.md` staje się stroną „EmuStart”;
+- `lumen/docs/wiki/*.md` — strony gracza Lumena (tryb TV, poradniki kluczy API, do których linkuje aplikacja —
+  `lumen/src/renderer/src/components/KeyGuide.tsx`);
+- `openwiki/` — strony „Technika-…” (mapa nazw `OPENWIKI_PAGES` w skrypcie): bez nagłówka YAML, linki `.md`
+  przepisane na strony wiki, pliki źródłowe jako linki do GitHuba; strony `index.md` katalogów prowadzą do
+  „Dla-deweloperów” (z `quickstart.md`).
+
+Skrypt tworzy `Home` i `_Sidebar`, przerywa przy dwóch stronach o tej samej nazwie albo linku do nieznanej strony
+OpenWiki, usuwa strony, które sam kiedyś zapisał (znacznik w pierwszej linii), a których nie ma już w źródłach,
+i zostawia strony dodane ręcznie. Użycie: `git clone https://github.com/C4rl0s79/EmustartNXT.wiki.git <folder>`,
+potem `python scripts/publish_wiki.py <folder>` (podgląd zmian) albo z `--push` (commit i push). Nowa strona
+OpenWiki wymaga wpisu w `OPENWIKI_PAGES`.
 
 ## Powiązane
 

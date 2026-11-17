@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_THEME, THEMES, contrast, lookDefaults, lookSpecFor, themeById, themeStyle } from '../src/renderer/src/tv/themes'
 import { FONTS, type LookChoice } from '../src/renderer/src/tv/look'
 import { LOOK_ITEMS } from '../src/renderer/src/tv/look'
-import { coverBox, flowLayout, flowScale } from '../src/renderer/src/tv/TvCoverflow'
+import { coverBox, flatScale, flowLayout, flowScale } from '../src/renderer/src/tv/TvCoverflow'
 
 describe('TV themes', () => {
   it('has the default theme and unique ids; an unknown id falls back to the default', () => {
@@ -90,5 +90,21 @@ describe('cover ribbon spacing', () => {
     const [w, h] = coverBox(1.4)
     expect(w).toBe(1.1)
     expect(h).toBeCloseTo(1.1 / 1.4)
+  })
+})
+
+describe('flat row of posters (layout "posters")', () => {
+  it('the selected poster is larger, the others one size, and none covers its neighbour', () => {
+    expect(flatScale(0)).toBeGreaterThan(flatScale(1))
+    expect(flatScale(-3)).toBe(flatScale(2))
+    const poster = coverBox(2 / 3)[0]
+    const snes = coverBox(1.4)[0]
+    for (const w of [Array(9).fill(poster), [poster, snes, poster, snes, snes, poster, snes, poster, poster]])
+      for (const sel of [0, 4, 8]) {
+        const x = flowLayout(w, sel, true)
+        const half = (i: number): number => (flatScale(i - sel) / 2) * w[i]
+        for (let i = 0; i + 1 < x.length; i++) expect(x[i + 1] - half(i + 1) - (x[i] + half(i))).toBeCloseTo(0.07)
+        expect(x[sel]).toBe(0)
+      }
   })
 })

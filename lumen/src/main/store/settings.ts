@@ -1,7 +1,7 @@
 import { safeStorage } from 'electron'
 import { homedir } from 'node:os'
 import path from 'node:path'
-import type { ArtDataSource, SecretName, Settings, SettingsPatch } from '@shared/types'
+import type { ArtDataSource, SecretName, Settings, SettingsPatch, TvGamesLayout } from '@shared/types'
 import { cleanDeckSettings, defaultDeckSettings, mergeDeck } from '@shared/deck'
 import { JsonFile } from './jsonFile'
 import { log, registerSecret } from '../logger'
@@ -24,6 +24,7 @@ const defaults = (): StoredSettings => ({
   emustartEnabled: true,
   language: 'polish',
   tvTheme: 'emustart',
+  tvLayouts: {},
   tvLooks: {},
   tvAnim: 'med',
   gogInstallDir: defaultGogDir(),
@@ -53,6 +54,15 @@ export function cleanArtSources(v: unknown): ArtDataSource[] {
 export function cleanAbsDir(v: unknown): string | undefined {
   const p = cleanPath(v)
   return p && path.isAbsolute(p) && !/[<>"|?*\x00-\x1f]/.test(p.slice(2)) ? path.normalize(p) : undefined
+}
+
+/** układ listy TV dla grup: tylko znane układy, klucze grup krótkie (bez śmieci z uszkodzonego pliku) */
+function cleanLayouts(v: unknown): Record<string, TvGamesLayout> {
+  const out: Record<string, TvGamesLayout> = {}
+  if (!v || typeof v !== 'object') return out
+  for (const [k, x] of Object.entries(v as Record<string, unknown>))
+    if (k.length <= 200 && (x === 'list' || x === 'coverflow' || x === 'posters')) out[k] = x
+  return out
 }
 
 /** per-theme looks: theme id → { key: number | short string } — anything else is dropped */
@@ -99,6 +109,7 @@ function migrate(raw: unknown): StoredSettings {
     pythonPath: cleanPath(r.pythonPath),
     tvTheme: typeof r.tvTheme === 'string' && /^[a-z0-9-]{1,40}$/.test(r.tvTheme) ? r.tvTheme : 'emustart',
     tvLooks: cleanLooks(r.tvLooks),
+    tvLayouts: cleanLayouts(r.tvLayouts),
     tvAnim: r.tvAnim === 'off' || r.tvAnim === 'low' || r.tvAnim === 'high' ? r.tvAnim : 'med',
     gogInstallDir: cleanAbsDir(r.gogInstallDir) ?? d.gogInstallDir,
     gogLanguages: r.gogLanguages === undefined ? d.gogLanguages : cleanLangs(r.gogLanguages),

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:308d2d0f76d6521594e9248e820a8225c3d924560f15f2c1f7952974bae7e8ed",
+  "claims": [
+    {
+      "id": "claim_3244112076f04ab0bd8c6c8a71d8f96b",
+      "statement": "Gry Xbox zainstalowane na komputerze są wykrywane przez Get-AppxPackage jako pakiety z MicrosoftGame.config zawierającym plik wykonywalny; pakiety bez niego (DLC) są pomijane.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/installed.ts#L5-L40",
+          "version": "repo-lines-v1:sha256:0d9a12ecab184f5d48ea0813a10b9f419c7915d8cea41dfad334b8a238bae24a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkZTI4OWRiNzJmYzdmNmQ2NjE4ZTk0MTk0YmNiNDhhMDNhZDkyYzY3N2ExNGVhMjczN2I5MTQwNzFiMWQ4MzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmYTEyZjVjODEyNDQ2OTgwOGZmYjIwYTZhYThjMmFiODJhMTAxM2MxYWU0NzAyODk2NWJkYjViOTJlYmJiNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjNmE3YjljNWRlODU0YTRiYWU1ODRhZmNlZWIxMDFiYjlhNTgxOGIyYjMwNTcxMDMyOTNlNWUyZGRkNjA3Y2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_67c89b89fa184b32963e2760e623a9b4",
+      "statement": "Gra Xbox startuje przez explorer.exe shell:AppsFolder\\<aumid>, więc bez uprawnień administratora, a gra spoza komputera otwiera stronę produktu w Sklepie Microsoft.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1425-L1445",
+          "version": "repo-lines-v1:sha256:11657ff66501b75e9fe586029e0d2d6d454431411a212024ce83c9a3d4a58b2e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMjNiZjI2OTg1MTFkN2Y2N2JkZjQ5MzNmNGJkOTA4ZDc3MGRhNjg3ZWE0M2JiNDdkYzFmODIxMzE0YWZjNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxMjJjMjU2YjM3YzMwZDhhNDI2ZjYyMzk5YzIxZjAzNzFkYTAyYTJjZTNlYmNjNmE3ZDZkOGM3YzE5NTE5ZjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_24f1042022c54c03a0d71b2674d53288",
+      "statement": "XboxProvider tworzy jedną pozycję xbox:<StoreId> na grę z gier zainstalowanych, konta i katalogu Game Pass, a kopię katalogu Microsoft odświeża raz na dobę.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L130-L140",
+          "version": "repo-lines-v1:sha256:1fdc4f876c342cc4e2dabeb4fb5ec84cae85fa327b05e9b2415f5bc366cfa34a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlYmY3MzQxZDc2MzIwMTk2MDc3NGQzMDY0NmEwZGYyMjAyM2JlMTZlMjU3NTZhYzkwYzY4NTJlMDY2NTNmOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjODQyOWM5YTNlZTM0MDE0MWEwMWFhYmI4ZmVkODIzMWE3ZDA4MTBjYWNiZjEyZjQ3NDlmM2U0YzU1NGY4MGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhM2U2M2YzOTBkZDI5N2Q5YmEwMzY2YWEyOTU0ZmVhYTAwMDUzZmQ1YTMyY2RlZTQ5ODYzZDE3MmJjZmYxNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNjViZWFjMzNjN2IwNzFlNDc3OWM4M2YyNzIzNDA2NmViMTYyNjJlMDZiNWNjN2QwZDFlMGRhZDU4MGU1NGYifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L8-L50",
+          "version": "repo-lines-v1:sha256:c0a79559b999fc73e7d21af23a7f15503013e55087b0ef123e7b8220559b2520:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3M2QwMDMyNjc1ZjllZmYzYjg0MGYwYjhlOWVjYzQ0N2Y1NDgxOTU4ZDcyNjdjODZjNWZkOThlY2E0ZWIyY2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3ZTM1N2ZmZjk3MjY3YWM2ZDAxMzVhYWZmODllM2Y1NDFlOGU0ZjI2OTBiZTU4OWQ5MTdmMzBlZjZlNGM4YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhY2FjNDg3YzJkZTU0NmU3YTM4ZDEwNDJjY2JkOTFjZDZlY2VlZGUzMzdlNGZiOGQyNmQxMzhhMjk1ZmU5NWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fda65420241a46c4aa1c6a8f7c9aa09a",
+      "statement": "Logowanie do Xbox używa OAuth z PKCE na login.microsoftonline.com/consumers z przekierowaniem nativeclient i domyślnie aplikacji Lumen Launcher, a potem uwierzytelnia w Xbox Live przez user.auth (kolejne formy biletu RPS) i XSTS.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/account.ts#L165-L200",
+          "version": "repo-lines-v1:sha256:42525953cb5a8580639416c7db66d9a59d8484c8d7a82fc6065f648521197951:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZjllNzJjOGM4YWM2YjljMzJmOWFhNDJjMzIwNWU0MWU1YWUwZTc3YzJiM2UwNjdiZTRkYzU0ZDU1MzkzMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxMzFlNDE2YzgyNDlkMWY3M2FlYjEwNzRjNDgzNmE2ODNhNmY3YzQ5MjkxMmFmNzk2NWY1YWE0YzY3OGI0M2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2Y2M3NDk4YTE3NmRiNjEyZThjZDA5ZjY1OGJmNjcwNTQ2YmJmOTU2ZjVjZjM3NjE0NjdkMjE4MzM2ODJmMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlYzZmYTkzNzVmOGFhZGRmYzFlZjU4NDg1ZDExMDJjMmZmZjMxMTllMDY1ZGVmNzViNDViNWM4NTBlZGQ5NWYifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/xbox/account.ts#L7-L40",
+          "version": "repo-lines-v1:sha256:9b9fede1bb3c9cbef973e8c774507d0068c095d89e46d98fc9048f2f04c47dce:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJkNzdmMmY0NWQyMGIzOTVmNmI3NDU1NmZhMDZkMjEyMmUwZmQ4MjU0YmFmNGM3MTk5NDc3NTFlOGU4NGIzNjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2NDI3ZGNjNzliOTgxZDA2OGYzYzlkY2FmYjY0MWM3YWM4M2Q5OTNkOThkY2IwMGVmMzBmMWE2OWRjNDdjYzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_eda853f74e08468a96f2091199a22b17",
+      "statement": "Gry konta Xbox pochodzą z historii tytułów titlehub, z której brane są tylko gry na PC.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/account.ts#L217-L240",
+          "version": "repo-lines-v1:sha256:58632aea7cb222660b180e2a8ebe42b7ccabaf6ed6c0899a2dfcebb3eada7630:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwODU1MWRkYjVkZGQzOTQ1NmE1MzEwMWNjZGFiYzhmZmZkNWU3Y2E0MDU2ZmRiM2I2NDUwN2JiZDcxZDM5NjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyZDI2ZjhlMWU1MzIwY2UyMWQzYjgwZDU3ZWI4YWU1NTU4NTE4YTg2MTA2NTBmMDc2YTU4ZDNkZWYzN2IzMmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4Y2E4Y2U0ZDM1NDIxZGJiODVlODlhOGNlOTJlMDgwMzU0YTIyZWZhNjA1YmM4OTQ0Yjc1ZjVmZTk0OTA0NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyYzczZWJiMWI0NjhiZWNhZmJiNmYwOWU4ZGZhMmNhZjZkMGEyNjUyODM0ZDJlMWUyNGUxMzMzYjVkODAxNzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cef678d8828b490b9242280277044d63",
+      "statement": "Nowe logowanie Xbox zapisuje token odświeżania dopiero po przyjęciu przez Xbox Live, a synchronizacja konta powtarza się co 6 godzin i przerywa po wylogowaniu.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1508-L1530",
+          "version": "repo-lines-v1:sha256:bd2a4e5e1603b2b383e67e4d88acef7defad72b101153d2e193c514111ce51aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNmY4ZTE1MzRmNjlmODJmY2Y3YjQ1NzI2NjJjZGYyMjVkM2NmNTk2NjM3MGVhOGM1OTgyZjhjMTVjYTBkZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyN2MzMmUzM2I4Mjc0YTg1YmQ1YzA2NDczOWE4YWQ5MDFmMWM0ODIwZTQ2ZmM5Y2VhMTg4YjY1ZWYzNDkwMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmNWEzN2VkZWIzNTcyYWY4ZTc1ZmI4YTU3YTc4NGFlMzQxZWM5OTRhMjU0ZmFlODhkYmRlZGFjZGYyZDA4N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0MmM4NzQ4MTZmYTAzZGZhOTg0MTQ3MzhkNWZiMGI3ZGNiM2M2MTAyYTM1ODM5ZDMzYTkwMDA2Mzg4ZmJhYzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e3b6f048d7c47ee86065a7bb62c2e84",
+      "statement": "Odmowy Xbox Live (x-err / XErr) są tłumaczone na przyczyny po polsku, a nieznany kod jest podawany jako kod Xbox.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/account.ts#L121-L136",
+          "version": "repo-lines-v1:sha256:c49bd7651d1bddc1eeb701157baf1c21a7b35be3135e41157dc2f553384e2e2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlOTU1ODIxOGY5YTlmMTE4NjcyMjg3YmE0MTM2YzlkZWRlMTkwY2JiNzdmZDFmZTY5MmFmNTUzYmM3OGIxZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMzNhZjVmMWZjOGQ4ZTA4YzRhYmU5Yjk3OWRjZmY2NzczOTk3NzljMWFmMjNmYWQ4ZDdmNGQyNTgzMDNjMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5Mjc5ZDZhMjJiM2E3NTI2OGEzYzRiNDc5ZWEwNDE4YzdiYmQwYTU0NTUwZWMwZDZjZTMyMTAyZDk0MGQzYjAifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-16T23:16:42.429Z"
+  }
+}

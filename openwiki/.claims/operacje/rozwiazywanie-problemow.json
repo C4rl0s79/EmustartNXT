@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:63e9add7f18c208dbb6940e6b64247652cb48c640364d9ea453c1399286e319d",
+  "pageVersion": "sha256:81ecc92ac7415e65df1ea272ee2f3cf1d35088dde324035f031d73bb875f9dda",
   "claims": [
     {
       "id": "claim_62e14bc91255431e9634b0367a62fbb4",
@@ -17,7 +17,7 @@
       "statement": "Serwer na koncie SYSTEM sam dopisuje regułę zapory dla portu szyfrowanego przy starcie; bez uprawnień zostawia tylko wpis w logu.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/remote.py#L1330-L1355",
+          "resource": "repo://emustart/emustart/remote.py#L1387-L1412",
           "version": "repo-lines-v1:sha256:0e0087105c0685bbca9aa1f644d4a67b5b2eebafec0562fec8c5ffaca17a319a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzMjc4NjgxMWViZmZhZjVjNmU5YjIwNmQ4OTM1MTUzNmUwYjU3ZWQ4YzNlZGJjZTkzODc1ZWQyYjg0ZTA2Y2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjYTIxOWMxZThmYmI4M2Q4NTAwMTZiYmYzODNmMDVjOTg1ZDE4OTVhMzI5NGYyNWYxZDQyNjFjMzc0NTlkMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhMGNjZWQ0Yjk0ODUwOWE3YWYwODJmOWEzOTNhODQwNjczZDRhNzI2ZDAxNTZmYTk1OGE4M2IyZDI0NDlkMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4Zjg4MzgxM2Q1ZGVjY2U1ZDNmY2ZlNDk4NGFmYjAwZDRmMjA3ZGRlYTQxNmIzZDBiOWE5MzEyMTA5ZGQzZDgifQ"
         }
       ]
@@ -27,7 +27,7 @@
       "statement": "Panel serwera, gdy serwer nie odpowiada i nie da się go uruchomić, odsyła do logs\\emustart.log, a wybrane foldery zamienia na ścieżki UNC, bo serwer jako SYSTEM nie zna liter dysków sieciowych.",
       "evidence": [
         {
-          "resource": "repo://emustart/server_main.py#L162-L190",
+          "resource": "repo://emustart/server_main.py#L166-L194",
           "version": "repo-lines-v1:sha256:4b541cc8797ae68a932ecd6889ed73318d53ca9e87ff221539409bf7e788ddbc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyMGY3NTg2NmE3MjBmNWQ4ZTc2YWNhNThkMDAzYTBkNzg5OGQyZTk3NWYxYzI1NTk4ODE2NjViYjIwODM4ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyODczNWIzMjYzMjI2NjIzMmE0NTRjYmI2Mjk0MDQ5NzA0YmE1M2I1YzM5OTIyYzkzYzM0ZjRjNDMzODg0OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2MWUwZTg2NmIzNWI0MWRlMzYyZTI1OTE3ZWNhNzlkYWZmNjVkMzU3MDFmZGViMDA5NDA4NGVhODcyZDU1YzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4ZjNjNTY2MTkyYWQ0ODRmMGI1ZjcwNGY3M2E5ODQ3YzMzZTI4NWYzOWZlMGIwOTNmMjkzYzI3N2EwMTQ4YzUifQ"
         }
       ]
@@ -55,7 +55,7 @@
           "version": "repo-lines-v1:sha256:6bdf76594b2c28206dd0c34f84d9838d8471742d435db0d721c7706a536e1ddb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZWNkMmI1OGY2ZWY4N2YyZTA1MjEwMjBiZjA1YWU5YmE4ZTJkZDMwNDg1NWNlOTQ5MGE3MzQ2Y2RjMzYzZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjZlODcwNmI0MzA0N2YyYTZkYjY3ZjEzMjYzODU5NTYwNGU2N2YzNjk2Njg3NmNlMDE1OGYwMDUzZTZiZDEifQ"
         },
         {
-          "resource": "repo://lumen/engine/engine_main.py#L56-L75",
+          "resource": "repo://lumen/engine/engine_main.py#L62-L81",
           "version": "repo-lines-v1:sha256:f7a6b97ab6d21cf4d91352c2225a2f9fdb954e9771a44054319fd1020140a672:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzOTUyMDVhNjA2YzUyZGU3MjI3MDAxN2E1NTUxMGEwMzA0YWNmZGU2ZWU4MzQ5YTE0YzliMTk4NTMzY2Y1YzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2Y2MxNWMwMGY2YWM1MDU1NjUyMjIyZmU3ODk1MzhiMzhiYTQ1NTQ1NzA0MmY0ODM3MWI3ZDYyMDA4M2IzMTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ZWMyYzg0Yjg2MTVmODA2ZmU1NjY1NDM3NzFjNjU2ZjE1MDhhMjIxMjVkODVhYTI4MDAwZmNmZGJlNWM3MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2Y2E2OTI2NmYzNGExMmI4NWM1ZGY5ODRlOThjNzM0NGYxYmRhNjEwNWNjODkwMDVkNzU5YjZiODEyMDYzNzUifQ"
         }
       ]
@@ -69,10 +69,54 @@
           "version": "repo-lines-v1:sha256:7f365e6a7bc1c1d47e059b68328457c61d6720a2008ef5778e313dfb2a77cd68:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MTc3ZTdmNzFhNTMwYzYxMzM5MDlkZDgwMjMyOTJjZmEwZTNlNWVmMjI5YjhmNWUxYTkzMzI2Yzg4YTc3NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZmYxZTEyMTJmZGU5NGJmNzA3M2RhZDVhOWRhMjVlNTM2OGZmMTVjMzZmNGFhOWUwMGZkM2QzZGM2ZDM0ZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjZDZlNTI3OGNjZTdjNjg0OWI0YjM5ZDBkZmIwN2ViMDFhZjIzYTVhYzA5NzU5NjBiNjc5NWI1MmUxNjI0MmYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_851b995175954051b365db817c3adb05",
+      "statement": "Odmowa Xbox Live jest pokazywana jako przyczyna po polsku na podstawie kodu x-err / XErr (np. konto bez profilu Xbox, konto dziecka, warunki).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/account.ts#L121-L136",
+          "version": "repo-lines-v1:sha256:c49bd7651d1bddc1eeb701157baf1c21a7b35be3135e41157dc2f553384e2e2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlOTU1ODIxOGY5YTlmMTE4NjcyMjg3YmE0MTM2YzlkZWRlMTkwY2JiNzdmZDFmZTY5MmFmNTUzYmM3OGIxZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMzNhZjVmMWZjOGQ4ZTA4YzRhYmU5Yjk3OWRjZmY2NzczOTk3NzljMWFmMjNmYWQ4ZDdmNGQyNTgzMDNjMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5Mjc5ZDZhMjJiM2E3NTI2OGEzYzRiNDc5ZWEwNDE4YzdiYmQwYTU0NTUwZWMwZDZjZTMyMTAyZDk0MGQzYjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_485d9c718b2f45288ff6f683dd532fe8",
+      "statement": "Gdy uruchomienie programu gracza z tokenem powłoki się nie uda, unelevated.popen zapisuje ostrzeżenie w logu i uruchamia program zwykle.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/unelevated.py#L138-L157",
+          "version": "repo-lines-v1:sha256:ee32e75084477ee1d284b988f31c176d0c70e1b6b3853eb9a49435fafa9ef986:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkZGJlMDZhN2QxOWZmYTJhNThjNDhmNzkwZjI3NDdkZGRhMDRlZTc3NGM1OTAxZjAzM2ZhZTViM2Q3ZWNmNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiODAyMjZkNDRlZTAyNTRjYjYxOTNlZWEwN2E0ODc3N2E1Nzc1Y2FlMTQ1NGZiY2UxZTlkMzdkNzM5MDk1M2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmMzE3MjA2ODdmNjEzMDBkNzY0ZDQyYmIyMDM1NDE1ZDExMmU1ZjhjMTMyZWRlZmY1Y2UxZjRiZWQzYTA0NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyYTMzMWUyODUzOWNkODc3MWE4OGYxZDU1NjQ0NDhlNmFlOGJmODIxYTdiYWZkMGFiYzA3OTFmNWM4NzQ4NzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_10b7af8601da4eb485735fb9598059a7",
+      "statement": "hangWatch zapisuje w logu Lumena, kiedy okno przestaje i zaczyna odpowiadać (z czasem trwania), awarie procesów i co 10 minut pamięć procesów.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/hangWatch.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:a17dae453ee5e3fe62d496035fef7a213744cee14e1bde9c2c116fba825cb381:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhY2EwYTY3ZjNlNDM2NjUzNWNlMWUyYjkyNTc4YTVkZWEyNGQwZGExOWVlOTZhNTZlMTE1YzcyNzJmNDRkMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NmJkMjE0ODhlY2RhNDE5MzFiNWMyNDlhODNhOGFjZmE5NDlkOTU3ZmEyYjU2ODY2NjQ0ZmU4Y2U4OGM0NGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9cee7473c407408ba6e091838cff3231",
+      "statement": "Start gry GOG z diagnostyką jest dostępny tylko dla gier DOSBox.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogfinal.py#L885-L895",
+          "version": "repo-lines-v1:sha256:e9b910c643fdc5be4dcf3245df65cac66c087d9b457801ddb29341b4e6d75bd7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZTZkOWRiNDgxZTZkNWYxY2EwYTdlNDVlYmVhZGVmYzU1MjQ4NTZjZGM2YTc4Yjk3OWI5MTRiYzUxMGYzODgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3Y2E4NzE5M2NmYWE5YmUwNDJkZjU3N2U1ZTk0YjEzM2RhMGJkZmRjMzZiZmJiNTliYmQxNzJmODcwNzc0ZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmZjZkNDk4NzA3YzkwODJmZDQ5ZDZhYzdlODYyYWJjMzkyMjEwZGM5MTljZjcyM2JlZmM4NDhkMzExZmMyY2UifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/gogfinal.py#L931-L945",
+          "version": "repo-lines-v1:sha256:f84b33c794f65214e75d88371df59d9e8257173d3514ec4784ffcd2a0e62359c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyNzU0NjI0OWY4MWUxMTQ1ZDM2NDBmZjA3YmVkM2YzZmI4NjdjMDRjYjEyZDc1OTM3MTg5ODY3NTFhNjllMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YTAzOTI3NzNiYWM5YTkwMDFkZjI2YTc2NWJhN2U0NzdkMzEwMzhiNDVhM2M3YzYwN2E1NGI2ZTdkMjhhNmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwODE0OTUyNDA1YTUxZTU4ZWZjN2E4N2I5Y2NkYThlZGM4NjE1YjRhMDk0ODFhYWU4MWZjN2Y2YTllMDhkMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU0YjZjNTY1M2Y3ODdhYmNiNmU2MzBiM2Q5YTMxYzRmMjhkZmM3NTY5MzUzNmI2ZTI0NTYwNDA4NmIyNjdmNTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:46:08.589Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

@@ -2594,3 +2594,47 @@ html.no-pointer body {
   font-size: 0.85em;
   overflow-wrap: anywhere;
 }
+
+/* kopiuj / wklej w całym interfejsie (2026-11-16): tekst do czytania da się zaznaczyć myszą i skopiować
+   (Ctrl+C albo prawy przycisk → Kopiuj); przyciski, listy i kafle dalej bez zaznaczania (pad) */
+:is(.card__desc, .facts dd, .details__desc, .keyguide__body, .advnote span, .toast) {
+  user-select: text;
+}
+
+/* Ustawienia: odnośnik w miejscu pola przeniesionego do „Zaawansowane” */
+.advnote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  color: var(--text-2);
+}
+.advnote strong {
+  color: var(--text);
+  font-weight: 600;
+}
+/* „Jak zdobyć klucz?” — zwinięty poradnik pod polem */
+.keyguide {
+  margin: 4px 0 12px;
+}
+.keyguide__toggle {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+.keyguide__body {
+  margin: 6px 0 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 10px 10px 0;
+}
+.keyguide__body ol {
+  margin: 0 0 8px;
+  padding-left: 1.3em;
+  line-height: 1.55;
+}

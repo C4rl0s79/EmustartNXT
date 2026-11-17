@@ -5,8 +5,10 @@ description: "Budowa Lumena: proces główny Electron, preload window.lumen, ren
 tags: [lumen, electron, react, deck, updater, architecture]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:46:08.589Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
+  - id: openwiki-source-0e32751ee2661d39a58dab3e
+    resource: repo://lumen/electron-builder.yml
   - id: openwiki-source-5a39473792996e9404198864
     resource: repo://lumen/src/main/core/uiMode.ts
   - id: openwiki-source-ea05cc17602f2ac1fc801500
@@ -15,19 +17,26 @@ sources:
     resource: repo://lumen/src/main/dataDir.ts
   - id: openwiki-source-5302eff1bb3714b91bee1699
     resource: repo://lumen/src/main/deckWindow.ts
+  - id: openwiki-source-6f89370f7dc09be72fbc87a4
+    resource: repo://lumen/src/main/elevation.ts
   - id: openwiki-source-d1b9ce3766cc38562686f8ba
     resource: repo://lumen/src/main/index.ts
+  - id: openwiki-source-a4c7f9f77c5cd84030de0eb0
+    resource: repo://lumen/src/main/instances.ts
   - id: openwiki-source-c7a3b7dae932c5a9a714e05a
     resource: repo://lumen/src/main/updater.ts
   - id: openwiki-source-1ad07c49b6016e10a33d1af2
     resource: repo://lumen/src/preload/index.ts
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+  - id: openwiki-source-7bdeef8798e03468fa7ab86d
+    resource: repo://lumen/src/renderer/src/lib/artCache.ts
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Lumen — launcher Electron
 
 Lumen (`lumen/`) to aplikacja kliencka dla Windows: gry **Steam**, gry na emulowane platformy
-z **serwera EmuStart** i gry **GOG** z serwera w jednej bibliotece. Stos: Electron 44, React 19,
+z **serwera EmuStart**, gry **GOG** z archiwum serwera oraz gry **Xbox / Microsoft Store** i katalog
+**PC Game Pass** w jednej bibliotece. Stos: Electron 44, React 19,
 TypeScript, electron-vite, electron-builder (`lumen/package.json`, `lumen/docs/ARCHITECTURE.md`).
 Logika emulacji nie jest przepisana na TypeScript — wykonuje ją **silnik EmuStart** (`lumen/engine/`,
 Python) uruchamiany jako proces bez okna; zob. [Most Lumen ↔ silnik](../integracje/most-lumen-silnik.md).
@@ -42,8 +51,11 @@ src/main/       proces główny (Node): okno, IPC, Steam, grafiki, LaunchBox, GO
   library/        biblioteka Steam (scalanie, watcher, first-seen, tryb demo)
   emustart/       engine.ts, provider.ts, mapping.ts, ipc.ts, versions.ts
   gog/            gry GOG z serwera EmuStart
+  xbox/           gry Xbox / Microsoft Store, katalog PC Game Pass, konto Xbox
   art/, launchbox/, input/ (XInput, Raw HID), store/ (settings, prefs, jsonFile)
-  dataDir.ts, updater.ts, releaseSigning.ts, deckWindow.ts, desktopLayer.ts, localMedia.ts, logger.ts
+  dataDir.ts, updater.ts, releaseSigning.ts, deckWindow.ts, desktopLayer.ts, localMedia.ts, logger.ts,
+  elevation.ts (uprawnienia administratora), instances.ts (druga kopia), hangWatch.ts, editMenu.ts, themes.ts,
+  series.ts
 src/preload/    contextBridge → window.lumen
 src/renderer/   UI React: index.html (aplikacja), deck.html (Deck)
 ```
@@ -58,8 +70,11 @@ src/renderer/   UI React: index.html (aplikacja), deck.html (Deck)
 ## Wspólna biblioteka
 
 `UnifiedLibrary` (`src/main/core/unifiedLibrary.ts`) zestawia gry Steam (`LibraryService`), EmuStart
-(`EmustartProvider`) i GOG z serwera EmuStart (`GogProvider`). **Gry nigdy nie są łączone po tytule** —
-wydania Steam, GOG i emulatorowe tego samego tytułu są osobnymi pozycjami z własnymi id i akcjami.
+(`EmustartProvider`), GOG z serwera EmuStart (`GogProvider`) i — gdy jest — Xbox (`XboxProvider`, zob.
+[Xbox i Microsoft Store](../integracje/xbox-microsoft-store.md)). **Gry nigdy nie są łączone po tytule** —
+wydania Steam, GOG, Xbox i emulatorowe tego samego tytułu są osobnymi pozycjami z własnymi id i akcjami.
+Serie gier (z IGDB przez serwer) idą do okien osobnym kanałem, nie w migawce biblioteki — zob.
+[Serie gier](../przeplywy/serie-gier.md).
 Identyfikatory: `steam:<appid>`, `shortcut:<appid32>`, `emu:<game_id>` (id z serwera, takie samo na
 każdym urządzeniu) — `lumen/docs/INTEGRATION.md` §3.
 
@@ -69,7 +84,8 @@ w `src/main/core/jobs.ts`.
 ## Dwa układy jednego interfejsu
 
 `UiModeManager` (`src/main/core/uiMode.ts`): jeden renderer React, dwa układy — **pulpit** (wygląd
-Lumena) i **TV** (pełny ekran, wygląd EmuStart, `src/renderer/src/tv`). Przełączenie zmienia tylko
+Lumena) i **TV** (pełny ekran, `src/renderer/src/tv` — opis w
+[Lumen — tryb TV i ustawienia](lumen-tryb-tv.md)). Przełączenie zmienia tylko
 układ i pełny ekran okna; zadania żyją w rdzeniu i silniku, więc trwają dalej, a wybrana gra
 „przechodzi” między układami. Skróty (`src/main/index.ts`): **F10** albo View+Start — przełączenie
 układu, F11 — pełny ekran okna, F12 — DevTools (w trybie deweloperskim).
@@ -78,11 +94,36 @@ układu, F11 — pełny ekran okna, F12 — DevTools (w trybie deweloperskim).
 
 `DeckWindow` (`src/main/deckWindow.ts`) to opcjonalny interfejs na pulpicie: belka nad tapetą i pod
 oknami aplikacji (`desktopLayer.ts`), bez fokusu, poza Alt+Tab i paskiem zadań, na ekranie głównym.
-Okno istnieje tylko, gdy Deck jest włączony w ustawieniach. Autostart z Windows zapisuje w rejestrze
-użytkownika wpis `Lumen.exe --deck` (bez uprawnień administratora).
+Okno istnieje tylko, gdy Deck jest włączony w ustawieniach. Deck dostaje migawkę tylko z gier na tym
+komputerze i 40 ostatnio granych. Autostart z Windows (`--deck`): w wersji zainstalowanej, działającej jako
+administrator — zadanie Harmonogramu z najwyższymi uprawnieniami i opóźnieniem po zalogowaniu
+(`elevation.ts`; wpis Run nie uruchomiłby programu wymagającego uprawnień), ze źródeł — wpis Run w rejestrze
+użytkownika.
 
 Gdy Deck działa, zamknięcie okna głównego (albo „Wyjdź” w menu TV) chowa Lumena do zasobnika zamiast
 kończyć program — `hidesToTray()` w `src/main/index.ts`.
+
+## Lumen jako administrator
+
+Wersja zainstalowana startuje z manifestem `requireAdministrator` (`electron-builder.yml`) — jedno okno UAC przy
+starcie zamiast okna przy każdym kroku instalacji gier GOG. Programy gracza nie dostają tych uprawnień: silnik
+uruchamia gry i emulatory przez `unelevated.popen` (zob. [Klienci EmuStart](klienci-emustart.md)), a Lumen
+otwiera adresy (`steam://…`, `https://…`) przez Eksploratora (`openUnelevated` w `elevation.ts`). Czy Lumen ma
+uprawnienia, sprawdza `isElevated()` (kod wyjścia `fltmc.exe`).
+
+**Druga kopia** (`instances.ts`): nowa kopia zostawia prośbę w plikach `%LOCALAPPDATA%\Lumen`
+(`running.json`, `second-instance.json`, odpowiedź `second-instance-<PID>.answer`), a działająca pokazuje okno
+wyboru. Działająca kopia niczego nie uruchamia z prośby (prośbę może zapisać każdy proces użytkownika — byłoby to
+obejście UAC); przy „przełącz” sama się zamyka, a nowa startuje. Osobny profil `LUMEN_USER_DATA` nie oddaje
+startu działającemu Lumenowi.
+
+## Diagnostyka i wydajność
+
+- `hangWatch.ts`: „nie odpowiada / znów odpowiada” z czasem dla okna głównego i Decka, awarie procesów Electrona,
+  co 10 minut pamięć procesów — w logu.
+- `lib/perf.ts` (czujnik zacięć `[perf]` w interfejsie) i `perfTime.ts` (czas pracy procesu głównego).
+- `lib/artCache.ts`: grafiki `lumen-art://` wczytywane w tle (`fetch` → blob → `decode()`) i trzymane w pamięci do
+  256 MB — `<img>` dekodował duże i animowane pliki kawałkami na wątku interfejsu.
 
 ## Dane: `LumenData`
 
@@ -98,8 +139,8 @@ kończyć program — `hidesToTray()` w `src/main/index.ts`.
 W tym katalogu są ustawienia (`settings.json`, `prefs.json`, `secrets.json`), `first-seen.json`,
 logi (`logs/`), pliki tymczasowe (`tmp/` — także `TEMP`/`TMP` dla procesów potomnych, w tym silnika)
 oraz dane silnika EmuStart z pamięcią gier, emulatorami i BIOS-ami. Starsze pliki są przenoszone
-(`migrateDataDir`, lista `MIGRATED_ENTRIES`). Lumen pozwala na jedną instancję
-(`app.requestSingleInstanceLock()`).
+(`migrateDataDir`, lista `MIGRATED_ENTRIES`). Po sprawdzeniu drugiej kopii (wyżej) proces kończy się także, gdy
+nie dostanie blokady jednej kopii Electrona (`app.requestSingleInstanceLock()`).
 
 ## Aktualizator
 
@@ -118,7 +159,9 @@ Budowa i wydanie Lumena: [Budowa, testy i wydania](../operacje/budowa-testy-i-wy
 
 ## Powiązane
 
+- [Lumen — tryb TV i ustawienia](lumen-tryb-tv.md)
 - [Most Lumen ↔ silnik EmuStart](../integracje/most-lumen-silnik.md)
+- [Xbox i Microsoft Store](../integracje/xbox-microsoft-store.md)
 - [Przegląd systemu](przeglad-systemu.md)
 - `lumen/docs/INTEGRATION.md` (pełny opis integracji i stan sprawdzenia), `lumen/docs/MIGRATION.md`,
   `lumen/docs/TESTING.md`

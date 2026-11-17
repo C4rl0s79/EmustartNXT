@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:47744e46b6c9d8a4d45a14f1dbdbf47f01d63c16bb4b977ed258ac7dff781be0",
+  "pageVersion": "sha256:4240fe5271b70592d9db97c38301f8c1cb15dc94c769206f4d7cd88ce1632304",
   "claims": [
     {
       "id": "claim_9173fb4ee5df47cc9e0e312f8ddb4a47",
@@ -78,7 +78,7 @@
       "evidence": [
         {
           "resource": "repo://lumen/electron-builder.yml",
-          "version": "repo-file-v1:sha256:be9b3b787f66c907e66c35b2c7dcb7e8bdd351603ab2bc67b9b822cac099ad2f"
+          "version": "repo-file-v1:sha256:7af9479ace8bcc1bbbf8f2fc5629dfe0a27dbf889f12968b45ea055cfe06590f"
         }
       ]
     },
@@ -98,7 +98,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/lumen.yml",
-          "version": "repo-file-v1:sha256:281abb37a59d4be6755f63e41d18fff077c97a77eaac4bb60625bc133ee30174"
+          "version": "repo-file-v1:sha256:575c9d8d59f085b32a3a32ddf1f5e3dd742651627794a960747b6b215ddb409c"
         }
       ]
     },
@@ -108,13 +108,43 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/lumen.yml",
-          "version": "repo-file-v1:sha256:281abb37a59d4be6755f63e41d18fff077c97a77eaac4bb60625bc133ee30174"
+          "version": "repo-file-v1:sha256:575c9d8d59f085b32a3a32ddf1f5e3dd742651627794a960747b6b215ddb409c"
+        }
+      ]
+    },
+    {
+      "id": "claim_b9583ad449384f1aa79be5e022a42b5e",
+      "statement": "Zbudowany Lumen.exe ma w manifeście requestedExecutionLevel requireAdministrator.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/electron-builder.yml#L17-L21",
+          "version": "repo-lines-v1:sha256:c21d29c9958f4dc03bd6d3417034aa4082529467e6f494e6275317ae641060a7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc4ZmY0NTUyZmU5Y2Y1MmE5MGJiMTNhMjFiNTViMTY4M2ZiMDYwOGE5ZTYxNDlhYWMyZjNlMTIxMzM4ZjYxNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjUxYmM4ODMzNmJlMGM1MTEwM2ZkYzRjNzY0MDljNjAzNDcyMTBmZjFkOTg1N2UxOWE4YmRlM2I0NzNjMDUzNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGI2MWY0YmYxMzgyZjZhMWEwNDhiZjdhM2Y5ZDNlN2ExNzFjNzgxNTRiYmRhNzFkOGFiNGZjNjg3ZmFiYjJjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDQ2YTJhNGMzMmJiYjc2M2E3YmE1NGM5OGE0NmEzNWZhNTBhNWQyZjdmMTg2ZWY1MDJlYzJkNGUyYmE2Y2JkNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7c70c191f50646d498847cd944155702",
+      "statement": "scripts/publish_wiki.py składa wiki GitHub z emustart/docs/wiki, lumen/docs/wiki i openwiki (strony Technika-… bez nagłówka YAML, z przepisanymi linkami), tworzy Home i _Sidebar, usuwa tylko strony z własnym znacznikiem i z --push robi commit i push.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/publish_wiki.py",
+          "version": "repo-file-v1:sha256:06d2607905b08d9606108a3f3404715da6095a248daa84d70f06815b9fc5f41d"
+        }
+      ]
+    },
+    {
+      "id": "claim_5196dd5dc7ef496d9b0ada9345fcd6db",
+      "statement": "Workflow Lumena uruchamia vitest z limitem czasu testu 30 s i instaluje pillow do testów grafik.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/lumen.yml#L50-L65",
+          "version": "repo-lines-v1:sha256:3a438c4572011ed7a011e22100f918a86201b183405166979f535470924951c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3YWRiMzlhMzA1MTlhYzIzZjEwODA1Nzc3MDA0OTRmMzYzMzUyYjVkNzY0OTE1NDY4ZDZjYjc2Y2I5NWM3ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNzRiMTRjMGE5ZTljYjZlOTY0N2IyMTg0MWFmNzVlZmQyODEyMjYwNzhlOTkxZWY3NjViNDUwZDQ2N2UzNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI3ZmQyZGRlMzZlNDhjYzJjYzI3MTE1ZmIyZDQzMDk5YjYxODlhOGE4NDM4NzE1MmZmYjY5OGUyMWRmOGNkNTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:54:21.084Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }
