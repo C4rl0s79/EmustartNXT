@@ -35,7 +35,7 @@ sources:
     resource: repo://lumen/src/renderer/src/tv/TvGamePage.tsx
   - id: openwiki-source-7ebb2eee42acf299ab5362e6
     resource: repo://lumen/src/renderer/src/tv/TvGames.tsx
-generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # Lumen — tryb TV i ustawienia

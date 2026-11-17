@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fdae5bc2189540ca1f769efb005aeb62d8c96dfef544a560260f16a333fd8656",
+  "pageVersion": "sha256:1f2ae31aec845fad5038ed4d78d4b2b86c4cf32d64bb5ac52e857bf1df5d8ac2",
   "claims": [
     {
       "id": "claim_3244112076f04ab0bd8c6c8a71d8f96b",
@@ -17,7 +17,7 @@
       "statement": "Gra Xbox startuje przez explorer.exe shell:AppsFolder\\<aumid>, więc bez uprawnień administratora, a gra spoza komputera otwiera stronę produktu w Sklepie Microsoft.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L1425-L1445",
+          "resource": "repo://lumen/src/main/index.ts#L1527-L1547",
           "version": "repo-lines-v1:sha256:11657ff66501b75e9fe586029e0d2d6d454431411a212024ce83c9a3d4a58b2e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMjNiZjI2OTg1MTFkN2Y2N2JkZjQ5MzNmNGJkOTA4ZDc3MGRhNjg3ZWE0M2JiNDdkYzFmODIxMzE0YWZjNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxMjJjMjU2YjM3YzMwZDhhNDI2ZjYyMzk5YzIxZjAzNzFkYTAyYTJjZTNlYmNjNmE3ZDZkOGM3YzE5NTE5ZjIifQ"
         }
       ]
@@ -27,12 +27,12 @@
       "statement": "XboxProvider tworzy jedną pozycję xbox:<StoreId> na grę z gier zainstalowanych, konta i katalogu Game Pass, a kopię katalogu Microsoft odświeża raz na dobę.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/xbox/provider.ts#L130-L140",
-          "version": "repo-lines-v1:sha256:1fdc4f876c342cc4e2dabeb4fb5ec84cae85fa327b05e9b2415f5bc366cfa34a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlYmY3MzQxZDc2MzIwMTk2MDc3NGQzMDY0NmEwZGYyMjAyM2JlMTZlMjU3NTZhYzkwYzY4NTJlMDY2NTNmOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjODQyOWM5YTNlZTM0MDE0MWEwMWFhYmI4ZmVkODIzMWE3ZDA4MTBjYWNiZjEyZjQ3NDlmM2U0YzU1NGY4MGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhM2U2M2YzOTBkZDI5N2Q5YmEwMzY2YWEyOTU0ZmVhYTAwMDUzZmQ1YTMyY2RlZTQ5ODYzZDE3MmJjZmYxNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNjViZWFjMzNjN2IwNzFlNDc3OWM4M2YyNzIzNDA2NmViMTYyNjJlMDZiNWNjN2QwZDFlMGRhZDU4MGU1NGYifQ"
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L164-L176",
+          "version": "repo-lines-v1:sha256:6a99770c4d470e8dfc140236d396767cdca629ae2e38d397b9fbe0e434eae84a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlYmY3MzQxZDc2MzIwMTk2MDc3NGQzMDY0NmEwZGYyMjAyM2JlMTZlMjU3NTZhYzkwYzY4NTJlMDY2NTNmOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxNjVhMWYxODI3YjU4NmY4ZDBmZjcwYzg1MGE3NzA1NGZiNjE1NmM3MDE2NWQ5ZTJkOTI3NzljMzY4MmEzODMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhM2U2M2YzOTBkZDI5N2Q5YmEwMzY2YWEyOTU0ZmVhYTAwMDUzZmQ1YTMyY2RlZTQ5ODYzZDE3MmJjZmYxNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMzZlNjA2MDM5Njg0NDRiZjllNmYzNGIyMWU5NGRjMzA5MTgxZDJlZmNlMDJiYTI1ZDc0ZDNkNDkzZDhiNzQifQ"
         },
         {
-          "resource": "repo://lumen/src/main/xbox/provider.ts#L8-L50",
-          "version": "repo-lines-v1:sha256:c0a79559b999fc73e7d21af23a7f15503013e55087b0ef123e7b8220559b2520:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3M2QwMDMyNjc1ZjllZmYzYjg0MGYwYjhlOWVjYzQ0N2Y1NDgxOTU4ZDcyNjdjODZjNWZkOThlY2E0ZWIyY2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3ZTM1N2ZmZjk3MjY3YWM2ZDAxMzVhYWZmODllM2Y1NDFlOGU0ZjI2OTBiZTU4OWQ5MTdmMzBlZjZlNGM4YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhY2FjNDg3YzJkZTU0NmU3YTM4ZDEwNDJjY2JkOTFjZDZlY2VlZGUzMzdlNGZiOGQyNmQxMzhhMjk1ZmU5NWIifQ"
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L33-L69",
+          "version": "repo-lines-v1:sha256:68e414fa361332c0f09383c0c3a72f0b7ef554a16c0d05889a45b1f14f67faa9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMTkzZTc2Mjg5M2MxOGVlMTlhNDMyYTQwMDI0MDg0MWRlZTNlOGJjNWI5NTM4NjIyMjA5MWJmMGMwOGM4YzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxY2M0NzdjNDdhYjQzMzVhOGUxNjBmN2QyNjMxNGJkNjk4OGU5Yzk5NmJiNTEzZjEyNzNkNDI0YjFjMTU4YjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjYTk0OTBiMTE0Y2E3ODM4YTY5NDkyMGJjZDJhZWEyYTJkODc5YmQxMDZkMzk0ZDlmY2EyYjVmNmE2YWZlYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxMDMwZjM0NDM2YjdkMzYwYjZjN2MwN2Y2MDc1ZDQ5Nzc0MDZhMzZiYmYyNjA5NWRiNzkxOWNmMTgyYzVmODAifQ"
         }
       ]
     },
@@ -65,7 +65,7 @@
       "statement": "Nowe logowanie Xbox zapisuje token odświeżania dopiero po przyjęciu przez Xbox Live, a synchronizacja konta powtarza się co 6 godzin i przerywa po wylogowaniu.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L1508-L1530",
+          "resource": "repo://lumen/src/main/index.ts#L1610-L1632",
           "version": "repo-lines-v1:sha256:bd2a4e5e1603b2b383e67e4d88acef7defad72b101153d2e193c514111ce51aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNmY4ZTE1MzRmNjlmODJmY2Y3YjQ1NzI2NjJjZGYyMjVkM2NmNTk2NjM3MGVhOGM1OTgyZjhjMTVjYTBkZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyN2MzMmUzM2I4Mjc0YTg1YmQ1YzA2NDczOWE4YWQ5MDFmMWM0ODIwZTQ2ZmM5Y2VhMTg4YjY1ZWYzNDkwMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmNWEzN2VkZWIzNTcyYWY4ZTc1ZmI4YTU3YTc4NGFlMzQxZWM5OTRhMjU0ZmFlODhkYmRlZGFjZGYyZDA4N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0MmM4NzQ4MTZmYTAzZGZhOTg0MTQ3MzhkNWZiMGI3ZGNiM2M2MTAyYTM1ODM5ZDMzYTkwMDA2Mzg4ZmJhYzQifQ"
         }
       ]
@@ -79,10 +79,38 @@
           "version": "repo-lines-v1:sha256:c49bd7651d1bddc1eeb701157baf1c21a7b35be3135e41157dc2f553384e2e2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlOTU1ODIxOGY5YTlmMTE4NjcyMjg3YmE0MTM2YzlkZWRlMTkwY2JiNzdmZDFmZTY5MmFmNTUzYmM3OGIxZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMzNhZjVmMWZjOGQ4ZTA4YzRhYmU5Yjk3OWRjZmY2NzczOTk3NzljMWFmMjNmYWQ4ZDdmNGQyNTgzMDNjMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5Mjc5ZDZhMjJiM2E3NTI2OGEzYzRiNDc5ZWEwNDE4YzdiYmQwYTU0NTUwZWMwZDZjZTMyMTAyZDk0MGQzYjAifQ"
         }
       ]
+    },
+    {
+      "id": "claim_a1a36c03bf3a4d9fb432d2c18d05d283",
+      "statement": "Opis gry Xbox (opis, producent, wydawca, gatunki, data premiery) pochodzi ze strony produktu w katalogu Microsoft, pobieranej przy otwarciu gry, z pierwszego języka mającego treść.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1024-L1047",
+          "version": "repo-lines-v1:sha256:9a1d4ee36f420908a37f0c0af08efaaf97c4e8978fbb440d79daf44d142bcacc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZGNlMjcxZDlkN2YyZTRjYzNiNmI4OTA3NDhmNGE5NjAxYTY3MWU3ZTU5ZTkyNGNkNDc5MjA5OTU4YjE1NzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5NDNjZWQ2MTcwYzg4MmIxZWFkZjI5ZDk1YjljMzQyMWZiNDJmZjdhMDgzZGJlMmJhNmE3ZGMyZGUwNDg1YTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5YzhhMTgwMGE3NzlhNDc2MTQ4NTJlMTJlNzZhNDVmNGM0N2YzNjQxM2I2NGY4NmM1ZjFhYjI0NDVmNzQ1ZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYTIzZDBlNTI2ZjZiNjg2ZjM3ODgwOWQ3YTQ2ZWJkZmZlYTMyMThkYTBlODNiNzIyMGZlZWE1NDQ2ZTc4ZmEifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/xbox/catalog.ts#L92-L128",
+          "version": "repo-lines-v1:sha256:53a21424194a61ae6d3075cd522bf2306c991d661c6a45ce4b19a4aded5fb731:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMzc0YTMxODExNzRkN2M0NzlhNGQxMmQwZmM4MjNiZWZhMjY4NGIxMjM3MmYxYWNlYmVhMzllZTFjOWI0MjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwZGIwZjA1ZGY4OTljM2VjMWI1NzhlNDhhMmVhZTFiMDFjYjc1ZGQ1ZTZkNjZkZThlMWFkYzQzNjczOTFiYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1NmUwZmQ3ZWE3MDA5YTgzNTIwNzVhNTYyN2I1YTZkYmFmMDlkYzc4Y2FmODNlNmIyNTZkM2MwNDZhZDE0MGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4a25c1084597493e8f01c478ce772fa9",
+      "statement": "Opis gry Xbox jest zapisywany na dysku na 30 dni, a produkt nieznany katalogowi na 7 dni; bez sieci zostaje ostatni zapis.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L20-L30",
+          "version": "repo-lines-v1:sha256:3e1704f070d0288eecf978638c4822b586cab4025e08b4c4ac8324c5edb2f752:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4OTZlMzNhNDgwMTg3MTJiOGRjMTI1NGFjMWU0NDBiNDgwNjcxOTk0M2VhYWQ3MmNkYjJkYjFiNzRjNTJmMzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjc1YTBkZTYzZThiZjllNWFkODkxZTU3ZWZlOWEwMWRjZjU0NWY1MGQ1MGYzYmEzZGMzYTkzMmZhMTY4YWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ODBmYzY2NjIyMGZkNTgzNmM3YmMxZjMxYjgxYjcyMzVlNTM2YzBkZGMwZTZmYTZjNTc1ODI3YWY0ZmU4ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRkZTliNDJkMDhhMTMyNmE1MWEyYzRkYjM1MTRiNTIwNTU4MGNkNWMyNTdjNTc2NGFkYzUzMmY2YTg1NjA0NGIifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/xbox/provider.ts#L95-L115",
+          "version": "repo-lines-v1:sha256:d7f9f756d4eee0d4d9badd2bc854dabf2975384957350409b68185c66a3239ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjMGNhYmM1ZjBjNDcyMmVjNDI1NDUxMWUwNGI2MmU5NzMyYWZhYWQ2MDg1MTliZjJkZmFkZDJmMmViY2Q5YmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3ODJkOTllMTBhYWU3MzBmOWUzNjA3YjU0NTdjZjJjM2M5NjI1ZDdhMWU3YzkxZGYxMjc4NGYwNDA4MTEzNTEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T21:56:42.171Z"
   }
 }

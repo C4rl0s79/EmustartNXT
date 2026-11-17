@@ -50,6 +50,12 @@ A na liście otwiera stronę gry: tło gry, logo, przyciski i opis z miejscem do
 - Szczegóły w trzech kartach: **Na tym komputerze** (stan, rozmiar, emulator, zapisy), **Twoja gra** (ostatnio,
   czas gry, uruchomienia), **O grze** (rok, gatunek, producent, wydawca, gracze, wiek, oceny w jednej linii).
 - X — Graj, Y — Opcje gry, R3 — Ulubiona, B — z powrotem na listę, na tę samą grę.
+- **Skąd opis** (także na stronie gry na pulpicie): sklep Steam, GOG Manager, serwer EmuStart, a dla gier Xbox —
+  katalog Microsoft Store; czego tam brak, Lumen bierze z bazy LaunchBox, a gdy nadal nie ma opisu — z Wikipedii
+  (polskiej, potem angielskiej). Pod opisem widać, skąd pochodzi. Jeśli opis pasuje do innej gry albo go nie ma,
+  wybierz właściwą grę w **Opcje gry… → Grafiki → Zmień dopasowanie gry** (potrzebny
+  [klucz SteamGridDB](Klucz-SteamGridDB)) — pod tą nazwą Lumen szuka też opisu.
+  Wikipedia przyjmuje tylko kilka zapytań naraz; gdy odmówi, opis pojawi się przy następnym otwarciu gry.
 
 ## Ustawienia
 

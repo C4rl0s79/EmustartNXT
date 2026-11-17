@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5236eac6ff78e87fd853e6906951144b4fc397dc7670e6cf2c01768a30bfd2c3",
+  "pageVersion": "sha256:bbd5f2e5223e3e193b1dc7da51395909a4f5da1cedaca9090f08076cf2735238",
   "claims": [
     {
       "id": "claim_306e709c34e14457af6d392686268821",
@@ -21,7 +21,7 @@
           "version": "repo-lines-v1:sha256:29c7b1e8f44bbb748fee0b35ca9521b4f99e7209deb45e93b033e9d62c4ae043:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzYmE4ODM0OTRkNTE3YjEyYmE2OWIzYmQxYjllMjBjOTBiNmZiNmI0NTBjNDFmYzBmMDIzMjE0YzgyM2M0ZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMzkzNWU1ZjA2ODBmMGVjN2U5NzQ4MzRmYzlkN2IxOWM5NzY2ZWYwNjk2NmYzNzkwMThiOGZmNWVkMmNlMmUifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L632-L638",
+          "resource": "repo://lumen/src/main/index.ts#L622-L628",
           "version": "repo-lines-v1:sha256:fde4fa9ae7f33ebda49aa6cea752e24d878a4ae035565675dd60da65470d7633:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWIwNjMwYTdlOTA1ZWMzMTgxYzU4MDhmYTI3MGZhY2M2OGY1YTRiY2Q5YjNhZjFmOTRkOThmOGJkZjc3NTIwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E2MDFmYjMyMjc1M2E5ZTg1ZTBhNTM4YmIzNWE0OGU0MzUzNmQzZjg4YWVlMzZlNDhiYjg3NmI4MDQwOThkNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjk2MGYxNGU2NjkzZThlOTc3MTVjOTA3YzdjNTQxODczMTgxYjk4NjE5ODVhNjBkYjkwMzQwZmE1NDU4YzkwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2M5ZjcwMGVhZWE4MjNiOGYxNjE1N2Q0NzQ1YWY1NThkMjZkYjlmMTRhMWUwYzUxYzZiNWY4YjZlNWNkNWY3MiJ9"
         }
       ]
@@ -45,7 +45,7 @@
           "version": "repo-lines-v1:sha256:31de3ff19794752510608d76f4d40354adbc3acb627fb4e4f47eea67e954b5d0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1YTQxNzc3YjhkN2Y1YmM5ZWFkZDY0N2FmZDNhNjVjY2VkZGUwYzAwNWZhMjlkOTllYmM2ZTBmNmZmODg5ZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzMzhiZGIyNzYwNjhmYmIyN2Y1Mjk4NDhjOWIyZWEyYmRhNWU4OGE5N2Y0ZTdhNTJiY2U5MGQ4ZGM1Y2M1ODIifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L94-L117",
+          "resource": "repo://lumen/src/main/index.ts#L82-L105",
           "version": "repo-lines-v1:sha256:efcf980af89a0ee64462a920c843dd7ee27162b1969101cfaf1e12f300d8bab8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MzUyZGZhNmM1ODYzOTljNTJmMGI4ZmZmN2U2NTJjZWRiYjI5YmI0NTZkZmVkMmQwOGU1ZjdhMTA1ZmQ3ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTE1NjQ5MzFjYmYyYWM3MDU1OWY3YzEzMGM5MGFkNGQyNjIyZWE5MzliNDRlYjlhZTEzMTk5N2RmMTYxOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMTQzNTRlNDllMTVlNDg3ODE0NzRiYmNjZWMwMzk1ODEwN2E2YWRmMmU1NDM1NzM3OTc2NTQyYjU5ODNiOTMifQ"
         }
       ]
@@ -55,7 +55,7 @@
       "statement": "Gdy Deck jest włączony i działa, zamknięcie okna głównego chowa Lumena do zasobnika zamiast kończyć program.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L395-L398",
+          "resource": "repo://lumen/src/main/index.ts#L385-L388",
           "version": "repo-lines-v1:sha256:9fa39c898ecdb02e53d1e632c2a2874e8e77a16cd8756f9a035d0d4d1938423b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGFkOTBhMWE0NjM4ZmE4NGMzNjcwNWVhMmI0YTVlNDI1ZmYxMDM0YTQwOTFiNDI2ZjYyMTBkZmJkMmJmOTMwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQ1NTU5YTFlOTdiMDMyNmI4OTQ0ZjI2MGY4OTIwZjMyNTQ2MDg1YmQ3ZjMxYWNiOWVjMjFkMTQ3ZmUwOTY1OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2VkODgyMzgwMDQxZWZlYzIwODgwMzVmODBiYjAyNTlmMThjNmU1NGNlYTQzNjFhODY2ODQyZjA0NGI1MDJlZSJ9"
         }
       ]
@@ -109,7 +109,7 @@
       "statement": "Autostart wersji działającej jako administrator to zadanie Harmonogramu, a ze źródeł — wpis Run w rejestrze użytkownika.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L236-L276",
+          "resource": "repo://lumen/src/main/index.ts#L226-L266",
           "version": "repo-lines-v1:sha256:d3e79389cb1234ceaf868fcbbd5481051988654753608195e4f74664a44f9489:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZjgyZmY0YTA2YzQ2N2QwMzBkYTc2NjQwOTlmOGYzZWU2MjQzYjZlYzY0MjQ1ZTM5NTY5M2UwZDY2OTdiMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhYjFjZGQwZTI5MTlkM2RhYmM0NzA3ODdiNWIxODc5Y2FhNGY5NzQ0NGU5NTQ3MDY4YjZkMTY1ZWQ5NWY1NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4ODg4ZTUxNjhiOTUwZmE5YWJiYzdiOTg5ZDAzN2JlNTUyYzJhYjkwNWI1YjEwNDE3MDcyOGQ4NjFjMzA2NDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU5ZTk2ZWY3NTQ3N2FmOGJmYTYzMDRlZDlmYWZkN2QxM2E1ZTliYTM1ZmE4ZmU5M2VjOTk2MTZhZTc5ZWIifQ"
         }
       ]
@@ -119,7 +119,7 @@
       "statement": "Deck dostaje migawkę biblioteki ograniczoną do gier na tym komputerze, gier w trakcie pobierania i 40 ostatnio granych.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L346-L364",
+          "resource": "repo://lumen/src/main/index.ts#L336-L354",
           "version": "repo-lines-v1:sha256:b8e2b92dbd20b7d8948c846ec5783a510eb9707302a4d26011b62496a187b34e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1ZjJiMDYyMjk0ODMxMTQ2ODg1YzVlYzIzNDQ0M2JmZjg5MzZkMzgxYTk5OTU4MmNhZjRmZjM5YWQ2NmQ0YjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzYTRkMDM1ZTU5MDIyNGFhZDhkNWVlMzRlMWQ0MTlmY2NkYTQwNzA1ZGFmZTY3YTE2ZTkwYzEzNGZhZTI0YjcifQ"
         },
         {
@@ -157,7 +157,7 @@
       "statement": "Deck dostaje listę zadań kanałem jobsChanged i na kafelku pobieranej gry rysuje pasek z procentem, prędkością i czasem do końca; każdy kafelek śledzi tylko swoje zadanie.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L334-L336",
+          "resource": "repo://lumen/src/main/index.ts#L324-L326",
           "version": "repo-lines-v1:sha256:b086cc466d38fc8bca42e7a435b5e289f6cdd2711117b51d9f808c34fc9d3a85:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzdjYmU2OWZkMmI3NzEwYjQwODQ3ZmZjNTkwMTRmZTIyZGZhNjY5ODQwZWQ4Y2M4YWU0NWI2Y2VjZDdmZTVjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTUwOGMxMDVkNmU5NWM2NDAxNjQzNmE3ZGE4OTQwZTM5YzE3M2I3Njg5ZWMzNWM0ZjAwMjY2NjllOTk4NTNjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzViN2ZmODVmM2JkYzRiOTMzYjY2NGJkNzhlZDAyNDU1NjI4M2VkNWNlYWY2OTc3MWE4YjU0ZWZmNjA5ZTNjYyJ9"
         },
         {
@@ -165,10 +165,72 @@
           "version": "repo-lines-v1:sha256:4e970d56ca626c3761f02d3f946c83a89bd77c6c2d8e8b88aba17619e86f1ad5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMGMyNmNhZTFjNGIyMzI3MWQ5ZDhkY2JlYmYwMjkzYmRjZjFhYjM2YTFkYTI5YThkNGE0MDNjOWQwYjFjNzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlhYzBlZTU5NjUxMDY0NjkxNmVjOWY4NGE3YmU3NDhiYTY0ZTAxODM2OTUyMTAwY2U4ODdhYTdlYmE3NjZiOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NWE0ODA1ZDU1NWQ4YTg4OWRiZDU2ZjE0YTQ5MTRiNDYzMjQ4Y2I3YWJjMDU1ZDM0MDQxYWYyMWRkZmE0NzQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_74041c61e6b94d2cb411b522fdf118e3",
+      "statement": "Gdy po własnych źródłach gry i LaunchBox nie ma opisu, Lumen bierze streszczenie artykułu z Wikipedii (najpierw polskiej, potem angielskiej) jako ostatnie źródło dla każdej gry; pozycje demonstracyjne nie są szukane.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/details/wikipedia.ts#L148-L156",
+          "version": "repo-lines-v1:sha256:11428882a1e96fee96d35540984ac0706e10c14f0d948f18dd8a272e8c4398af:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmRjNWQxNjE2NTliNzI3YmMxZTg2MTMyNGU1NDM4ODA3NjA1ZDgwYTEyOTcwMTdkMTNiYzUzZjYzODQ4YTEzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGViYmJlMDBjYWI1Yjg5Yzc5MTFhZmQ2MDZhMjkzZDZiMTFlNzQ2ZWZiNDM2MDcwOGI4YTUyZDBhNjY4ZWY1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWM3OWY2NmRlMWEwZjY2YjBlZTYzNWE0Nzk5MjYxMmEzNmQyMDZhYTIzNzE4NjQzYThlMWMwNDFjMzlhM2RlMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmRjMGU3ZmM4YTg2NzI5ZmYxMTczNDkxNDdmOTE5ZGFmNWIwYjM5NjJmOGE2ZDY4MjIzMjc1MmVlZGYzNDhiYSJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1009-L1022",
+          "version": "repo-lines-v1:sha256:44ca3ddac0b04b01d6c31e08353ad5d56eb9c2bbbf37efd98d02cfd2648939a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMDI0NDFjZjBkNWE5ZTViN2Q4NDFjYzllOTIzZTEwODcxYmFlMGM2ODQ0N2UzZGMyY2Q5YmRlMmJlYjEyZDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0MTE1MDdiNjgzNTQyOWQzNjZkNjBmNWYwNjM2OTVjNjMyNmE3MWIzMDI0NTQwZDI3OWRhZWE1ODc3NDM0YWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlODc0ZDcyOWI0NTM3MDYzNjExZjU3N2EwOGYwMjY3ZmI0NzdlNjRiMDk1NjZhOTNjNmJjM2Q0YzE2MmQ5M2MifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1795-L1801",
+          "version": "repo-lines-v1:sha256:460b30f5991d3646d447483b9ff7f91aa726b6fa2cf39232d391e38bff7b68fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjFiMDViZDA1MGE1ZmVhNjA3NTgxZDI4YWUwMjA4MmZkYzY4OTUzYThkZjRlNTQwMmVlNTI4OTgyYjc2MGNiOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjIzNTI1ODljMzRkM2M2MDY4NTkzMWI2ZWNjNGQ1MDk5MWE3YzU2YzhmYmEyODk0MTE0NjU3NjkwMjcyY2FjMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODg2ZTc0ZmExMThmMDVjMWMzZDYxODUxMmY1N2FiY2ZhNWJjZjM1ZGJlZDlmOTA5MTVlM2JhNTEwOWE0NzQxZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDU1OWU5NGVhYjlmMjQ1NDNjMmQzOTIzMzUyMTAxNjgzZjhkYzIyNDBlZjIwMjE1MzQxYmU2ODExMDNkOTk0YSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_808934ffc320480ebdc0bc9063d28761",
+      "statement": "Artykuł Wikipedii pasuje do gry tylko wtedy, gdy jego tytuł bez dopisku w nawiasie jest podobny w co najmniej 75 % i ma te same numery części.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/details/wikipedia.ts#L49-L62",
+          "version": "repo-lines-v1:sha256:5c93f3b7699842a43f4c86fc988945660296b8101966aba39db78ac1ff8720f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmQzMzRhNzg2MjE1ZDRhMTQ4YjZjNWNiYzZlZTEzNGViNzI3ZGZmNDYxODAzZDQzY2ZhOTNjNDgwMTAxODgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5Yjc1YzgwOGI3NGYzNWFlNjFlZDQ3ZDQzZTcxYTQ3YWZiOWRlN2ZlMDhhNWViODMyZGNjZDYwOGRlODA3Y2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3NDhiOGE0OTkzYzQ5NmViNWFjZDBiMWY1YmU2MDZmYTllYTBlNWNjM2ZjZjA3YzQ4MjlhMGM1MTgyN2Y0YTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b442947b9cf40edb1f5027d94bc8e27",
+      "statement": "Zapytania do Wikipedii idą pojedynczo przez kolejkę, a po odmowie HTTP 429 następuje przerwa od 2 do 30 minut, w czasie której nie są wysyłane zapytania ani zapisywany brak artykułu.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/details/wikipedia.ts#L134-L146",
+          "version": "repo-lines-v1:sha256:680f07654271c7849619064e956aebb3afb02540562c52a7a1cefbf93fab83e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliNjdhNDE5Njg2ODljYmI2N2Q2YWEyNGVmNzg0OWFhYzQ1OWFkN2ZmMGVlMzc2YzQzZDhhNGFiNjAyZWYxNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyOTQ2MTRjZjFhMjA2YjFkZDJjNWE3OGI2NjEwZThlZDA2MzVmM2Y2OTYyZDg1MzZiNjUyMzJmZmU5ODk2NDgifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/details/wikipedia.ts#L64-L72",
+          "version": "repo-lines-v1:sha256:c5c5dcfe070711dc15a6e11727e4eda5db8db810851f71afab505296bde998c4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2Q0NzhjMDhkZTQ1YTFjYTc4OTVkNDA4OWRmMGIxZWM4NDZiYzM2MzkxN2E5MzljMmUyYjc0Y2Y1OWU4ZGNjMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjQ0MDg1MTI4MGI4ZTE4MmQ1YWE5NjBhNGU3OTNlNWMxZjcyY2VkNjY1ZjdjYjM2ODJhYTkyNzg1Yzc5MzJjNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_39f9f64438b444f2a420b3fa590a02e3",
+      "statement": "Nazwą do szukania opisu jest nazwa w LaunchBox od administratora, potem gra wybrana w dopasowaniu SteamGridDB, potem nazwa ze sklepu.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L976-L983",
+          "version": "repo-lines-v1:sha256:7977d7fb160ea15199b69f252a9a0ffa867a3b652905779664e2dd0d3f22de65:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFmMjJjZjA3MzI1OTJjMjQ3MTQxY2JlNjFlZmExMTAxMjYxMmY1YTMxMjJiOWFmOWJiYWY1MmY1NzI0ZDE5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDIxYjIxYzI2NTJmNGVjMGI5NTE0Y2M3M2E3ZDE1YTk2YTA2YTUxZTAzNGM0MDQ4ZDY5OTYxM2YwMTNkZjE5NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGJjMTcyZjZhMWMwOGMzOTAwMWMxNTkxMTcwNWU2YWMwODBlMzcwYTZkMjhmNzMxYjI1MjZhMDIzNGIyYzBhYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e3d3a4f9c7a415e8d68eaeb2f6f8365",
+      "statement": "W trybie TV strona gry pobiera opis na nowo po zmianie dopasowania SteamGridDB lub nazwy w LaunchBox i trzyma przez sesję tylko wyniki z opisem.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L17-L48",
+          "version": "repo-lines-v1:sha256:b86a17a4552ba2f06b3934ea80a9766763112f05f8df12bfba73a7a28f37d0cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NjljMGE1MDE3YWRhN2Y2ZTQ5ZGIyM2ZhNzY3Y2NjNjA1NzAxYWFmZDM4NjQzYzdiMDJkYTZhZjE1OTRkODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0ZWNkOTIzMjUyNjFjMDg0MGI0ODAwMmNjMzZmNGExM2YyOGE5MDQzYWFjY2RlNmI2NWY2YzFhNDA5ZDYwYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3YjkyNjE4NzIyNDViZTA2NzY3MjM0ZWI0NTcxMzdlNDcyYWNjN2Q0OGYzZDExYjYzZTUzZWU5M2QyYTFiNzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3Y2UzY2E3M2FhODAzZTk1N2NiN2NhNmVmMjZmZjQ0MWQ0OTBiMzVjZjk2YzNlNzQ4M2VlNDljNjkyZmYwMjcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T16:11:28.167Z"
+    "at": "2026-11-17T21:56:42.171Z"
   }
 }

@@ -19,7 +19,7 @@ sources:
     resource: repo://lumen/src/main/series.ts
   - id: openwiki-source-f891089b004ed1194d67eb3d
     resource: repo://lumen/src/shared/series.ts
-generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # Serie i kolekcje gier

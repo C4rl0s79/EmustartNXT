@@ -25,7 +25,7 @@ sources:
     resource: repo://lumen/src/main/index.ts
   - id: openwiki-source-e675b383c011628ae63c821d
     resource: repo://lumen/src/main/serverActivity.ts
-generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # Most Lumen ↔ silnik EmuStart

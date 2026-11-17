@@ -21,7 +21,7 @@ sources:
     resource: repo://emustart/emustart/userart.py
   - id: openwiki-source-0249de2a4b6e41f78c81c34c
     resource: repo://lumen/src/main/art/artSync.ts
-generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # API /v1: urządzenia, konta, zapisy i grafiki

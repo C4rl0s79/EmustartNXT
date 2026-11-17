@@ -2,105 +2,105 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architektura/klienci-emustart.md": {
-      "pageVersion": "sha256:0c1f0279664a79d91f521919267dd5ab8cc33027d3fcebd715fa242c3c79c8e0",
+      "pageVersion": "sha256:4e63c4471b2ccca3e4f4ac19fa88269ab02d6e509a1986a22a12f4c14e928f4b",
       "completedBy": "claude-code",
       "completedRunId": "61e83055-8f48-4d42-b614-b7c9227df27d",
       "gitHead": "e0d82f4aed1145eacb8d9af6553da30c52918584",
       "sourceFingerprint": "sha256:dcf6cc5cde16d45cc5940f6573ef2b0229917b0bdd6e9195ac1fd3f1f480e49b"
     },
     "/openwiki/architektura/lumen-tryb-tv.md": {
-      "pageVersion": "sha256:0b7ce1e9297b8d139ec7931cf299ed04bbb1cafdae128a7b045071b1d013e044",
+      "pageVersion": "sha256:336d11c541aa48fb1e4b9da5f76c339043b2b2d928e4abc5cb125f93671bd82c",
       "completedBy": "claude-code",
       "completedRunId": "5e58be37-642c-4d96-96e4-915296e3275d",
       "gitHead": "d7f546b3092408db2122f3c8858f625f546bfab6",
       "sourceFingerprint": "sha256:43018793e9a84830fd7a421f0faecc03855ecbc3a7be9a4035a4e746cd7f5f3e"
     },
     "/openwiki/architektura/lumen.md": {
-      "pageVersion": "sha256:5236eac6ff78e87fd853e6906951144b4fc397dc7670e6cf2c01768a30bfd2c3",
+      "pageVersion": "sha256:bbd5f2e5223e3e193b1dc7da51395909a4f5da1cedaca9090f08076cf2735238",
       "completedBy": "claude-code",
-      "completedRunId": "2f864b7a-e731-4d5e-bd8b-2ce14b5073c0",
-      "gitHead": "12c73d8288edf80914e2ead9ba2881c66455c561",
-      "sourceFingerprint": "sha256:5ef3bbb1f90343ccdf63da2afb39a0807ef38797a74cb1dd02b42d84aac67026"
+      "completedRunId": "8c745348-d986-4c7f-a918-4bbfd5e62741",
+      "gitHead": "5e3862ebd37181968e275042ae8a0ead33c8947e",
+      "sourceFingerprint": "sha256:4e328c4e022aac1271403081a382ef37275a9d52e0e318714ebbdf5b33b69126"
     },
     "/openwiki/architektura/przeglad-systemu.md": {
-      "pageVersion": "sha256:1098b05326d39f65c99d91499d7554094677564c9697277a508b4ca953674f45",
+      "pageVersion": "sha256:6237606e8f1bcfc34462cf8191eaf7c6bc401f3e002d005370ca7b6aaa1615f8",
       "completedBy": "claude-code",
       "completedRunId": "f1539c52-9426-493a-8408-bf6aa0b14196",
       "gitHead": "0aa898956934d1f58d00bce2094918429f83341a",
       "sourceFingerprint": "sha256:fbe023fd54b065bff3775521d3b64461d38e47f9b15be7a2afeeb105627a79e8"
     },
     "/openwiki/architektura/serwer-emustart.md": {
-      "pageVersion": "sha256:562d1fa3f7faa404999d78005dfe7f81bdf29b4f1990813b31c49ed61ce49998",
+      "pageVersion": "sha256:fac945ac0f5fc9e7957fdd3dec60473768d18684b7c921d3af79f65d66638125",
       "completedBy": "claude-code",
       "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
       "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
       "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
     },
     "/openwiki/integracje/most-lumen-silnik.md": {
-      "pageVersion": "sha256:d49480b266e38b9306adeae11e82d2d52e66336cbd336bdc6dc30a8346d377d6",
+      "pageVersion": "sha256:696dce06fec6a05063c4474760adb7e33911cde97cec4ba00cc7b38f9e26dcb1",
       "completedBy": "claude-code",
       "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
       "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
       "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
     },
     "/openwiki/integracje/xbox-microsoft-store.md": {
-      "pageVersion": "sha256:fdae5bc2189540ca1f769efb005aeb62d8c96dfef544a560260f16a333fd8656",
+      "pageVersion": "sha256:1f2ae31aec845fad5038ed4d78d4b2b86c4cf32d64bb5ac52e857bf1df5d8ac2",
       "completedBy": "claude-code",
-      "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
-      "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
-      "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
+      "completedRunId": "8c745348-d986-4c7f-a918-4bbfd5e62741",
+      "gitHead": "5e3862ebd37181968e275042ae8a0ead33c8947e",
+      "sourceFingerprint": "sha256:4e328c4e022aac1271403081a382ef37275a9d52e0e318714ebbdf5b33b69126"
     },
     "/openwiki/operacje/budowa-testy-i-wydania.md": {
-      "pageVersion": "sha256:f22e278d7f953b77888a758aee6bc832c02ee1e5a29c6ab189dd0cc01dfbfdeb",
+      "pageVersion": "sha256:b47a79340612b19e648160cb27d592891c0bd562dd20cb25d2192c28abd9c0b6",
       "completedBy": "claude-code",
       "completedRunId": "a75fcccb-163e-463e-9aaa-0ded00db6afb",
       "gitHead": "f1c314df348de851987f706eabdbe0068ca1c30e",
       "sourceFingerprint": "sha256:baaea6f7ffd6e3f0a4097dd72a62bfb559d237919a49306d19c62f8cb59e6d5d"
     },
     "/openwiki/operacje/konfiguracja-porty-i-sciezki.md": {
-      "pageVersion": "sha256:7c0ce56ce4f31b7dfc0610a170e3efa491e2472f099ede0805490d3bf953c192",
+      "pageVersion": "sha256:c8af37b6ac7e034346c67ba93bad771a48c7b6c9e674776cea55ac0b27d75dd1",
       "completedBy": "claude-code",
       "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
       "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
       "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
     },
     "/openwiki/operacje/rozwiazywanie-problemow.md": {
-      "pageVersion": "sha256:ec3b9c1ae5af28c26f5fcc846dbaee7deadce43682b1b8baf5819a46b132c2ac",
+      "pageVersion": "sha256:16b4c66232fb5d7baf2c6d2204adc6ffeff3f8a4be9e5d6bf10c3d3945d6d23a",
       "completedBy": "claude-code",
       "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
       "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
       "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
     },
     "/openwiki/przeplywy/api-v1.md": {
-      "pageVersion": "sha256:43106ff5c87f87a040b4324e65856e9a44621ebfff028e1b1849d8438b608622",
+      "pageVersion": "sha256:0765cd18016080a94afe71be3e84d8fc353118d4335389d02cf7df158bb78b4d",
       "completedBy": "claude-code",
       "completedRunId": "5e58be37-642c-4d96-96e4-915296e3275d",
       "gitHead": "d7f546b3092408db2122f3c8858f625f546bfab6",
       "sourceFingerprint": "sha256:43018793e9a84830fd7a421f0faecc03855ecbc3a7be9a4035a4e746cd7f5f3e"
     },
     "/openwiki/przeplywy/gry-gog.md": {
-      "pageVersion": "sha256:77aa83493b75dfdc679f50ff58f662ac5e53c57653b396f51727a5f0a34d91b2",
+      "pageVersion": "sha256:dff727c93a22fa1d235150f9ab1bffd00e9e5e6bba9172bfa79d271557a1edfc",
       "completedBy": "claude-code",
       "completedRunId": "2f864b7a-e731-4d5e-bd8b-2ce14b5073c0",
       "gitHead": "12c73d8288edf80914e2ead9ba2881c66455c561",
       "sourceFingerprint": "sha256:5ef3bbb1f90343ccdf63da2afb39a0807ef38797a74cb1dd02b42d84aac67026"
     },
     "/openwiki/przeplywy/motywy-tv.md": {
-      "pageVersion": "sha256:a9cbd8e0d08a0ecbee536ae46ad13bc2c409ff9eab28a21220716747cf0d8af8",
+      "pageVersion": "sha256:7111d864586f617fe4ccabcf434d54e0e4fca13f9ab1015eac090f027c8b21fe",
       "completedBy": "claude-code",
       "completedRunId": "2301ffaa-6779-4928-8742-66a51c3b1a8b",
       "gitHead": "426b680012df66c5c432b51ad05786fd6531ea40",
       "sourceFingerprint": "sha256:a1ec786ae36da89122761df8d9c24a451f5421c852c539923f6f23f9de22a536"
     },
     "/openwiki/przeplywy/serie-gier.md": {
-      "pageVersion": "sha256:d3374439d1ed7f9ae20ad05da8aabbec01bdde63415fc4067b8e179cc476e265",
+      "pageVersion": "sha256:4286f2ad0c2e498b92a749580cfaa0eaa367066baeda566437dd1e579ef3c675",
       "completedBy": "claude-code",
       "completedRunId": "61e83055-8f48-4d42-b614-b7c9227df27d",
       "gitHead": "e0d82f4aed1145eacb8d9af6553da30c52918584",
       "sourceFingerprint": "sha256:dcf6cc5cde16d45cc5940f6573ef2b0229917b0bdd6e9195ac1fd3f1f480e49b"
     },
     "/openwiki/quickstart.md": {
-      "pageVersion": "sha256:7e5ada0e8f13c8a61ef6f395b72724de23f3ea4885aae6af749f57570718761a",
+      "pageVersion": "sha256:47aa96f036a98e619041a48d13254e3a87a2a88813bfa2854af0ca23ec51d237",
       "completedBy": "claude-code",
       "completedRunId": "f1539c52-9426-493a-8408-bf6aa0b14196",
       "gitHead": "0aa898956934d1f58d00bce2094918429f83341a",
