@@ -41,6 +41,9 @@
 - **Wydanie pomostowe (jednorazowo, pierwsze wydanie z EmustartNXT):** EmuStart ≤ 0.62 pyta jeszcze
   `C4rl0s79/EmuStart` (`/releases/latest`, tag `v…`, pliki tylko z tamtego repozytorium) — te same pliki z `.sig`
   trafiają tam jako wydanie `vX.Y.Z`; dopiero wersja z niego pyta EmustartNXT.
+- **Po wydaniu (EmuStart i Lumen) — wiki:** odśwież OpenWiki (`/openwiki`, tryb `update`, język `pl`), zmiany
+  przez PR, a po scaleniu opublikuj wiki GitHub (`python scripts/publish_wiki.py <kopia wiki> --push`). Pełna
+  procedura: `AGENTS.md`, „Dokumentacja po wydaniu”. Wydanie bez tego kroku nie jest zakończone.
 
 ## Jeden ekosystem: klient Windows + serwer + APK + Lumen
 - To jeden system. Przy każdej zmianie sprawdź, czy nie psuje współpracy między modułami

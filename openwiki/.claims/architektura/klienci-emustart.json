@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d6d69cc7b3289d77cee552232de079f5c636618b3c28edadbc5c653b3133458",
+  "pageVersion": "sha256:84d4ae5b3122fdaa281933cbb30ea4bf38783d7a3e8184487063b1f9d49dd058",
   "claims": [
     {
       "id": "claim_33f79c16583346fab72c66b622aa1bd0",
@@ -11,7 +11,7 @@
           "version": "repo-lines-v1:sha256:e5ecc75835a0f7e029cdc254ff4a470006acfae8a64cb489576711253d47b1a8:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDk2ZWFlYmIxZTJhM2E3Y2NiOGVjNmZmZDgxZGRiNzBlNjdmOGFiNWFkZWFmYzNmMjZmZjc2ODU1NDRhYzdlYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDc1ZDQ1ODllOTFjYzhjYjk3NDg4OWRhYjAxZGUxNWRiMTU3NGNhMTBlZWM3MjkwYTEwOWJmNTg4Yzk0ZTAxYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQzMGEwOGY5OWU3M2M5NTA2MTQxZTJjYjBkZjZjZGQ5MzY1ZWRkYTlmNDBjYjBlZTBjYjNhN2NkZGFhMWEyMiJ9"
         },
         {
-          "resource": "repo://emustart/main.py#L44-L55",
+          "resource": "repo://emustart/main.py#L50-L61",
           "version": "repo-lines-v1:sha256:e063cfd98dbc957063815dc8d70c757d2837d421aaed46d7a5caae6bb1901821:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MTlmYTc1ZWZiYzVhNTc1MTAyYjg2MGI2OTRkYWQ2N2FkZTIzZGQ1N2I3NThmMmFjNWZjMzAyMjcyNGU4ZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0N2IzY2FjZWU4MjI2YWRhZmYxMzg0OWFjOWIzMmUyNmZkNzBiNTQ0N2U2ZGQyZGRmN2M5YWY2OTJlYmRhNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlM2FjN2Q4MDIzMjZmNzYxZGE1Mzg4N2MzOWE4MjJiMTZlMzI0M2I4OWVkNWI2NTI1ODM5M2E4MGI3ZGI5OGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjZmQxZmE0YzM2M2UwOWQ2YWY1NTkzMzVmOWE1Njk3YmU0N2U4NmJiYTM0MjhkNTM0ZDZkYzA0MTk4ZTQ3ZDQifQ"
         }
       ]
@@ -21,7 +21,7 @@
       "statement": "Wywołania POST /api/<metoda> są przyjmowane tylko z tego komputera z poprawnym nagłówkiem Host i nagłówkiem X-EmuStart: 1; nazwa metody wskazuje metodę obiektu Api, a argumenty to lista JSON.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/server.py#L163-L183",
+          "resource": "repo://emustart/emustart/server.py#L166-L186",
           "version": "repo-lines-v1:sha256:41c43031e09052b6de64c73f56f5eef7ef6f70d7a7a3d7f01fd1dcff8b748a59:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YTBkMThjZDRjZTcwYzY3YzNhNjMyZGQ2ZTEwZGM1MDc0MzliZmZhN2IwMWQyNGVjM2E5OTkyNDU5YmE0NzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OWU2ZmIxYmUyNWM4ZTZjNjY1NmQ1MWZkYWE5NDI0YWQzNmE4ODFkOTRlODAxOWI2M2U4M2UyZGU2MTdmNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhZGFhN2Q0ZjZiNTJkYTlhZjY3NDc4N2ZiZDM4MDQzM2FjMzMwYTRmNzIzMGUxMDM0N2MyMjJmYTlmNjJlN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyZDY1OWNmZjk3YWI2MGM3MGNlYTJmZWYwZmE4ZWY4YzJjZGM0MzliMmMyNDk1YmY3ZTIzODRmNzc2MWEyNDgifQ"
         },
         {
@@ -39,7 +39,7 @@
           "version": "repo-lines-v1:sha256:16b3d2b101bfcc8cb0ce50c6cdd62b747b18c394a5679d6368a06c1b96ff2c77:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTU1NGZkZjZhMjU4NDExZGQ1ZTRmNmZhYWQ0YTNlMTdjZTc0NmI0ZDUxNDE5NjA3MzVmZTM0MmVmMTAzNzdhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWRmZGMzM2FjMDFhNjZiZmYwYmNmZTMyOTM2ZDIxYmEyNzI2MmUwNGVmMTE3MDM2NDY2ZWMwYTYwMjJiNTgwYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmM1YWZiNDQwZmU2ZWJiMWUxZDU5ZTJiZTkyOTM1YjQ0MTI1NGQwNzE4YjczMGE2MzgyY2FmODEwNzhjNGQ0MSJ9"
         },
         {
-          "resource": "repo://emustart/main.py#L36-L40",
+          "resource": "repo://emustart/main.py#L42-L46",
           "version": "repo-lines-v1:sha256:365948dea97096d22325c78957c93440e5ddfe52cf12ce9c0a11250836462901:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWJiYzk4MTgzMzliMjJlYTI2ZjBlOTQxNWI1MzY5ZjgwMTJjZjI3NTA2N2M2ZTBjODViM2JlNDI0NDBiMjg0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTBmNTFjYzAzYjBhNzQ3ODY2NmY4MTIyM2M4ZGMzNmVhNzdlMDMwOGQ2Y2JkMGRhZjA0ZjI0Y2MwMWQ1ZmJlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVmMWUyZGI2OTVjZDExZTQxNDkyZjgxYTE5MzA5ZjRjNjFiYjYzNzliYWU4OTUzZjYwMzdkYWY0MjA4NzE1ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmUzYWM3ZDgwMjMyNmY3NjFkYTUzODg3YzM5YTgyMmIxNmUzMjQzYjg5ZWQ1YjY1MjU4MzkzYTgwYjdkYjk4YyJ9"
         }
       ]
@@ -101,10 +101,48 @@
           "version": "repo-lines-v1:sha256:85d44ed5c3b047ea32433e9cc607c6737f9e1051b8c695b728cf5796724a348e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDA4ZmJiMGJkOTAxMTllNDFkOTM1MDQ3MTgzMzEzM2RjMTU2NDFjZDdjOThjZmFiNDFjM2M1YmVmODVmYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjYjRlOWJkYmNlMDI2ODRlMjk4YzNiZjRiNDVlYmM1NTBjMmJkODk0OGI3MWEzOWU3NGYwZTUyMjkzNGY0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2OGI0MDA1Y2FlY2JhOWNjMGI3MTEyZTAwMDA5ZDkyNWMzMWY4ZTBmZGViMmZmM2I3ZmUzNTIxNDYxNmNkNzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYjE4NzM4OTMzY2ExODFmMGM5MjUwYTg1N2U5MjEwNWE4Y2I0Mjk5MDA0NjExMDlkMjE1ZTVhNGExZTU0NTEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_bd5bdf82a9584b8095311b6fb441eda1",
+      "statement": "Gry i emulatory uruchamiane przez EmuStart startują przez unelevated.popen: w procesie z uprawnieniami administratora program dostaje token powłoki użytkownika (CreateProcessWithTokenW), a po nieudanej próbie startuje zwykle z ostrzeżeniem w logu.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/launcher.py#L504-L504",
+          "version": "repo-lines-v1:sha256:d710d4355a2a5923b6041753027fc9672fd837d1ca2d28ac9b88deefe454018b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDcxMGQ0MzU1YTJhNTkyM2I2MDQxNzUzMDI3ZmM5NjcyZmQ4MzdkMWNhMmQyOGFjOWI4OGRlZWZlNDU0MDE4YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDcxMGQ0MzU1YTJhNTkyM2I2MDQxNzUzMDI3ZmM5NjcyZmQ4MzdkMWNhMmQyOGFjOWI4OGRlZWZlNDU0MDE4YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWY1ZmFiYjBlNDU4NjlkYzA2ODVjZjA1NTc5ZWQ2MzI1NGNkZTVjNTkyYzk0NTg4OGUwYmQ0MGJkNjFiOTBkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0YWQyNWU1MTVmZTQ0Y2UyZjQ0YmU1YjU5ZDQ0MTA4ZjQ1MjYwNDdmNGYwN2JiNTExNjI0ZTIwM2FkN2JmZiJ9"
+        },
+        {
+          "resource": "repo://emustart/emustart/unelevated.py#L138-L157",
+          "version": "repo-lines-v1:sha256:ee32e75084477ee1d284b988f31c176d0c70e1b6b3853eb9a49435fafa9ef986:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkZGJlMDZhN2QxOWZmYTJhNThjNDhmNzkwZjI3NDdkZGRhMDRlZTc3NGM1OTAxZjAzM2ZhZTViM2Q3ZWNmNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiODAyMjZkNDRlZTAyNTRjYjYxOTNlZWEwN2E0ODc3N2E1Nzc1Y2FlMTQ1NGZiY2UxZTlkMzdkNzM5MDk1M2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmMzE3MjA2ODdmNjEzMDBkNzY0ZDQyYmIyMDM1NDE1ZDExMmU1ZjhjMTMyZWRlZmY1Y2UxZjRiZWQzYTA0NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyYTMzMWUyODUzOWNkODc3MWE4OGYxZDU1NjQ0NDhlNmFlOGJmODIxYTdiYWZkMGFiYzA3OTFmNWM4NzQ4NzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a904246a07ac407dba8913c841f4e444",
+      "statement": "dosmidi wybiera wyjście MIDI gry DOSBox bez zmiany plików gry: dodaje plik -conf w podfolderze .emustart-midi z mididevice=win32 i numerem portu liczonym przy każdym starcie z nazwy portu z config.json.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/dosmidi.py#L1-L20",
+          "version": "repo-lines-v1:sha256:f151f527a5e69711397042583f8c671edb530916a3b4b71346e9535cc7549ac8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjQ0MThjZjg3NzhhZGNiOTBiZjMzZmU2OTljMTU5OWFhYjIzMGE2ZjRjZjAwOTZlOTZkY2JhMDZhODkzNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MDVhNGM2YzQzMGI3NTg3MzMwMDFlZmY0MDQzZmU2NDQxOWZmYjZhZWIwOTRmYzAzOTM4MTg5NzczMDY1M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlhM2Y1Njk3ZDI3OTdiZWZkMGQyYzM3NWI5ZDQwNzFlM2Y1YzExM2M1ZjYyNjQ1ZTc3OTJkYWY4MTZjOTZlYjMifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/goglib.py#L353-L358",
+          "version": "repo-lines-v1:sha256:bb3cb37361e29e84b27aa7d30243392598f3bb396426369babe4d02cbf1c92ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjViODQ4MzZhNDFlMGQ2Yzk3ZTllMzgxMjAzY2YzZmU5YTI3M2I3Zjg3ZDM2YWJkNTNkYjI1MGFjYzhhOGE1NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTIwMjEzNjBlMmM4ZmQzNWIxNzcwMTYzZjkwMDdiMzA0YWVkNGViMjgzZDg3ZjBiNDA1MTJkNWE4OTQ3NGFmZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWY3OTVjYTFjZGUyYTUyM2RhYWFmNTRlOThkNjllY2VjMzliMTQ5MzM4ZGMyNjViMjYxOWE3OTBhNDFlZjc0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDk3NzBkOGZkOGU2Y2EyZDU3NTZlMWY4Y2EwZWU3ZTY4ZDA2MzNiMGE5MjQyZTNhZmU5M2JhY2E0N2M2NmI3NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c3fb85bb05a4492b9fbeaf7538d6860d",
+      "statement": "Przed startem gry DOSBox ensure_companion uruchamia program grający wybrany port MIDI (domyślnie Munt dla MT-32 albo program z midi_mt32_app / midi_sc55_app), gdy nie działa — bez uprawnień administratora, zminimalizowany i bez fokusu.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/dosmidi.py#L241-L311",
+          "version": "repo-lines-v1:sha256:20616020af06ba11f5965e5768700d7e1b32291bb1a5416d193bda5df65e2a6e:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MDI1MDI2NTQ3N2YyMzFjYTg1Yzc5MDgxNDRkNjE1OTg2MWJhN2UyODMyNjBlY2U3OGYzOTgwNWVkY2YxMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyOTJkMjIyZWRhMTgyYTZlMmMzODEzMGQwMTRiNGZiNGQ5NjI4ZTFiY2EwYTM3ODlmNDI0NDE4YjAxYWNlN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiODA1M2JkYmEzMjQzNmIyODRiNGI2NGQ4MjQwZWMzNDNmYWFkZjEzZGY0NmM3MTQ5YmMxZjZmNDM5ZWVmOGIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

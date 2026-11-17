@@ -23,3 +23,5 @@ EmuStart) i techniczne (z OpenWiki). Źródła są w repozytorium: `lumen/docs/w
 git clone https://github.com/C4rl0s79/EmustartNXT.wiki.git <folder>
 python scripts/publish_wiki.py <folder> --push
 ```
+
+Po każdym wydaniu: odświeżenie OpenWiki i publikacja wiki — procedura w `AGENTS.md` („Dokumentacja po wydaniu”).

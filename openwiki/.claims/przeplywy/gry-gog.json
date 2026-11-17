@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f9f3791495c590b1bbf79f6ed4b5c3282a061cf22b2b4dc02818edd6b37f026b",
+  "claims": [
+    {
+      "id": "claim_e72a897129d544878c3b6949de8d1aa4",
+      "statement": "Serwer EmuStart tylko czyta archiwum depotów GOG Managera; indeks publikuje build dopiero po sprawdzeniu manifestów i każdego chunka z rozmiarem, a klient instaluje build przypięty do content_hash.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogarchive.py#L1-L25",
+          "version": "repo-lines-v1:sha256:f0b75776673904ea3ff36d77d955125f2360ab50b19d7ff8c32651a675f646e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NzhjZGQzMGY3ZTg2NWRkZTE0ZjBmNjdkYmFiZjkwMWI0YjkxMGE4ZDg1YjhjZWVmZDhmMDA1Y2MxZjg2MzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5MGJiMzkzZDVhZjk3ODY2Njk4Y2JlZTljMDZkMzZmYWVlNjUyMjJlODUwYzdkYTFhYzk1ZmM2ZGZjNjNiOTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1Mzk0Mzg4NTgzYjIyY2JmMzQ1NTAyZDk1YTgzMWEwODRmMWJhNjQ1NTI0YzJjNDUxZmEwNjEzNzljZjMxODEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d15e61f08b3446aa931dce49380c724d",
+      "statement": "Instalacja gry GOG zapisuje zweryfikowane MD5 chunki wprost w plikach docelowych pod przesunięciem z planu, bez kopii w TEMP i bez rozciągania pliku zerami, a stan zapisuje w <dane>/gog/installs/<pid>.json.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/goginstall.py#L1-L18",
+          "version": "repo-lines-v1:sha256:282ddef89eefc6de56a2facf79c09686e5ea96937d611737f449d90629cc1f3d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2NzE5NDI2MDg1ZWU2MDY0MTBiMzMwMmM3NTNiMDE5ZGU0MjI2YTYyMTFmY2ZjNmE4MWY4NzgyMTJlYWNjMTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZTQ0ZDZmN2U5MWE2MzBmMDg1YTNhN2UyOTdkN2ZlOTE5YzZhY2UyNmM0ZDk1ZTQxMDZlODEzYzU0NjE3OGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzYjllNWUwNThjNWM5ZjQxZDhlN2RjZGRkMDExYTYyYzJjZDNmMWM1NmM4ODQyZWY1ZjEzZWEzNGRmNWVmMWEifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/goginstall.py#L535-L545",
+          "version": "repo-lines-v1:sha256:631fcfac9864e597b8c2cc78164d997caaa4c74c4861922cc76802f511a256f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhYzRiOTQ5MzZiMmNhMGEyOWQ5YmY1ZmI2NzU0NTY1NGJlNjNmMzI1NDhlMTI5MzdjMmRmYTVjMjM2YjQ5MWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2YzkwNzgxOWNjMzg4NjY2NmQwOGUyNzE0MjYwZWM3ZTMyYzM5ODEzY2EwYjVjMDQzZmMxMjRkMGMzZDdkYTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1ZjFlMWM1OGUyYzc3MjUyOTZiNWY0MjI5NTg5MmU3MDNhNDk4NDllMDZkYTc5N2RkYmQwYWM4NDA2YWNmYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMTY1MDEwYWYxNTI2MTExNzE1NzE5ZTNkZGI2NDc0NDg1ZjU4YTg5YjExNjhjMTVkM2JjZThmZTZiNDVjY2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_31514e834a644e3981e0ba5074ef02a4",
+      "statement": "Kroki administratora instalacji GOG wykonują się od razu w procesie z uprawnieniami, a bez nich jednym oknem UAC (runas z --gog-admin i skrótem pliku kroków); proces podniesiony przyjmuje tylko reg_set/reg_put/reg_del dla HKLM\\Software.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogadmin.py#L1-L20",
+          "version": "repo-lines-v1:sha256:e8c3a30804657dd5a330cd35780d0ddf7afabd4d9ab01670baed1618dbb6446e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMjMwYmYzNGVmMDM0NTIwZDA1OWFhOWY0NDM3MzI2NDdlZGYyYjQ1YjUwNGRjNzJlMjU4YjIyMjYwMTg3OGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNmJmY2VjMGQzMGRkYTgxZTIyZjAwYjA1ODRlYTM3M2EwMzdkMjgzNWU2ZWE0YzkzZjMzNTZlYWY1NjNjMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1Y2NmMzdjNzhlNTFmZTM0ZDI1MjUxNzE0MWE1YjA0ZDk5NWNlMDkzZmNiMGE3ODI3OTUxYmUzZDkzYTRkZmYifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/gogadmin.py#L208-L225",
+          "version": "repo-lines-v1:sha256:6c9670b07fc1aa5e40ae0a793cfe2ec7c52396d3a4386ca228b53711dd9e0475:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NzQ3YmY3MTcyMmYzMDNiZTkzY2Q3ZWNiNDliM2NhOGEwYWM4OTNkYjljMmMxNTQyMGQ3NDU5N2QzOWI3M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkMDkxMDdkNDQ4YzJmOTcyMWFiMDc1ZjFiZDVjYjg3ODkyOTFiOWU5MWE1YjJiMDg1MjgxMTliNmIwOWU2NjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3ZTVhMWY2YmNhZDBmNWMwOWE4YTI1MzRkOTIxMzQyMTJkMDFhNjY2YWZkZWQ3ODYwYjNjMWYzYjMwNzRkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2OWU3N2Y3MWY0MjZhMzdiMGNjYTUwOGMzM2JmZmMwYjdjMTBmZWZjZWE3YzdjMjFlYzgyMTFhZjcxNjdlMzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c460900d72214aa49d088bdcc6638724",
+      "statement": "Akcja Execute ze skryptów GOG jest tłumaczona na odwracalne kroki (REG ADD, reguła zapory, regsvr32, DISM DirectPlay, sdbinst -u), a inne programy są uruchamiane bez zmian.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogexec.py#L1-L14",
+          "version": "repo-lines-v1:sha256:370850071211d0c39d3cdf99a2b80ff70013bd152df5393bc447a289a342ac22:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MjQ3MjYxZDFkMTljODgxZWYwNWI2MjAyOGE0ZTU3ZTdhYTljNTJlMjNmOWE0ZmRjOGVkNGZiZDFmNGM4ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNTE1NTEzZDhkMTI5Y2NjZGNiODFlMTk5ZTgxNmEwMmU4YTM4YmZjZGFkZThmZTZhMGRmYjBjMDIwM2NkYTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlNDYyY2M4ODgzZDgxZjIyZjVkNTI0MGQxMjRhMWJmNzA1ZmNmNmIwNGNkMWRmMDY2MGE2MjExNGQyMGY5MGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_33c16846034e4a8ca0ae87f9e344b4ca",
+      "statement": "Gdy widoczne zadanie główne gry GOG to launcher, a plik gry jest jednym ukrytym zadaniem kategorii game, gra startuje bez launchera; przy kilku wariantach launcher zostaje.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogfinal.py#L783-L800",
+          "version": "repo-lines-v1:sha256:c845f4d7a8db52aafa705cf8e8124a5202e6595908d7be257b8dd234c0d32f66:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwNWU1YTk5NDhiNDFhYzU5ZWVmNGYwNTU4Mzk0ODAwNjQxYjZlZWZiNTY0NDkwNzgwOWJiZjQxM2ZiYzQ3ODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxYzZlYTBhMzlmNzU2MmEyNzY4ZmYwN2EyNzcyMTBhNTA0YWJkZTg2MjU4YmMxYjQ0YzU5ZmQ5Yjc3NGVlZmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ2ZjU2ODAyZmMxOGZjOTIyYzcwNzJlZjk3ZmM3ZmRlNTNmOTY1MjU0ZWFiYmIyZTFjOTk3MTUzYzRmMDBkOGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3NjVhN2RkZDJiZmQ5YjQxYzJkMGMyOTM5YzU2ZGIxOGZkYmJkMDcxZGNiNmRiMGY5NzIxZTczOGRjOTU4MjUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_46783f4748564d538f681ea234b597b8",
+      "statement": "Zapisy gier GOG są synchronizowane wyłącznie przez serwer EmuStart według reguł: ręczne gracza, poprawka serwera, ludusavi-manifest; wpisy rejestru nie są synchronizowane.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogsaves.py#L1-L17",
+          "version": "repo-lines-v1:sha256:4aab58a490d71e8a93ebe194c76e997ee42c97085aab377cca1d568bbd03e1d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ZjZkZTQ3Y2NhYzk4YjJlZjAyMjIzYzIwNzk1MGNlODIxNDlhNTkyZGYyMTA2ZTk4MzljM2MwZmI4NmVmYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3NWQ0NTg5ZTkxY2M4Y2I5NzQ4ODlkYWIwMWRlMTVkYjE1NzRjYTEwZWVjNzI5MGExMDliZjU4OGM5NGUwMWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0MzBhMDhmOTllNzNjOTUwNjE0MWUyY2IwZGY2Y2RkOTM2NWVkZGE5ZjQwY2IwZWUwY2IzYTdjZGRhYTFhMjIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-16T23:16:42.429Z"
+  }
+}

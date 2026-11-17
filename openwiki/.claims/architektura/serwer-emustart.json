@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7ee33e0119aee5da2f6b2e00dc8016dbd33251f7455b8109ba806f7d2b74dc6b",
+  "pageVersion": "sha256:e41ef99784eb5394022ccddd9ee204964c03959759c965247fc832b7a68a34a8",
   "claims": [
     {
       "id": "claim_d15654d1b8c749d4bc9d4bf30fe65bce",
@@ -21,7 +21,7 @@
       "statement": "--install ogranicza zapis w folderze programu do SYSTEM i Administratorów, tworzy zadanie Harmonogramu 'EmuStart Server' na koncie SYSTEM z --service bez limitu czasu i z ponowieniami, skrót panelu oraz reguły zapory dla portu i portu + 1.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/remote.py#L1358-L1391",
+          "resource": "repo://emustart/emustart/remote.py#L1415-L1448",
           "version": "repo-lines-v1:sha256:b2a399d42901b119bf7ca210123a4379cbcb76b8cb7e8be1db65da0b7805761f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ODMwMGExZmNkZjQ0YTJjMzY3ZWQ4ODU2NTFmNmM5ZjFmOTU2NDljNTYyZGNlOTk1MGVkZjdjMDlkN2ZkZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZGQ3Y2NkMGMxZDM5ZDIyZWQzZjYyY2Y1MGUyZTk2ODBlYmE1OWQyOTdmOTlkNDRmZTQ5YzRmMjZlZGE0YzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjczZGM3ZWFhODcwYTAzZTY1YjA3ZTcwYTBhYThmNWYwYjcxOWY1YjU2OTQ2M2Q2NmNjYjc3NjhjZWQ5ZGZlMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMDk2NmU2YjE5NWUzOGM3MzUxZDA2ODcyY2E4OTI5YjZhYmIzYjcwZTg2YWIzZTk1MzY5ZGMxYjFjN2RmYzQifQ"
         }
       ]
@@ -42,11 +42,11 @@
     },
     {
       "id": "claim_7beae0694bc544b8893ad51de596f25d",
-      "statement": "Przy starcie serwer uruchamia w tle indeks archiwum GOG i reguły zapisów (gdy ustawiono gog_depots_dir), dzienne kopie kont, dzienne sprawdzanie emulatorów i dystrybucję programów, a potem nasłuchuje na 0.0.0.0 i otwiera port TLS.",
+      "statement": "Przy starcie serwer uruchamia w tle indeks archiwum GOG i reguły zapisów (gdy ustawiono gog_depots_dir), dzienne kopie kont, dzienne sprawdzanie emulatorów, dystrybucję programów, zapis pamięci procesu w logu i serie gier z IGDB, a potem nasłuchuje na 0.0.0.0 i otwiera port TLS.",
       "evidence": [
         {
-          "resource": "repo://emustart/server_main.py#L86-L137",
-          "version": "repo-lines-v1:sha256:882e7e411dd7b18bf83be85aff2c54813cab3f017360bcff01a923de1acbe08e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ1ZmRhNTI1OWMyYTJjZTBjNGI5Nzg4Y2QyZGNlYmIzOGQyMzAwMjFjNzM0N2YxMzYyZjliZmExOWNlYmRlMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyY2JlMDAwYWVkYmM0YzU5NmNlNjQ1YmJkMDczMzU4ZDdhYjZhODE5MDg4N2YyNjUxNWM2NGI2NjYxMzE1ZTcifQ"
+          "resource": "repo://emustart/server_main.py#L88-L137",
+          "version": "repo-lines-v1:sha256:143a5faf67bc6d0c2ae87c16e8c83440fe245c8b7e461d76e4ab7358e36cd5ab:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiNjAyMmNhYWUwZTk0NzE0Mjk3NmQ1N2Y2Njg5NjQ3NzNjZmM0MjBlOTUxMDgyZTU0YTIwMThjNDIyNmY1MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5ZDE0ZjI3OTQ4ZTQ3OGJmOTNiMzE0NTcyNTE5ZTY2MzYwOTQ1NjA2ZjRhODFkNGUzMDhmZTcyMGI4Y2MzZjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliMjdlMmY3NzYyYWU3Njc3ZDBjMmE3YjUwMTI0MzAwMzdmMDQ1MWRlZDdmMWM5OWU1OWM2Mjk5MjZjMGVhNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxOWI0ZGZhN2RiYTUwZjg4ZjliNDczOTk3OWRkNDZhYmM4ZGZjMTc1NTViM2U2ZDAyZTc1NzBjOGE5NmJjOTEifQ"
         }
       ]
     },
@@ -89,10 +89,40 @@
           "version": "repo-lines-v1:sha256:4a0f5d32d2f17790f9b7ca1a04aba4c23b0788adadc7c7e6d08c3c02da356da3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkOTQ5MTk0NGMxMzg5MTdkZmMxZDdkMmJkOTdmOTFhMDdmNGM1OTI4ZTdjMWMzNGRlM2YxYmJlYWQyZGMzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OWM1ZDYwNmNlY2FmNDFkZTJjY2EyMzlhOThkOTUzZWY0OGJiMDI5YWQ0OGQwNjUzMzYyM2UxYzdjMThjMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkMWU3ZWY5YTc3OTczZGI5ZmIwOWZlZWIxOGE5NGExYjg5NzM0OGJkNmQ4YzEyZDM5Yjg2ZmMyNjZiMmRiMzcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_ced53fd7322c4df6ae2948f8b5010575",
+      "statement": "Serie gier z IGDB serwer sprawdza w osobnym wątku 15 minut po starcie, a potem raz na dobę.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/igdbseries.py#L480-L490",
+          "version": "repo-lines-v1:sha256:6acf34db1a5d86bc393330a1c76fdbb8dd7935762c13d442ff48e03be79a146a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljYTYzMGUzZWFiNzc4YzkwZWM4OWEwMmUwYzk4OTlhOGQ0MTY1Zjk3ZWRlZWIxNWU5NTkwN2ZlMDkxMDNiM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4ZDRlNGI5N2I5MTZhMmZkM2IxMTNmNzg4ZDk5MmI3MDFmNjUwNjdmNTRiMjI2Y2YzYzcyZDk3NGM3NjUxOWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjNTYwNjc5MTk2MWRiYWIyMjA5ZjJiYmI0MmY1N2JjYmNjMWE2NWEwMjZiZjYzNzg1ZjMyZjBlNzFiMGZkOTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhODQwZTI2MjA3ZGU5MzNmNDQyYzVlYzg1MGZjZWI1MzFkYTA0ZWE4NWRjZGNlZDA0NjE4NGYyOWM2NzU1OTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7709ab0f57e14d79b9fd137dd67eea8f",
+      "statement": "Indeks archiwum GOG przechowuje chunki buildu w ChunkSet — posortowanych tablicach 64-bitowych skrótów i rozmiarów — zamiast słowników, żeby ograniczyć pamięć serwera.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/gogarchive.py#L258-L280",
+          "version": "repo-lines-v1:sha256:ef36be7cdd81ef2fd0fcf2d0e1977fae09cb1c26cb3dc65841ea46ab9c85dc8d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyMGQ2NzRkMjk1ZTE5NTc3OGJhNjdkYmQ3M2JiODliMjFjNzAxNjdmMzBlNjJkMGJmYWQ3NGIyYjU0YmUzYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0NzU1NWMwYWMwNDUxMDU3MmRkNGVmNDI0NTQ3MDY5MTU4OWUxODM3NmEzMWZiMTA4M2FmODE2YmZjMTdiOWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhYmEwYzZlOGExMjAxYTBlMmM2Njk0N2E5YTlhMjZmODAzZjJhM2JjZWQwZjk3M2QxYTcyOTI3MDBiZWRiMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4YWZkNmFhMDhhMmRiNTUyYjA0YzVjYTRhNzE1NzY4MmIwNGQ5NmE4NTgzODU2ZmUxMDhlMjJjYjU4ODI5NjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_87ac489686bf4f4ea91ae2006a67cbbf",
+      "statement": "memwatch zapisuje pamięć procesu serwera w logu: pierwszy wpis 10 minut po starcie, potem co godzinę.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/memwatch.py#L1-L20",
+          "version": "repo-lines-v1:sha256:9f0d279d778b9458a8350807077ffb09f41c756e90d0b7fc5b057f9cdb4ee2bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MGIzYTBjNTU3ZmZkNWUxZThmMDMwMDRlZjRjMDc3MjYwZmIwNjVmOGNjYTFkZDQ5YTcxZTRkMjQ0OGQ3OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM2N2M3NTJlNTRkNjAyYWQ3Y2VlMDRlMGZjYjUzOTRiYmRhODc4YjYyZmMzMTk5NDZmMDhjNmVkYTc3YWE4MTEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

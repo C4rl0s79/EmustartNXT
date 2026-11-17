@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eb2ca23457d6790e05dc693486963253fcf6ef58142b9f8da3b49d2aa7b4858c",
+  "pageVersion": "sha256:97a9ac600ef8b8a6cf5416429ed237e7f1159474c251f1a88d5789629c28e62c",
   "claims": [
     {
       "id": "claim_ccdd4d347bef4bc5945079ca3a0a1e48",
@@ -61,14 +61,66 @@
       "statement": "Wylogowanie klienta z serwera usuwa z konfiguracji server_url, server_key, server_keyname, server_keykind, server_account i server_fp oraz klucz z magazynu kluczy.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/api.py#L2226-L2237",
+          "resource": "repo://emustart/emustart/api.py#L2451-L2462",
           "version": "repo-lines-v1:sha256:eae733ca0ee416607d0505a06f5ee670df8759ae1e1d884ecefc882d71442865:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4NGQ1ZGQyY2ViNTdhNmU1YTQxMTU5ZTgyMjc5NmE1ZGNhMjU3ODgzMGRiYmY2OTVjMzlhMjM1NzVkNDJiNWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYzI5YmIzZDNmMGQ1ODRiMTk4YjQyOWI2MDdhNTA1OGExMDE4YmMyNGY0Njg2YmY3NWRhNTE5YzcwYWU2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhOGE2ODVhODRkYjFjYTQ1ZjA3YWM1NzQ1NTVmYjAyY2FhM2IxMGViY2ZiYWFiZmZkYTg4ZDgwYmE5ZWQzNGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZTFhMzllZmViOTQ2OTc1YmFiODUwY2E2NzYxYTZkMzAyYTAyZjZlOTNiYzhlYjc3N2FhMzA5ODE2NDgyYzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6e7d5070e1da429a823d473e32202b05",
+      "statement": "Lumen obsługuje zmienne testowe LUMEN_OFFLINE=1 (symulacja braku sieci), LUMEN_STEAM_PATH (folder Steama albo none) i LUMEN_UPDATE_FEED (lokalne źródło wydań).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L207-L210",
+          "version": "repo-lines-v1:sha256:6f9f6fa3238a34e644fc5108a0bda6f35cb8bad41845edde0da215974f2d8912:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWE4MTNhN2Y0YjYwYWRkNzA0NjZhMjUyMzNmZjBlN2FlZTZkZjNkMDI1MDcxYzFhZWExNWYxNDA2MjRhMTcxZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzg1YmQ0M2Y5MTZhMmQ1YjkzZGZjMzUwYTJjMTBmNTFiMGVmNmYyYzM0YmUxMTAyZThjMzdlM2RjMmYyMDlhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDRmMmYxZjNiNTZiODRjMjRmYTA1Mzc3OTU3YzQ2YmRiYzM4NmExYjM1ODk5YmI0YzlmMmRjNjFmNDNhNDgwNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDExOTRjM2IwYmNhMWViYjVmMDk1OTliOTk4MTFkZjU2NzRlMmZiNTBjYThiMDI1ZjYyODNmMzFjMTIyNjkwNCJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/library/service.ts#L118-L121",
+          "version": "repo-lines-v1:sha256:4515845572ca41a5449ff5198eabfef97c19f39b944e944c8581021b52066191:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTlhZmQxNWJhODFhZjJjY2QwMDg3OWQwZGYxNzFhNGQxNDM1MjI3MzFjNGEzODkwM2U4ZjRkYWZjOTI4OWI3NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTE4NzYyZmJmZTQxODRmMDQwNTk3Y2RhNTRhNmU4MzUxOGM1Y2JkYzZhNzg2NDA0ZGRlNDZjZDA4ZmNkZjczZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2E4M2YwNmVmMDYwZGM2MDQ0ZjNjMTIyN2MxMzk2MTMyM2E0NTRjOGVlZjYzMTU5YTU3Mzg3MzAwZDU2YWFlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2I3Y2RhZjc0ZjBiMDU4YzYwMDFlZGJhNTAwYjkwYTI5NThmNGM5NDI1OTE3MmU5YzMxNjhlMjE3MjYwODU1NiJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/net.ts#L16-L19",
+          "version": "repo-lines-v1:sha256:f839ed4d2b71d7dc998ff2b95291da9f5ec4f678984aff4748e6a4a49243b4e4:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTJlMzc4NTUzZDQwM2FjYTY1MTIwN2ViNWVlMjgzZWMzNmUwOGJhZDUyZTM2YzBiZDAyYzJlOTkzYjc2YjM2MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRjZDUyNTRlNjhkMDU3MzBmY2U2YzM0Y2RiNWQ1YmQ0NzE0NjlkMmRmZTRhMjgyYWE0ODI5YWFhNTY1MGYxZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzg0ZGMyYmZkMGNhNGFjYzdiNDVjOTZmNDAxZmRmOTgxZDI1N2ViODc2NDdiMDUwNTcwMzc0ZDgyNzRmM2Y4MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODdhNjU4ZjExYzI1ODIxNzcyYTdlNzMwYTdhZTc1ZDdlODMwNjg2MTg1ZDlmMzQ3MTU2MDFhNzZmNjZjYzQ2YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b790167eaf104295ab21f545bd840e86",
+      "statement": "LUMEN_NO_PAD=1 wyłącza obsługę padów w procesie głównym Lumena (testy automatyczne).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L2279-L2292",
+          "version": "repo-lines-v1:sha256:d4ac4aafbf0e4072a73d1b999da0d415662877ca811603b4ac4e3b7213013173:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0NTBmNzMzMjUzMzU2MDliMTU2NzJiM2FjZGRlMDVlMjM5YWQyMmNhNDI5OGQxMzA0MjE2MWNhMTY5N2RlMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiYzEyZmZhYmIyM2YyNTk4ZDkyODYxOGUyMDQzMDMxYzZiYTFlMjJhMGRmM2Q4MzdhY2Q0NGE5MWFjMzRmOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3NDRmZWQ1MTBmNmI1NTA1ZDRiNjNmY2FmMjExZjVhZGRjMTNjYzg4OGQxNWVjMDE0ZjdmOGZjMjVmNjZjYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2YTI3MTRjZWUwNTJiNGI0YmM0NTA2MDY3ZDdiYzc4NTAwMDA0YWQzMDBkMTcyZDczYjA1YWYxMGI0OTU4ZjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f60586e345ee468d95a2ba9c0d346c29",
+      "statement": "Porty MIDI i programy MIDI dla gier DOSBox są kluczami config.json (midi_mt32_port, midi_sc55_port, midi_mt32_app, midi_sc55_app), gdzie '-' wyłącza urządzenie albo program.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/dosmidi.py#L1-L30",
+          "version": "repo-lines-v1:sha256:757b07b2da9355bd56022d57b952a9df8e69d936c3770ebe72572763f5aea1b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjQ0MThjZjg3NzhhZGNiOTBiZjMzZmU2OTljMTU5OWFhYjIzMGE2ZjRjZjAwOTZlOTZkY2JhMDZhODkzNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwZTFhNzUyZWI3YzFhMTE1OThkZWExNjAzMmY0N2IyODRhNzBkYjRiYTUwYmYzMGIyZDZmMGI4MjhlZTIwYWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlMzYwMWMxZThiOTU5YmFmOWE1YmE4OTM2MjA4ODcwZDcxMTVlZmIwYmMyMjE0OTNhM2RhMTg5NDBjNWU4ZjQifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/dosmidi.py#L250-L260",
+          "version": "repo-lines-v1:sha256:eb9fc41692e5acf63314e96464e8cdae4a35a55c2c766279cb4d8d420d24c839:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5MGIxZTE4MDJjYTQwZDFhZjE2YTg1YzViZGZiNjEzNmM3NDdjYmI2OGZmMDc1MzA3ZDEzYjlhMWU5NjZkZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5NTJkMWQ5MzI1Mzk5OTUzNDVlYjkyODEwMGMyMmU5NTIxY2M2MmVlZDcwMzY4OTI0ZTFiNzRkZThmNTI1NGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmZmQ2NDRjOGE5YWQyODllYjVlNjMzMWZhMzQwNWZiNjRiNjJiNjJmMzM5Mzc0NGJiNTlmYWRhMzlkOGZhZGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c43c63146b064876b1bea039860ebb2b",
+      "statement": "Sekrety Lumena są szyfrowane, gdy safeStorage Electrona jest dostępny.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/store/settings.ts#L155-L170",
+          "version": "repo-lines-v1:sha256:8fab5a69464d04f4b5ce8fc7dc2a7d053b29fc31999b5584d71503e81df468a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NzdmZTFmMWNkMWJhMmNmY2M3MGE2NjFlZWIxYWI4YTljMmY0ZTJkMTJhOWVmMjRkNTE5ODY2NDJjMDE3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmNWEzZDcyMjA0NmM1YWJhOTgyMDIxMTUwMzkxYzY4YTRiNTA2ZmMwNzJiMWUwYTI3ZjFhNGYxMGE5NTI5NmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1NjVhZjY3NDlmNjhiYTc2YmY0MjQ4MDczYWNhZjA0MWMyMzM0ODNmYzkwYjY3NGU1ZDg5MThlYTU5YjMyOGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0MTQ2MjU1Mzg4ZWIwODc5YjRiYmMyZmFiMmZkZGRlNGVkOWQ2ODdlYjcwNmY4YWFhMmI3NWFhNTYyZjQ5OWUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

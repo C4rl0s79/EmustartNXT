@@ -5,7 +5,7 @@ description: "Jak działa klient EmuStart na Windows (pywebview, Api, tryb --bro
 tags: [emustart, client, windows, android, pywebview, webview]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
   - id: openwiki-source-3a86e937b3bdf9fc386b02ba
     resource: repo://emustart/android/app/build.gradle.kts
@@ -13,17 +13,25 @@ sources:
     resource: repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/MainActivity.kt
   - id: openwiki-source-41d978605caa219b235d17c2
     resource: repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Server.kt
+  - id: openwiki-source-0d61759cab48093068c68838
+    resource: repo://emustart/emustart/dosmidi.py
+  - id: openwiki-source-1f1d4f3bbb924e004b121a5b
+    resource: repo://emustart/emustart/goglib.py
+  - id: openwiki-source-993f7cca8bd66ab8c43f8fb8
+    resource: repo://emustart/emustart/launcher.py
   - id: openwiki-source-6df1c98092383c519f5bcd85
     resource: repo://emustart/emustart/libsync.py
   - id: openwiki-source-c689b27cb9963760bf507303
     resource: repo://emustart/emustart/paths.py
   - id: openwiki-source-a124d623671267edfd450054
     resource: repo://emustart/emustart/server.py
+  - id: openwiki-source-8e86ad247bda3ba0a75ffbac
+    resource: repo://emustart/emustart/unelevated.py
   - id: openwiki-source-2adf1fd1ef5a15de936149b6
     resource: repo://emustart/main.py
   - id: openwiki-source-f0e926c2a9db5ea4c80d614b
     resource: repo://emustart/web/app.js
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # Klienci EmuStart: Windows i Android
@@ -93,6 +101,30 @@ urządzeń działa tylko połączeniem szyfrowanym — zob.
 > Uwaga: docstring `emustart/emustart/remote.py` wciąż mówi o udostępnianiu API „przez HTTP
 > (Tailscale)”, ale od wersji 0.43 `/v1` przyjmuje zwykłe HTTP wyłącznie z tego samego komputera
 > (`server.py`, `_v1_ok`). Aktualny jest kod.
+
+### Uruchamianie gier bez uprawnień administratora
+
+Gry i emulatory startują przez `unelevated.popen` (`emustart/emustart/unelevated.py`), a nie wprost
+`subprocess.Popen` (`launcher.py` przy starcie emulatora, `gogfinal.py` przy grach GOG). Gdy proces EmuStart ma
+uprawnienia administratora — co dotyczy silnika w Lumenie, który od 1.0.59 startuje jako administrator — program
+gracza dostaje token powłoki zalogowanego użytkownika (`GetShellWindow` → `OpenProcessToken` → `DuplicateTokenEx` →
+`CreateProcessWithTokenW`). Bez uprawnień (zwykły klient EmuStart, Lumen ze źródeł) to zwykłe `subprocess.Popen`.
+Gdy uruchomienie z tokenem się nie uda, program startuje normalnie, a log zapisuje ostrzeżenie — gra nie zostaje
+bez startu.
+
+### MIDI w grach DOSBox (MT-32 / SC-55)
+
+`emustart/emustart/dosmidi.py` wybiera wyjście MIDI dla gier DOSBox per gra: tryby `auto`, `mt32`, `sc55`,
+`default`. Pliki gry zostają bez zmian — przy starcie DOSBox dostaje dodatkowy plik `-conf` w podfolderze gry
+`.emustart-midi` z `mididevice=win32` i `midiconfig=<numer portu>`; ostatni `-conf` wygrywa. Porty wybiera się
+po nazwie (`config.json`: `midi_mt32_port`, `midi_sc55_port`), a numer jest liczony przy każdym starcie, bo
+Windows zmienia numery po odłączeniu urządzeń USB. Tryb `auto` korzysta z baz `midigames.py` (gry z MT-32 oraz
+gry, które fałszywie deklarują MT-32 — generator `emustart/tools/build_midi_games.py`).
+
+Program grający port (np. Munt `mt32emu-qt.exe` dla MT-32 albo program wskazany w `midi_mt32_app` /
+`midi_sc55_app`; `-` = nic) uruchamia `ensure_companion` tuż przed startem gry, gdy jeszcze nie działa:
+bez uprawnień administratora, zminimalizowany i bez fokusu. `warmup` robi to samo przy starcie Lumena. Wywołania
+z gry GOG: `goglib.py` (start gry z DOSBoxem), ustawienia: metody MIDI w `api.py`.
 
 ## Aplikacja Android (`emustart/android/`)
 

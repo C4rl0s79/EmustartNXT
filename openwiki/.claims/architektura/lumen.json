@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e807f6c4ea5b9894b3d9450e3720c2598ff93d37f587c13258f53bc413df4c82",
+  "pageVersion": "sha256:4849fccaef8e563dc6dea97c2642a194b656d013e26e08834df6e977e37e0f50",
   "claims": [
     {
       "id": "claim_306e709c34e14457af6d392686268821",
-      "statement": "UnifiedLibrary zestawia gry Steam, EmuStart i GOG z serwera EmuStart w jednej bibliotece i nigdy nie łączy ich po tytule.",
+      "statement": "UnifiedLibrary zestawia gry Steam, EmuStart, GOG z serwera EmuStart i (gdy jest) Xbox w jednej bibliotece i nigdy nie łączy ich po tytule.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L1-L25",
-          "version": "repo-lines-v1:sha256:05ffa1c63e113a5dd7da981ebafb053adb53a3b7bf48c7586386dc69a0fc8d21:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNmVhYmZlNzBmYzkyN2Y3ZjEwZGY0MzIzOWIyMTI0YTQyODBmOTE5MTRhNmU2NjRiYTFlZDQ0ZWY3ODE3ZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA3N2IxMTJiMDRjMWU4ODExMWUyOTMyYWM2M2M4MTc1MzhjMzA2OWQ5YzllN2QxYTg1NDYwNTAzMGRhZTliZGEifQ"
+          "resource": "repo://lumen/src/main/core/unifiedLibrary.ts#L19-L57",
+          "version": "repo-lines-v1:sha256:945a0862b4631ee9fe82d91c0977be34e1a1e3f67b852ef76f2f8e680293fa54:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZGFmMGRjY2VkOTdiMGUzMmM2YjIxYjFkM2E5NjAyNDlkM2NhMzNiMzEwZjZhY2Y0NmFiMzkxMmYyMTQzNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlOWIxMDUxY2RhZjk4MmE1OTNmMTZkYTY4NjMyMGRlY2ZlMWM0OGY1MjcyN2Q0ZTVlYTM1NDIxODNjZDk3OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ODA0YjVhNmJhN2MwMmFhNDc3OTkzNjU1NWI3ZjYxZDY5NmI2NWZiNjk0OGQ0NjM0NDE0MDU5NTA1NjRhNjkifQ"
         }
       ]
     },
@@ -21,7 +21,7 @@
           "version": "repo-lines-v1:sha256:29c7b1e8f44bbb748fee0b35ca9521b4f99e7209deb45e93b033e9d62c4ae043:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjVlY2UzNzllZDZmZWM1YTc1MGQ4Y2FhN2FlZGYxNjY2YmI3OGExZDAyOTA2ZDNmYjgyYmYzYzYzY2UxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzYmE4ODM0OTRkNTE3YjEyYmE2OWIzYmQxYjllMjBjOTBiNmZiNmI0NTBjNDFmYzBmMDIzMjE0YzgyM2M0ZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMzkzNWU1ZjA2ODBmMGVjN2U5NzQ4MzRmYzlkN2IxOWM5NzY2ZWYwNjk2NmYzNzkwMThiOGZmNWVkMmNlMmUifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L419-L425",
+          "resource": "repo://lumen/src/main/index.ts#L631-L637",
           "version": "repo-lines-v1:sha256:fde4fa9ae7f33ebda49aa6cea752e24d878a4ae035565675dd60da65470d7633:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWIwNjMwYTdlOTA1ZWMzMTgxYzU4MDhmYTI3MGZhY2M2OGY1YTRiY2Q5YjNhZjFmOTRkOThmOGJkZjc3NTIwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2E2MDFmYjMyMjc1M2E5ZTg1ZTBhNTM4YmIzNWE0OGU0MzUzNmQzZjg4YWVlMzZlNDhiYjg3NmI4MDQwOThkNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjk2MGYxNGU2NjkzZThlOTc3MTVjOTA3YzdjNTQxODczMTgxYjk4NjE5ODVhNjBkYjkwMzQwZmE1NDU4YzkwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2M5ZjcwMGVhZWE4MjNiOGYxNjE1N2Q0NzQ1YWY1NThkMjZkYjlmMTRhMWUwYzUxYzZiNWY4YjZlNWNkNWY3MiJ9"
         }
       ]
@@ -31,7 +31,7 @@
       "statement": "Preload wystawia rendererowi jeden obiekt window.lumen przez contextBridge.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/preload/index.ts#L193-L193",
+          "resource": "repo://lumen/src/preload/index.ts#L220-L220",
           "version": "repo-lines-v1:sha256:652ea2f17e14b225c8638e853aaf554050d32d167abf065cda01bb63be5d6308:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUyZWEyZjE3ZTE0YjIyNWM4NjM4ZTg1M2FhZjU1NDA1MGQzMmQxNjdhYmYwNjVjZGEwMWJiNjNiZTVkNjMwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUyZWEyZjE3ZTE0YjIyNWM4NjM4ZTg1M2FhZjU1NDA1MGQzMmQxNjdhYmYwNjVjZGEwMWJiNjNiZTVkNjMwOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
@@ -45,7 +45,7 @@
           "version": "repo-lines-v1:sha256:31de3ff19794752510608d76f4d40354adbc3acb627fb4e4f47eea67e954b5d0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1YTQxNzc3YjhkN2Y1YmM5ZWFkZDY0N2FmZDNhNjVjY2VkZGUwYzAwNWZhMjlkOTllYmM2ZTBmNmZmODg5ZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzMzhiZGIyNzYwNjhmYmIyN2Y1Mjk4NDhjOWIyZWEyYmRhNWU4OGE5N2Y0ZTdhNTJiY2U5MGQ4ZGM1Y2M1ODIifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L72-L95",
+          "resource": "repo://lumen/src/main/index.ts#L94-L117",
           "version": "repo-lines-v1:sha256:efcf980af89a0ee64462a920c843dd7ee27162b1969101cfaf1e12f300d8bab8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MzUyZGZhNmM1ODYzOTljNTJmMGI4ZmZmN2U2NTJjZWRiYjI5YmI0NTZkZmVkMmQwOGU1ZjdhMTA1ZmQ3ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTE1NjQ5MzFjYmYyYWM3MDU1OWY3YzEzMGM5MGFkNGQyNjIyZWE5MzliNDRlYjlhZTEzMTk5N2RmMTYxOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMTQzNTRlNDllMTVlNDg3ODE0NzRiYmNjZWMwMzk1ODEwN2E2YWRmMmU1NDM1NzM3OTc2NTQyYjU5ODNiOTMifQ"
         }
       ]
@@ -55,7 +55,7 @@
       "statement": "Gdy Deck jest włączony i działa, zamknięcie okna głównego chowa Lumena do zasobnika zamiast kończyć program.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/index.ts#L274-L277",
+          "resource": "repo://lumen/src/main/index.ts#L394-L397",
           "version": "repo-lines-v1:sha256:9fa39c898ecdb02e53d1e632c2a2874e8e77a16cd8756f9a035d0d4d1938423b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGFkOTBhMWE0NjM4ZmE4NGMzNjcwNWVhMmI0YTVlNDI1ZmYxMDM0YTQwOTFiNDI2ZjYyMTBkZmJkMmJmOTMwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQ1NTU5YTFlOTdiMDMyNmI4OTQ0ZjI2MGY4OTIwZjMyNTQ2MDg1YmQ3ZjMxYWNiOWVjMjFkMTQ3ZmUwOTY1OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2VkODgyMzgwMDQxZWZlYzIwODgwMzVmODBiYjAyNTlmMThjNmU1NGNlYTQzNjFhODY2ODQyZjA0NGI1MDJlZSJ9"
         }
       ]
@@ -65,8 +65,8 @@
       "statement": "Okno Decka istnieje tylko przy włączonym Decku, leży nad tapetą i pod oknami aplikacji, bez fokusu i poza Alt+Tab.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/deckWindow.ts#L1-L10",
-          "version": "repo-lines-v1:sha256:89a868bb662422739a4057533ca69f5e69f504d8ac993c6fc8fec72fa7bae65f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMWE0Mzk3YTkyOTU4ZjFhYjBkMjhjOWUzOTk4YWM3YzcyZmE2NzlhMzhjOWRlNjM2MDYxMmI0MjVmNjE4ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4YTQ0N2EzMTIwMmM0ZTU4MzkzNjgyZmI5Y2M4ODIzYjUxNTA0NTQ0MTRlYjk2ZmQ1ZjBhYmJiOWZjNWQ5OTQifQ"
+          "resource": "repo://lumen/src/main/deckWindow.ts#L1-L11",
+          "version": "repo-lines-v1:sha256:07aea10d1300186f30bc25b780cf417f202417061d1a0cae7682a4bfb56c993b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0N2JkN2ViNmRlZDY5NmEzNTVhMjk5OGNiMDA4YmI2Yzk2MGVlYjEwY2ZlMmZjMTdkZTY1MTZhNzQ1MWFmNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4YTQ0N2EzMTIwMmM0ZTU4MzkzNjgyZmI5Y2M4ODIzYjUxNTA0NTQ0MTRlYjk2ZmQ1ZjBhYmJiOWZjNWQ5OTQifQ"
         }
       ]
     },
@@ -75,14 +75,68 @@
       "statement": "Aktualizator Lumena wybiera najnowsze wydanie z tagiem lumen-v z C4rl0s79/EmustartNXT (do 5 stron), weryfikuje rozmiar, SHA-256 i podpis Ed25519, a podmianę plików wykonuje skrypt PowerShell bez ruszania LumenData.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/updater.ts#L12-L35",
+          "resource": "repo://lumen/src/main/updater.ts#L13-L36",
           "version": "repo-lines-v1:sha256:72cb50a65489d03f3050e86ae68dfaaacb41729bfdbcbfb584a856c99dffc206:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViZjFiNDkxYzkyZDJmYTE1MjcwYTIxMGU5ZDEwMzY2MTRiMjJhOTc5ZWIzNjdmMmZhNmUyNjgyZjM3MDljNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxNGEwYTNmNDJiNDk5MzVlOTNkYjBlZDhlYzhmOWRhZmUwMDAwMDllNTgzZmJlY2I0M2RlZTFkZjVjNjBjYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZkZDFlNGNkNzI1OWIwNGI0Nzc4OTAyYzMwMGE0MGQ5YzNiMTU5MDJmMmJkMmM0Y2ViNGE2NjU3ZTI2MTNhMGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0fa6b6fb75f74bb7a9a6418b97cf52f5",
+      "statement": "Wersja zainstalowana Lumena ma manifest requireAdministrator, a adresy otwiera przez Eksploratora, żeby Steam i przeglądarka startowały bez uprawnień administratora.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/electron-builder.yml#L21-L21",
+          "version": "repo-lines-v1:sha256:b51bc88336be0c51103fdc4c76409c60347210ff1d9857e19a8bde3b473c0534:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjUxYmM4ODMzNmJlMGM1MTEwM2ZkYzRjNzY0MDljNjAzNDcyMTBmZjFkOTg1N2UxOWE4YmRlM2I0NzNjMDUzNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjUxYmM4ODMzNmJlMGM1MTEwM2ZkYzRjNzY0MDljNjAzNDcyMTBmZjFkOTg1N2UxOWE4YmRlM2I0NzNjMDUzNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDM3NTRkMDQ0NTNjMTc4OWY5ZjQ4ZmU2ZGNlNjA4M2FjMWMzZTJjYTY3MzRlOWU3ODEzYmZkNGUzYjY3MWI0OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDQ2YTJhNGMzMmJiYjc2M2E3YmE1NGM5OGE0NmEzNWZhNTBhNWQyZjdmMTg2ZWY1MDJlYzJkNGUyYmE2Y2JkNCJ9"
+        },
+        {
+          "resource": "repo://lumen/src/main/elevation.ts#L1-L50",
+          "version": "repo-lines-v1:sha256:402c3ce3a829ec6f4b8d49b1bd5c5c49bff3957319ac907bc153368aa580fc99:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2N2ZiMmRlYzEwYWU3MjMyNzk4NjU0ZTZlN2VkNWE5NjFkMmMzMWEyZmUzZDU5M2E1NDFkMWQ3NjBhMGQ2NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlhZjE3MTE1OGU3NmMxMmZiZDlkNzVkZTNiNDc2YzU2MDYwMmExNmQ2NzBjNjUzNzc3MGNjYzQwODEwNTYwNjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc35b7e29dab4eb0a28dafb2ca5cd400",
+      "statement": "Druga kopia Lumena przekazuje prośbę przez pliki w %LOCALAPPDATA%\\Lumen, a działająca kopia niczego z prośby nie uruchamia (pyta gracza, przy przełączeniu sama się zamyka).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/instances.ts#L1-L20",
+          "version": "repo-lines-v1:sha256:dc6f177d7f3552c3a5e37af67a55002fc871c42a138a6345429be9c89fdfa668:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlOTNmZDQzMjA2ZjcwMTdhN2I4NWJjNjA3OTVmNmQyNjE5M2Y4YzUyNzQ4MmYyZjZhMzYxMTAzODg4N2U2ZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MmE0MjkzODJiMmUxNDcxOGUwZTM3YjA1NzBhOGExNzAyOTkxZmNkODQ5OGNkODQwNjBhOGJmNGYwNTAxN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyZDYyMmYwYTI5YmI1OGE3M2ZmNTJkZDM0MzI4YmY4ZGQ0NDZiMzdkMTI0NzA4NjQ5YmMwMzg1OGUzMjU4NjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_853cfa845c6f481790a5b5f4aa1c064b",
+      "statement": "Autostart wersji działającej jako administrator to zadanie Harmonogramu, a ze źródeł — wpis Run w rejestrze użytkownika.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L236-L276",
+          "version": "repo-lines-v1:sha256:d3e79389cb1234ceaf868fcbbd5481051988654753608195e4f74664a44f9489:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZjgyZmY0YTA2YzQ2N2QwMzBkYTc2NjQwOTlmOGYzZWU2MjQzYjZlYzY0MjQ1ZTM5NTY5M2UwZDY2OTdiMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhYjFjZGQwZTI5MTlkM2RhYmM0NzA3ODdiNWIxODc5Y2FhNGY5NzQ0NGU5NTQ3MDY4YjZkMTY1ZWQ5NWY1NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4ODg4ZTUxNjhiOTUwZmE5YWJiYzdiOTg5ZDAzN2JlNTUyYzJhYjkwNWI1YjEwNDE3MDcyOGQ4NjFjMzA2NDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU5ZTk2ZWY3NTQ3N2FmOGJmYTYzMDRlZDlmYWZkN2QxM2E1ZTliYTM1ZmE4ZmU5M2VjOTk2MTZhZTc5ZWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_dcacc602301c4c5eb5eff56312c0ed60",
+      "statement": "Deck dostaje migawkę biblioteki ograniczoną do gier na tym komputerze i 40 ostatnio granych.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/index.ts#L343-L362",
+          "version": "repo-lines-v1:sha256:7a3de9dbb51159cca095aca739241db49a71a94ec22aff7e61b205a0812884c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2MwZTgxY2ZiOTFhMTRmNzY0YTEzYmEzODI3ODFhZTgwMmMzZTM4ZjFkMWI0OWYyMjk5NmVhMTg5ZWExZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5MWU4MjA4N2E2ZTM4OTRjMzc3OWZlYWRkMGZhMWQyZWFmZDM1ZjA4NGQwM2RjZTY3ZjFkN2UwYThmZjI1MzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4MzAzZDRiZjUyOWFlNDlkNDc5ODg1OGVjY2QwYzA5ZjFhZjE3NGRlNWNkNDY1M2UwMzhkMTE2ZmU0MTk3ODcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6d745f15383e4dc3b1bd854a2ca4d7b0",
+      "statement": "artCache wczytuje grafiki lumen-art:// w tle (fetch, blob, decode) i trzyma je w pamięci do 256 MB.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/lib/artCache.ts#L1-L12",
+          "version": "repo-lines-v1:sha256:d5a6397b3b4eaf78b28cfb8091223f03e297255a49812273e7f7de9f719bb7ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlYjM2MTE0OWZjOTQxYTExZTA2YWVjYTRiNmRmMThkOTc4YWI3NmNlNGFhZGMzZWQ1ZjlmNzRkNTdkNjJhMzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YTk5MjhkYzk0MDRkYmQ2OWJjYzdmZjBhY2U5MDQ2YjVlMWM2N2UwMDdjZDNlZTQzODcyNjAxOWIyMjM4OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3ODNlMDBhZWFkZGVlZDQyNDMyODg3NGY3MzFjY2U1OThkMWU2ZGE4NGYxOTBlOTkwOTc4Y2ZmZTgxZGNkM2EifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:46:08.589Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

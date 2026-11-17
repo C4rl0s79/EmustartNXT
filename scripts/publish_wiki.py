@@ -41,6 +41,11 @@ OPENWIKI_PAGES = {
     "operacje/budowa-testy-i-wydania.md": "Technika-Budowa-testy-i-wydania",
     "operacje/konfiguracja-porty-i-sciezki.md": "Technika-Konfiguracja-porty-ścieżki-i-logi",
     "operacje/rozwiazywanie-problemow.md": "Technika-Rozwiązywanie-problemów",
+    "architektura/lumen-tryb-tv.md": "Technika-Lumen-tryb-TV",
+    "integracje/xbox-microsoft-store.md": "Technika-Xbox-i-Microsoft-Store",
+    "przeplywy/gry-gog.md": "Technika-Gry-GOG",
+    "przeplywy/serie-gier.md": "Technika-Serie-gier",
+    "przeplywy/motywy-tv.md": "Technika-Motywy-TV",
 }
 DIR_INDEX = "Dla-deweloperów"
 

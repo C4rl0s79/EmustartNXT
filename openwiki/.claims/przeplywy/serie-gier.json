@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b4ec146ec555803238cd43b2eb85abd9fb66a7c81e19ea131979edc29d54156d",
+  "claims": [
+    {
+      "id": "claim_ca8f170d0e124d7284dff89956dbecc4",
+      "statement": "Serwer wybiera jako nazwę serii najwęższą kolekcję IGDB z co najmniej dwiema grami, a franczyzę podaje jako grupę; gra z samą franczyzą dostaje puste name.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/igdbseries.py#L312-L345",
+          "version": "repo-lines-v1:sha256:84883bc1ee1d63e17e1c390a0705464063801934ced5fbf9d59d613addb66d45:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViOWU3YWY4NTliYjIyZjUzYjRkZTRkNWM3ZWExZGMxZGU3NmNlY2I3NzY5ZmI4YTBiNDY4MzNmYjQxMTIwYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0ZjE0OTBiMzIyNjM0MTk5MGVlZjg3MmFkZDU1ZjM3ZDQ3N2U4MmZmY2E0NmNmMWZlYTQyN2VlYmEwYTVjMjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExMGY4MDQyNmYxY2JhN2ZlOTVhZTQ5MmU3NTk4NGYxNTRhNDE0YmQ0MDMzMWVkOWUyZmRiYzc4ZGUwOTNhMzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZGI5MTQ4OWQxMWI4NTQxYjI1ZjhmOWQ5YzU3OTE0ZDliZjA0ZWJkMzUwYTdmODU1ZWRhNWE0ODMwNjJjMDcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_acc1c3128e3646b48aeba654fe3f6ffa",
+      "statement": "Dopasowanie serii w IGDB wymaga podobieństwa co najmniej 0,80, a gry „nie znaleziono” są sprawdzane ponownie po 30 dniach; wynik jest w series.sqlite z kluczem system|tytuł.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/igdbseries.py#L1-L40",
+          "version": "repo-lines-v1:sha256:ca814622c090cac117b08f4bd43d570b0245163251c783a8d8df274ea73d83c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NGRlZTIxNjVhNDM2NjQ4NjQ4NWY4Nzk2NzIyNDYyZjdiYjM3YTFkOTQ2MmFkODkwYTk5NWJiNGFiNTY1MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjNzE5MTZiMzc2NjRhMDQxNTVhZWM3MDg4OTMzNDM3MDdhNzNmZTQ2ZDA5NDljYTlmYzAyMjk5ZGQwZTQ3NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxOWVmMWYwODRjNDMyY2JkNmRlZDI4NzMwZGExOWMzNTlmNWRkNDZiMGQ5MzhlNDU0YjBjMGY0YjI4ZDg3NWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_54ef7b4c0a084002817be891ea45d00c",
+      "statement": "Lumen pobiera serie metodą silnika series_sync co 6 godzin albo co 3 minuty, gdy serwer sprawdza jeszcze tytuły tego Lumena, i trzyma wynik w pliku.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/series.ts#L78-L90",
+          "version": "repo-lines-v1:sha256:4e075e9ded2efa862f3d1e204d3a9e0b5768c2fe054338906c847bd35865eaf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyMGYyMDFmNTk2MGNkY2QyYjM4YTJlZjU3NWJjMTVlYWE1MDM2ZmUyMWI1NDk0ZGU2NDI2NTJmY2NlNTVmY2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMjE0MTg5ZGYzYWU1ZGM1MDE4MzJkMThhNzFkYTliZDdkMWEyZTYxM2U2N2NkYTA4NjAwMzJhYjdiOGQzOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5YWRhZmNhNWI4NmE2YjNiM2NhNGFlOWU4ODExZGY3YmM1YjYyZGE2ZDg1NWU5MzEzOGUzYzNiZjc3MWZhYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmOThjYWIzMGFjYTFjZjMwZTM3OTNhMTI4YWJhZjU0MzQyNThiOWQ2NjMyMGExNDIwOWVmMDNmZGViNTUxMDQifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/series.ts#L8-L40",
+          "version": "repo-lines-v1:sha256:0a085d2c2d4f7d70fbeddd51bc4b5527ea56375ef7a3201fecdd3e0acccc6b35:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmYWZlNjc3MThiOTRmZTQ3ZTFmNzU4YTk5YmE3ZTVjYTU1YjhhZGQ1YmIyM2UxNjZhMzA0ZWE1OTE3YmNlNmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhZWRjOGIyM2I5NDczMDY0OTgxYmNiMzRiM2E4ODM0YjU5YmE5ZDYzY2NkZDhmYjQ3NzcwMDEwMzgwZjkzMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNiMWI2ZTlhNDUwMDRjMDU4ODVlYTUyMjg3Y2IyMjA1ZDkyODExOTI4NTcwM2M0ZDkzMmM1NTJhMWI3NzNmZDEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b424c865ae124c00a57ce039f8ae8edb",
+      "statement": "Klucz serii w Lumenie zawiera platformę (steam, gog, skrót albo es:<system>), więc seria nie miesza platform.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/shared/series.ts#L95-L97",
+          "version": "repo-lines-v1:sha256:83d502032071fb5b7f1920ee8a0c173c5abc6c6975b2968b143a075b9e9b96aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTIyZThkODYzMmIzNTI3Mjg0M2ZmNWQ0MjI1M2RmODgwMmVmYmI5ZDczZDkxMTE4MTM1MjVmZTg1NTMzZTIwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2YxZTgyZjhmNTY0NTE0NWM1Zjc5NWViNTJmYjZjZWFmZTkzYWM0MTQ5NjJlNjViNTVlYjFjZGE3NTU1MjUyNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDk1YTUzYjBlM2ZhODdkYjIwZGFlYjhiOWEwZWViYjI3ZjkyMjY0MDA1ZjMzNjRhOWM4NTZiNmY1MmU4NTExZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b9f7d0ac72394fb29cb3b100c6c038b3",
+      "statement": "Kolejność w serii: miejsce ustawione przez gracza, data oryginału z IGDB, gry bez niej między znanymi według numeru części, potem data wydania i tytuł.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/shared/series.ts#L163-L210",
+          "version": "repo-lines-v1:sha256:cf7dd1b9a22397e459ac848fbc7aa49632cf1ddd28bd7fda9456401eabb989b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiMmU1NTEwM2U2NjVjOTJiZmY2Y2QyMTA5NGI5ODk0ZWI5ZWRhMjFlMzI4MjgzNGQxODI3MDc0YmFmODc0NDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNTQzMWVjZmM4MDRmZmRmMDg1ZjhhMWQwMThjNGY0MTY5NGIzMzhlZjEyZjY3YTdmMmM0NDIzNDU2OTIyM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NDQwYzY0MWYzZjJmYTAxYmI4NTI0ZDhlMDI5Zjg3NDY0MDIxZmYxYzBkMTk3YWIyZGViZjNiMTI2MmM1NWYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-16T23:16:42.429Z"
+  }
+}

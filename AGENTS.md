@@ -238,6 +238,21 @@ Sprawdzaj:
 
 Nigdy nie umieszczaj kluczy prywatnych, tokenów ani haseł w repozytorium.
 
+### Dokumentacja po wydaniu (obowiązkowo)
+
+Po każdym wydaniu (EmuStart `emustart-v…` albo Lumen `lumen-v…`), gdy opublikowane wydanie jest sprawdzone:
+
+1. odśwież OpenWiki z `main`: przebieg `update` w języku `pl` (`openwiki_begin` → plan → strony → `openwiki_finish`;
+   w Claude Code: `/openwiki`) — opisz zmiany z wydania na właściwych stronach `openwiki/`, nowe systemy na nowych
+   stronach;
+2. nowa strona w `openwiki/` → wpis w `OPENWIKI_PAGES` w `scripts/publish_wiki.py`; zmiana dla gracza → strona
+   w `lumen/docs/wiki/` albo `emustart/docs/wiki/`;
+3. zmiany na gałęzi `docs/wiki-<wersja>` → PR → scalenie;
+4. po scaleniu opublikuj wiki GitHub: `python scripts/publish_wiki.py <kopia EmustartNXT.wiki> --push`
+   (`README.md`, sekcja „Wiki”) i sprawdź, czy strony się otwierają.
+
+Gdy OpenWiki zwróci `noop`, wykonaj tylko krok 4, jeśli zmieniły się strony gracza.
+
 ## 8. Dane użytkownika i pliki
 
 Szczególnie kontroluj:

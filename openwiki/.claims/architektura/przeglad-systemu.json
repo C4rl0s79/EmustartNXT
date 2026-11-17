@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7d32487f219076f4979fa27c8eb4ea4095c988efd95e80364578baeea7e4d09d",
+  "pageVersion": "sha256:4d9ec5be1dc5a4f6c03171668aa906952c1132e2a905ef8418b2c494c865d2d2",
   "claims": [
     {
       "id": "claim_4688fbcad5bc4dcb9abff56048e26190",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://README.md",
-          "version": "repo-file-v1:sha256:d9cc01436033de6392485ea168ab8a0639572899a0b26bec9de299a632d51664"
+          "version": "repo-file-v1:sha256:fc5dbd117a7a5ad983fad03c4fbc48e0972848c8f454b8bea0de450aa1539916"
         }
       ]
     },
@@ -21,7 +21,7 @@
           "version": "repo-lines-v1:sha256:4ca011c00be4f02ccc7b430096f9e720aef585fe60f3bfaa799f1f96e96eb922:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNhMDExYzAwYmU0ZjAyY2NjN2I0MzAwOTZmOWU3MjBhZWY1ODVmZTYwZjNiZmFhNzk5ZjFmOTZlOTZlYjkyMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNhMDExYzAwYmU0ZjAyY2NjN2I0MzAwOTZmOWU3MjBhZWY1ODVmZTYwZjNiZmFhNzk5ZjFmOTZlOTZlYjkyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2ZlYzJhYTQ3NTIzYjY1MzJiZTIwNzNjNGJjZmUwZjJjNzk1MGM3M2U4MTQ2OGRiZjhkNzkzNjc3OWMwODJlYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWMzMzY3YmViZDg5YzU3YzJhYzVmZDczOTFjMmY0MDFhMjVkNDUyZTkyMmJlMzljZTA0MzEzZjkwOGNkYjZjYyJ9"
         },
         {
-          "resource": "repo://emustart/server_main.py#L140-L148",
+          "resource": "repo://emustart/server_main.py#L144-L152",
           "version": "repo-lines-v1:sha256:2bd12acc8803a61e3333746f4dd0095171c6732383d35ff345255ba4542d5d59:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjA4MTZiYmYzNDU2ZWVkM2YzM2E0NWM5NzhhMjQ4OTkyM2NiNzEzZThiNDEyZDk2ZmY3YmQyMTVjMzc0NjVhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzRmNzg0ZTkxMGJiZTQzYjY0YTQ2MGJmODViZDA1ZjZlNGZjZWY5NTc1NDUzMzM0NTI2YTgzNTIwOWQ5YWFkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzc3NzA0ZjFkYzJmNThkN2QzZjc0YTE3NTVjMzI2ODMxMWQ2NjFjZmEzZWQwNmU4MmYyNGE2NDViMzI5NWIzZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc2MDM0MmM3NDU5YzYyMGQ0YTA3OTQxM2E2NzE0OTFmMzBhNGYxMzE2Y2ZjYzQxNmVjYzIzMjEwYzgyNWY2MSJ9"
         }
       ]
@@ -59,10 +59,24 @@
           "version": "repo-lines-v1:sha256:68952a80de30f5926f454ad86f0a37a3f7f1dc3378d5b9e997e7189e395152d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4N2QzNGVmNDgzYTE0M2Q4YWM0MzgzMDkwNjNhOWY5N2JkZDU4YzBlNTc4YzM5MzdiNDk4MDJjNzRkMzBiMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4OTAxNzgzNDY2Nzk5ODAxMTdhMzEyODhiMmFjMGNkYTVhMGQ3NmNkNDM1ZTliNDQxOWRhNjgzNDlmYWE4NWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4ZTgwZmYxMDI1ODA1ZDg1YjY5MjgxMjM1MWQzOGQyYTk2Y2Y3MjJiNTlkMGQxM2NkODdhNjk1MWRiZDA5OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiNzY0YmUxZDJiNmE3NmM4ZGM1ODFkZGIzYWQ1MzFjNDVmZWZiOWZiMzNhY2FjZWIzYTI3NmU5MGE0N2RlMmYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_73ddb42ed2574c268139e7ef39cdedcf",
+      "statement": "Wiki GitHub projektu jest składana skryptem scripts/publish_wiki.py z emustart/docs/wiki/, lumen/docs/wiki/ i openwiki/ i nie powinna być edytowana bezpośrednio na GitHubie.",
+      "evidence": [
+        {
+          "resource": "repo://README.md",
+          "version": "repo-file-v1:sha256:fc5dbd117a7a5ad983fad03c4fbc48e0972848c8f454b8bea0de450aa1539916"
+        },
+        {
+          "resource": "repo://scripts/publish_wiki.py#L1-L20",
+          "version": "repo-lines-v1:sha256:ac5ddd496a77e498e8dc430cf637038ab692050f6855342878f8a1e364cddf93:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMTI0Y2U1MDIyZTI5ZWI0MGZkOTA0YTQ1NzExOTg0Y2I1OTc3OGFjZjExYmZjYjEzY2VkNzIzODkyZDhkZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MzhiMGU1ZmNhMTRlMzZiNDg5NmJlZjA0YzFhZGE4OWM0NDgwYTc2ZmY1MThmNDliNTA0ZGIzMmRiOTI1M2UifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-11T20:26:15.897Z"
+    "at": "2026-11-16T23:16:42.429Z"
   }
 }

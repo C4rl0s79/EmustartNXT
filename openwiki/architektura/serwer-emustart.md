@@ -5,8 +5,14 @@ description: "EmuStart Server (server_main.py / EmuStartServer.exe): tryby uruch
 tags: [emustart, server, tls, firewall, upnp, security]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-11T20:26:15.897Z
+    at: 2026-11-16T23:16:42.429Z
 sources:
+  - id: openwiki-source-53b1890bf695c580d786793a
+    resource: repo://emustart/emustart/gogarchive.py
+  - id: openwiki-source-a03805cf993ff2b37b1a1f8c
+    resource: repo://emustart/emustart/igdbseries.py
+  - id: openwiki-source-02e3ce0bbcfbc64759fde00d
+    resource: repo://emustart/emustart/memwatch.py
   - id: openwiki-source-c689b27cb9963760bf507303
     resource: repo://emustart/emustart/paths.py
   - id: openwiki-source-37e7277eedf5a9b2062b9903
@@ -19,7 +25,7 @@ sources:
     resource: repo://emustart/emustart/tls.py
   - id: openwiki-source-dc1c4e0ec4611cab17206a30
     resource: repo://emustart/server_main.py
-generated: { by: "claude-code", at: "2026-11-11T20:54:21.084Z" }
+generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
 ---
 
 # EmuStart Server
@@ -73,7 +79,10 @@ Kolejno (`emustart/server_main.py`):
 3. gdy ustawiono `gog_depots_dir` — indeks archiwum GOG w tle (`gogarchive.refresh`) i reguły zapisów
    gier GOG (`saverules.update_async`, raz na tydzień);
 4. harmonogramy w tle: kopie kont raz dziennie (`acctbackup`), nowe wersje emulatorów raz dziennie
-   (`emustore.scheduler`), programy do pobrania ze strony serwera (`clientdist.scheduler`);
+   (`emustore.scheduler`), programy do pobrania ze strony serwera (`clientdist.scheduler`), pamięć procesu
+   w logu (`memwatch.start` — pierwszy wpis po 10 min, potem co godzinę; także przed i po indeksie GOG) i serie
+   gier z IGDB (`igdbseries.scheduler` — 15 min po starcie, potem raz na dobę; zob.
+   [Serie gier](../przeplywy/serie-gier.md));
 5. import kluczy źródeł grafik z `server\art_keys.json` (plik jest potem usuwany);
 6. HTTP na `0.0.0.0:<server_port>` (domyślnie **8740**, `remote.DEFAULT_PORT`); po restarcie z panelu
    (`--restarted`) czeka do 30 s na zwolnienie portu;
@@ -119,9 +128,21 @@ na 30 minut; najwyżej 32 połączenia naraz z jednego adresu.
 - `/admin/…` — API panelu (`emustart/emustart/srvadmin.py`), wyłącznie z tego komputera.
 - Strona serwera (`emustart/emustart/webportal.py`, pliki `web/portal/`) — logowanie Google na
   zaproszenie, kod logowania, programy do pobrania; dostępna także z portu publicznego.
+- W panelu (`emustart/web/server.html`, `server.js`): archiwum GOG z listą „Bez archiwum” (gry GOG Managera bez
+  rekordu w archiwum), postęp serii z IGDB na karcie grafik, wgrywanie paczek motywów trybu TV Lumena
+  (`emustart/emustart/themes.py` — [Motywy trybu TV](../przeplywy/motywy-tv.md)).
+
+## Archiwum GOG i pamięć
+
+Archiwum depotów GOG (`gog_depots_dir`) indeksuje `emustart/emustart/gogarchive.py`; zbiór chunków buildu
+trzyma w zwięzłej postaci (`ChunkSet` — posortowane tablice skrótów i rozmiarów zamiast słowników), bo przy
+milionach chunków słowniki zajmowały gigabajty. Przepływ instalacji w kliencie opisuje
+[Gry GOG z archiwum serwera](../przeplywy/gry-gog.md).
 
 ## Powiązane
 
+- [Gry GOG z archiwum serwera](../przeplywy/gry-gog.md), [Serie gier](../przeplywy/serie-gier.md),
+  [Motywy trybu TV](../przeplywy/motywy-tv.md)
 - [Konfiguracja, porty, ścieżki i logi](../operacje/konfiguracja-porty-i-sciezki.md)
 - [Rozwiązywanie problemów](../operacje/rozwiazywanie-problemow.md)
 - Dokumentacja użytkownika: `emustart/docs/wiki/EmuStart-Server.md`,
