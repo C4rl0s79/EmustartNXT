@@ -287,6 +287,10 @@ class Server(private val prefs: Prefs) {
         try { return c.inputStream.bufferedReader(Charsets.UTF_8).readText() } finally { c.disconnect() }
     }
 
+    /** Serie gier z IGDB znane serwerowi: {"series": {"<system|tytuł>": {collection, order_ts, release_ts…}}}
+     *  (emustart/igdbseries.py). Starszy serwer — HttpError 404. */
+    fun series(): JSONObject = JSONObject(text("/v1/series"))
+
     /** To urządzenie administratora (zmienia grafiki, opisy i logo dla wszystkich urządzeń). */
     @Volatile var admin = false
 

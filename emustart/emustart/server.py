@@ -160,6 +160,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/v1/series":
             from emustart import remote      # serie gier z IGDB dla Lumena (emustart/igdbseries.py)
             return remote.series_post(self)
+        if p == "/v1/collections":
+            from emustart import remote      # kolekcje konta z Lumena dla APK (emustart/usercollections.py)
+            return remote.collections_call(self, "POST")
         if p.startswith("/v1/lock/"):
             from emustart import remote      # jedna gra naraz na profil (emustart/plock.py)
             return remote.lock_post(self)

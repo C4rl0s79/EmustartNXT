@@ -49,7 +49,7 @@ import { registerEmustartIpc } from './emustart/ipc'
 import { UnifiedLibrary } from './core/unifiedLibrary'
 import { GogProvider, gogPid, isGogId } from './gog/provider'
 import { SteamFamily } from './steam/family'
-import { applyServer, groupNames, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
+import { applyServer, emuCollections, groupNames, localItems, pendingFiles, type ServerChoices, parseDefaults } from './art/artSync'
 import { JsonFile } from './store/jsonFile'
 import { registerGogIpc } from './gog/ipc'
 import { UiModeManager } from './core/uiMode'
@@ -1135,6 +1135,7 @@ async function syncArt(): Promise<void> {
     await syncLbTitles()
     const r = await engine.call<{ ok?: boolean; choices?: ServerChoices }>('art_user_sync', [localItems(prefs.get()), currentGroupNames()], 60_000)
     if (!r.choices) return
+    await syncCollections()
     const d = await engine.call<{ defaults?: Record<string, { sha?: string; ext?: string }> }>('art_user_defaults', [], 30_000).catch(() => null)
     if (d?.defaults) {
       const artDefaults = parseDefaults(d.defaults)
@@ -1154,6 +1155,20 @@ async function syncArt(): Promise<void> {
   } finally {
     artSyncing = false
   }
+}
+
+/** Lumen categories with EmuStart games → server, for EmuStart on Android; an older server just says no */
+async function syncCollections(): Promise<void> {
+  const sidsOf = (gameId: string): string[] =>
+    isEmuGameId(gameId)
+      ? [emu.row(gameId)?.sid, ...emu.versionsOf(gameId).map((version) => emu.row(version.id)?.sid)].filter(
+          (sid): sid is string => Boolean(sid)
+        )
+      : []
+  const reply = await engine
+    .call<{ ok?: boolean; reason?: string }>('collections_sync', [emuCollections(prefs.get(), sidsOf)], 60_000)
+    .catch((err: Error) => ({ ok: false, reason: err.message }))
+  if (reply.ok === false) log.info('art', `kolekcje dla APK: ${reply.reason ?? 'nieudane'}`)
 }
 
 async function fileResponse(file: string): Promise<Response> {

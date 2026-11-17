@@ -282,7 +282,7 @@ def handle(handler) -> None:
     try:
         if parts == ["info"]:
             from emustart import gogarchive
-            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock", "series"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
+            feats = ["find", "system", "bios", "media", "library", "emulators", "savesync", "saveslots", "lock", "series", "collections"] + (["nas", "savemgr", "profiles"] if NAS_ROOT else []) \
                 + (["gog"] if gogarchive.INDEX["builds"] else [])
             return _json(handler, {"name": socket.gethostname(), "version": __version__, "api": 1,
                                    "features": feats + ["admin"], "nas_id": NAS_ID, "endpoints": endpoints(),
@@ -381,6 +381,8 @@ def handle(handler) -> None:
         if parts == ["series"]:                        # serie gier z IGDB (emustart/igdbseries.py, Lumen)
             from emustart import igdbseries
             return _json(handler, igdbseries.all_series((lambda: API._cfg) if API is not None else None))
+        if parts == ["collections"]:                   # kolekcje konta z Lumena (emustart/usercollections.py, APK)
+            return collections_call(handler, "GET")
         if parts == ["series", "progress"]:            # sam postęp sprawdzania (pasek w Lumenie)
             from emustart import igdbseries
             return _json(handler, igdbseries.status((lambda: API._cfg) if API is not None else None))
@@ -1115,6 +1117,33 @@ def series_post(handler) -> None:
     except Exception as ex:
         log.exception("serie")
         return _json(handler, {"ok": False, "reason": str(ex)}, 500)
+
+
+def collections_call(handler, method: str) -> None:
+    """GET /v1/collections → kolekcje konta; POST /v1/collections {"items": [{id, name, games: [game_id]}]} — zestaw
+    kolekcji tego urządzenia (Lumen). Konto i urządzenie z tokenu, jak przy zapisach (emustart/usercollections.py)."""
+    from emustart import savesync, usercollections
+    if not authorized(handler):
+        return _json(handler, {"error": "brak lub zły klucz serwera"}, 401)
+    _seen(handler)
+    try:
+        n = int(handler.headers.get("Content-Length") or 0) if method == "POST" else 0
+    except ValueError:
+        n = -1
+    if n < 0:
+        return _json(handler, {"ok": False, "reason": "zła długość treści"}, 400)
+    if n > 8 << 20:
+        return _json(handler, {"ok": False, "reason": "za duże zapytanie"}, 413)
+    try:
+        d = json.loads(handler.rfile.read(n) or b"{}") if n else {}
+        acc, dev = _sync_identity(handler, d if isinstance(d, dict) else None)
+        if method == "GET":
+            return _json(handler, usercollections.get(acc))
+        return _json(handler, usercollections.sync(acc, dev, (d or {}).get("items") if isinstance(d, dict) else None))
+    except savesync.Denied as ex:
+        return _json(handler, {"ok": False, "reason": str(ex)}, 403)
+    except ValueError as ex:                          # także usercollections.CollectionsError, zły JSON
+        return _json(handler, {"ok": False, "reason": str(ex)}, 400)
 
 
 def savesync_post(handler) -> None:

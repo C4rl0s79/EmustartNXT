@@ -321,12 +321,13 @@ function renderSystems() {
   });
   const s = S.systems[S.sysIdx];
   $("sysName").textContent = s ? s.display : "";
-  $("sysMeta").textContent = s
+  $("sysMeta").textContent = s && s.group ? `${s.count} ${groupWord(s.group, s.count)}`
+    : s
     ? `${s.games} ${plural(s.games, "gra", "gry", "gier")}` +
       (s.cached ? ` · ${s.cached} w pamięci podręcznej` : "") +
       (s.emulator ? ` · ${s.emulator}` : " · brak emulatora")
     : "";
-  setHints(n ? [["dpad", "System"], ["a", "Wybierz (przytrzymaj: opcje)"], ["start", "Menu"]] : [["start", "Menu"]]);
+  setHints(n ? [["dpad", "System"], ["a", s && s.group ? "Wybierz" : "Wybierz (przytrzymaj: opcje)"], ["start", "Menu"]] : [["start", "Menu"]]);
   scheduleSysInfo(s);
 }
 
@@ -335,7 +336,7 @@ const SYSINFO = {};
 let sysInfoTimer;
 function scheduleSysInfo(s) {
   clearTimeout(sysInfoTimer);
-  if (!s) return $("sysAbout").classList.add("hidden");
+  if (!s || s.group) return $("sysAbout").classList.add("hidden");
   if (SYSINFO[s.es]) return renderSysInfo(SYSINFO[s.es]);
   $("sysAbout").classList.add("hidden");
   let tries = 0;
@@ -364,7 +365,7 @@ function systemsInput(a) {
   else if (a === "right" && n) { S.sysIdx = (S.sysIdx + 1) % n; renderSystems(); }
   else if (a === "a" && n) {
     // krótko = wejdź do systemu, przytrzymane = opcje systemu (logo, nazwa, emulator…)
-    holdA(openSystemOptions);
+    holdA(S.systems[S.sysIdx]?.group ? ignoreHold : openSystemOptions);
   }
   else if (a === "start") openMenu();
 }
@@ -373,6 +374,12 @@ function systemsInput(a) {
 async function openSystem(keepIdx) {
   const s = S.systems[S.sysIdx];
   if (!s) return;
+  if (s.group) {
+    if (!keepIdx || !S.group || S.group.kind !== s.group) S.group = { kind: s.group, open: -1, listIdx: 0 };
+    await openGroup(s, keepIdx);
+    return;
+  }
+  S.group = null;
   const prevId = keepIdx && S.games[S.gameIdx] ? S.games[S.gameIdx].id : null;
   S.es = s.es;
   S.allGames = await api().list_games(s.es);
@@ -387,9 +394,42 @@ async function openSystem(keepIdx) {
   applyGameFilter();
 }
 
+/** „★ Serie” / „★ Kolekcje”: lista grup (wiersze-foldery), A — gry grupy, B — z powrotem do listy grup. */
+async function openGroup(s, keepIdx) {
+  const grp = S.group;
+  if (!s || !s.group || !grp) {                // karta grupy zniknęła (np. serwer nie ma już serii)
+    S.group = null;
+    show("systems");
+    return;
+  }
+  const prevId = keepIdx && S.games[S.gameIdx] ? S.games[S.gameIdx].id : null;
+  if (grp.open < 0) {
+    grp.list = await api().groups_list(grp.kind);
+    S.games = grp.list.map((x, i) => ({ id: -1 - i, folder: true, title: x.name,
+      tags: `${x.sub} · ${x.count} ${plural(x.count, "gra", "gry", "gier")}` }));
+    $("listTitle").textContent = s.display;
+  } else {
+    S.games = await api().group_games(grp.kind, grp.list[grp.open]?.key || "");
+    $("listTitle").textContent = `${s.display} › ${grp.list[grp.open]?.name || ""}`;
+  }
+  S.allGames = S.games;
+  const i = prevId !== null ? S.games.findIndex((x) => x.id === prevId) : -1;
+  S.gameIdx = i >= 0 ? i : grp.open < 0 ? Math.min(grp.listIdx, Math.max(0, S.games.length - 1)) : 0;
+  $("listLogo").classList.add("hidden");
+  const n = S.games.length;
+  $("listCount").textContent = `${n} ${grp.open < 0 ? groupWord(grp.kind, n) : plural(n, "gra", "gry", "gier")}`;
+  show("games");
+}
+function ignoreHold() { /* karta serii / kolekcji — bez opcji systemu */ }
+function enterGroup(i) {
+  S.group.listIdx = i;
+  S.group.open = i;
+  openGroup(S.systems[S.sysIdx], false);
+}
+
 /** Lista gier dociągnięta w tle (telefon: duże systemy porcjami) — na tej samej grze. */
 window.__emuGamesUpdated = (es) => {
-  if (S.screen === "games" && S.es === es && !S.modal) openSystem(true);
+  if (S.screen === "games" && S.es === es && !S.modal && !S.group) openSystem(true);
 };
 
 function renderGames() {
@@ -412,7 +452,7 @@ function renderGames() {
     if (g.cached) icons.push('<span class="tag c">lokalnie</span>');
     html.push(`<div class="row${i === S.gameIdx ? " sel" : ""}" data-i="${i}" style="top:${(i - top) * rh}px">` +
       (S.state?.games_logo && g.logo ? `<img class="tlogo" src="${esc(g.logo)}" alt="${esc(g.title)}">` : `<span class="t">${esc(g.title)}</span>`) +
-      `<span class="g">${esc(listTags(g.tags))}</span>` +
+      `<span class="g">${esc(S.group?.kind === "collections" && g.system ? `${g.system} · ${listTags(g.tags)}` : listTags(g.tags))}</span>` +
       `<span class="ic">${icons.join("")}</span></div>`);
   }
   box.innerHTML = html.join("");
@@ -422,13 +462,15 @@ function renderGames() {
     // prawy przycisk myszy / długie dotknięcie — opcje gry (jak przytrzymane A)
     el.addEventListener("contextmenu", (ev) => { ev.preventDefault(); S.gameIdx = +el.dataset.i; renderGames(); openGameOptions(); });
   });
-  setHints([["a", "Graj (przytrzymaj: opcje)"], ["x", "Filtry"], ["y", S.games[S.gameIdx]?.pinned ? "Odepnij" : "Przypnij"],
-            ["lb", "Strona"], ["lt", "Litera"], ["b", "Wstecz"], ["start", "Menu"]]);
+  const cur = S.games[S.gameIdx];
+  setHints(cur?.folder ? [["a", "Otwórz"], ["lb", "Strona"], ["lt", "Litera"], ["b", "Wstecz"], ["start", "Menu"]]
+    : [["a", "Graj (przytrzymaj: opcje)"], ...(S.group ? [] : [["x", "Filtry"]]), ["y", cur?.pinned ? "Odepnij" : "Przypnij"],
+       ["lb", "Strona"], ["lt", "Litera"], ["b", "Wstecz"], ["start", "Menu"]]);
   schedulePreview();
   // okładki dla widocznej strony — w tle
   const page = S.games.slice(Math.max(0, top), top + vis);
   const want = (g) => (!g.box && !g.art_box) || (S.state?.games_logo && !g.logo && !g.art_logo);
-  const ids = page.filter(want).map((g) => g.id);
+  const ids = page.filter((g) => !g.folder && want(g)).map((g) => g.id);
   if (ids.length) { api().request_art(ids); scheduleRowArt(ids); }
 }
 
@@ -482,9 +524,19 @@ function gamesInput(a) {
     holdA(openGameOptions);
     return;
   }
-  else if (a === "y" && n) return togglePin();
-  else if (a === "x") return openFilter();
-  else if (a === "b") return show("systems");
+  else if (a === "y" && n) {
+    if (!S.games[S.gameIdx].folder) togglePin();
+    return;
+  }
+  else if (a === "x") {
+    if (!S.group) openFilter();
+    return;
+  }
+  else if (a === "b") {
+    if (S.group && S.group.open >= 0) { S.group.open = -1; openGroup(S.systems[S.sysIdx], false); }
+    else show("systems");
+    return;
+  }
   else if (a === "start") return openMenu();
   else return;
   renderGames();
@@ -503,6 +555,12 @@ async function updatePreview() {
     $("pvTitle").textContent = ""; $("pvTags").textContent = "";
     $("pvMeta").innerHTML = ""; $("pvDesc").innerHTML = "";
     setArt({ title: "" });
+    return;
+  }
+  if (g.folder) {
+    $("pvTitle").textContent = g.title; $("pvTags").textContent = g.tags;
+    $("pvMeta").innerHTML = ""; $("pvDesc").innerHTML = "";
+    setArt({ title: g.title });
     return;
   }
   $("pvTitle").textContent = g.title;
@@ -654,6 +712,10 @@ async function togglePin() {
 let launchPoll, lastNotice = "";
 async function launch(state = "", takeover = false, configure = false) {
   const g = S.games[S.gameIdx];
+  if (g && g.folder) {
+    enterGroup(S.gameIdx);
+    return;
+  }
   if (S.modal === "launch") return;
   // okno od razu po A — sprawdzenie konta, BIOS-y i lista plików z serwera trwają chwilę,
   // a wcześniej przez ten czas nic się nie działo
@@ -1322,12 +1384,29 @@ async function settingsInput(a) {
 }
 
 /* ───────────── stan ogólny ───────────── */
+// telefon: serie z IGDB i kolekcje Lumena jako osobne pozycje na końcu ekranu systemów (Bridge.kt: groups_list);
+// klient Windows — bez zmian (lista tekstowa)
+const GROUP_CARDS = [["series", "★ Serie"], ["collections", "★ Kolekcje"]];
+function groupCards(st) {
+  if ((st.platform || "") !== "android") return [];
+  return GROUP_CARDS.filter(([k]) => (st.groups || {})[k] > 0)
+    .map(([k, label]) => ({ es: "@" + k, display: label, group: k, count: st.groups[k] }));
+}
+function groupWord(kind, n) {
+  return kind === "series" ? plural(n, "seria", "serie", "serii") : plural(n, "kolekcja", "kolekcje", "kolekcji");
+}
+
 async function refreshState() {
   const st = await api().get_state();
   S.state = st;
   S.platform = st.platform || "windows";
   const keep = S.systems[S.sysIdx]?.es;
-  S.systems = st.systems;
+  S.systems = st.systems.concat(groupCards(st));
+  // karta grupy, w której jest gracz, zniknęła — z powrotem na ekran systemów (nie na inny system pod tym indeksem)
+  if (S.group && !S.systems.some((s) => s.group === S.group.kind)) {
+    S.group = null;
+    if (S.screen === "games") show("systems");
+  }
   const i = S.systems.findIndex((s) => s.es === keep);
   S.sysIdx = i >= 0 ? i : Math.min(S.sysIdx, Math.max(0, S.systems.length - 1));
   const net = $("netInfo");

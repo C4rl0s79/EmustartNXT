@@ -51,6 +51,12 @@ def sync(cfg: dict, pid: int, items: list, names: dict | None = None) -> dict:
     return sc._Client(cfg, pid).json("POST", "/v1/userart/choices", body)
 
 
+def collections(cfg: dict, pid: int, items: list) -> dict:
+    """Kolekcje Lumena z grami EmuStart ([{id, name, games: [game_id]}]) → serwer (usercollections.py), dla APK.
+    Starszy serwer (bez funkcji `collections`) — 404, zgłaszane jako ok=False, bez wpływu na grafiki."""
+    return sc._Client(cfg, pid).json("POST", "/v1/collections", {"items": items})
+
+
 def gallery(cfg: dict, pid: int, game: str, kind: str) -> dict:
     return sc._Client(cfg, pid).json("GET", f"/v1/userart/gallery?{_q(game=game, kind=kind)}")
 

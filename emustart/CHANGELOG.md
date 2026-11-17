@@ -6,6 +6,28 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: serie i kolekcje w APK (decyzje użytkownika 2026-11-17) — **wydane: EmuStart 0.67.0, Lumen 1.0.75**
+
+Decyzje: kolekcje = kategorie Lumena przesłane przez serwer (te same na PC i telefonie); tylko APK (klient Windows
+zostaje z listą tekstową — ustalenie z planu trybu TV); na ekranie systemów osobne pozycje „★ Serie” i „★ Kolekcje”,
+lista gier systemu bez zmian.
+
+Wspólny identyfikator gry: `savesync.game_id(es, nazwa)` = `SaveSync.gameId` w APK = `sid` gry EmuStart w Lumenie;
+klucz serii z serwera: `system|tytuł` (`igdbseries.key_of`).
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 21a | **Serwer: kolekcje konta** — `POST /v1/collections` (Lumen: `[{id, name, games: [sid]}]`, zestaw osobno dla każdego urządzenia, jak nazwy kolekcji w 0.63.5 — pusty zestaw jednego urządzenia nie rusza innych), `GET /v1/collections` (kolekcje konta ze wszystkich urządzeń; ta sama nazwa z kilku urządzeń — jedna pozycja, suma gier). Funkcja `collections` w `/v1/info`. Ta sama zmiana w `lumen/engine/` | zrobione — `emustart/usercollections.py`, trasy w `remote.py` / `server.py` (obie kopie); pisownia nazwy z najnowszego zestawu; testy `test_usercollections.py` (3) |
+| 21b | **Lumen: wysyłanie kolekcji** — kategorie własne (`kind: custom`) z grami EmuStart (`emu:<sid>`; grupa wersji `emugrp:` → wszystkie jej wersje) przy tej samej synchronizacji co grafiki; kolekcje Steam i kategorie bez gier EmuStart nie są wysyłane (nie do zagrania na telefonie). Starszy serwer — bez wysyłania, bez błędu | zrobione — `emuCollections` (`lumen/src/main/art/artSync.ts`), `syncCollections` po synchronizacji grafik (co 10 min i po zmianie grafik), silnik `collections_sync` → `artsync.collections` (obie kopie); test w `prefs.test.ts`, typy |
+| 21c | **APK: „★ Serie”** — na ekranie systemów (tylko Android): lista serii z `GET /v1/series` dla gier biblioteki telefonu (seria = kolekcja IGDB, co najmniej 2 gry tego samego systemu; ta sama seria w dwóch systemach — dwie pozycje z nazwą systemu); w serii gry w kolejności wydania, start i opcje gry jak na liście systemu | zrobione — `Bridge.kt`: serie liczone w tle (najwyżej co 10 min, po pełnych listach gier systemów; brakujące listy wczytywane w tle), `groups_list` / `group_games`, liczby w `get_state` → `groups`; `Server.series()`; `web/app.js`: karty na końcu karuzeli (tylko `platform == android`), lista grup jako wiersze-foldery (A otwiera, B wraca na tę samą grupę), bez filtrów (X) i bez opcji / przypięcia na wierszu grupy; klient Windows: `groups_list` / `group_games` w `api.py` zwracają puste listy |
+| 21d | **APK: „★ Kolekcje”** — lista kolekcji z `GET /v1/collections`, w kolekcji gry dopasowane po `game_id` (z nazwą systemu); gry, których telefon nie ma, pominięte. Pozycje ukryte, gdy serwer nie zna serii / kolekcji albo lista jest pusta | zrobione — konto gracza (profil telefonu) jak przy zapisach (`server.sync`), gry z nazwą systemu w kolumnie oznaczeń. **Sprawdzone:** testy EmuStart 895, silnik 947, Lumen 438 + typy; interfejs w Edge (CDP) z symulowanym mostem Androida: karty „★ Serie” / „★ Kolekcje”, lista serii, gry serii, B → lista (ta sama seria) → systemy, kolekcja z dwóch systemów, bez błędów JS; klient Windows — bez kart. **Niesprawdzone:** kompilacja Kotlina (brak Gradle / SDK na tym komputerze — dopiero CI), APK na telefonie z prawdziwym serwerem, Lumen wysyłający prawdziwe kategorie, lista gier klienta Windows na żywo (lokalnie brak skonfigurowanej biblioteki) |
+| 21r | **Code review PR #47 (10 uwag, wszystkie poprawione) i DeepSource:** kolekcje profilu innego niż konto urządzenia (token profilu) nie przepadają — liczy się tylko, czy urządzenie nie jest odwołane; chwilowy błąd `/v1/series` / `/v1/collections` zostawia poprzednie grupy; gry grupy po stałym kluczu (`system|nazwa`), nie po pozycji; kopie list gier (bez wspólnych obiektów z listą systemu); `decorate` raz na system; w tle wczytywane tylko listy systemów do 5000 gier; po brakujących listach najwyżej 5 szybkich ponowień, potem co 10 min; klucz serii jak na serwerze (spacje Unicode, GOG / Steam / Windows → `pc`); karta grupy, która zniknęła, wraca na ekran systemów; zła `Content-Length` → 400. DeepSource: data class, stałe zamiast powtórzonych napisów, konkretne wyjątki z logiem, bez asercji non-null, metody statyczne w `api.py` | zrobione (testy EmuStart 895, silnik 947, Lumen 438, typy; nowe przypadki w `test_usercollections.py`; UI w Edge z mostem Androida — także zniknięcie karty w środku grupy) |
+
+**Czego NIE dotyka.** Klient Windows (ten sam `web/app.js`, pozycje tylko gdy `platform == android`), lista gier
+systemu i jej sortowanie w APK, sterowanie, menu; serie i kategorie w Lumenie (dalej lokalne, tylko dosyłane);
+ręczne zmiany serii w Lumenie (nie trafiają na serwer — APK pokazuje serie z IGDB); serie bez kolekcji IGDB (Lumen
+wylicza je z tytułu — w APK nie w tym kroku); kolekcje Steam.
+
 ### Plan: przebudowa trybu TV Lumena — przejrzystość (zaakceptowana przez użytkownika 2026-11-16) — **wydane: Lumen 1.0.71**
 
 Propozycja z 2026-11-16 zaakceptowana w całości. Decyzje użytkownika: A na liście otwiera stronę gry („dobra zmiana”);
@@ -382,6 +404,28 @@ dokumentacji Lumena, wydanie.
 10. Zawijanie: na końcu listy gier i menu przejście na początek i odwrotnie; przefiltrowana lista z dwiema pozycjami
     przełącza się między nimi bez końca.
 11. Tryb TV: gdy po filtrowaniu jest mało gier, powielać okładki, żeby wypełnić ekran.
+
+## [0.67.0] — 2026-11-17
+
+Zakres: APK (`Bridge.kt`, `Server.kt`, `web/app.js`, `web/options.js` — nowe pozycje tylko gdy `platform == android`),
+serwer (`usercollections.py` — nowy, `remote.py`, `server.py`), silnik (`artsync.py`, `api.py`); te same pliki w kopii
+silnika Lumena (`lumen/engine/`). Lumen 1.0.75 wysyła kolekcje. Klient Windows — bez zmian w działaniu (lista tekstowa).
+
+### Nowe
+- **APK: „★ Serie” i „★ Kolekcje” na ekranie systemów** — serie z IGDB (kolekcja IGDB, co najmniej 2 gry tego samego
+  systemu, w kolejności wydania) i kolekcje Lumena konta gracza, dopasowane do gier na serwerze; A otwiera serię /
+  kolekcję, B wraca. Pozycje widoczne tylko wtedy, gdy coś zawierają. Liczone w tle najwyżej co 10 minut.
+- **Kolekcje kont na serwerze:** `POST /v1/collections` (Lumen: kategorie z grami EmuStart, osobny zestaw każdego
+  urządzenia), `GET /v1/collections` (kolekcje konta ze wszystkich urządzeń, ta sama nazwa — jedna kolekcja); funkcja
+  `collections` w `/v1/info`. Starszy serwer — Lumen i APK działają jak dotąd, bez kolekcji.
+- **Lumen 1.0.75:** własne kategorie z grami EmuStart trafiają na serwer przy synchronizacji grafik (grupa wersji —
+  wszystkie wersje); kolekcje Steam nie.
+
+**Czego NIE dotyka.** Lista gier systemu i jej sortowanie, sterowanie, menu; klient Windows; serie i kategorie w Lumenie
+(ręczne zmiany serii nie trafiają na serwer).
+
+**Sprawdzone:** testy EmuStart 895, silnik 947, Lumen 438, typy Lumena, mypy bez nowych błędów; interfejs w Edge z
+symulowanym mostem Androida; code review (10 uwag poprawionych) i DeepSource; kompilacja APK w CI. **Niesprawdzone przed wydaniem:** APK na telefonie, prawdziwe kategorie z Lumena.
 
 ## [0.66.3] — 2026-11-17
 

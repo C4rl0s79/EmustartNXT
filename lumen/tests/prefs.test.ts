@@ -221,6 +221,17 @@ describe('wybory grafik między urządzeniami', () => {
     expect(groupNames(nav)).toEqual({ 'navgrp:col/cat:952f63a5': 'Yakuza', 'navgrp:col/steamcol:uc-9iS1UmZnatNQ': 'Resident Evil' })
     expect(groupNames([])).toEqual({})
   })
+  it('kolekcje dla APK: tylko własne kategorie z grami EmuStart, grupa wersji — wszystkie wersje', async () => {
+    const { emuCollections } = await import('../src/main/art/artSync')
+    const cat = (id: string, name: string, kind = 'custom') => ({ id, name, kind, pinned: false, order: 0 })
+    const prefsIn = base({
+      categories: [cat('c1', ' Kanapa '), cat('c2', 'Tylko Steam'), cat('s1', 'Steam RPG', 'steam'), cat('c3', '  ')],
+      gameCategories: { 'emu:ga': ['c1', 's1', 'c3'], 'emugrp:x': ['c1'], 'steam:10': ['c1', 'c2', 's1'] }
+    } as never)
+    const sids: Record<string, string[]> = { 'emu:ga': ['ga'], 'emugrp:x': ['gb', 'gc'] }
+    expect(emuCollections(prefsIn, (gameId) => sids[gameId] ?? [])).toEqual([{ id: 'c1', name: 'Kanapa', games: ['ga', 'gb', 'gc'] }])
+    expect(emuCollections(base({}), () => [])).toEqual([])
+  })
   it('zmiana i usunięcie wyboru dostają znacznik czasu; stare wybory jako najstarsze', async () => {
     const { localItems } = await import('../src/main/art/artSync')
     const old = base({ art: { 'gog:1': { hero: { type: 'none' } } } })

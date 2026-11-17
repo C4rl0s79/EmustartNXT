@@ -9,6 +9,7 @@ import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -88,6 +89,8 @@ class Bridge(private val act: MainActivity) {
         "get_state" -> state()
         "list_systems" -> systems()
         "list_games" -> games(a.getString(0))
+        "groups_list" -> groupsList(a.getString(0))
+        "group_games" -> groupGames(a.getString(0), a.getString(1))
         "game_detail" -> detail(a.getInt(0))
         "set_variant" -> setVariant(a.getInt(0), a.optInt(1, 0))
         "get_settings" -> settings()
@@ -234,6 +237,7 @@ class Bridge(private val act: MainActivity) {
                 .put("pending_saves", if (keyRejected) saves.pendingCount() else 0) else JSONObject.NULL)
             .put("py_pad", false).put("pad_backend", "android")
             .put("admin", server.admin)
+            .put("groups", groupCounts().also { refreshGroupsLater() })
     }
 
     // ── administrator: zmiany na serwerze, potem lista z serwera od nowa ──
@@ -553,6 +557,150 @@ class Bridge(private val act: MainActivity) {
             g.put("seconds", 0).put("favorite", 0)
         }
         return arr
+    }
+
+    // ── „★ Serie” i „★ Kolekcje” na ekranie systemów: serie z IGDB (GET /v1/series) i kolekcje Lumena konta
+    //    (GET /v1/collections) dopasowane do pełnych list gier telefonu; liczone w tle, najwyżej co 10 minut ──
+    private data class Group(val key: String, val name: String, val es: String, val sub: String, val games: List<JSONObject>)
+    @Volatile private var groups: Map<String, List<Group>> = emptyMap()
+    @Volatile private var groupsAt = 0L
+    @Volatile private var groupsShortRetries = 0
+    private val groupsBusy = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    private fun groupCounts(): JSONObject =
+        JSONObject().put(SERIES, groups[SERIES]?.size ?: 0).put(COLLECTIONS, groups[COLLECTIONS]?.size ?: 0)
+
+    private fun refreshGroupsLater() {
+        if (!online || !prefs.configured || System.currentTimeMillis() - groupsAt < 10 * 60_000) return
+        if (!groupsBusy.compareAndSet(false, true)) return
+        pool.execute {
+            try {
+                val before = groupCounts().toString()
+                val lists = systemLists()
+                // błąd serwera (null) — zostają poprzednie grupy; karty nie znikają przez chwilową przerwę
+                val series = buildSeries(lists.first) ?: groups[SERIES] ?: emptyList()
+                val cols = buildCollections(lists.first) ?: groups[COLLECTIONS] ?: emptyList()
+                groups = mapOf(SERIES to series, COLLECTIONS to cols)
+                // listy części systemów jeszcze się wczytują — ponownie za minutę, najwyżej 5 razy, potem co 10 minut
+                val soon = lists.second && groupsShortRetries++ < 5
+                if (!lists.second) groupsShortRetries = 0
+                groupsAt = System.currentTimeMillis() - if (soon) 9 * 60_000 else 0
+                if (groupCounts().toString() != before)
+                    act.js("window.refreshState && refreshState().then(() => S.screen === 'systems' && renderSystems())")
+            } catch (e: org.json.JSONException) {
+                Log.w(tag, "serie / kolekcje: $e")
+                groupsAt = System.currentTimeMillis() - 9 * 60_000
+            } finally { groupsBusy.set(false) }
+        }
+    }
+
+    /** Kopie pełnych list gier systemów (pamięć albo plik) — bez wspólnych obiektów z listą systemu, którą inne
+     *  wątki uzupełniają. Brak pełnej listy: wczytanie w tle tylko dla systemów do 5000 gier (bez pobierania
+     *  ogromnych list, których gracz nie otwierał); `second` = część list jeszcze się wczytuje. */
+    private fun systemLists(): Pair<List<Pair<JSONObject, JSONArray>>, Boolean> {
+        val sys = systemsCache ?: return Pair(emptyList(), false)
+        val out = ArrayList<Pair<JSONObject, JSONArray>>()
+        var missing = false
+        for (i in 0 until sys.length()) {
+            val s = sys.getJSONObject(i)
+            val es = s.optString("es")
+            val text = synchronized(gamesCache) { gamesCache[es]?.toString() }
+            val arr = if (text != null) JSONArray(text) else cacheFile("gry-" + safe(es)).takeIf { it.isFile }
+                ?.let { f -> readList(f) }
+            if (arr != null) { out.add(Pair(s, arr)); continue }
+            if (s.optInt("games") in 1..5000) { missing = true; loadGamesInBackground(es) }
+        }
+        return Pair(out, missing)
+    }
+
+    private fun readList(f: File): JSONArray? = try { gameUrls(JSONArray(f.readText())) } catch (e: org.json.JSONException) {
+        Log.w(tag, "lista ${f.name}: $e"); null
+    }
+
+    /** Tytuł jak w kluczu serii serwera (igdbseries.key_of: str.split() — także spacje Unicode). */
+    private fun norm(title: String) = title.lowercase(Locale.ROOT).split(UNICODE_SPACE).filter { it.isNotEmpty() }.joinToString(" ")
+
+    /** Źródło jak igdbseries.source_of: GOG / Steam / Windows → „pc”. */
+    private fun source(es: String) = es.trim().lowercase(Locale.ROOT).let { if (it in PC_SOURCES) "pc" else it }
+
+    /** Seria = kolekcja IGDB z co najmniej dwoma tytułami tego samego systemu; gry w kolejności wydania.
+     *  null = serwer nie odpowiedział (zostają poprzednie serie); starszy serwer bez serii (404) — pusto. */
+    private fun buildSeries(lists: List<Pair<JSONObject, JSONArray>>): List<Group>? {
+        val ser = try { server.series().optJSONObject("series") ?: JSONObject() } catch (e: Server.HttpError) {
+            Log.i(tag, "serie: $e"); if (e.code == 404) JSONObject() else return null
+        } catch (e: java.io.IOException) { Log.i(tag, "serie: $e"); return null }
+        val out = ArrayList<Group>()
+        for ((s, arr) in lists) {
+            val es = s.optString("es")
+            val by = LinkedHashMap<String, MutableList<Pair<Long, JSONObject>>>()
+            for (i in 0 until arr.length()) {
+                val game = arr.getJSONObject(i)
+                val r = ser.optJSONObject(source(es) + "|" + norm(game.optString(TITLE))) ?: continue
+                val name = r.optString("collection").trim()
+                if (name.isEmpty()) continue
+                val ts = r.optLong("order_ts").takeIf { it > 0 } ?: r.optLong("release_ts")
+                by.getOrPut(name) { ArrayList() }.add(Pair(ts, game))
+            }
+            for ((name, games) in by) {
+                if (games.map { norm(it.second.optString(TITLE)) }.distinct().size < 2) continue
+                val sorted = games.sortedWith(compareBy<Pair<Long, JSONObject>>({ if (it.first > 0) it.first else Long.MAX_VALUE },
+                    { it.second.optString(TITLE).lowercase(Locale.ROOT) })).map { it.second }
+                out.add(Group("$es|$name", name, es, s.optString(DISPLAY, es), sorted))
+            }
+        }
+        return out.sortedWith(compareBy<Group>({ it.name.lowercase(Locale.ROOT) }, { it.sub.lowercase(Locale.ROOT) }))
+    }
+
+    /** Kolekcje Lumena konta gracza; gry po `SaveSync.gameId` (= sid w Lumenie), których telefon nie ma — pominięte.
+     *  null = serwer nie odpowiedział; starszy serwer (404) — pusto. */
+    private fun buildCollections(lists: List<Pair<JSONObject, JSONArray>>): List<Group>? {
+        val account = prefs.profile.ifEmpty { prefs.serverAccount }
+        if (account.isEmpty()) return emptyList()
+        val reply = try { server.sync("GET", "/v1/collections", account) } catch (e: java.io.IOException) {
+            Log.i(tag, "kolekcje: $e"); return null
+        } catch (e: Server.HttpError) { Log.i(tag, "kolekcje: $e"); return null }
+        if (reply.code == 404) return emptyList()
+        if (reply.code != 200) { Log.i(tag, "kolekcje: serwer ${reply.code}"); return null }
+        val cols = JSONObject(String(reply.body, Charsets.UTF_8)).optJSONArray(COLLECTIONS) ?: return emptyList()
+        val byId = HashMap<String, MutableList<Pair<JSONObject, JSONObject>>>()
+        for ((s, arr) in lists) for (i in 0 until arr.length()) {
+            val game = arr.getJSONObject(i)
+            byId.getOrPut(SaveSync.gameId(s.optString("es"), game.optString("name"))) { ArrayList() }.add(Pair(s, game))
+        }
+        val out = ArrayList<Group>()
+        for (i in 0 until cols.length()) {
+            val col = cols.optJSONObject(i) ?: continue
+            val ids = col.optJSONArray("games") ?: continue
+            val found = (0 until ids.length()).flatMap { byId[ids.optString(it)] ?: emptyList() }
+            if (found.isEmpty()) continue
+            val games = found.sortedWith(compareBy<Pair<JSONObject, JSONObject>>({ it.second.optString(TITLE).lowercase(Locale.ROOT) },
+                { it.first.optString(DISPLAY).lowercase(Locale.ROOT) })).map { (s, game) ->
+                game.put("es", s.optString("es")).put(SYSTEM, s.optString(DISPLAY, s.optString("es"))) }
+            val systems = found.map { it.first.optString(DISPLAY) }.distinct()
+            val name = col.optString("name")
+            out.add(Group("|$name", name, "", if (systems.size == 1) systems[0] else "${systems.size} systemy", games))
+        }
+        return out
+    }
+
+    private fun groupsList(kind: String): JSONArray {
+        val arr = JSONArray()
+        for (g in groups[kind] ?: emptyList())
+            arr.put(JSONObject().put("key", g.key).put("name", g.name).put("sub", g.sub).put("count", g.games.size))
+        return arr
+    }
+
+    /** Gry grupy (po kluczu — lista grup mogła się w międzyczasie przeliczyć) w jej kolejności, ze stanem lokalnym
+     *  jak lista systemu; decorate raz na system (czyta indeks pamięci podręcznej). */
+    private fun groupGames(kind: String, key: String): JSONArray {
+        val g = groups[kind]?.firstOrNull { it.key == key } ?: return JSONArray()
+        val copies = g.games.map { JSONObject(it.toString()).also { c -> if (!c.has(SYSTEM)) c.put(SYSTEM, g.sub) } }
+        for ((es, list) in copies.groupBy { g.es.ifEmpty { it.optString("es") } }) {
+            val arr = JSONArray()
+            list.forEach { arr.put(it) }
+            decorate(es, arr)                          // zmienia te same obiekty — kolejność `copies` zostaje
+        }
+        return JSONArray(copies)
     }
 
     // ── aktualizacja EmuStart (menu Start): APK z wydania na GitHubie ──
@@ -1552,6 +1700,14 @@ class Bridge(private val act: MainActivity) {
     }
 
     companion object {
+        private const val SERIES = "series"
+        private const val COLLECTIONS = "collections"
+        private const val TITLE = "title"
+        private const val DISPLAY = "display"
+        private const val SYSTEM = "system"
+        /** białe znaki jak w Pythonie (str.split()): także spacje Unicode z tytułów (U+00A0, U+3000…) */
+        private val UNICODE_SPACE = Regex("[\\s\\u001C-\\u001F\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]+")
+        private val PC_SOURCES = setOf("", "pc", "windows", "steam", "gog")
         fun key(es: String, name: String) = "$es/$name"
         fun safe(s: String) = s.replace(Regex("[^A-Za-z0-9._-]"), "_")
         fun sha1(s: String): String = MessageDigest.getInstance("SHA-1").digest(s.toByteArray())

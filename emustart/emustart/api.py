@@ -535,6 +535,19 @@ class Api:
     def art_user_sync(self, items: list, names: dict | None = None) -> dict:
         return self._art_user("sync", items if isinstance(items, list) else [], names if isinstance(names, dict) else None)
 
+    @staticmethod
+    def groups_list(kind: str) -> list:
+        """„★ Serie” / „★ Kolekcje” są tylko w APK (Bridge.kt); klient Windows ich nie pokazuje (lista tekstowa)."""
+        return []
+
+    @staticmethod
+    def group_games(kind: str, key: str) -> list:
+        return []
+
+    def collections_sync(self, items: list) -> dict:
+        """Lumen: kolekcje z grami EmuStart na serwer — APK pokazuje je w „★ Kolekcje” (usercollections.py)."""
+        return self._art_user("collections", items if isinstance(items, list) else [])
+
     def art_user_gallery(self, game: str, kind: str) -> dict:
         return self._art_user("gallery", str(game), str(kind))
 
