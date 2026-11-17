@@ -16,7 +16,7 @@ import time
 from collections import deque
 from pathlib import Path
 
-from emustart import config, gogfinal, goginstall as gi
+from emustart import config, gogadmin, gogfinal, goginstall as gi
 from emustart.gogarchive import BUILD_ID, PRODUCT_ID, UnsafePath, safe_rel
 
 log = logging.getLogger("emustart.goglib")
@@ -610,7 +610,14 @@ class GogService:
         return {"ok": True, "message": "Instalacja ukończona."}
 
     def admin_pending(self) -> list:
-        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG)."""
+        """Gry z zaległymi krokami administratora (skrypt gry albo rejestr GOG jak po instalatorze GOG). Proces
+        z uprawnieniami (Lumen jako administrator) najpierw planuje naprawę `GOG.com\\Games` (etap 6: brakujące wpisy
+        gier sprzed Lumena 1.0.58, martwe klucze innych gier) — bez uprawnień nic nie dochodzi (bez okien UAC)."""
+        if gogadmin.is_elevated():
+            try:
+                gi.plan_registry_repair()
+            except Exception as ex:                 # noqa: BLE001 — naprawa nie blokuje zaległych kroków
+                log.warning("GOG: naprawa rejestru GOG.com\\Games: %s", ex)
         return [e["product_id"] for e in gi.entries()
                 if e.get("state") in (gi.ST_NEEDS_ADMIN, gi.ST_INSTALLED) and (e.get("finalize") or {}).get("admin")]
 

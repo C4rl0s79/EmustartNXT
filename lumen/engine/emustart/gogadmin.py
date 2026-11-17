@@ -64,6 +64,28 @@ class WinRegistry:
         except OSError:
             return None
 
+    def subkeys(self, view: str, subkey: str) -> list:
+        """Nazwy podkluczy (odczyt bez uprawnień); brak klucza — []."""
+        import winreg
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_READ | self._flag(view)) as k:
+                return [winreg.EnumKey(k, i) for i in range(winreg.QueryInfoKey(k)[0])]
+        except OSError:
+            return []
+
+    def values(self, view: str, subkey: str) -> list:
+        """[(nazwa, typ, wartość)] klucza (odczyt bez uprawnień); brak klucza — []."""
+        import winreg
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_READ | self._flag(view)) as k:
+                out = []
+                for i in range(winreg.QueryInfoKey(k)[1]):
+                    name, v, t = winreg.EnumValue(k, i)
+                    out.append((name, t, v))
+                return out
+        except OSError:
+            return []
+
     def set(self, view: str, subkey: str, name: str, t: int, v) -> None:
         import winreg
         with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, subkey, 0, winreg.KEY_SET_VALUE | self._flag(view)) as k:
