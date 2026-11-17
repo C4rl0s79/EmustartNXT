@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Game } from '@shared/types'
 import { letterJump, letterOf } from '../src/renderer/src/tv/letters'
-import { arrangeSeries, seriesSortKeys } from '@shared/series'
+import { arrangeSeries, placedSeriesKeys } from '@shared/series'
 import { compareText } from '@shared/libraryNav'
 
 // lista jak w Lumenie: po kluczu sortowania bez przedimka („The Witcher” → „witcher”)
@@ -47,7 +47,7 @@ describe('skok po literach — serie (Amiga WHDLoad, 2026-11-17)', () => {
   const games = titles.map(g).sort((a, b) => compareText(a.sortName, b.sortName))
   const prefs = { 'Bubble Dizzy': dizzy, 'Fantasy World Dizzy': dizzy, 'Magicland Dizzy': dizzy, 'Treasure Island Dizzy': dizzy, Dizzy: dizzy }
   const list = arrangeSeries(games, prefs)
-  const keys = seriesSortKeys(games, prefs)
+  const keys = placedSeriesKeys(list)!
   const keyOf = (x: Game): string | undefined => keys.get(x.id)
   const at = (name: string): number => list.findIndex((x) => x.name === name)
   const jumps = (from: string, dir: 1 | -1, n: number): string[] => {
@@ -78,7 +78,7 @@ describe('skok po literach — serie (Amiga WHDLoad, 2026-11-17)', () => {
     let i = at('Cannon Fodder')
     i = letterJump(list, i, 1)
     i = letterJump(list, i, 1)
-    expect(['Flood']).not.toContain(list[i].name)
+    expect(dizzyAt).toContain(i) // stary kod: drugi skok zatrzymuje się w środku bloku serii
   })
 
   it('litera z akcentem spoza polskiego alfabetu — jak bez akcentu; polskie litery osobno', () => {
@@ -86,5 +86,12 @@ describe('skok po literach — serie (Amiga WHDLoad, 2026-11-17)', () => {
     expect(letterOf(g('Über Racer'))).toBe('U')
     expect(letterOf(g('Łowcy'))).toBe('Ł')
     expect(letterOf(g('Ósemka'))).toBe('Ó')
+    expect(letterOf(g('Ørsted'))).toBe('O')
+    expect(letterOf(g('Æon Flux'))).toBe('A')
+  })
+
+  it('klucze tylko dla listy z arrangeSeries (np. „Ostatnio grane” — brak, litera z tytułu)', () => {
+    expect(placedSeriesKeys([...list])).toBeUndefined()
+    expect(placedSeriesKeys(arrangeSeries(titles.slice(0, 2).map(g), {}))?.size).toBe(0)
   })
 })

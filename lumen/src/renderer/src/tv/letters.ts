@@ -4,13 +4,15 @@ import type { Game } from '@shared/types'
 // „A”, „An”), nie z tytułu: lista jest ułożona po kluczu, więc „The Witcher” stoi wśród gier na W. Litera z tytułu
 // (T) przerywała skok — z A do B trzeba było nacisnąć kilka razy (zgłoszenie 2026-11-16).
 // Gry jednej serii stoją razem pod nazwą serii (shared/series.ts arrangeSeries): ich litera to litera serii
-// (`keyOf` — seriesSortKeys), inaczej skok zatrzymywał się w środku bloku serii (Amiga WHDLoad, 2026-11-17).
+// (`keyOf` — placedSeriesKeys), inaczej skok zatrzymywał się w środku bloku serii (Amiga WHDLoad, 2026-11-17).
 
 const POLISH = /[ĄĆĘŁŃÓŚŹŻ]/
-/** pierwsza litera klucza; akcent spoza polskiego alfabetu (É, Ü) — jak bez niego, bo tak sortuje lista */
+// litery bez rozkładu NFKD, które polskie porównywanie stawia przy literze bazowej (Ø wśród O, Æ wśród A)
+const FOLD: Record<string, string> = { Ø: 'O', Æ: 'A', Œ: 'O', Đ: 'D' }
+/** pierwsza litera klucza; akcent spoza polskiego alfabetu (É, Ü, Ø) — jak bez niego, bo tak sortuje lista */
 function firstLetter(key: string): string {
   const raw = key.trim().charAt(0).toUpperCase()
-  const c = POLISH.test(raw) ? raw : raw.normalize('NFKD').charAt(0)
+  const c = POLISH.test(raw) ? raw : (FOLD[raw] ?? raw.normalize('NFKD').charAt(0))
   return /[A-ZĄĆĘŁŃÓŚŹŻ]/.test(c) ? c : '#'
 }
 
