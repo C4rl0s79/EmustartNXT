@@ -1,0 +1,16 @@
+# Repozytorium główne (EmuStart i Lumen mają własne .gitignore w swoich folderach)
+
+# Lokalne wyniki generowania grafik (ComfyUI)
+/output/
+
+# Raporty skanów Claude Security
+/CLAUDE-SECURITY-*/
+
+# Pamięć podręczna narzędzi
+.mypy_cache/
+__pycache__/
+
+# Pliki systemowe
+Thumbs.db
+desktop.ini
+.DS_Store
