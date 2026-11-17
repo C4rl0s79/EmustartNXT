@@ -286,13 +286,8 @@ export function placedSeriesKeys(list: Game[]): Map<string, string> | undefined 
  */
 export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): Game[] {
   const { blocks, inBlock } = seriesBlocks(sorted, prefs)
-  if (!blocks.length) {
-    placed.set(sorted, new Map())
-    return sorted
-  }
+  if (!blocks.length) return remember(sorted, blocks)
   blocks.sort((a, b) => collator.compare(a.sk, b.sk))
-  const keys = new Map<string, string>()
-  for (const blk of blocks) for (const g of blk.games) keys.set(g.id, blk.sk)
   const out: Game[] = []
   let b = 0
   for (const g of sorted) {
@@ -302,8 +297,15 @@ export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): G
     out.push(g)
   }
   while (b < blocks.length) out.push(...orderSeries(blocks[b++].games, prefs))
-  placed.set(out, keys)
-  return out
+  return remember(out, blocks)
+}
+
+/** lista z arrangeSeries i klucze, pod którymi postawiła bloki serii (placedSeriesKeys) */
+function remember(list: Game[], blocks: { sk: string; games: Game[] }[]): Game[] {
+  const keys = new Map<string, string>()
+  for (const blk of blocks) for (const game of blk.games) keys.set(game.id, blk.sk)
+  placed.set(list, keys)
+  return list
 }
 
 /** Gry tej samej serii co `game` (ta sama platforma) w całej bibliotece, w kolejności serii (okno „Seria”). */

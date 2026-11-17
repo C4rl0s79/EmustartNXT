@@ -47,8 +47,8 @@ describe('skok po literach — serie (Amiga WHDLoad, 2026-11-17)', () => {
   const games = titles.map(g).sort((a, b) => compareText(a.sortName, b.sortName))
   const prefs = { 'Bubble Dizzy': dizzy, 'Fantasy World Dizzy': dizzy, 'Magicland Dizzy': dizzy, 'Treasure Island Dizzy': dizzy, Dizzy: dizzy }
   const list = arrangeSeries(games, prefs)
-  const keys = placedSeriesKeys(list)!
-  const keyOf = (x: Game): string | undefined => keys.get(x.id)
+  const keys = placedSeriesKeys(list)
+  const keyOf = (x: Game): string | undefined => keys?.get(x.id)
   const at = (name: string): number => list.findIndex((x) => x.name === name)
   const jumps = (from: string, dir: 1 | -1, n: number): string[] => {
     const out: string[] = []

@@ -12,8 +12,8 @@ const FOLD: Record<string, string> = { Ø: 'O', Æ: 'A', Œ: 'O', Đ: 'D' }
 /** pierwsza litera klucza; akcent spoza polskiego alfabetu (É, Ü, Ø) — jak bez niego, bo tak sortuje lista */
 function firstLetter(key: string): string {
   const raw = key.trim().charAt(0).toUpperCase()
-  const c = POLISH.test(raw) ? raw : (FOLD[raw] ?? raw.normalize('NFKD').charAt(0))
-  return /[A-ZĄĆĘŁŃÓŚŹŻ]/.test(c) ? c : '#'
+  const base = POLISH.test(raw) ? raw : (FOLD[raw] ?? raw.normalize('NFKD').charAt(0))
+  return /[A-ZĄĆĘŁŃÓŚŹŻ]/.test(base) ? base : '#'
 }
 
 export const letterOf = (g: Game, keyOf?: (g: Game) => string | undefined): string =>
@@ -28,8 +28,8 @@ export function letterJump(games: Game[], idx: number, dir: 1 | -1, keyOf?: (g: 
   for (let i = at + dir; i >= 0 && i < games.length; i += dir) {
     if (letter(i) !== cur) {
       if (dir < 0) {
-        const l = letter(i)
-        while (i > 0 && letter(i - 1) === l) i--
+        const prev = letter(i)
+        while (i > 0 && letter(i - 1) === prev) i--
       }
       return i
     }
