@@ -82,7 +82,7 @@ const META_FIELDS = [["title", "Tytuł"], ["developer", "Producent"], ["publishe
 
 async function openGameOptions() {
   const g = S.games[S.gameIdx];
-  if (!g) return;
+  if (!g || g.folder) return;                // wiersz serii / kolekcji (telefon)
   GO.id = g.id;
   GO.confirmDel = false;
   // telefon: tylko granie, przypięcie i usunięcie z telefonu — emulatory, zapisy

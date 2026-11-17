@@ -86,6 +86,34 @@ export function groupNames(nav: NavGroup[]): Record<string, string> {
   return out
 }
 
+export interface EmuCollection {
+  id: string
+  name: string
+  /** cross-device game ids (savesync.game_id = row.sid) */
+  games: string[]
+}
+
+/**
+ * Lumen's own categories with EmuStart games, for EmuStart on Android (server: usercollections.py). A group of
+ * versions (emugrp:…) sends every version, so the phone finds whichever one it has. Steam collections and
+ * categories without EmuStart games are left out — nothing in them can be played on the phone.
+ */
+export function emuCollections(p: Prefs, sidsOf: (gameId: string) => string[]): EmuCollection[] {
+  const games = new Map<string, Set<string>>()
+  for (const [gameId, cats] of Object.entries(p.gameCategories ?? {})) {
+    const sids = sidsOf(gameId)
+    if (!sids.length) continue
+    for (const c of cats) {
+      const set = games.get(c) ?? new Set<string>()
+      sids.forEach((s) => set.add(s))
+      games.set(c, set)
+    }
+  }
+  return p.categories
+    .filter((c) => c.kind === 'custom' && c.name.trim() && games.get(c.id)?.size)
+    .map((c) => ({ id: c.id, name: c.name.trim(), games: [...games.get(c.id)!] }))
+}
+
 /** `file` choices waiting for upload: [layout, game, kind, path] */
 export function pendingFiles(p: Prefs): [ArtLayout, string, ArtKind, string][] {
   const out: [ArtLayout, string, ArtKind, string][] = []
