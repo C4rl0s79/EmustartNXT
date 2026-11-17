@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4240fe5271b70592d9db97c38301f8c1cb15dc94c769206f4d7cd88ce1632304",
+  "pageVersion": "sha256:495449b437547e760cb86ee1f64025d6ea50db2ba568b1de21334018db4a7124",
   "claims": [
     {
       "id": "claim_9173fb4ee5df47cc9e0e312f8ddb4a47",
@@ -124,11 +124,11 @@
     },
     {
       "id": "claim_7c70c191f50646d498847cd944155702",
-      "statement": "scripts/publish_wiki.py składa wiki GitHub z emustart/docs/wiki, lumen/docs/wiki i openwiki (strony Technika-… bez nagłówka YAML, z przepisanymi linkami), tworzy Home i _Sidebar, usuwa tylko strony z własnym znacznikiem i z --push robi commit i push.",
+      "statement": "scripts/publish_wiki.py składa wiki GitHub z emustart/docs/wiki, lumen/docs/wiki i openwiki (strony Technika-… bez nagłówka YAML, z przepisanymi linkami), tworzy Home i _Sidebar, usuwa tylko strony z własnym znacznikiem; bez --push nie dodaje plików do gita, a z --push robi commit i push, wysyłając też wcześniej niewysłany commit.",
       "evidence": [
         {
-          "resource": "repo://scripts/publish_wiki.py",
-          "version": "repo-file-v1:sha256:06d2607905b08d9606108a3f3404715da6095a248daa84d70f06815b9fc5f41d"
+          "resource": "repo://scripts/publish_wiki.py#L176-L210",
+          "version": "repo-lines-v1:sha256:02d31bc609fb7f1d1ae765f8c0ec82c3f365e9ee1e030ef8d298b472d2c68f8a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NTg1M2VjNmExYzc1ZjdmYjc1M2I5ODQ0NTc4NDgyMmFjZThjMDZiOGU1MjQ2MWJhZDk4MWI0Njk1NzY0MmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1ZTVkZWY2Y2M2N2M4MjdkZjgzNjA2MjFkNDFhYmRlNjc0MTlhNTBiYjIwMWY1ODEzOGVlYThmMWFhNjljZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiYzM3ODU0MmY5MjM0OTg4MTM2MzE0OTE1MDY5ODZjNGUxMjdmNmZjMWJlM2E0ZTRkYjQ1YjgzYzM2ODkzMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -141,10 +141,20 @@
           "version": "repo-lines-v1:sha256:3a438c4572011ed7a011e22100f918a86201b183405166979f535470924951c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3YWRiMzlhMzA1MTlhYzIzZjEwODA1Nzc3MDA0OTRmMzYzMzUyYjVkNzY0OTE1NDY4ZDZjYjc2Y2I5NWM3ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNzRiMTRjMGE5ZTljYjZlOTY0N2IyMTg0MWFmNzVlZmQyODEyMjYwNzhlOTkxZWY3NjViNDUwZDQ2N2UzNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI3ZmQyZGRlMzZlNDhjYzJjYzI3MTE1ZmIyZDQzMDk5YjYxODlhOGE4NDM4NzE1MmZmYjY5OGUyMWRmOGNkNTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_d1baa1fe53144041ba43443557202cfe",
+      "statement": "AGENTS.md wymaga po każdym wydaniu EmuStart albo Lumena odświeżenia OpenWiki, PR ze zmianami i publikacji wiki skryptem publish_wiki.py.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L241-L256",
+          "version": "repo-lines-v1:sha256:e9d8984dd90222b271983d5c4e217e08fe6c423d4921606d07f9888e7a0382a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmNWVjMmIzNTAyZjcxZGY5NzJjZmFmOWVlYTIwODJlOGM5NWQ1ZWZiNjk0MjAxMmQ1Y2M5YmExYTliMGIxNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyMjlmNzIwYTRiNDQ0MmNmNzA0M2NiZDA2MTkyNjdmMjE3NDc0YWM2ZTEwYzlmOTVjYmVmNTZiNjY0MDE1NzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxYzkxYzZhYWIzOTQ1N2U2NTk5NjA0YTI4YThlZTlhNjhlNTgyMGQ3OTAwZjM1NWQ1MGI5ZGQ5ZTkxZWU1NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlODhlYzQ4NTg5ZTcwM2E2Y2VmNzhkOTQzNGM0MWNiYzQzZWU5ZDZkNzFmZmY5ODU0YWVmNDFhOWYwNWE5MjAifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T00:45:56.894Z"
   }
 }

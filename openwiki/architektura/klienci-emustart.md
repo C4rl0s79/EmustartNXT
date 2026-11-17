@@ -31,7 +31,7 @@ sources:
     resource: repo://emustart/main.py
   - id: openwiki-source-f0e926c2a9db5ea4c80d614b
     resource: repo://emustart/web/app.js
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Klienci EmuStart: Windows i Android

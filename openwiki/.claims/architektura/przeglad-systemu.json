@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d9ec5be1dc5a4f6c03171668aa906952c1132e2a905ef8418b2c494c865d2d2",
+  "pageVersion": "sha256:fb23c79231ab966658b522e269830fb9bdec06d28a9b9d097caa2fbde2e097c9",
   "claims": [
     {
       "id": "claim_4688fbcad5bc4dcb9abff56048e26190",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://README.md",
-          "version": "repo-file-v1:sha256:fc5dbd117a7a5ad983fad03c4fbc48e0972848c8f454b8bea0de450aa1539916"
+          "version": "repo-file-v1:sha256:98297c82be8d44914a8c7a241a404062bcd8a71e2a45d188ee9f6fd5038f1fbe"
         }
       ]
     },
@@ -66,17 +66,17 @@
       "evidence": [
         {
           "resource": "repo://README.md",
-          "version": "repo-file-v1:sha256:fc5dbd117a7a5ad983fad03c4fbc48e0972848c8f454b8bea0de450aa1539916"
+          "version": "repo-file-v1:sha256:98297c82be8d44914a8c7a241a404062bcd8a71e2a45d188ee9f6fd5038f1fbe"
         },
         {
-          "resource": "repo://scripts/publish_wiki.py#L1-L20",
-          "version": "repo-lines-v1:sha256:ac5ddd496a77e498e8dc430cf637038ab692050f6855342878f8a1e364cddf93:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMTI0Y2U1MDIyZTI5ZWI0MGZkOTA0YTQ1NzExOTg0Y2I1OTc3OGFjZjExYmZjYjEzY2VkNzIzODkyZDhkZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MzhiMGU1ZmNhMTRlMzZiNDg5NmJlZjA0YzFhZGE4OWM0NDgwYTc2ZmY1MThmNDliNTA0ZGIzMmRiOTI1M2UifQ"
+          "resource": "repo://scripts/publish_wiki.py#L1-L21",
+          "version": "repo-lines-v1:sha256:d5f33f1da3f9e0976a4769847f70200d24dd98b7aa3251c18051b66b6da2e311:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2YWViODg3MTEzZmUyYjc5MjcxNDY3MDZmY2Y0ZTA1MWU5MjY5YTRiODlhMWI2ZDE5MGFjMzc2MzVhZjRkMzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNTQ2MGMxMzJhZTI3ODNlNmY0MTYxZmE4ZWQ2Njc4MjQ1NmQ0ZTQzMDU2MGJkMWViOTkwMmE1NWIxNDZkNDYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T00:45:56.894Z"
   }
 }

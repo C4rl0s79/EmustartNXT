@@ -5,7 +5,7 @@ description: "Jak zbudować i przetestować EmuStart (build.ps1, PyInstaller, Gr
 tags: [build, ci, release, testing, signing, github-actions, openwiki]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T00:45:56.894Z
 sources:
   - id: openwiki-source-4e3e538728489e7a1208c697
     resource: repo://.github/workflows/android.yml
@@ -15,6 +15,8 @@ sources:
     resource: repo://.github/workflows/openwiki-update.yml
   - id: openwiki-source-c50d065f5235e5ffd41ee89b
     resource: repo://.github/workflows/windows.yml
+  - id: openwiki-source-8037e2358a2c4f9b2c722a11
+    resource: repo://AGENTS.md
   - id: openwiki-source-8157ecc58d2847ca6e5feddb
     resource: repo://emustart/build.ps1
   - id: openwiki-source-5938cfad97d428b6e016845b
@@ -29,7 +31,7 @@ sources:
     resource: repo://lumen/scripts/sign-release.mjs
   - id: openwiki-source-ee4b9047b69765a31df0868a
     resource: repo://scripts/publish_wiki.py
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Budowa, testy i wydania
@@ -180,8 +182,17 @@ jej ręcznie (`README.md`, sekcja „Wiki”):
 Skrypt tworzy `Home` i `_Sidebar`, przerywa przy dwóch stronach o tej samej nazwie albo linku do nieznanej strony
 OpenWiki, usuwa strony, które sam kiedyś zapisał (znacznik w pierwszej linii), a których nie ma już w źródłach,
 i zostawia strony dodane ręcznie. Użycie: `git clone https://github.com/C4rl0s79/EmustartNXT.wiki.git <folder>`,
-potem `python scripts/publish_wiki.py <folder>` (podgląd zmian) albo z `--push` (commit i push). Nowa strona
-OpenWiki wymaga wpisu w `OPENWIKI_PAGES`.
+potem `python scripts/publish_wiki.py <folder>` (podgląd: pliki w kopii wiki, bez dodawania do gita) albo z `--push`
+(commit i push; wysyła też commit z wcześniejszego przebiegu, którego push się nie udał). Nowa strona OpenWiki
+wymaga wpisu w `OPENWIKI_PAGES`.
+
+### Dokumentacja po wydaniu (`AGENTS.md`)
+
+Wydanie EmuStart albo Lumena jest zakończone dopiero po odświeżeniu dokumentacji: przebieg OpenWiki `update`
+w języku `pl` z `main` (w Claude Code: `/openwiki`), nowa strona OpenWiki dopisana do `OPENWIKI_PAGES`, zmiany dla
+gracza w `lumen/docs/wiki/` albo `emustart/docs/wiki/`, PR z gałęzi `docs/wiki-<wersja>`, a po scaleniu
+`python scripts/publish_wiki.py <kopia wiki> --push`. Gdy OpenWiki nie ma nic do zmiany — tylko publikacja, jeśli
+zmieniły się strony gracza (`AGENTS.md`, sekcja 7; odnośniki w `emustart/CLAUDE.md` i `README.md`).
 
 ## Powiązane
 

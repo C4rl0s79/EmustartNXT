@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3b8eb9af382254df1c0b6512c4c246e8f9f541ec9d28537ff48b32c5ba396564",
+  "pageVersion": "sha256:94b824595d7962446eba45c4042f547f3eaff5bf69a0d3eee164f9d4b35fc73c",
   "claims": [
     {
       "id": "claim_5254db77d2cf4df4b62730d48c17f947",
@@ -17,7 +17,7 @@
       "statement": "Na liście gier TV przycisk A otwiera stronę gry, X uruchamia główną akcję gry, a Y otwiera filtry.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L160-L170",
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L163-L173",
           "version": "repo-lines-v1:sha256:84319daad0f8593ac81006ac39a1127d5d86037bfbaf3e1e095d4e12b5544505:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZTQyOGJmM2Q3ZmNkYmFjOTJjMjhjOWI4ZGY4NmIwNzhmMWRlNzRlM2JlMmQ1OGU4ZDZjM2I3MDE4YTRjOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjOGUzYjY0MGJlNDEyMDg5MmZhNjZlMjM0MzliNDQyOWJlNjgxMjM0MGM5MWYwZThmZTU3ZDgwZmY3Njk1YjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyNGNiNTUxZjRjNzhmY2FiZWFhZTYwZDc5ZjE0MGIyNzA1YjcyNWM4ZTM5Mjc2N2M3OGUzMTZjZDhjMTAyY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4MDY2Y2ZhYzRjMjZlNjZlMDJmMWNkY2IyNDUzYTRmNTU0YTJmNWY3MDUyMjhlMWE0MDBkODRhNGQ0NjlhYTgifQ"
         }
       ]
@@ -27,12 +27,12 @@
       "statement": "Strona gry TV jest warstwą modalną z fokusem początkowym na przycisku Graj, a jej fakty pochodzą z useGameFacts pogrupowanych na trzy karty.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/renderer/src/tv/TvGamePage.tsx#L50-L100",
-          "version": "repo-lines-v1:sha256:17d83e4992469adee746539884e7fdbc2844b92c8e755a5746d876b1cf8ec564:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4ODNlODNhNjM2NzFlMjhjOTVmZmVmZjA2NTA3ODE3MzU1Mzk3OTBlNTU4MTU1YTk1ZGZiYzJlYjA0ZTQ2NTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1Y2FmN2EyYWE4ZDdhOTFjY2QzNTFkYTNmNGRkNDY0NjJlYmY0MmQ0MmI1MzE1MTRlNzBkZWZlNTBlOTA5MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxODM4N2I0NmY4NjFmNzk0YWE1ZTI5ZDdiYjk2NzI3MzE3YTkyNWJjMmQ2Y2QyMWI5YjAzYWJkYTVhYmYwNzEifQ"
+          "resource": "repo://lumen/src/renderer/src/tv/TvGamePage.tsx#L60-L90",
+          "version": "repo-lines-v1:sha256:b5ad7e7af1f215d1abf5d64b5505f09e74c6377fb82d2f478043ffa0a4925fda:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiM2YwZTJhZmU2ZDlmNDM5ZjExYTIyNGNhZmNlZTk5NjY3YjNkYWU1ZmM3YmI5MGM4MzBjZjU0ZmVlMmMwMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOGMwODk3MjVjZjVkN2M2ODBhNGI2YWIyNGIxMjllM2I3NjA5OWY4Njc0OWFkYzhiM2Y5NDgyNjAxMjNhZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzM2IyZjgyY2JkMTI2YTY2MzI3OGNmM2JlMDdkODVhMzgxYWU0YWYzNTI0ODJhMzg0ZDBhY2IyYWY2MTFmODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlYTIxMmQwMzhmODI4Y2JmMDZlY2MxMWRkZjAwNmJlZjc1ZDYzZTY5Mzc3YzcyZmIxYjFiNDg1MzI1NmZjMjEifQ"
         },
         {
           "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L206-L265",
-          "version": "repo-lines-v1:sha256:0b2f1a3196eb76d5977b7f3fc9c6cd026c11fa9e21528b9d3558e251c70d3f59:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2NhYjM5ZWFmMjk5NzY2YzE4YmY2N2IwYjFjZmNhZWEyZmNjZDZjNmViOTJjNzIzNmFkM2RlMmY4NjY2NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5NzBiNTJmM2Y3YjNmNzg0YjBkNDYyZDIxMTg0MWJmZmYzZGJkMTVkYzM5ZWRiMTZlOTcxMDgwNzc0NmRhOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NDlkZmFkOTIwZjBkYjQ1OTdkNjJlNDMyYzY1MTVhMDg0ZDE0YThjYWMyYjM4NDc2NDQ5NTNkNDg5ODU0NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2MWQwOTQ2MmNlYzMyMzNhMjBhYmY0MjMzMmU0ZDgwMzVmYmM2OTJhMDc2MzczMDk1NDA0ZGIyM2E3M2FhNTAifQ"
+          "version": "repo-lines-v1:sha256:76ba2f929d26a980b2ff3fe738f68a6a67a8f3e641f76ab7a81dcca021ba3fd5:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2NhYjM5ZWFmMjk5NzY2YzE4YmY2N2IwYjFjZmNhZWEyZmNjZDZjNmViOTJjNzIzNmFkM2RlMmY4NjY2NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxN2Y4OWNiMjI4YzBlNDY1NDA0NTc3MGEzNjk3NmMxNDQxMTIzNTY1NGMyY2ZjMDQ3YmMwMjk4YzFlMTEyYjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NDlkZmFkOTIwZjBkYjQ1OTdkNjJlNDMyYzY1MTVhMDg0ZDE0YThjYWMyYjM4NDc2NDQ5NTNkNDg5ODU0NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4MDAzMmZkZGViNzBmMTg0NjBlM2JiZGEyMDRmYjg3ZmVkMmU4ZTQ1N2FkZGFkOGFmZDc2NTA1NGY2NGRhODMifQ"
         }
       ]
     },
@@ -65,10 +65,40 @@
           "version": "repo-lines-v1:sha256:3ef51625ea97e3013db442198d38572da5dc025c8ecd0228544531a2400acbfb:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkZTgzY2EyYjgyNWNkMzI2MTQ3Y2Y0NDM0YjdjYmE4ZjViMmQ4MzI3NmIyYTNhNTJkOTc4NDUxOTU0ZjY5NWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NTE5MmE3NmU5YTRmNWMxMGQ4OGNhNDBjNGQwZTdjYTg4ODZhNTU4MmU3MTRhYzU5M2QxZTI1YmIwMDM2YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM3MDAxNjg4YWM2YmQ2YzlkZDJjOGYwYzgwNTQwNmVlMGVkYWRkZGUyNTMwMTE2NmJjYWMzOGU0YTM5NzlkMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5ZTA0MTY0ZTE1MmUwYTFjYmM4M2ZiMjUyMGRmYTYzYWYxMDJlYzRkZjExODEzNzhkNjY3MmFjOTFiOTUwNmQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_6dc0b9c4d26b48998e99bce073ba57d0",
+      "statement": "Strona gry TV trzyma grę po identyfikatorze; gdy gra wypadnie z grupy, jest brana z całej biblioteki.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L60-L67",
+          "version": "repo-lines-v1:sha256:68beaf6866844e16b09220710e83d725b922f0b57f8992ede34f10e7a44f7d07:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiYjg0OWNiOTJlNjQwMWNiN2U4ZGI4OWFlMzRhN2YzNDA4NmIzZDNiNDMyNjVmMTc3OTJkZjdkZjIyYTAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzJhZTU5YjE2OTk1Mjc1OGEwNjEzNzQ5NDVlZTM2MmMzYjliZTMzYmJkZjM1NTA1MjlhYWVkMDMwMzU5Yzc2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWI2OGFlOWI2Njk3OTg3OTc3YWEwODRmMzFiNzdkZTJkNjViYTUwYmRkZmYwOWJhZTE0MjczZmNlZGQzMzZjMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmFlODhhODI3NjE2MGRiNTY4OTk2MmU4NTFlZjdjZTc1NjgzMGE2ZWM5MjAxZWU4NTYwNWU3MGU0ZDQxZTc5NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1891be6546e640bd9475c4dd213a652f",
+      "statement": "Główną akcję gry i start od początku wykonują wspólne funkcje runPrimary i launchFromStart.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/lib/primary.ts#L222-L235",
+          "version": "repo-lines-v1:sha256:41653928be874df9a58c17cf72405185c4674cea22e3def58c4a50e640166dfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxNjUxZjQwM2M4NmI5ZTBjZTM0MmUwNDUwYjBjYjliOTBhZmRkMDU0MTNkNjFiYmExOThmNjc4OGI4N2M5MzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8f162d487e4245f0be0c7ae037f7dbc8",
+      "statement": "Przejście między działami Ustawień ustawia fokus w nowym dziale, a prośba o dawną sekcję (np. deck) — na tej sekcji (data-section).",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/screens/Settings.tsx#L120-L160",
+          "version": "repo-lines-v1:sha256:fbac23fc39fb824d3c9588ce60a6a981339016c2810b4448613be17460a95431:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxM2Q0ODcxODc1NTQxZWU2OTU0M2FiMmEwM2M2NDFkODRkMDMyYWE5MmM0ZTRhYzg3Njk4NmZiZDY3ZGViM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiNzJhZTNhMjRlMWM0NTExNmIzZmJiODNkNmZmMGZkZGY0YjEwZGYxZTJkYTc3NmE4MjM2MDdhYzBmYmY4NTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxOGE2ODA1MTkxYjEyYzllNzllMDQ4MzgyODMyMWQyODU0YzM1MjBlM2M0Y2M4MWY5YjljYWFkNGM4Y2U2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxNDliMzZmZjg2NTQ1Mzc2MzczMDk2YmZhMjUwOWE2OGQ2MDA1MWY3ZGYzNDkxMTk0MWMzMzcyMjcwMDg4MjcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T00:45:56.894Z"
   }
 }
