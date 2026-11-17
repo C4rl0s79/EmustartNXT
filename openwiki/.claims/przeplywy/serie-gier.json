@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45d4b64e987ab376b997573ee7683b223936b432722c3a748b26ba1166d5080c",
+  "pageVersion": "sha256:c74a20e0f521e09f69bb63d2fe632f7600c2d2bb6141cbe93f1934f4024db98a",
   "claims": [
     {
       "id": "claim_ca8f170d0e124d7284dff89956dbecc4",
@@ -65,10 +65,44 @@
           "version": "repo-lines-v1:sha256:3b2fc22e895011ff49ec36f00bf938b5b788afa13022b28256373231a4d14592:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMDQzZjk2MjNlMWQwNzMzNzZjYWRiNzI3NmQ3ZmIzMmI0YzRjODYyOTFiNjI3ODY0ZDFlODFhZmQ5NDU2MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1ZmVjYjIxY2E5MWM0YTg4NzBjYmRiNTgxY2Y5Nzk5NmI4ZDJjOTA0MjhmMmIwN2MzMDEzZTk5NGI1MDMxNzQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_b432b67298e44cf99c2a0910366a2131",
+      "statement": "Lumen wysyła na serwer tylko własne kategorie (kind custom) z grami EmuStart, identyfikowanymi przez sid; grupa wersji wysyła wszystkie wersje, a kolekcje Steam są pomijane.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/main/art/artSync.ts#L95-L116",
+          "version": "repo-lines-v1:sha256:322d04ff1c650321406ad63967926731f3658cb10f9f49bec39316c447a597bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyZTI3MTM1YmRmZmQ5Yzg4NTRjMzE3ZTgxZGM5Y2E3NjQ2ODQwOTE5Nzc3NmQ4YmQ2NDIyNTE5ZDM0YjExOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4NzVmZGM0ZDJhZjcxNGU3NjhjNWIzZWExNDBhNTcxZDM3MTk2MTQzNjMzNDZlN2MwODFjNmNkNDA1OTY4ZGUifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/index.ts#L1161-L1172",
+          "version": "repo-lines-v1:sha256:1f6f891f4bd7905618f7e2ef2869641541e5a3ebc7a6c346654e656421cb46b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3ZWRiZDk5NjRjYjRhMDQ1NzM3MzIxMDcxMTQ2MjQxMWRhNzEwMjhkMGFhN2M2ODU3YzYyZDBmZDM5OTJmYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzNTVjNWFiMGFhNTgwM2QxNzNlYWY2MmJlOTNhMzdhYzI2ZjE0NDU2ZWRiZDIwNTgxZGE4MDEwNzJhYjllMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMzkxOTQ4ZDgzZWQ5YjA2ZjM0ZWE3MTEyMmE1NjkzNGRmZmNiNzRlNzY1NjUxZmI2OWNmNzFhZjBhMzU4MTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_248161cfe6814dea8e76a72c8f6f7936",
+      "statement": "Serwer trzyma kolekcje osobno dla każdego urządzenia konta, a nowy zestaw zastępuje tylko zestaw tego urządzenia.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/usercollections.py#L85-L104",
+          "version": "repo-lines-v1:sha256:be325f2fbc466c51416e66baded1fedc1dc3c68f480fc9276d23f7aa90cd64ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlNTNmZjZmYmExZTZiY2RlMGIwMWRjYTlmYTljNDEzZGJhOWJmNWQyZTg2ZjI3Y2FjOWJiNDYyYjkxYjI4YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiZDU1Njk4NGRhNGMyYTc3ZjBmNzhkZWI1MjE5ODk0NzM0ZTQxNDhlNmFlN2NmNGY4NWMxOGRiOWY4MzVjNDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiZmM5NTIwOGFkODUzNjdjZGRhNWI3MzI4NDZmY2U2ZjE3OGVkMGQwOGM2YTFiZWU0MjU4YzU4YjRkZjQxYWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNzI3ZTcyOTlhZjE5YWRmYmIwNDFjNTUwYzlmMGM3OWVkMTI3ZTc1MTYzNWU1NWQzZjFlNjY1M2FiNjkwMjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a62eaef7afe3472ca334c3441de21f44",
+      "statement": "GET /v1/collections łączy zestawy urządzeń po nazwie bez wielkości liter i pomija urządzenia odwołane albo nieaktywne od 90 dni.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/usercollections.py#L76-L137",
+          "version": "repo-lines-v1:sha256:ce78d2584b7844fae1aca3bc0a6e2f2542d1ff5601b672cd89e7ebb3b69ae0e6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2ZWFkNTJlMDNkNTU3NmZhOWEyN2NiMDBkMzU3ODMxOTgyNzRhZDUyN2JlZmRmNzdhZTIyNDMwOWU2YmUyZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNmFiMTBlMGI4ZGFhNDg0MTQ2MjhlYzNhN2YxMGViNGQ3NDIwMWI0MWU4ZmM3N2ExMzMxNDhjNTRiYzAwYmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3ZTVhMWY2YmNhZDBmNWMwOWE4YTI1MzRkOTIxMzQyMTJkMDFhNjY2YWZkZWQ3ODYwYjNjMWYzYjMwNzRkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T15:15:29.370Z"
+    "at": "2026-11-17T17:27:24.312Z"
   }
 }

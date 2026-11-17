@@ -35,7 +35,7 @@ sources:
     resource: repo://lumen/src/renderer/src/lib/artCache.ts
   - id: openwiki-source-de906671f09d6ccb0be869a2
     resource: repo://lumen/src/shared/deck.ts
-generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
+generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
 ---
 
 # Lumen — launcher Electron

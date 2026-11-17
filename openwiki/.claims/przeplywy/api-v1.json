@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:edfb4cd8e7356bd6e8956426479cee4ffa15b2b9db815fd8cb14c5d60fde97bf",
+  "pageVersion": "sha256:3d0d8d93608ba650237ac05fcde237e1c63f1f00bf0ef1af9b6c6d18b645343d",
   "claims": [
     {
       "id": "claim_771bf5e9f0784994a117e3c00bc03e12",
@@ -24,21 +24,21 @@
     },
     {
       "id": "claim_c779eca77c804b378e959e48fd2feb08",
-      "statement": "server.py kieruje POST /v1/enroll/*, /v1/auth/*, /v1/savesync/, /v1/userart/, /v1/series i /v1/lock/ do modułu remote, a pozostałe POST /v1 kończą się 404.",
+      "statement": "server.py kieruje POST /v1/enroll/*, /v1/auth/*, /v1/savesync/, /v1/userart/, /v1/series, /v1/collections i /v1/lock/ do modułu remote, a pozostałe POST /v1 kończą się 404.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/server.py#L148-L167",
-          "version": "repo-lines-v1:sha256:6c8b965c4aa245bba8f3b1d7fdbe61f8aef4c01af37cc576a1e6626b6552e00d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkYmYyYWYzNTY1YWExOWRkMWIxNmVkNDVjMzQzOGJjMjU1ZWQ0OTVlMzliMjMwZDczOGNjZWJjNmYxYjE2NWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmOGQ0MDEzMmUzMTc2YmYxMjQwNTI3ZTFhM2Y5NWEwZWIwOTk0NmQzNmUzZWQ0YzE3NzhhZTNjMDNhZDRjNTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjMzNmM2Q3ZjQ0MjIwNTE5NDYxMGQ1ZmZiZjg3N2VlNDUzOTZkY2RhYTFlOTk1MTljYjY1YTllYjExNjU5NWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg5OTQ0ZGRiYWRkYzM4YWM3MTNmZDQ0YjdlMGVkNmY4ZmZhODBkZDZiZDNiMmM1MWRiOWU0NWYzNDg2NjY3Y2YifQ"
+          "resource": "repo://emustart/emustart/server.py#L148-L170",
+          "version": "repo-lines-v1:sha256:640d0fc947e30a6af5becddaa74556f533d9f73f5279186cd3d940ce87cd3635:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkYmYyYWYzNTY1YWExOWRkMWIxNmVkNDVjMzQzOGJjMjU1ZWQ0OTVlMzliMjMwZDczOGNjZWJjNmYxYjE2NWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmOGQ0MDEzMmUzMTc2YmYxMjQwNTI3ZTFhM2Y5NWEwZWIwOTk0NmQzNmUzZWQ0YzE3NzhhZTNjMDNhZDRjNTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjMzNmM2Q3ZjQ0MjIwNTE5NDYxMGQ1ZmZiZjg3N2VlNDUzOTZkY2RhYTFlOTk1MTljYjY1YTllYjExNjU5NWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg5OTQ0ZGRiYWRkYzM4YWM3MTNmZDQ0YjdlMGVkNmY4ZmZhODBkZDZiZDNiMmM1MWRiOWU0NWYzNDg2NjY3Y2YifQ"
         }
       ]
     },
     {
       "id": "claim_f5ff23f83e3c40d3bb708905f4295687",
-      "statement": "GET /v1 bez autoryzacji zwraca 401; /v1/info podaje wersję, api 1, listę funkcji (w tym themes i series, a gog tylko przy zaindeksowanych buildach), adresy serwera oraz port i odcisk TLS.",
+      "statement": "GET /v1 bez autoryzacji zwraca 401; /v1/info podaje wersję, api 1, listę funkcji (w tym themes, series i collections, a gog tylko przy zaindeksowanych buildach), adresy serwera oraz port i odcisk TLS.",
       "evidence": [
         {
           "resource": "repo://emustart/emustart/remote.py#L275-L291",
-          "version": "repo-lines-v1:sha256:04c6c4a396840b67e4f16e3d14fe94bd9b9f236dbaaee15974a91e06ed4de739:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2NzM1N2UxMjA5NWQzYWNlMzQwZGI4MzgzMmE3NmIzMjU5NTA3YTY0MmUzZGYyMjE0MDVjYzM2NDBjMzA1NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4NDhhZGNjZWYwOWZiODljMDc1MGJmNTI4NmI1ZDg1N2JjMzIyZGYwNzBmNDZmNzg0MmFlNDJhNTZkNWNhZjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3N2FmZGRiNDAxMzVhMDllMzU2Mjg2NTIyMGIwYWYzMDFhNTkyN2Y3YmIxMGU4Yzg2ZmI3YTY4OTY1MGE2NTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5YTExYzU3OTEzMDQwOWFjYmRiZjcxOWJlYmU1N2NiNWFjYTcwOTM1OTIyMjk3Njk2OWVlM2U4NDI2NmM0NzEifQ"
+          "version": "repo-lines-v1:sha256:31f80554e5bea82f15bd7e51f9650c8126b7630b8fdef587a5654d66d2abc621:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2NzM1N2UxMjA5NWQzYWNlMzQwZGI4MzgzMmE3NmIzMjU5NTA3YTY0MmUzZGYyMjE0MDVjYzM2NDBjMzA1NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4NDhhZGNjZWYwOWZiODljMDc1MGJmNTI4NmI1ZDg1N2JjMzIyZGYwNzBmNDZmNzg0MmFlNDJhNTZkNWNhZjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3N2FmZGRiNDAxMzVhMDllMzU2Mjg2NTIyMGIwYWYzMDFhNTkyN2Y3YmIxMGU4Yzg2ZmI3YTY4OTY1MGE2NTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5YTExYzU3OTEzMDQwOWFjYmRiZjcxOWJlYmU1N2NiNWFjYTcwOTM1OTIyMjk3Njk2OWVlM2U4NDI2NmM0NzEifQ"
         }
       ]
     },
@@ -57,7 +57,7 @@
       "statement": "Paczki zapisów wysyła się przez POST /v1/savesync/upload/init i commit z treścią przez PUT /v1/files/u/<token>, a pobiera przez GET /v1/files/d/<token> z Range; blokadę profilu obsługuje POST /v1/lock/take|renew|release|status.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/remote.py#L1149-L1227",
+          "resource": "repo://emustart/emustart/remote.py#L1178-L1256",
           "version": "repo-lines-v1:sha256:5c803ed13b8e67a6304d933a8f96c694226486ce42f2210c95890a3fd889d459:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZTcyOGUxYmNmODhlYjhiZGFmNjg5NDM0ZDQ4NDg5MTIxYTJiMmJmODg1Nzk1MjEyNzc3NjNlYzYyZGNmZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNzk2Y2VkMzY1MDlmNDEyNmE0N2VmNDc2OTBiNDEwODNlYTQ5NjIwYjcyMDhhMDU5ZDc5OTlkYWNkMzFjN2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1Yzk2ODAyZTg0NjM0NmZjOTgzZTdmNTk5ZThlNDY3ZDc2Zjg2NTUzOTQxNzM0MGY2MDkwOTM4YTExOGJhMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwZmRlMWIwYWNmMTBmNDZjZGRmMjlkODMwMDMxMDc3MzY5OWVkZDc0MTM4ZTAwZTNkZTVkOWZhYjUwNjZkYWUifQ"
         }
       ]
@@ -77,8 +77,8 @@
       "statement": "GET /v1/series zwraca serie z IGDB znane serwerowi, a GET /v1/series/progress sam postęp sprawdzania.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/remote.py#L381-L386",
-          "version": "repo-lines-v1:sha256:62355dd26b8ad2e515185341c5115e2fc025afcb28f9a058397d7eeab0cf9f40:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGJjMGY2N2EzMjU5YTQzMTFjZGVhMTY4Zjk3M2YzOWJhNzk2ZDliZjZhODYwMzJhNTNhNjYyMTEyMzI0YzhhZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzljYTcwMDg4OTExM2Q2ZDRjZWJjM2Y1ZjA0NDU2ZjE5NDBlZTljODI3Yjc1YWI2ZGYwYWI1ZTA0MjNmNDcyZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYzMDMzYjcxMDRiMDdiOTE2ZmZiOGY2OGU0MzY1YTFkZjg1MWNmMWYwOTViYmZjZjdkMzAzN2FkNzE0MTYxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RlMzliM2QzNzk0NjM0NDUyOGQ0MzVkYzdmOTFmNDk4OTkzZjkyYWNmMzNkYWNjZTM4NDgyNGI1NWE5ZWJhMyJ9"
+          "resource": "repo://emustart/emustart/remote.py#L381-L388",
+          "version": "repo-lines-v1:sha256:bc3676da2f4f729b775aed09245ca1f38892ff57b42a915d73c464396ef8b750:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGJjMGY2N2EzMjU5YTQzMTFjZGVhMTY4Zjk3M2YzOWJhNzk2ZDliZjZhODYwMzJhNTNhNjYyMTEyMzI0YzhhZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzljYTcwMDg4OTExM2Q2ZDRjZWJjM2Y1ZjA0NDU2ZjE5NDBlZTljODI3Yjc1YWI2ZGYwYWI1ZTA0MjNmNDcyZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYzMDMzYjcxMDRiMDdiOTE2ZmZiOGY2OGU0MzY1YTFkZjg1MWNmMWYwOTViYmZjZjdkMzAzN2FkNzE0MTYxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RlMzliM2QzNzk0NjM0NDUyOGQ0MzVkYzdmOTFmNDk4OTkzZjkyYWNmMzNkYWNjZTM4NDgyNGI1NWE5ZWJhMyJ9"
         }
       ]
     },
@@ -87,14 +87,24 @@
       "statement": "GET /v1/themes zwraca indeks motywów TV z SHA-256 plików, a GET /v1/themes/<id>/<plik> wydaje tylko pliki z indeksu (inaczej 404).",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/remote.py#L407-L426",
+          "resource": "repo://emustart/emustart/remote.py#L409-L428",
           "version": "repo-lines-v1:sha256:9aa326dc04233ee44e0ec2f8c4459a9ef0a10a6f0e146228ca8998e84e9c3f0b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxMTJjYTI4YWU4ZDA0MzY1ZGI5YWZjNTVjNWU2ODNiNDM3NmI0MjRjMGI1YjY1MDI4NDhhMDM5ZjJmZjU3MDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMzA2ODlmNjk1ZTA1MjhmNzRkNmIyYjZkNjE5NTY2M2U2MDg0OWViM2Q3MGVjYTEzMjU3Zjk4NmNjZGNmOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjNjc0NTNlZWY1Y2QxOGUwNDg5Y2ZjMTgwOTFiZWIwMzdjNTg3ZWE3MmZmZWMyYTllMThlZGU3ZjI0MjQzNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhMjJhYWZkYzBlZDVkMGRkZDNmYTk3ZTM1YjM2MzQzOWMxYTk2NGQwM2NjNzBlZTk4YmI1ZTdkMjY5ZWI2MmEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a46ea715d8344b049fa5205d5ddab2b7",
+      "statement": "POST /v1/collections zapisuje zestaw kolekcji urządzenia, a GET /v1/collections zwraca kolekcje konta; konto i urządzenie pochodzą z tokenu, a zła długość treści daje 400.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/remote.py#L1151-L1178",
+          "version": "repo-lines-v1:sha256:cf530c1dcbccfcb8929265c78a835b0efa49eb362e0b10fa8df68a549b6d2a2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYTE4YmEzMDZjMjg4YWRlNDBjOWQ1M2VlYmNlMDBiMWNlNWFhM2ZmZTIwMGQ5NmE1YmMzZDZkMWRkNDJiMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZTcyOGUxYmNmODhlYjhiZGFmNjg5NDM0ZDQ4NDg5MTIxYTJiMmJmODg1Nzk1MjEyNzc3NjNlYzYyZGNmZmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViYjIzNGEzMDdjZTc0Y2EyYzUwYzk4OTA5Y2RjNmQwMGJlMjJkNjMwYTYzNjM2MWZmN2NjZGJkN2Y1OWQzMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxYjkwYzQzZjYwOGUyOWU0YTg0NmZlZjUxOGU2MTc5MDllYTQ0MDExZDdlNjIzMjA2YmZhMmE5ZWZhYjAzNmUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T17:27:24.312Z"
   }
 }
