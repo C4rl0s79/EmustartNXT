@@ -69,7 +69,7 @@ function ConsoleBackdrop({ sys, photos }: { sys: TvSystem; photos: boolean }) {
   if (own.id && own.hero && !broken)
     return (
       <div key={sys.key} className="tv-console" aria-hidden="true" style={{ '--con-lum': 0.5 } as CSSProperties}>
-        <img decoding="async" src={api().art.url(own.id, 'hero', own.rev, 'tv')} alt="" draggable={false} onError={() => setBroken(true)} />
+        <img decoding="async" src={api().art.url(own.id, 'hero', own.rev)} alt="" draggable={false} onError={() => setBroken(true)} />
       </div>
     )
   if (!sys.console || broken) return null
@@ -101,7 +101,7 @@ function SysCard({ sys, d, gap, plate }: { sys: TvSystem; d: number; gap: number
         rev={own.logo ? own.rev : sys.logoRev}
         pixel={sys.logoPixel}
         plate={plate}
-        ownSrc={themedLogo && !own.own.logo ? themedLogo : own.id && own.logo ? api().art.url(own.id, 'logo', own.rev, 'tv') : undefined}
+        ownSrc={themedLogo && !own.own.logo ? themedLogo : own.id && own.logo ? api().art.url(own.id, 'logo', own.rev) : undefined}
         className={sys.key === STEAM ? 'tv-syslogo-steam' : 'tv-syslogo'}
         fallback={<div className="txt">{sys.display}</div>}
       />

@@ -1,8 +1,10 @@
 import type { Game, GameRatings } from '@shared/types'
+import { compareText } from '@shared/libraryNav'
 
-// Game list filters of the TV layout — EmuStart's filters (engine/web/options.js: FL) for Lumen's
+// Game list filters of a library group — EmuStart's filters (engine/web/options.js: FL) for Lumen's
 // games: search in the title, genre, decade, players, region, developer, what to show and the
-// order. Kept per system (like EmuStart). Pure functions — tested in tests/tv.test.ts.
+// order. One record per group, read by the desktop and the TV layout alike (filterId). Pure functions —
+// tested in tests/tv.test.ts.
 
 export interface Filter {
   q: string
@@ -11,8 +13,8 @@ export interface Filter {
   players: number
   region: string
   dev: string
-  show: 'all' | 'local' | 'pinned' | 'fav' | 'played' | 'unplayed'
-  sort: 'title' | 'year' | 'last' | 'time' | 'size' | RatingSort
+  show: 'all' | 'local' | 'notlocal' | 'pinned' | 'fav' | 'played' | 'unplayed'
+  sort: 'title' | 'year' | 'last' | 'added' | 'time' | 'size' | RatingSort
 }
 
 /** sorting by a rating: LaunchBox community, critics (Metacritic), players (Steam reviews) */
@@ -26,6 +28,7 @@ export const SORT: Record<Filter['sort'], string> = {
   title: 'tytuł',
   year: 'rok premiery',
   last: 'ostatnio grane',
+  added: 'nowo dodane',
   time: 'czas gry',
   size: 'rozmiar',
   launchbox: 'ocena LaunchBox',
@@ -38,6 +41,7 @@ export function showLabels(steam: boolean): Record<Filter['show'], string> {
   return {
     all: 'wszystkie',
     local: steam ? 'tylko zainstalowane' : 'tylko lokalne (w cache)',
+    notlocal: steam ? 'tylko niezainstalowane' : 'tylko poza cache',
     pinned: 'tylko zachowane na dysku',
     fav: 'tylko ulubione',
     played: 'grane',
@@ -77,6 +81,7 @@ export function matches(g: Game, f: Filter, fav: (id: string) => boolean, skip?:
   if (skip !== 'show') {
     const local = g.emu ? g.emu.cached : g.installed
     if (f.show === 'local' && !local) return false
+    if (f.show === 'notlocal' && local) return false
     if (f.show === 'pinned' && !g.emu?.pinned) return false
     if (f.show === 'fav' && !fav(g.id)) return false
     if (f.show === 'played' && !g.lastPlayed) return false
@@ -89,10 +94,12 @@ export function matches(g: Game, f: Filter, fav: (id: string) => boolean, skip?:
 export function apply(all: Game[], f: Filter, fav: (id: string) => boolean, ratings: Record<string, GameRatings> = {}): Game[] {
   const out = all.filter((g) => matches(g, f, fav))
   const size = (g: Game): number => g.emu?.size ?? g.sizeOnDisk ?? 0
+  const name = (a: Game, b: Game): number => compareText(a.sortName, b.sortName)
   const by: Partial<Record<Filter['sort'], (a: Game, b: Game) => number>> = {
     year: (a, b) => (yearOf(a) || '9999').localeCompare(yearOf(b) || '9999') || a.name.localeCompare(b.name),
-    last: (a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0),
-    time: (a, b) => (b.playtimeMinutes ?? 0) - (a.playtimeMinutes ?? 0),
+    last: (a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || name(a, b),
+    added: (a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0) || name(a, b),
+    time: (a, b) => (b.playtimeMinutes ?? -1) - (a.playtimeMinutes ?? -1) || name(a, b),
     size: (a, b) => size(b) - size(a)
   }
   if (isRatingSort(f.sort)) {
@@ -136,17 +143,69 @@ export function activeParts(f: Filter, steam: boolean): string[] {
   return out
 }
 
-const KEY = (sys: string): string => `lumen.filter.${sys}`
-export function loadFilter(sys: string): Filter {
+const KEY = (id: string): string => `lumen.filter.${id}`
+
+/**
+ * id of a group's filters, the same in both views: the library subgroup ('console/emu:snes', 'pc/gog', 'col/…');
+ * a whole group on the TV carousel (Ulubione, Ostatnio grane…) — its "Wszystkie" subgroup ('fav/all')
+ */
+export function filterId(sub: { id: string } | undefined, group: { id: string } | undefined, fallback: string): string {
+  return sub?.id ?? (group ? `${group.id}/all` : fallback)
+}
+
+/**
+ * ids the TV layout kept a group's filters under until Lumen 1.0.75: the platform (EmuStart), 'steam', the pin,
+ * the whole group on the carousel — and the subgroup id itself (other groups)
+ */
+export function oldTvKeys(id: string, es?: string): string[] {
+  const keys = [es, id === 'pc/steam' ? 'steam' : undefined, `pin:${id}`, id.endsWith('/all') ? `grp:${id.slice(0, -4)}` : undefined]
+  return keys.filter((oldKey): oldKey is string => Boolean(oldKey))
+}
+
+/** a desktop view's own install filter and order, kept apart until Lumen 1.0.75 */
+const OLD_DESKTOP_SHOW: Record<string, Filter['show']> = { installed: 'local', notInstalled: 'notlocal' }
+const OLD_DESKTOP_SORT: Record<string, Filter['sort']> = { name: 'title', recent: 'last', added: 'added', playtime: 'time' }
+
+function read(key: string): Partial<Filter> | null {
+  const raw = localStorage.getItem(key)
+  return raw === null ? null : (JSON.parse(raw) as Partial<Filter>)
+}
+
+/** the old separate records of a group: the TV's first (its old ids), then the desktop's; null — none */
+function oldFilter(id: string, es?: string): Filter | null {
+  for (const oldKey of oldTvKeys(id, es)) {
+    const tv = read(KEY(oldKey))
+    if (tv) return { ...FILTER_DEFAULT, ...tv }
+  }
+  const desk = read(KEY(`group:nav:${id}`))
+  const rawView = localStorage.getItem(`lumen.group.nav:${id}`)
+  if (!desk && rawView === null) return null
+  const view = JSON.parse(rawView ?? '{}') as { filter?: string; sort?: string }
+  const merged: Filter = { ...FILTER_DEFAULT, ...(desk ?? {}) }
+  if (merged.show === 'all' && view.filter && OLD_DESKTOP_SHOW[view.filter]) merged.show = OLD_DESKTOP_SHOW[view.filter]
+  if (merged.sort === 'title' && view.sort && OLD_DESKTOP_SORT[view.sort]) merged.sort = OLD_DESKTOP_SORT[view.sort]
+  return merged
+}
+
+/**
+ * The group's filters — one record for the desktop and the TV layout. Until Lumen 1.0.75 each view kept its own;
+ * the first read takes the old TV record, else the desktop's, and saves it as the shared one, so both views (and
+ * later reads) see the same.
+ */
+export function loadFilter(id: string, es?: string): Filter {
   try {
-    return { ...FILTER_DEFAULT, ...(JSON.parse(localStorage.getItem(KEY(sys)) ?? '{}') as Partial<Filter>) }
+    const own = read(KEY(id))
+    if (own) return { ...FILTER_DEFAULT, ...own }
+    const old = oldFilter(id, es)
+    if (old) saveFilter(id, old)
+    return old ?? { ...FILTER_DEFAULT }
   } catch {
     return { ...FILTER_DEFAULT }
   }
 }
-export function saveFilter(sys: string, f: Filter): void {
+export function saveFilter(id: string, f: Filter): void {
   try {
-    localStorage.setItem(KEY(sys), JSON.stringify(f))
+    localStorage.setItem(KEY(id), JSON.stringify(f))
   } catch {
     /* no browser storage — the filter lasts until the program closes */
   }

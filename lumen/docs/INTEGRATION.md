@@ -433,13 +433,18 @@ Od Lumen 0.6.0 (plan: `docs/PLAN-TV-REACT.md`, etap 1) — **jeden interfejs, dw
   - Sortowanie (filtry TV i pulpitu): ocena LaunchBox, krytyków (Metacritic), graczy (recenzje Steam);
     gry bez oceny na końcu. Oceny całej listy: `library.ratings` (LaunchBox z lokalnej bazy; Steam z cache,
     brakujące pobierane w tle — lista pyta ponownie co 20 s).
-- **Grafiki trybu TV osobno od trybu pulpitu** (Lumen 1.0.9): tryb TV pokazuje okładkę w całości, okienko
-  zrzutu i logo — inaczej niż plakat 2:3 i szerokie tło pulpitu, więc ma własne wybory (`prefs.artTv`,
-  `ops.setArt(…, 'tv')`) i własny adres obrazka (`lumen-art://…?tv=1`, `tvArt` w `main/index.ts`).
-  Domyślnie dla gier EmuStart najpierw LaunchBox (Box - Front; Fanart - Background, potem zrzut; Clear Logo),
-  potem grafika serwera; „Grafika z serwera EmuStart” — tylko serwer. Bez własnej grafiki TV (gry Steam,
-  gry EmuStart bez LaunchBox i serwera) — jak na pulpicie. Okno grafik otwarte w trybie TV zmienia
-  tylko grafiki TV („Grafiki trybu TV”: Okładka, Zrzut / tło, Logo).
+- **Jedne grafiki w każdym widoku** (od wersji po Lumenie 1.0.75; zastępuje osobne grafiki TV z 1.0.9): pulpit,
+  Deck i tryb TV czytają te same wybory (`prefs.art`, także grupy biblioteki `navgrp:…`) i tę samą kolejność źródeł
+  (`emuArt` / `artwork.resolve` w `main/index.ts`); okno grafik z trybu TV zmienia te same grafiki. Tryb TV różni się
+  tylko sposobem pokazania (okładka w całości, nazwy rodzajów „Okładka”, „Zrzut / tło”, bez ikon). Stare `artTv`
+  przechodzi do `art` przy wczytaniu ustawień (`mergeTvArt`: przy obu — nowszy). Serwer trzyma jeden wybór na grę
+  i rodzaj (`desktop|…`; klucze `tv|…` od starszych klientów zapisuje jako ten sam wybór, w odpowiedzi podaje go pod
+  oboma kluczami dla starszych Lumenów i klientów EmuStart).
+- **Wspólne filtry i sortowanie grupy** (od wersji po Lumenie 1.0.75): jeden zapis na grupę biblioteki
+  (`lumen.filter.<id podgrupy>`, `filterId` w `tv/filters.ts`; cała grupa na karuzeli TV — `<grupa>/all`), czytany
+  przez pulpit (`screens/Group.tsx`) i tryb TV (`tv/TvGames.tsx`). Filtr instalacji z paska pulpitu to pole `show`
+  (`local` / `notlocal`), „Sortuj” to `sort` (`title` / `last` / `added` / `time`); oba widoki filtrują i sortują tą
+  samą funkcją `apply`. Stare osobne zapisy czytane raz: najpierw zapis TV grupy, bez niego — pulpitu.
 - **Lumen 1.0.5:**
   - filtry z układu TV także w grupach trybu pulpitu (X / F, zapamiętane dla każdej grupy; ulubiona — R3 / U);
   - gry EmuStart bez numeru LaunchBox z serwera (Mega Drive, Game Boy, Atari…) są szukane po tytule na

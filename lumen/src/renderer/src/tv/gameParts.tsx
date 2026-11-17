@@ -42,7 +42,7 @@ export function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
   // logo (mała kopia) — znane z pamięci od razu, nowe dopiero gdy wybór stanie na ~350 ms: przy przytrzymanym
   // kierunku nie wczytuje się logo każdej mijanej gry (pomiar: logo przy każdym kroku, pełne pliki)
   const rev = useStore((s) => s.artRev[game.id] ?? 0)
-  const [show, setShow] = useState(() => !!readyArt(api().art.url(game.id, 'logo', rev, 'tv', true)))
+  const [show, setShow] = useState(() => !!readyArt(api().art.url(game.id, 'logo', rev, true)))
   useEffect(() => {
     if (show) return
     const t = setTimeout(() => setShow(true), 350)
@@ -53,7 +53,7 @@ export function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
       {!ok && text}
       {show && (
         <span className={`tv-logo ${ok ? '' : 'is-wait'}`}>
-          <Art gameId={game.id} name={game.name} kind="logo" className="tv-logo__img" fallback="none" eager layout="tv" thumb onState={setOk} />
+          <Art gameId={game.id} name={game.name} kind="logo" className="tv-logo__img" fallback="none" eager thumb onState={setOk} />
         </span>
       )}
     </>
@@ -90,7 +90,7 @@ export function usePrefetchLogos(games: Game[], idx: number, settled: boolean, a
     if (!settled || games.length < 2) return
     // wersje grafik czytane tu, bez subskrypcji: zmiana grafiki dowolnej gry nie rysuje od nowa całej listy
     const artRev = useStore.getState().artRev
-    for (const game of neighbourGames(games, idx, around)) prefetchLogo(api().art.url(game.id, 'logo', artRev[game.id] ?? 0, 'tv', true))
+    for (const game of neighbourGames(games, idx, around)) prefetchLogo(api().art.url(game.id, 'logo', artRev[game.id] ?? 0, true))
   }, [settled, idx, games, around])
 }
 
@@ -161,7 +161,7 @@ export function TvDesc({ game, details: dr, className }: { game: Game; details: 
 export function TvBackdrop({ game }: { game: Game }) {
   return (
     <div className="tv-backdrop" aria-hidden="true">
-      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager layout="tv" thumb />
+      <Art gameId={game.id} name={game.name} kind="hero" fallback="none" eager thumb />
     </div>
   )
 }

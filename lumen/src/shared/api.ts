@@ -4,7 +4,7 @@ import type { SeriesPref } from './series'
 import type { EmuSystemLogo, EmuAccountMethod, EmuServerArt, EmuMetaField, EmuSettingsChange, EmuGameOptions, EmuSystemInfo, LbArtOptionsResult, EmuSaves, EmuStateEditInfo, EmuStateEditOp, EmuTrashState,
   ActionResult,
   ThemePackage,
-  ArtKind, ArtLayout,
+  ArtKind,
   GameRatings,
   ArtOption,
   ArtOptionsResult,
@@ -155,22 +155,22 @@ export interface LumenApi {
   }
   art: {
     /**
-     * layout 'tv': the TV layout's art (its own choices, LaunchBox first for EmuStart games); anim: with thumb,
-     * an animated poster as it is, not its list copy (first frame) — the Deck's tiles and the desktop lists
+     * the same art in every view (desktop, Deck, TV); anim: with thumb, an animated poster as it is, not its list
+     * copy (first frame)
      */
-    url(gameId: string, kind: ArtKind, rev?: number, layout?: ArtLayout, thumb?: boolean, anim?: boolean): string
+    url(gameId: string, kind: ArtKind, rev?: number, thumb?: boolean, anim?: boolean): string
     /** page: the next SteamGridDB page (0 = first, PAGE_SIZE each), animated images included */
     options(gameId: string, kind: ArtKind, page?: number): Promise<ArtOptionsResult>
     search(term: string): Promise<{ ok: true; games: SgdbGame[] } | { ok: false; error: string }>
     setMatch(gameId: string, sgdbGame: SgdbGame | null): Promise<Prefs>
-    choose(gameId: string, kind: ArtKind, option: ArtOption, layout?: ArtLayout): Promise<Prefs>
+    choose(gameId: string, kind: ArtKind, option: ArtOption): Promise<Prefs>
     /** LaunchBox Games DB images of an EmuStart game (by the LaunchBox id from the server) */
     launchboxOptions(gameId: string, kind: ArtKind): Promise<LbArtOptionsResult>
-    chooseLaunchbox(gameId: string, kind: ArtKind, url: string, layout?: ArtLayout): Promise<Prefs>
+    chooseLaunchbox(gameId: string, kind: ArtKind, url: string): Promise<Prefs>
     /** use an image file chosen in the in-app picker (copied into Lumen's data folder) */
-    useFile(gameId: string, kind: ArtKind, file: string, layout?: ArtLayout): Promise<Prefs>
-    useSteam(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
-    reset(gameId: string, kind: ArtKind, layout?: ArtLayout): Promise<Prefs>
+    useFile(gameId: string, kind: ArtKind, file: string): Promise<Prefs>
+    useSteam(gameId: string, kind: ArtKind): Promise<Prefs>
+    reset(gameId: string, kind: ArtKind): Promise<Prefs>
     /** images uploaded to the server by its accounts (this game, this kind) */
     /** gameId '' = everything uploaded to the server */
     userGallery(gameId: string, kind: ArtKind): Promise<UserArtGallery>
@@ -178,8 +178,8 @@ export interface LumenApi {
     /** the art source keys: from PyLinks on this PC (file null) or from an encrypted file */
     keysImport(file: string | null, password: string): Promise<Settings>
     keysExport(folder: string, password: string): Promise<string>
-    chooseOwn(gameId: string, kind: ArtKind, url: string, layout?: ArtLayout): Promise<Prefs>
-    chooseUser(gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout): Promise<Prefs>
+    chooseOwn(gameId: string, kind: ArtKind, url: string): Promise<Prefs>
+    chooseUser(gameId: string, kind: ArtKind, sha: string, ext: string): Promise<Prefs>
     onChanged(cb: (gameId: string, rev: number) => void): () => void
   }
   launchbox: {

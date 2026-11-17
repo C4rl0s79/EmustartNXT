@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import type { ArtChoice, ArtKind, ArtLayout, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
+import type { ArtChoice, ArtKind, Category, EmuSystem, GameArtPrefs, Prefs, SteamCollection } from '@shared/types'
 import { cleanSeriesPrefs, type SeriesPref } from '@shared/series'
 import { JsonFile } from './jsonFile'
+import { KINDS } from '../art/artSync'
 
 // User library preferences: categories, favourites, artwork choices.
 // Pure functions below are unit-tested; PrefsStore adds persistence.
@@ -19,17 +20,15 @@ const REMOVED_SMART = new Set(['smart:installed', 'smart:notInstalled'])
 export const PREFS_VERSION = 4
 
 export function defaultPrefs(): Prefs {
-  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artTv: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
+  return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
 }
 
-export function migratePrefs(raw: unknown): Prefs {
-  const base = defaultPrefs()
-  if (!raw || typeof raw !== 'object') return base
-  const r = raw as Partial<Prefs>
+/** categories of older prefs: known ones, every smart category exactly once, v2 / v3 changes applied */
+function migrateCategories(r: Partial<Prefs>, smart: Category[]): Category[] {
   let categories = Array.isArray(r.categories) ? r.categories.filter(isCategory).filter((c) => !REMOVED_SMART.has(c.id)) : []
   // make sure every smart category exists exactly once (new ones may be added in updates)
-  for (const smart of base.categories) {
-    if (!categories.some((c) => c.id === smart.id)) categories.push({ ...smart, order: categories.length })
+  for (const one of smart) {
+    if (!categories.some((c) => c.id === one.id)) categories.push({ ...one, order: categories.length })
   }
   if ((r.version ?? 1) < 2) {
     // v2: home screen shows "recently played" itself; pinned categories became top-bar group tabs
@@ -41,36 +40,82 @@ export function migratePrefs(raw: unknown): Prefs {
     // v3: "all games" is the Steam platform tab (emulator platforms come from Steam collections)
     categories = categories.map((c) => (c.id === 'smart:all' ? { ...c, name: 'Steam' } : c))
   }
+  return categories
+}
+
+/** a stored map with only the entries whose value passes `keep` */
+function cleanMap<T>(value: unknown, keep: (entry: unknown) => entry is T): Record<string, T> {
+  if (!isRecord(value)) return {}
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, T] => keep(entry[1])))
+}
+const isNumber = (value: unknown): value is number => typeof value === 'number'
+const isString = (value: unknown): value is string => typeof value === 'string'
+const isOverride = (value: unknown): value is string => typeof value === 'string' && validOverride(value)
+
+/**
+ * v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces the
+ * flat tabs. Pinned Lumen categories and Steam collections stay quick-access pins (in their order). EmuStart
+ * platforms were pinned automatically (every new platform), not by the player — they live in the hierarchy now;
+ * their old flags stay in `categories` untouched.
+ */
+function pinsFromTabs(categories: Category[]): string[] {
+  return [...categories]
+    .sort((a, b) => a.order - b.order)
+    .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
+    .map((c) => `col/${c.id}`)
+}
+
+export function migratePrefs(raw: unknown): Prefs {
+  const base = defaultPrefs()
+  if (!raw || typeof raw !== 'object') return base
+  const r = raw as Partial<Prefs>
+  const categories = migrateCategories(r, base.categories)
   const prefs: Prefs = {
     version: PREFS_VERSION,
     categories,
     gameCategories: isRecord(r.gameCategories) ? sanitizeGameCategories(r.gameCategories) : {},
-    favorites: Array.isArray(r.favorites) ? r.favorites.filter((x) => typeof x === 'string') : [],
+    favorites: Array.isArray(r.favorites) ? r.favorites.filter(isString) : [],
     art: isRecord(r.art) ? (r.art as Record<string, GameArtPrefs>) : {},
-    artTv: isRecord(r.artTv) ? (r.artTv as Record<string, GameArtPrefs>) : {},
     artDefaults: isRecord(r.artDefaults) ? (r.artDefaults as Prefs['artDefaults']) : {},
-    artStamps: isRecord(r.artStamps) ? Object.fromEntries(Object.entries(r.artStamps).filter((e): e is [string, number] => typeof e[1] === 'number')) : {},
-    versions: isRecord(r.versions)
-      ? Object.fromEntries(Object.entries(r.versions).filter((e): e is [string, string] => typeof e[1] === 'string'))
-      : {},
-    platformOverrides: isRecord(r.platformOverrides)
-      ? Object.fromEntries(Object.entries(r.platformOverrides).filter((e): e is [string, string] => typeof e[1] === 'string' && validOverride(e[1])))
-      : {},
+    artStamps: cleanMap(r.artStamps, isNumber),
+    versions: cleanMap(r.versions, isString),
+    platformOverrides: cleanMap(r.platformOverrides, isOverride),
     pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : [],
     lbTitles: cleanLbTitles(r.lbTitles),
     series: cleanSeriesPrefs(r.series)
   }
-  if ((r.version ?? 1) < 4) {
-    // v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces
-    // the flat tabs. Pinned Lumen categories and Steam collections stay quick-access pins (in their order).
-    // EmuStart platforms were pinned automatically (every new platform), not by the player — they live in the
-    // hierarchy now; their old flags stay in `categories` untouched.
-    prefs.pinnedGroups = [...categories]
-      .sort((a, b) => a.order - b.order)
-      .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
-      .map((c) => `col/${c.id}`)
+  if ((r.version ?? 1) < 4) prefs.pinnedGroups = pinsFromTabs(categories)
+  return normalizeOrder(mergeTvArt(prefs, (r as { artTv?: unknown }).artTv))
+}
+
+/**
+ * One art per game (and library group) for every view — desktop, Deck and TV only show it differently (user
+ * 2026-11-17). Lumen 1.0.9 – 1.0.75 kept TV choices apart (`artTv`); they are moved into `art` here. With both, the
+ * newer choice stays (its stamp; unstamped = older than any sync, so the desktop's stays) — the rule between devices.
+ */
+export function mergeTvArt(p: Prefs, rawTv: unknown): Prefs {
+  const tvChoices = isRecord(rawTv) ? (rawTv as Record<string, GameArtPrefs>) : {}
+  const tvStamps = Object.keys(p.artStamps).filter((k) => k.startsWith('tv|'))
+  if (!Object.keys(tvChoices).length && !tvStamps.length) return p
+  const art = { ...p.art }
+  const artStamps = { ...p.artStamps }
+  for (const [gameId, tv] of Object.entries(tvChoices)) {
+    if (!isRecord(tv)) continue
+    const cur: GameArtPrefs = { ...(art[gameId] ?? {}) }
+    for (const kind of KINDS) {
+      const choice = (tv as GameArtPrefs)[kind]
+      if (!choice) continue
+      const tvAt = p.artStamps[`tv|${gameId}|${kind}`] ?? 1
+      const deskAt = artStamps[`desktop|${gameId}|${kind}`] ?? (cur[kind] ? 1 : 0)
+      // a stamp without a desktop choice: "automatic" picked there later — also newer
+      if (tvAt <= deskAt) continue
+      cur[kind] = choice
+      artStamps[`desktop|${gameId}|${kind}`] = tvAt
+    }
+    art[gameId] = cur
   }
-  return normalizeOrder(prefs)
+  for (const k of tvStamps) delete artStamps[k]
+  return { ...p, art, artStamps }
 }
 
 /** LaunchBox names from the server: GOG games and shortcuts only, non-empty names */
@@ -313,12 +358,11 @@ export const ops = {
     return { ...p, favorites }
   },
 
-  setArt(p: Prefs, gameId: string, kind: ArtKind, choice: ArtChoice | undefined, layout: ArtLayout = 'desktop'): Prefs {
-    const key = layout === 'tv' ? 'artTv' : 'art'
-    const current = { ...(p[key][gameId] ?? {}) }
+  setArt(p: Prefs, gameId: string, kind: ArtKind, choice: ArtChoice | undefined): Prefs {
+    const current = { ...(p.art[gameId] ?? {}) }
     if (choice) current[kind] = choice
     else delete current[kind]
-    return { ...p, [key]: { ...p[key], [gameId]: current }, artStamps: { ...p.artStamps, [`${layout}|${gameId}|${kind}`]: Date.now() / 1000 } }
+    return { ...p, art: { ...p.art, [gameId]: current }, artStamps: { ...p.artStamps, [`desktop|${gameId}|${kind}`]: Date.now() / 1000 } }
   },
 
   setSgdbMatch(p: Prefs, gameId: string, sgdbGameId: number | undefined, name?: string): Prefs {

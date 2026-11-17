@@ -1,6 +1,6 @@
 import { UserArtSection } from '../components/UserArt'
 import { useEffect, useRef, useState } from 'react'
-import type { ArtKind, ArtLayout, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, OwnArtResult, SgdbGame } from '@shared/types'
+import type { ArtKind, ArtOption, ArtOptionsResult, EmuServerArt, Game, LbArtOptionsResult, OwnArtResult, SgdbGame } from '@shared/types'
 import { api, attempt, useStore, pickPath } from '../store'
 import { Modal } from '../components/Modal'
 import { TextField } from '../components/TextField'
@@ -54,9 +54,9 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
     lastZoom = Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)) * 100) / 100
     setZoomState(lastZoom)
   }
-  // opened in the TV layout: the TV's own art (cover, screenshot, logo), separate from the desktop's
-  const layout = useStore((s) => (s.uiMode === 'fullscreen' ? 'tv' : 'desktop'))
-  const tv = layout === 'tv'
+  // the same art in both views (TV and desktop are two views of one library); the TV layout only names the kinds
+  // after what it shows and has no icons
+  const tv = useStore((s) => s.uiMode === 'fullscreen')
   const kinds = KINDS.filter(([k]) => !((tv || isEmuGame(game)) && k === 'icon')).map(([k, l]): [ArtKind, string] => [k, (tv && TV_LABEL[k]) || l])
   const nextKind = (step: number): void => {
     const i = kinds.findIndex(([k]) => k === kind)
@@ -70,7 +70,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
   const [searching, setSearching] = useState(false)
   const gp = prefs.art[game.id]
   listKey.current = `${game.id}|${kind}|${gp?.sgdbGameId ?? ''}`
-  const current = (tv ? prefs.artTv?.[game.id] : gp)?.[kind]
+  const current = gp?.[kind]
   const isEmu = game.source === 'emustart'
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
 
   return (
     <Modal
-      title={`${tv ? 'Grafiki trybu TV' : 'Grafiki'} — ${game.name}`}
+      title={`Grafiki — ${game.name}`}
       onClose={onClose}
       wide
       className="art-picker"
@@ -141,8 +141,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
         ))}
       </div>
       <p className="details__muted">
-        Obecnie: {current ? (isEmu && current.type === 'steam' ? 'grafika z serwera EmuStart' : CHOICE_LABEL[current.type]) : tv && isEmu ? 'automatycznie (LaunchBox, potem serwer)' : 'automatycznie'}
-        {tv && ' · wybór tylko dla trybu TV (tryb pulpitu ma własny)'}
+        Obecnie: {current ? (isEmu && current.type === 'steam' ? 'grafika z serwera EmuStart' : CHOICE_LABEL[current.type]) : 'automatycznie'}
         {result?.ok && result.sgdbGame && ` · SteamGridDB: ${result.sgdbGame.name}`}
       </p>
       <div className="modal__row">
@@ -151,13 +150,13 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           data-nav
           onClick={async () => {
             const file = await pickPath({ kind: 'file', title: 'Własny plik graficzny', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] })
-            if (file) void attempt(api().art.useFile(game.id, kind, file, layout)).then(done('Ustawiono własny plik'))
+            if (file) void attempt(api().art.useFile(game.id, kind, file)).then(done('Ustawiono własny plik'))
           }}
         >
           Wybierz plik…
         </button>
         {game.source === 'steam' && kind !== 'icon' && (
-          <button className="btn" data-nav onClick={() => void attempt(api().art.useSteam(game.id, kind, layout)).then(done('Użyto grafiki Steam'))}>
+          <button className="btn" data-nav onClick={() => void attempt(api().art.useSteam(game.id, kind)).then(done('Użyto grafiki Steam'))}>
             Oficjalna grafika Steam
           </button>
         )}
@@ -165,7 +164,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           <button
             className="btn"
             data-nav
-            onClick={() => void attempt(api().art.useSteam(game.id, kind, layout)).then(done('Użyto grafiki z serwera EmuStart'))}
+            onClick={() => void attempt(api().art.useSteam(game.id, kind)).then(done('Użyto grafiki z serwera EmuStart'))}
           >
             Grafika z serwera EmuStart
           </button>
@@ -174,7 +173,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           className="btn"
           data-nav
           disabled={!current}
-          onClick={() => void attempt(api().art.reset(game.id, kind, layout)).then(done('Przywrócono automatyczny wybór'))}
+          onClick={() => void attempt(api().art.reset(game.id, kind)).then(done('Przywrócono automatyczny wybór'))}
         >
           Przywróć automatyczne
         </button>
@@ -184,7 +183,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           </button>
         )}
       </div>
-      <UserArtSection gameId={game.id} kind={kind} layout={layout} />
+      <UserArtSection gameId={game.id} kind={kind} />
       {!result && <p className="details__loading">Wczytywanie grafik ze SteamGridDB…</p>}
       {result && !result.ok && <p className="details__muted">{result.error}</p>}
       {result?.ok && result.options.length === 0 && (
@@ -201,7 +200,7 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
                 data-nav
                 data-key={`t-${o.id}`}
                 title={o.author ? `Autor: ${o.author}` : undefined}
-                onClick={() => void attempt(api().art.choose(game.id, kind, o, layout)).then(done('Zapisano wybór grafiki'))}
+                onClick={() => void attempt(api().art.choose(game.id, kind, o)).then(done('Zapisano wybór grafiki'))}
               >
                 <SgdbThumb o={o} />
                 {(o.style || o.animated) && <span className="thumb__tag">{[o.animated && 'animowana', o.style].filter(Boolean).join(' · ')}</span>}
@@ -223,8 +222,8 @@ export function ArtPicker({ game, onClose, admin }: { game: Game; onClose: () =>
           </button>
         </div>
       )}
-      {isEmu && kind !== 'icon' && <LaunchBoxThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'launchbox' ? current.url : undefined} />}
-      {hasOwnKey && kind !== 'icon' && <OwnKeyThumbs game={game} kind={kind} layout={layout} chosen={current?.type === 'web' ? current.url : undefined} />}
+      {isEmu && kind !== 'icon' && <LaunchBoxThumbs game={game} kind={kind} chosen={current?.type === 'launchbox' ? current.url : undefined} />}
+      {hasOwnKey && kind !== 'icon' && <OwnKeyThumbs game={game} kind={kind} chosen={current?.type === 'web' ? current.url : undefined} />}
       {isEmu && admin && kind !== 'icon' && <ServerArt game={game} kind={kind} />}
       <div className="modal__footer">
         <button className="btn btn--primary" data-nav onClick={onClose}>
@@ -257,8 +256,7 @@ function ServerArt({ game, kind }: { game: Game; kind: ArtKind }) {
   const sk = SERVER_KIND[kind as 'grid' | 'hero' | 'logo']
   const [list, setList] = useState<EmuServerArt[] | null>(null)
   // marked only while this device shows the server's art (not after another choice)
-  const layout = useStore((s) => (s.uiMode === 'fullscreen' ? 'tv' : 'desktop'))
-  const showsServer = useStore((s) => (layout === 'tv' ? s.prefs?.artTv?.[game.id] : s.prefs?.art[game.id])?.[kind]?.type === 'steam')
+  const showsServer = useStore((s) => s.prefs?.art[game.id]?.[kind]?.type === 'steam')
   const [picked, setPicked] = useState(() => readPicked(game.id, sk))
   useEffect(() => setPicked(readPicked(game.id, sk)), [game.id, sk])
   useEffect(() => {
@@ -303,7 +301,7 @@ function ServerArt({ game, kind }: { game: Game; kind: ArtKind }) {
                   /* no browser storage — just not marked next time */
                 }
                 setPicked(o.url)
-                await attempt(api().art.useSteam(game.id, kind, layout))
+                await attempt(api().art.useSteam(game.id, kind))
               }}
             >
               {o.thumb ? <img src={o.thumb} alt="" loading="lazy" decoding="async" /> : <span className="thumb__tag">{o.source ?? 'grafika'}</span>}
@@ -316,7 +314,7 @@ function ServerArt({ game, kind }: { game: Game; kind: ArtKind }) {
   )
 }
 
-function LaunchBoxThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKind; layout: ArtLayout; chosen?: string }) {
+function LaunchBoxThumbs({ game, kind, chosen }: { game: Game; kind: ArtKind; chosen?: string }) {
   const [res, setRes] = useState<LbArtOptionsResult | null>(null)
   useEffect(() => {
     let alive = true
@@ -344,7 +342,7 @@ function LaunchBoxThumbs({ game, kind, layout, chosen }: { game: Game; kind: Art
               data-nav
               title={`${o.type}${o.region ? ` · ${o.region}` : ''}`}
               onClick={() =>
-                void attempt(api().art.chooseLaunchbox(game.id, kind, o.url, layout)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))
+                void attempt(api().art.chooseLaunchbox(game.id, kind, o.url)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))
               }
             >
               <img src={o.url} alt="" loading="lazy" decoding="async" />
@@ -361,7 +359,7 @@ function LaunchBoxThumbs({ game, kind, layout, chosen }: { game: Game; kind: Art
 }
 
 /** IGDB / TheGamesDB through the player's own keys: straight from this device, not through the EmuStart server */
-function OwnKeyThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKind; layout: ArtLayout; chosen?: string }) {
+function OwnKeyThumbs({ game, kind, chosen }: { game: Game; kind: ArtKind; chosen?: string }) {
   const [res, setRes] = useState<OwnArtResult | null>(null)
   useEffect(() => {
     let alive = true
@@ -388,7 +386,7 @@ function OwnKeyThumbs({ game, kind, layout, chosen }: { game: Game; kind: ArtKin
               key={o.url}
               className={`thumb thumb--fit ${chosen === o.url ? 'is-on' : ''}`}
               data-nav
-              onClick={() => void attempt(api().art.chooseOwn(game.id, kind, o.url, layout)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))}
+              onClick={() => void attempt(api().art.chooseOwn(game.id, kind, o.url)).then((p) => p && useStore.getState().toast('Zapisano wybór grafiki'))}
             >
               <img src={api().art.url(`web:${o.url}`, kind)} alt="" loading="lazy" decoding="async" />
               <span className="thumb__tag">{o.source}</span>

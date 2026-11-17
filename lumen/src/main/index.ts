@@ -17,7 +17,7 @@ import { isModeCombo } from '@shared/pad'
 import type { IgdbSeries, SeriesStatus, UserArtItem } from '@shared/types'
 import type { LbTitleInfo } from '@shared/types'
 import type { SeriesPref } from '@shared/series'
-import type { ActionResult, ArtChoice, ArtDataSource, ArtKind, ArtLayout, ArtOption, ArtOptionsResult, DetailsResult, GameArtPrefs, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
+import type { ActionResult, ArtDataSource, ArtKind, ArtOption, ArtOptionsResult, DetailsResult, GameDetails, GameFacts, GameRatings, FsEntry, FsListOptions, Game, JobsSnapshot, LibrarySnapshot, PlatformInfo, Prefs, SecretName, Settings, SettingsPatch, SgdbGame, UiMode } from '@shared/types'
 import { initLogger, log } from './logger'
 import { attachEditMenu } from './editMenu'
 import { EXPLORER, TASKLIST } from './systemTools'
@@ -61,19 +61,6 @@ import { buildNav } from '@shared/libraryNav'
 
 const ART_KINDS: ArtKind[] = ['grid', 'hero', 'logo', 'icon']
 
-/**
- * Art picked in one layout shows in the other too, unless that layout has its own choice (TV and desktop
- * keep separate choices). Only real images are borrowed — "no image" / "the source's art" stay per layout.
- */
-function borrowable(c: ArtChoice | undefined): ArtChoice | undefined {
-  return c && (c.type === 'file' || c.type === 'user' || c.type === 'sgdb' || c.type === 'launchbox' || c.type === 'web') ? c : undefined
-}
-function withBorrowed(own: GameArtPrefs | undefined, other: GameArtPrefs | undefined): GameArtPrefs | undefined {
-  if (!other) return own
-  const out: GameArtPrefs = { ...own }
-  for (const k of ART_KINDS) if (!out[k]) out[k] = borrowable(other[k])
-  return out
-}
 /** the EmuStart engine finds Lumen's window by this title (in-game menu, return after a game) */
 const WINDOW_TITLE = 'Lumen'
 
@@ -219,7 +206,7 @@ const artwork = new ArtworkService({
   steamPath: () => library.steamPath,
   sgdb,
   priority: () => (sgdbFirstFor('steam') ? 'sgdbFirst' : 'steamFirst'),
-  prefsFor: (id) => withBorrowed(prefs.get().art[id], prefs.get().artTv[id]),
+  prefsFor: (id) => prefs.get().art[id],
   userFile: (sha, ext) => userArtFile(sha, ext),
   userGridDir: () => {
     const { installPath, activeSteamId } = library.current.steam
@@ -837,7 +824,7 @@ async function artResponse(req: Request): Promise<Response> {
       return f ? fileResponse(f) : new Response('none', { status: 404 })
     }
     // the player's own art of a library group in the TV layout (PC, Konsole, GOG, a collection…): only a file
-    if (gameId.startsWith('navgrp:')) return (await tvArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
+    if (gameId.startsWith('navgrp:')) return (await groupArt(gameId, kind as ArtKind)) ?? new Response('none', { status: 404 })
     if (gameId.startsWith('emusys:')) {
       // platform logo / console photo from the EmuStart server (TV system carousel, Deck tabs); engineMedia
       // waits for the engine when it is still starting
@@ -845,10 +832,6 @@ async function artResponse(req: Request): Promise<Response> {
       const logo = kind === 'logo' ? emu.systemLogo(es) : kind === 'hero' ? emu.systemConsole(es) : undefined
       if (!logo) return new Response('not found', { status: 404 })
       return (await engineMedia(logo)) ?? new Response('not found', { status: 404 })
-    }
-    if (u.searchParams.get('tv') === '1') {
-      const own = await tvArt(gameId, kind as ArtKind)
-      if (own) return own
     }
     if (isEmuGameId(gameId)) return await emuArt(gameId, kind)
     if (gameId.startsWith('xbox:')) {
@@ -859,7 +842,7 @@ async function artResponse(req: Request): Promise<Response> {
     // way round when "SteamGridDB first" is on for GOG
     const isGog = isGogId(gameId)
     const gogSgdbFirst = isGog && sgdbFirstFor('gog')
-    const gogOwn = (): Promise<Response | null> => gogArt(gameId, kind as ArtKind, u.searchParams.get('tv') === '1')
+    const gogOwn = (): Promise<Response | null> => gogArt(gameId, kind as ArtKind)
     if (isGog && !gogSgdbFirst) {
       const own = await gogOwn()
       if (own) return own
@@ -1053,8 +1036,8 @@ const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'imag
  * keeps a copy, so it shows offline too). The player's own choice comes first; without server art —
  * SteamGridDB by name, as before.
  */
-async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response | null> {
-  const chosen = (tv ? prefs.get().artTv[gameId]?.[k] : undefined) ?? withBorrowed(prefs.get().art[gameId], prefs.get().artTv[gameId])?.[k]
+async function gogArt(gameId: string, k: ArtKind): Promise<Response | null> {
+  const chosen = prefs.get().art[gameId]?.[k]
   const pid = gogPid(gameId)
   if (chosen || !pid || !(await engineReady())) return null
   const info = gog.info(gameId)
@@ -1066,7 +1049,7 @@ async function gogArt(gameId: string, k: ArtKind, tv: boolean): Promise<Response
 /** Gra Xbox: okładka i tło z katalogu Microsoft (pobrane raz do LumenData/xbox-art); wybór gracza i pozostałe rodzaje
  *  — jak dla innych gier (SteamGridDB po nazwie). */
 async function xboxArt(gameId: string, k: ArtKind): Promise<Response | null> {
-  if (prefs.get().art[gameId]?.[k] || prefs.get().artTv[gameId]?.[k]) return null
+  if (prefs.get().art[gameId]?.[k]) return null
   const storeId = gameId.slice(5)
   const p = xbox.product(storeId)
   const url = k === 'grid' ? (p?.poster ?? p?.box) : k === 'hero' ? p?.hero : undefined
@@ -1118,7 +1101,7 @@ async function syncArt(): Promise<void> {
   if (artSyncing || engine.state !== 'ready' || !emu.summary().server?.ok) return
   artSyncing = true
   try {
-    for (const [layout, gameId, kind, file] of pendingFiles(prefs.get())) {
+    for (const [gameId, kind, file] of pendingFiles(prefs.get())) {
       const r = await engine.call<{ ok?: boolean; sha?: string; ext?: string; reason?: string }>('art_user_upload', [file, gameId, kind], 150_000)
       if (!r.sha || !r.ext) {
         log.warn('art', `upload ${gameId} ${kind}: ${r.reason ?? 'nieudane'}`)
@@ -1127,9 +1110,8 @@ async function syncArt(): Promise<void> {
       const sha = r.sha
       const ext = r.ext
       await prefs.update((p) => {
-        const map = layout === 'tv' ? 'artTv' : 'art'
-        if (p[map][gameId]?.[kind]?.type !== 'file') return p // changed meanwhile
-        return { ...p, [map]: { ...p[map], [gameId]: { ...p[map][gameId], [kind]: { type: 'user', sha, ext } } } }
+        if (p.art[gameId]?.[kind]?.type !== 'file') return p // changed meanwhile
+        return { ...p, art: { ...p.art, [gameId]: { ...p.art[gameId], [kind]: { type: 'user', sha, ext } } } }
       })
     }
     await syncLbTitles()
@@ -1227,17 +1209,12 @@ async function emuArt(gameId: string, kind: string): Promise<Response> {
   return new Response('not found', { status: 404 })
 }
 
-const layoutOf = (layout: unknown): ArtLayout => (layout === 'tv' ? 'tv' : 'desktop')
-
 /**
- * The TV layout's own art (a cover shown whole, a screenshot slot, a logo — not the desktop's 2:3
- * poster and wide background): the TV choice, else for EmuStart games LaunchBox first (box front,
- * background / screenshot, Clear Logo), then the server's art. null: nothing of its own — as on the
- * desktop (Steam games, EmuStart games with neither).
+ * Art of a library group (PC, Konsole, GOG, a collection…; shown in the TV layout and on Deck tabs): the player's
+ * choice, else the server's default. null: nothing — the group shows its name.
  */
-async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
-  const choice =
-    prefs.get().artTv[gameId]?.[k] ?? borrowable(prefs.get().art[gameId]?.[k]) ?? (k === 'logo' || k === 'hero' ? prefs.get().artDefaults[gameId]?.[k] : undefined)
+async function groupArt(gameId: string, k: ArtKind): Promise<Response | null> {
+  const choice = prefs.get().art[gameId]?.[k] ?? (k === 'logo' || k === 'hero' ? prefs.get().artDefaults[gameId]?.[k] : undefined)
   if (choice?.type === 'none') return new Response('none', { status: 404 })
   if (choice?.type === 'file' && (await fs.stat(choice.file).catch(() => null))) return fileResponse(choice.file)
   if (choice?.type === 'user') {
@@ -1247,23 +1224,6 @@ async function tvArt(gameId: string, k: ArtKind): Promise<Response | null> {
   if (choice?.type === 'sgdb' || choice?.type === 'launchbox' || choice?.type === 'web') {
     const f = await artwork.fromUrl(gameId, k, choice.url)
     if (f) return fileResponse(f)
-  }
-  if (!isEmuGameId(gameId)) return null
-  const server = (): Promise<Response | null> => engineArt(gameId, k)
-  const lb = (types: readonly string[]) => (): Promise<Response | null> => emuLbArt(gameId, k, types)
-  const steps =
-    choice?.type === 'steam'
-      ? [server]
-      : k === 'grid'
-        ? [lb(LB_TYPES.box), server]
-        : k === 'hero'
-          ? [lb(LB_TYPES.fanart), lb(LB_TYPES.screenshot), server]
-          : k === 'logo'
-            ? [lb(LB_TYPES.logo), server]
-            : []
-  for (const step of steps) {
-    const r = await step()
-    if (r) return r
   }
   return null
 }
@@ -1868,10 +1828,10 @@ function registerIpc(): void {
     if (st.outdated || st.job) return { ok: false, error: 'Baza LaunchBox aktualizuje się (dochodzi lista grafik) — spróbuj za kilka minut.' }
     return { ok: true, options: emuLbImages(gameId, PICKER_TYPES[kind] ?? []).slice(0, 48) }
   })
-  handle(IPC.artChooseLb, async (gameId: string, kind: ArtKind, url: string, layout?: ArtLayout) => {
+  handle(IPC.artChooseLb, async (gameId: string, kind: ArtKind, url: string) => {
     if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
     if (!String(url).startsWith(IMAGE_BASE)) throw new Error('Nieoczekiwany adres grafiki.')
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'launchbox', url: String(url) }, layoutOf(layout)))
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'launchbox', url: String(url) }))
     bumpArt(gameId, kind)
     return p
   })
@@ -1888,9 +1848,9 @@ function registerIpc(): void {
     bumpArt(gameId)
     return p
   })
-  handle(IPC.artChoose, async (gameId: string, kind: ArtKind, o: ArtOption, layout?: ArtLayout) => {
+  handle(IPC.artChoose, async (gameId: string, kind: ArtKind, o: ArtOption) => {
     if (!/^https:\/\/cdn2\.steamgriddb\.com\//.test(o.url)) throw new Error('Nieoczekiwany adres grafiki.')
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'sgdb', imageId: o.id, url: o.url, thumb: o.thumb }, layoutOf(layout)))
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'sgdb', imageId: o.id, url: o.url, thumb: o.thumb }))
     bumpArt(gameId, kind)
     return p
   })
@@ -1941,22 +1901,21 @@ function registerIpc(): void {
       .catch(() => null)
     return r?.options ? { ok: true, options: r.options, error: r.error || undefined } : { ok: false, error: 'Nie udało się zapytać IGDB / TheGamesDB.' }
   })
-  handle(IPC.artChooseOwn, async (gameId: string, kind: ArtKind, url: string, layout?: ArtLayout) => {
+  handle(IPC.artChooseOwn, async (gameId: string, kind: ArtKind, url: string) => {
     if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
     if (!WEB_ART.test(String(url))) throw new Error('Nieoczekiwany adres grafiki.')
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'web', url: String(url) }, layoutOf(layout)))
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'web', url: String(url) }))
     bumpArt(gameId, kind)
     return p
   })
-  handle(IPC.artChooseUser, async (gameId: string, kind: ArtKind, sha: string, ext: string, layout?: ArtLayout) => {
+  handle(IPC.artChooseUser, async (gameId: string, kind: ArtKind, sha: string, ext: string) => {
     if (!ART_KINDS.includes(kind) || !/^[0-9a-f]{64}$/.test(String(sha)) || !/^(png|jpg|webp|gif)$/.test(String(ext))) throw new Error('Zła grafika.')
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'user', sha, ext }, layoutOf(layout)))
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'user', sha, ext }))
     bumpArt(gameId, kind)
     return p
   })
-  handle(IPC.artUseFile, async (gameId: string, kind: ArtKind, src: string, layout?: ArtLayout) => {
-    const lay = layoutOf(layout)
-    const choices = lay === 'tv' ? prefs.get().artTv : prefs.get().art
+  handle(IPC.artUseFile, async (gameId: string, kind: ArtKind, src: string) => {
+    const choices = prefs.get().art
     if (!ART_KINDS.includes(kind)) throw new Error('Nieznany rodzaj grafiki.')
     if (!/\.(png|jpe?g|webp|gif)$/i.test(String(src))) throw new Error('Wybierz plik PNG, JPG, WebP albo GIF.')
     const stat = await fs.stat(src).catch(() => null)
@@ -1964,23 +1923,22 @@ function registerIpc(): void {
     if (stat.size > 25 * 1024 * 1024) throw new Error('Plik jest zbyt duży (maks. 25 MB).')
     await fs.mkdir(paths.customArt, { recursive: true })
     const safe = gameId.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const dest = path.join(paths.customArt, `${safe}-${lay === 'tv' ? 'tv-' : ''}${kind}-${Date.now()}${path.extname(src).toLowerCase()}`)
+    const dest = path.join(paths.customArt, `${safe}-${kind}-${Date.now()}${path.extname(src).toLowerCase()}`)
     await fs.copyFile(src, dest)
     const old = choices[gameId]?.[kind]
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'file', file: dest }, lay))
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'file', file: dest }))
     if (old?.type === 'file' && old.file.startsWith(paths.customArt)) await fs.rm(old.file, { force: true })
     bumpArt(gameId, kind)
     return p
   })
-  handle(IPC.artUseSteam, async (gameId: string, kind: ArtKind, layout?: ArtLayout) => {
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'steam' }, layoutOf(layout)))
+  handle(IPC.artUseSteam, async (gameId: string, kind: ArtKind) => {
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, { type: 'steam' }))
     bumpArt(gameId, kind)
     return p
   })
-  handle(IPC.artReset, async (gameId: string, kind: ArtKind, layout?: ArtLayout) => {
-    const lay = layoutOf(layout)
-    const old = (lay === 'tv' ? prefs.get().artTv : prefs.get().art)[gameId]?.[kind]
-    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, undefined, lay))
+  handle(IPC.artReset, async (gameId: string, kind: ArtKind) => {
+    const old = prefs.get().art[gameId]?.[kind]
+    const p = await updatePrefs((pr) => ops.setArt(pr, gameId, kind, undefined))
     if (old?.type === 'file' && old.file.startsWith(paths.customArt)) await fs.rm(old.file, { force: true })
     bumpArt(gameId, kind)
     return p

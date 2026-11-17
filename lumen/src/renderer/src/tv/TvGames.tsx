@@ -11,7 +11,7 @@ import type { TvSystem } from './data'
 import { TvFilters } from './TvFilters'
 import { useRatings } from './ratings'
 import { useFacts } from './facts'
-import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter } from './filters'
+import { activeParts, apply, filterId, loadFilter, needsFacts, saveFilter, type Filter } from './filters'
 import { useLook } from './look'
 import { listTop } from './listWindow'
 import { letterJump } from './letters'
@@ -51,11 +51,12 @@ export function TvGames({
   const opened = useStore((s) => s.uiSelection)
   // "installed" (Steam, GOG, PC groups) vs "in the game cache" (EmuStart platforms)
   const steam = !system.es
-  // EmuStart's filters, kept per system (X); search (L3) is the filter's first field
-  const [filter, setFilterState] = useState<Filter>(() => loadFilter(system.key))
+  // EmuStart's filters (X), the group's — the same as on the desktop; search (L3) is the filter's first field
+  const fid = filterId(system.sub, system.group, system.key)
+  const [filter, setFilterState] = useState<Filter>(() => loadFilter(fid, system.es))
   const setFilter = (f: Filter): void => {
     setFilterState(f)
-    saveFilter(system.key, f)
+    saveFilter(fid, f)
     setIdx(0)
   }
   const [filters, setFilters] = useState(false)
@@ -395,7 +396,7 @@ function TvPreview({ game, details: dr, note }: { game: Game; details: DetailsRe
     <div className="tv-preview" ref={fitH.ref} style={fitH.h ? { ['--tv-media-fit' as string]: `${fitH.h}px` } : undefined}>
       <div className="tv-box">
         {boxOk ? (
-          <Art key={`b-${game.id}`} gameId={game.id} name={game.name} kind="grid" className="tv-boxart" fallback="none" eager layout="tv" onState={setBoxOk} onRatio={setBoxRatio} />
+          <Art key={`b-${game.id}`} gameId={game.id} name={game.name} kind="grid" className="tv-boxart" fallback="none" eager onState={setBoxOk} onRatio={setBoxRatio} />
         ) : (
           <div className="tv-noart">brak okładki</div>
         )}
@@ -410,7 +411,6 @@ function TvPreview({ game, details: dr, note }: { game: Game; details: DetailsRe
             className="tv-snapart"
             fallback="none"
             eager
-            layout="tv"
             onState={setSnapOk}
             onRatio={setSnapRatio}
           />

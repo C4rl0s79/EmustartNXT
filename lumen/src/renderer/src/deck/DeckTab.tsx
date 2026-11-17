@@ -16,7 +16,7 @@ export function DeckTab({ sys, label, active, showLogos, onClick }: { sys?: TvSy
   const [natural, setNatural] = useState<Size | null>(null)
   const name = <span className="deck-tab-name">{sys?.display ?? label}</span>
 
-  const ownSrc = own.id && own.logo ? api().art.url(own.id, 'logo', own.rev, 'tv') : undefined
+  const ownSrc = own.id && own.logo ? api().art.url(own.id, 'logo', own.rev) : undefined
   const steam = !ownSrc && sys?.key === STEAM
   // the image SystemLogo will show (its rule: own logo, else the server's) — read for its natural size
   const src = !sys || !showLogos || steam ? undefined : (ownSrc ?? (sys.logo ? api().art.url(`emusys:${sys.key}`, 'logo', own.logo ? own.rev : sys.logoRev) : undefined))

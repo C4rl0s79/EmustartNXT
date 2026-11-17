@@ -8,7 +8,7 @@ import { UserArtSection } from '../components/UserArt'
 
 // Own art of a library group in the TV layout (PC, Komputery, Konsole, Steam, GOG, a collection…): logo on
 // the carousel and the picture behind it, from a file the player picks. EmuStart platforms keep their logo
-// and console photo from the server (Opcje systemu). Stored like a game's TV art (prefs.artTv, id navgrp:…).
+// and console photo from the server (Opcje systemu). Stored like a game's art (prefs.art, id navgrp:…).
 
 /** art id of a carousel item without an EmuStart platform; undefined for platforms */
 export function groupArtId(sys: TvSystem): string | undefined {
@@ -20,7 +20,7 @@ export function groupArtId(sys: TvSystem): string | undefined {
 
 export function useGroupArt(sys: TvSystem | undefined): { id?: string; logo: boolean; hero: boolean; own: { logo: boolean; hero: boolean }; rev: number } {
   const id = sys ? groupArtId(sys) : undefined
-  const choice = useStore((s) => (id ? s.prefs?.artTv?.[id] : undefined))
+  const choice = useStore((s) => (id ? s.prefs?.art[id] : undefined))
   const server = useStore((s) => (id ? s.prefs?.artDefaults?.[id] : undefined))
   const rev = useStore((s) => (id ? (s.artRev[id] ?? 0) : 0))
   const set = (t?: string): boolean => t === 'file' || t === 'user'
@@ -43,14 +43,14 @@ export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () =
   const pick = async (kind: ArtKind, title: string): Promise<void> => {
     const file = await pickPath({ kind: 'file', title, extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] })
     if (!file) return
-    const p = await attempt(api().art.useFile(id, kind, file, 'tv'))
+    const p = await attempt(api().art.useFile(id, kind, file))
     if (p) {
       setPrefs(p)
       toast(kind === 'logo' ? 'Logo grupy zapisane.' : 'Tło grupy zapisane.')
     }
   }
   const clear = async (kind: ArtKind): Promise<void> => {
-    const p = await attempt(api().art.reset(id, kind, 'tv'))
+    const p = await attempt(api().art.reset(id, kind))
     if (p) setPrefs(p)
   }
   const rows = [
@@ -69,8 +69,8 @@ export function GroupArtOptions({ sys, onClose }: { sys: TvSystem; onClose: () =
           </button>
         ))}
       </div>
-      <UserArtSection gameId={id} kind="logo" layout="tv" label="logo" />
-      <UserArtSection gameId={id} kind="hero" layout="tv" label="tło" />
+      <UserArtSection gameId={id} kind="logo" label="logo" />
+      <UserArtSection gameId={id} kind="hero" label="tło" />
     </Modal>
   )
 }

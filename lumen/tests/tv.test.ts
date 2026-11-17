@@ -82,3 +82,54 @@ describe('TV layout: game list filters (EmuStart rules)', () => {
     expect(matches({ id: 's', name: 'Portal', source: 'steam', installed: true } as Game, { ...FILTER_DEFAULT, show: 'local' }, fav)).toBe(true)
   })
 })
+
+describe('filtry grupy wspólne dla pulpitu i trybu TV', () => {
+  const mem = new Map<string, string>()
+  const storage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) }
+  const withStorage = async <T,>(fn: () => T | Promise<T>): Promise<T> => {
+    const g = globalThis as { localStorage?: unknown }
+    const before = g.localStorage
+    g.localStorage = storage
+    try {
+      return await fn()
+    } finally {
+      g.localStorage = before
+      mem.clear()
+    }
+  }
+  it('ten sam klucz w obu widokach; poziom grupy w TV = jej „Wszystkie”', async () => {
+    const { filterId } = await import('../src/renderer/src/tv/filters')
+    expect(filterId({ id: 'console/emu:snes' }, { id: 'console' }, 'snes')).toBe('console/emu:snes')
+    expect(filterId(undefined, { id: 'fav' }, 'grp:fav')).toBe('fav/all')
+    const { oldTvKeys } = await import('../src/renderer/src/tv/filters')
+    expect(oldTvKeys('fav/all')).toEqual(['pin:fav/all', 'grp:fav'])
+    expect(oldTvKeys('pc/steam')).toEqual(['steam', 'pin:pc/steam'])
+  })
+  it('zapis z jednego widoku czyta drugi; stare zapisy: najpierw TV, potem pulpit', async () => {
+    const { loadFilter, saveFilter } = await import('../src/renderer/src/tv/filters')
+    await withStorage(() => {
+      saveFilter('console/emu:snes', { ...FILTER_DEFAULT, genre: 'RPG' })
+      expect(loadFilter('console/emu:snes', 'snes').genre).toBe('RPG')
+      mem.clear()
+      mem.set('lumen.filter.snes', JSON.stringify({ sort: 'year' }))
+      mem.set('lumen.group.nav:console/emu:snes', JSON.stringify({ filter: 'installed', sort: 'recent' }))
+      expect(loadFilter('console/emu:snes', 'snes').sort).toBe('year')
+      // pierwszy odczyt zapisuje wspólny rekord: drugi widok czyta już to samo
+      expect(JSON.parse(mem.get('lumen.filter.console/emu:snes')!).sort).toBe('year')
+      mem.clear()
+      mem.set('lumen.group.nav:console/emu:snes', JSON.stringify({ filter: 'installed', sort: 'recent' }))
+      mem.set('lumen.filter.group:nav:console/emu:snes', JSON.stringify({ dev: 'Capcom' }))
+      expect(loadFilter('console/emu:snes', 'snes')).toEqual({ ...FILTER_DEFAULT, dev: 'Capcom', show: 'local', sort: 'last' })
+    })
+  })
+  it('„tylko niezainstalowane” i „nowo dodane”', () => {
+    const games = [
+      { id: 'a', name: 'A', sortName: 'a', source: 'steam', installed: true, addedAt: 1 },
+      { id: 'b', name: 'B', sortName: 'b', source: 'steam', installed: false, addedAt: 3 },
+      { id: 'c', name: 'C', sortName: 'c', source: 'steam', installed: false, addedAt: 2 }
+    ] as unknown as Game[]
+    const ids = (f: Partial<typeof FILTER_DEFAULT>): string[] => apply([...games], { ...FILTER_DEFAULT, ...f }, () => false).map((g) => g.id)
+    expect(ids({ show: 'notlocal' })).toEqual(['b', 'c'])
+    expect(ids({ sort: 'added' })).toEqual(['b', 'c', 'a'])
+  })
+})

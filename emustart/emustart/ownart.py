@@ -2,7 +2,8 @@
 
 Grafiki domyślne przychodzą z serwera i nie są tu ruszane. Wybór gracza leży osobno: `<dane>/ownart.json`
 ({profil: {"emu:<sid>|<grid/hero/logo>": {choice, at, file}}}), pliki w `media/_moje`, nakładany na listę gier.
-Klucz i rodzaj jak w Lumenie, więc wybory synchronizują się z kontem jako wybory trybu TV (`tv|emu:<sid>|grid`).
+Klucz i rodzaj jak w Lumenie, więc wybory synchronizują się z kontem jako te same grafiki co w Lumenie
+(`desktop|emu:<sid>|grid` — jedna grafika dla każdego widoku; starszy serwer zapisuje ją tak, jak przyszła).
 Źródła: grafiki wgrane na serwer (userart) i sieć kluczami użytkownika z tego urządzenia, nie przez serwer.
 """
 
@@ -161,16 +162,20 @@ def _file_of(cfg: dict, pid: int, c: dict | None) -> str:
 def sync(cfg: dict, pid: int) -> int:
     """Wybory tego urządzenia ↔ konto (nowszy wygrywa). Liczba zmian przyjętych z serwera."""
     mine = dict(_load().get(str(pid)) or {})
-    items = [{"key": f"tv|{k}", "choice": e.get("choice"), "at": e.get("at", 0)} for k, e in mine.items()]
+    items = [{"key": f"desktop|{k}", "choice": e.get("choice"), "at": e.get("at", 0)} for k, e in mine.items()]
     changed = 0
     for key, v in (artsync.sync(cfg, pid, items).get("choices") or {}).items():
         lay, _, rest = key.partition("|")
-        if lay != "tv" or not rest.startswith("emu:") or rest.rpartition("|")[2] not in BACK:
+        # pulpit i TV to ta sama grafika: starszy serwer może mieć oba klucze — nowszy wygrywa (porównanie niżej)
+        if lay not in ("desktop", "tv") or not rest.startswith("emu:") or rest.rpartition("|")[2] not in BACK:
+            continue
+        if lay == "tv" and v.get("choice") is None:          # starszy klient: „TV bez własnej grafiki” — nie usunięcie
             continue
         if float(v.get("at") or 0) <= float((mine.get(rest) or {}).get("at") or 0):
             continue
         try:
             _put(pid, rest, {"choice": v.get("choice"), "at": v.get("at"), "file": _file_of(cfg, pid, v.get("choice"))})
+            mine[rest] = {"at": v.get("at")}            # ten sam wybór pod drugim kluczem — już przyjęty
             changed += 1
         except (syncclient.Offline, syncclient.ConflictError, OSError, ValueError) as ex:
             log.info("wybór grafiki %s: %s", rest, ex)                  # spróbuje przy następnej synchronizacji
