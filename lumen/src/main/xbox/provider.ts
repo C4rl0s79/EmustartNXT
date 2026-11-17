@@ -18,8 +18,15 @@ interface Cache {
 }
 
 const DAY = 24 * 3600_000
-/** opis gry ze strony produktu — odświeżany po 30 dniach */
+/** opis gry ze strony produktu — odświeżany po 30 dniach; produkt, którego katalog nie zna — sprawdzany po 7 dniach */
 const DETAILS_TTL = 30 * DAY
+const UNKNOWN_TTL = 7 * DAY
+
+/** zapisany opis gry Xbox; `d` puste — katalog nie zna produktu */
+interface DetailsEntry {
+  at: number
+  d: XboxDetails | null
+}
 const EMPTY: Cache = { at: 0, gamePass: [], products: {} }
 
 /** Gry z danych: zainstalowane, z konta i z Game Pass — jedna pozycja na StoreId. */
@@ -72,34 +79,36 @@ export class XboxProvider extends EventEmitter {
   private busy: Promise<void> | null = null
   private account: { gamertag: string } | null = null
   private accountError = ''
-  private details: Record<string, { at: number; d: XboxDetails }> | null = null
-  private detailsFile: JsonFile<Record<string, { at: number; d: XboxDetails }>>
+  private details: Record<string, DetailsEntry> | null = null
+  private detailsFile: JsonFile<Record<string, DetailsEntry>>
 
   constructor(
     cacheFile: string,
     private readonly showGamePass: () => boolean = () => true,
-    detailsFile = cacheFile.replace(/\.json$/i, '') + '-details.json'
+    detailsFile = `${cacheFile.replace(/\.json$/iu, '')}-details.json`
   ) {
     super()
     this.file = new JsonFile<Cache>(cacheFile, () => EMPTY, (raw) => clean(raw))
     this.detailsFile = new JsonFile(detailsFile, () => ({}))
   }
 
-  /** opis gry (etap 23a): z dysku, gdy młodszy niż 30 dni; bez sieci — ostatni zapis; null — brak produktu */
-  async productDetails(storeId: string): Promise<XboxDetails | null> {
+  /**
+   * opis gry (etap 23a): z dysku, gdy młodszy niż 30 dni (`force` — z sieci); bez sieci — ostatni zapis;
+   * null — brak produktu w katalogu (zapamiętany na 7 dni — strona gry nie czeka za każdym razem na katalog)
+   */
+  async productDetails(storeId: string, force = false): Promise<XboxDetails | null> {
     const id = storeId.toUpperCase()
     if (!isStoreId(id)) return null
     this.details ??= await this.detailsFile.load()
     const known = this.details[id]
-    if (known && Date.now() - known.at < DETAILS_TTL) return known.d
+    if (!force && known && Date.now() - known.at < (known.d ? DETAILS_TTL : UNKNOWN_TTL)) return known.d
     try {
-      const d = await productDetails(id)
-      if (!d) return known?.d ?? null
-      this.details[id] = { at: Date.now(), d }
+      const fresh = await productDetails(id)
+      this.details[id] = { at: Date.now(), d: fresh }
       await this.detailsFile.save(this.details).catch(() => undefined)
-      return d
-    } catch (e) {
-      log.warn('xbox', `opis ${id}: ${(e as Error).message}`)
+      return fresh
+    } catch (err) {
+      log.warn('xbox', `opis ${id}: ${(err as Error).message}`)
       return known?.d ?? null
     }
   }

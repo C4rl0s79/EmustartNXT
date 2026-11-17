@@ -29,7 +29,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
   // bumped after the LaunchBox name changed: the description is read again
   const [detailsRev, setDetailsRev] = useState(0)
   // a new match in the art window is also the name the description is looked up by (etap 23c)
-  const matchRev = useStore((s) => s.prefs?.art[gameId]?.sgdbGameId ?? 0)
+  const matchRev = useStore((s) => `${s.prefs?.art[gameId]?.sgdbGameId ?? 0}|${s.prefs?.lbTitles?.[gameId] ?? ''}`)
   const isEmu = game?.source === 'emustart'
   const emuSummary = useStore((s) => s.snapshot?.emustart)
   const allJobs = useStore((s) => s.jobs.jobs)
@@ -315,7 +315,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
         {details && !details.ok && game.source !== 'demo' && <p className="details__muted">{details.error}</p>}
         {details?.ok && d?.source === 'launchbox' && (
           <p className="details__muted">
-            Opis: LaunchBox Games DB{d.name && d.name !== game.name ? ` · dopasowano „${d.name}”` : ''}
+            {d.wiki ? 'Szczegóły' : 'Opis'}: LaunchBox Games DB{d.name && d.name !== game.name ? ` · dopasowano „${d.name}”` : ''}
             {d.platform ? ` (${d.platform})` : ''}
           </p>
         )}
@@ -328,8 +328,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
         )}
         {details?.ok && d?.source === 'xbox' && (
           <p className="details__muted">
-            Opis: katalog Microsoft Store{d.launchboxName ? ` · uzupełnione z LaunchBox („${d.launchboxName}”)` : ''}
-            {d.wiki ? '' : '.'}
+            {d.wiki ? 'Szczegóły' : 'Opis'}: katalog Microsoft Store
+            {d.launchboxName ? ` · uzupełnione z LaunchBox („${d.launchboxName}”)` : ''}.
           </p>
         )}
         {details?.ok && d?.wiki && (
