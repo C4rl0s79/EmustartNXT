@@ -249,12 +249,8 @@ function blockName(arr: Game[], prefs: SeriesPrefs | undefined): string {
   return seriesOf(arr[0], prefs)?.name ?? arr[0].name
 }
 
-/**
- * Lista po tytule → gry jednej serii razem, pod nazwą serii (zgłoszenie 2026-11-16: Ultima stała przy „Akalabeth”,
- * Tomb Raider przy „Rise of the Tomb Raider”), w kolejności serii. Gry spoza serii (i serie z jedną grą na tej
- * liście) zostają, gdzie były. Scalanie dwóch posortowanych list — działa dla dziesiątek tysięcy gier.
- */
-export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): Game[] {
+/** bloki serii listy (seria z co najmniej dwiema grami na tej liście) i klucz sortowania, pod którym blok stoi */
+function seriesBlocks(sorted: Game[], prefs: SeriesPrefs | undefined): { blocks: { sk: string; games: Game[] }[]; inBlock: (g: Game) => boolean } {
   const groups = new Map<string, Game[]>()
   const keyByGame = new Map<Game, string>()
   for (const g of sorted) {
@@ -267,9 +263,31 @@ export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): G
   }
   const blocks: { sk: string; games: Game[] }[] = []
   for (const arr of groups.values()) if (arr.length > 1) blocks.push({ sk: sortLike(arr[0], blockName(arr, prefs)), games: arr })
-  if (!blocks.length) return sorted
-  blocks.sort((a, b) => collator.compare(a.sk, b.sk))
   const inBlock = (g: Game): boolean => (groups.get(keyByGame.get(g) ?? '')?.length ?? 0) > 1
+  return { blocks, inBlock }
+}
+
+/** klucze, pod którymi `arrangeSeries` postawił bloki serii — dla listy, którą zwrócił (placedSeriesKeys) */
+const placed = new WeakMap<Game[], Map<string, string>>()
+
+/**
+ * Klucz sortowania, pod którym `arrangeSeries` postawił grę tej listy (gra w bloku serii — klucz nazwy serii, nie
+ * własny tytuł: „Magicland Dizzy” stoi przy D). Dokładnie ten, którego lista użyła — nie liczony drugi raz.
+ * `undefined`: lista nie pochodzi z `arrangeSeries` (np. „Ostatnio grane”). Skok po literach (tv/letters.ts).
+ */
+export function placedSeriesKeys(list: Game[]): Map<string, string> | undefined {
+  return placed.get(list)
+}
+
+/**
+ * Lista po tytule → gry jednej serii razem, pod nazwą serii (zgłoszenie 2026-11-16: Ultima stała przy „Akalabeth”,
+ * Tomb Raider przy „Rise of the Tomb Raider”), w kolejności serii. Gry spoza serii (i serie z jedną grą na tej
+ * liście) zostają, gdzie były. Scalanie dwóch posortowanych list — działa dla dziesiątek tysięcy gier.
+ */
+export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): Game[] {
+  const { blocks, inBlock } = seriesBlocks(sorted, prefs)
+  if (!blocks.length) return remember(sorted, blocks)
+  blocks.sort((a, b) => collator.compare(a.sk, b.sk))
   const out: Game[] = []
   let b = 0
   for (const g of sorted) {
@@ -279,7 +297,15 @@ export function arrangeSeries(sorted: Game[], prefs: SeriesPrefs | undefined): G
     out.push(g)
   }
   while (b < blocks.length) out.push(...orderSeries(blocks[b++].games, prefs))
-  return out
+  return remember(out, blocks)
+}
+
+/** lista z arrangeSeries i klucze, pod którymi postawiła bloki serii (placedSeriesKeys) */
+function remember(list: Game[], blocks: { sk: string; games: Game[] }[]): Game[] {
+  const keys = new Map<string, string>()
+  for (const blk of blocks) for (const game of blk.games) keys.set(game.id, blk.sk)
+  placed.set(list, keys)
+  return list
 }
 
 /** Gry tej samej serii co `game` (ta sama platforma) w całej bibliotece, w kolejności serii (okno „Seria”). */

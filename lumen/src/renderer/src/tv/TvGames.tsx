@@ -15,6 +15,7 @@ import { activeParts, apply, loadFilter, needsFacts, saveFilter, type Filter } f
 import { useLook } from './look'
 import { listTop } from './listWindow'
 import { letterJump } from './letters'
+import { placedSeriesKeys } from '@shared/series'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
 import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails, usePrefetchLogos } from './gameParts'
@@ -145,7 +146,14 @@ export function TvGames({
     setIdx((Math.min(idx, games.length - 1) + d + games.length) % games.length)
     return true
   }
-  const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir)) : true)
+  // litera gry w bloku serii = litera serii, pod którą lista ją postawiła (shared/series.ts placedSeriesKeys — klucze
+  // z tego samego arrangeSeries, które ułożyło grupę); tylko w kolejności po tytule — inne sortowanie rozrzuca serie.
+  // Z pełnej listy grupy, bo filtr zostawia grę na miejscu bloku, nawet gdy z jej serii nic więcej nie zostało
+  const jumpLetter = (dir: 1 | -1): boolean => {
+    if (!sel) return true
+    const keys = filter.sort === 'title' ? placedSeriesKeys(system.games) : undefined
+    return go(letterJump(games, idx, dir, keys && ((g) => keys.get(g.id))))
+  }
   const openPage = (): boolean => {
     if (sel) setPageId(sel.id)
     return true

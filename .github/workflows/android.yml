@@ -3,9 +3,9 @@ name: Android
 on:
   push:
     branches: [main]
-    # tags: ["emustart-v*"]   # wyłączone do przeniesienia sekretów podpisu APK do EmustartNXT
-    #                           (ANDROID_KEYSTORE_B64 / _PASSWORD / ANDROID_KEY_ALIAS) — bez nich APK nie byłoby
-    #                           podpisane kluczem zainstalowanej aplikacji
+    # sekrety podpisu APK (ANDROID_KEYSTORE_B64 / _PASSWORD / ANDROID_KEY_ALIAS) przeniesione do EmustartNXT
+    # 2026-11-17 — ten sam klucz co w C4rl0s79/EmuStart (certyfikat sprawdzony z APK 0.62.0)
+    tags: ["emustart-v*"]
     paths:
       - "emustart/android/**"
       - "emustart/web/**"

@@ -96,8 +96,19 @@ body,
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* the selected platform: a light veil and a thin light line along the bottom (was a full blue fill, too loud
+   next to the logos); the other tabs' logos a little dimmer */
+.deck-tab > * {
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.deck-tab:hover > *,
+.deck-tab.active > * {
+  opacity: 1;
+}
 .deck-tab.active {
-  background: #2f6fed;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.75);
 }
 
 .deck-empty {
