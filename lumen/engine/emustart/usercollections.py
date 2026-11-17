@@ -119,15 +119,19 @@ def _live_sets(account: str) -> list:
     return [e.get("items") or [] for _dev, e in sorted(live, key=lambda x: -_at(x[1]))]
 
 
+def _merge(merged: dict, items: list) -> None:
+    """Dokłada zestaw urządzenia: ta sama nazwa (bez wielkości liter) — jedna kolekcja, gry bez powtórzeń."""
+    for it in items:
+        if isinstance(it, dict) and isinstance(it.get("games"), list) and it.get("name"):
+            c = merged.setdefault(str(it["name"]).lower(), {"name": it["name"], "games": {}})
+            c["games"].update(dict.fromkeys(it["games"]))      # kolejność: pierwsze wystąpienie
+
+
 def get(account: str) -> dict:
-    """Kolekcje konta ze wszystkich jego urządzeń: {"ok", "collections": [{name, games}]} — po nazwie (bez wielkości
-    liter; pisownia z najnowszego zestawu), gry bez powtórzeń."""
+    """Kolekcje konta ze wszystkich jego urządzeń: {"ok", "collections": [{name, games}]} — po nazwie (pisownia
+    z najnowszego zestawu), gry bez powtórzeń."""
     merged: dict = {}
     for items in _live_sets(account):
-        for it in items:
-            if not isinstance(it, dict) or not isinstance(it.get("games"), list) or not it.get("name"):
-                continue
-            c = merged.setdefault(str(it["name"]).lower(), {"name": it["name"], "games": {}})
-            c["games"].update(dict.fromkeys(it["games"]))      # kolejność: pierwsze wystąpienie, bez powtórzeń
+        _merge(merged, items)
     cols = [{"name": c["name"], "games": list(c["games"])} for c in merged.values() if c["games"]]
     return {"ok": True, "collections": sorted(cols, key=lambda c: str(c["name"]).lower())}

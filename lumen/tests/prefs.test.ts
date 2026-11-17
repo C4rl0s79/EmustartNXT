@@ -224,12 +224,12 @@ describe('wybory grafik między urządzeniami', () => {
   it('kolekcje dla APK: tylko własne kategorie z grami EmuStart, grupa wersji — wszystkie wersje', async () => {
     const { emuCollections } = await import('../src/main/art/artSync')
     const cat = (id: string, name: string, kind = 'custom') => ({ id, name, kind, pinned: false, order: 0 })
-    const p = base({
+    const prefsIn = base({
       categories: [cat('c1', ' Kanapa '), cat('c2', 'Tylko Steam'), cat('s1', 'Steam RPG', 'steam'), cat('c3', '  ')],
       gameCategories: { 'emu:ga': ['c1', 's1', 'c3'], 'emugrp:x': ['c1'], 'steam:10': ['c1', 'c2', 's1'] }
     } as never)
     const sids: Record<string, string[]> = { 'emu:ga': ['ga'], 'emugrp:x': ['gb', 'gc'] }
-    expect(emuCollections(p, (gameId) => sids[gameId] ?? [])).toEqual([{ id: 'c1', name: 'Kanapa', games: ['ga', 'gb', 'gc'] }])
+    expect(emuCollections(prefsIn, (gameId) => sids[gameId] ?? [])).toEqual([{ id: 'c1', name: 'Kanapa', games: ['ga', 'gb', 'gc'] }])
     expect(emuCollections(base({}), () => [])).toEqual([])
   })
   it('zmiana i usunięcie wyboru dostają znacznik czasu; stare wybory jako najstarsze', async () => {

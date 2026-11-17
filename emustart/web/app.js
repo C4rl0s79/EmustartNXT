@@ -396,28 +396,28 @@ async function openSystem(keepIdx) {
 
 /** „★ Serie” / „★ Kolekcje”: lista grup (wiersze-foldery), A — gry grupy, B — z powrotem do listy grup. */
 async function openGroup(s, keepIdx) {
-  const g = S.group;
-  if (!s || !s.group || !g) {                // karta grupy zniknęła (np. serwer nie ma już serii)
+  const grp = S.group;
+  if (!s || !s.group || !grp) {                // karta grupy zniknęła (np. serwer nie ma już serii)
     S.group = null;
     show("systems");
     return;
   }
   const prevId = keepIdx && S.games[S.gameIdx] ? S.games[S.gameIdx].id : null;
-  if (g.open < 0) {
-    g.list = await api().groups_list(g.kind);
-    S.games = g.list.map((x, i) => ({ id: -1 - i, folder: true, title: x.name,
+  if (grp.open < 0) {
+    grp.list = await api().groups_list(grp.kind);
+    S.games = grp.list.map((x, i) => ({ id: -1 - i, folder: true, title: x.name,
       tags: `${x.sub} · ${x.count} ${plural(x.count, "gra", "gry", "gier")}` }));
     $("listTitle").textContent = s.display;
   } else {
-    S.games = await api().group_games(g.kind, g.list[g.open]?.key || "");
-    $("listTitle").textContent = `${s.display} › ${g.list[g.open]?.name || ""}`;
+    S.games = await api().group_games(grp.kind, grp.list[grp.open]?.key || "");
+    $("listTitle").textContent = `${s.display} › ${grp.list[grp.open]?.name || ""}`;
   }
   S.allGames = S.games;
   const i = prevId !== null ? S.games.findIndex((x) => x.id === prevId) : -1;
-  S.gameIdx = i >= 0 ? i : g.open < 0 ? Math.min(g.listIdx, Math.max(0, S.games.length - 1)) : 0;
+  S.gameIdx = i >= 0 ? i : grp.open < 0 ? Math.min(grp.listIdx, Math.max(0, S.games.length - 1)) : 0;
   $("listLogo").classList.add("hidden");
   const n = S.games.length;
-  $("listCount").textContent = `${n} ${g.open < 0 ? groupWord(g.kind, n) : plural(n, "gra", "gry", "gier")}`;
+  $("listCount").textContent = `${n} ${grp.open < 0 ? groupWord(grp.kind, n) : plural(n, "gra", "gry", "gier")}`;
   show("games");
 }
 function ignoreHold() { /* karta serii / kolekcji — bez opcji systemu */ }
