@@ -6,7 +6,7 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
-### Plan: przebudowa trybu TV Lumena — przejrzystość (zaakceptowana przez użytkownika 2026-11-16)
+### Plan: przebudowa trybu TV Lumena — przejrzystość (zaakceptowana przez użytkownika 2026-11-16) — **wydane: Lumen 1.0.71**
 
 Propozycja z 2026-11-16 zaakceptowana w całości. Decyzje użytkownika: A na liście otwiera stronę gry („dobra zmiana”);
 lista tekstowa EmuStart zostaje; Deck zostaje w Ustawieniach TV; rzeczy przeniesione do „Zaawansowane” muszą być
