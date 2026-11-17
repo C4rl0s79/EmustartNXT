@@ -15,7 +15,7 @@ sources:
     resource: repo://emustart/emustart/remote.py
   - id: openwiki-source-a124d623671267edfd450054
     resource: repo://emustart/emustart/server.py
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # API /v1: urządzenia, konta, zapisy i grafiki

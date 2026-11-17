@@ -15,7 +15,7 @@ sources:
     resource: repo://lumen/src/main/xbox/installed.ts
   - id: openwiki-source-34523804e7fa18e29878403b
     resource: repo://lumen/src/main/xbox/provider.ts
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Xbox i Microsoft Store w Lumenie

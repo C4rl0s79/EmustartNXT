@@ -5,7 +5,7 @@ description: "Punkt wejścia do wiki EmustartNXT: czym jest system EmuStart + Lu
 tags: [quickstart, overview, navigation, emustart, lumen]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T00:45:56.894Z
 sources:
   - id: openwiki-source-405b8b710d216259d5c49bbb
     resource: repo://.github/workflows/lumen.yml
@@ -15,7 +15,7 @@ sources:
     resource: repo://lumen/README.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Szybki start — mapa wiki EmustartNXT
@@ -41,7 +41,8 @@ Kierunek: klient EmuStart przechodzi do Lumena, EmuStart zostaje serwerem.
 
 Szczegóły i wydania: [Budowa, testy i wydania](operacje/budowa-testy-i-wydania.md). Oba programy wydaje
 GitHub Actions: EmuStart przy tagu `emustart-v…` (`.github/workflows/windows.yml`), Lumen przy tagu
-`lumen-v…` (`.github/workflows/lumen.yml`).
+`lumen-v…` (`.github/workflows/lumen.yml`). Po każdym wydaniu odświeża się tę wiki i publikuje wiki GitHub — procedura w `AGENTS.md`
+(„Dokumentacja po wydaniu”).
 
 ## Która strona odpowiada na pytanie
 

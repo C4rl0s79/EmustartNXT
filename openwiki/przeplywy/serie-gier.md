@@ -13,7 +13,7 @@ sources:
     resource: repo://lumen/src/main/series.ts
   - id: openwiki-source-f891089b004ed1194d67eb3d
     resource: repo://lumen/src/shared/series.ts
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Serie gier (IGDB)

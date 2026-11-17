@@ -5,7 +5,7 @@ description: "Mapa całego systemu EmustartNXT: EmuStart Server, klient EmuStart
 tags: [architecture, overview, emustart, lumen, android, server]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T00:45:56.894Z
 sources:
   - id: openwiki-source-39316019f7b366045ad545d4
     resource: repo://emustart/emustart/remote.py
@@ -23,7 +23,7 @@ sources:
     resource: repo://README.md
   - id: openwiki-source-ee4b9047b69765a31df0868a
     resource: repo://scripts/publish_wiki.py
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Przegląd systemu: serwer, klienci i Lumen

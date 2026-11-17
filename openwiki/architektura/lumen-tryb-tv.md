@@ -5,10 +5,12 @@ description: "Układ TV Lumena: ekrany (systemy, podgrupy, lista gier, strona gr
 tags: [lumen, tv-mode, react, navigation, settings, themes]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T00:45:56.894Z
 sources:
   - id: openwiki-source-e868c5f48de252372a102b58
     resource: repo://lumen/src/main/editMenu.ts
+  - id: openwiki-source-f1d754446827eee77cdff1aa
+    resource: repo://lumen/src/renderer/src/lib/primary.ts
   - id: openwiki-source-21c4358c86ff6f976f631820
     resource: repo://lumen/src/renderer/src/screens/Settings.tsx
   - id: openwiki-source-e080b6221e297cf7c50b630e
@@ -19,7 +21,7 @@ sources:
     resource: repo://lumen/src/renderer/src/tv/TvGamePage.tsx
   - id: openwiki-source-7ebb2eee42acf299ab5362e6
     resource: repo://lumen/src/renderer/src/tv/TvGames.tsx
-generated: { by: "claude-code", at: "2026-11-16T23:16:42.429Z" }
+generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
 ---
 
 # Lumen — tryb TV i ustawienia
@@ -55,12 +57,18 @@ Sterowanie listy: A — strona gry, X — „Graj” od razu (`usePrimaryAction`
 pulpitu), Y — filtry i sortowanie (`TvFilters`, zapamiętane dla grupy), L3 — szukaj, R3 — ulubiona, LB / RB —
 o stronę, LT / RT — skok po literach (`letters.ts`, według klucza sortowania), Start — menu.
 
+Główną akcję gry (X na liście, „Graj” na stronie) wykonuje wspólne `runPrimary` (`lib/primary.ts`): akcja
+niedostępna pokazuje powód zamiast działać. „Graj od początku” to `launchFromStart` — to samo w oknie „Opcje gry”.
+
 Wydajność (decyzje z sesji z zacięciami): tło i logo gry wczytują się dopiero ~350 ms po zatrzymaniu wyboru,
 wstęga używa małych kopii okładek, a animowane plakaty stają tylko w trakcie przewijania.
 
 ### Strona gry
 
-`TvGamePage.tsx` otwiera się nad listą (lista zostaje zamontowana, B wraca na tę samą grę). Ma tło gry, logo,
+`TvGamePage.tsx` otwiera się nad listą (lista zostaje zamontowana, B wraca na tę samą grę). Strona trzyma grę
+po identyfikatorze, nie po pozycji na liście: zmiana filtra albo kolejności pod otwartą stroną (np. zdjęcie gry
+z Ulubionych, uruchomienie przestawiające „ostatnio grane”) nie podmienia gry, a gra, która wypadła z grupy, jest
+brana z całej biblioteki. Strona leży nad wstęgą (`z-index` strony 30, wstęga z `isolation: isolate`). Ma tło gry, logo,
 rząd akcji — **Graj** (fokus na start, więc A, A nadal uruchamia grę), **Graj od początku** (gry EmuStart,
 `emustart.launch` z `__od_poczatku__`), **Opcje gry…**, **Ulubiona**, a gdy gra je ma, **Dodatki** (GOG) i
 **Wersje** (regionalne) — oraz opis i fakty w trzech kartach: „Na tym komputerze”, „Twoja gra”, „O grze”
@@ -89,7 +97,9 @@ Enter — A, Esc — B, F — X, S — Y, Z — L3, U — R3, Q / E — LB / RB,
 
 `screens/Settings.tsx` ma siedem działów (`PAGES`): Wygląd, Biblioteka, Konta i sklepy, Pady i sterowanie,
 Zachowanie i dane (z Deckiem), Aktualizacja i Zaawansowane. Dawne identyfikatory sekcji (np. `deck` z menu
-Decka) prowadzą do nowych działów przez `PAGE_OF`. **Zaawansowane** zbiera pola, w które wpisuje się klucze
+Decka) prowadzą do nowych działów przez `PAGE_OF`, a fokus trafia od razu na tę sekcję (`data-section`). Każde
+przejście między działami (`goToPage`, np. „Przejdź do Zaawansowane”) ustawia fokus w nowym dziale — przycisk,
+który był wybrany, znika razem z poprzednim działem, a pad musi mieć gdzie wrócić. **Zaawansowane** zbiera pola, w które wpisuje się klucze
 i identyfikatory (Steam Web API i inne SteamID64, SteamGridDB, IGDB, TheGamesDB, przenoszenie kluczy, własna
 aplikacja Azure dla Xbox); na górze jest opis, co i dlaczego przeniesiono, a w dawnych miejscach odnośnik
 „przeniesione do Zaawansowane” (`AdvancedNote`). Przy każdym kluczu jest zwinięty poradnik
