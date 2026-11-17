@@ -380,7 +380,7 @@ export interface GameFacts {
 export interface GameDetails {
   appId: number
   fetchedAt: number
-  source: 'steamStore' | 'launchbox' | 'emustart' | 'gog'
+  source: 'steamStore' | 'launchbox' | 'emustart' | 'gog' | 'xbox' | 'wikipedia'
   name?: string
   shortDescription?: string
   descriptionHtml?: string
@@ -412,8 +412,10 @@ export interface GameDetails {
   playerReviews?: number
   platform?: string
   launchboxId?: number
-  /** the LaunchBox entry the description was filled in from (GOG, shortcuts) */
+  /** the LaunchBox entry the description was filled in from (GOG, shortcuts, Xbox…) */
   launchboxName?: string
+  /** the description is a Wikipedia article's summary (when no other source had one) */
+  wiki?: { lang: 'pl' | 'en'; title: string; url?: string }
   /** how many times the game was started (EmuStart) */
   plays?: number
   /** Steam store data format (3: with Metacritic, reviews, co-op, age rating) — older cache is refreshed */

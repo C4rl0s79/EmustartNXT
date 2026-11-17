@@ -6,6 +6,25 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: opisy i szczegóły dla każdej gry (prośba użytkownika 2026-11-17) — **wydane: Lumen 1.0.77**
+
+Zgłoszenie: gry Xbox nie miały opisu ani szczegółów, a strona gry pokazywała „Brak danych dla pozycji
+demonstracyjnej”. Przyczyna: przy dodaniu gier Xbox (etap 19) nie powstała dla nich obsługa opisów; `gameDetails`
+traktował każdą nieznaną grę jak grę Steam, a bez numeru Steam — jak pozycję demonstracyjną. Ustalenie użytkownika:
+każda gra ma mieć opis i szczegóły, chyba że naprawdę nie ma ich w internecie; brakujące dane z LaunchBox albo
+Wikipedii; nazwa wybrana w oknie grafik („Dopasowanie w SteamGridDB”) ma od razu służyć też do szukania opisu.
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 23a | **Gry Xbox:** opis, producent, wydawca, gatunki i data premiery z katalogu Microsoft (to samo `displaycatalog`, polski, potem angielski; pobierane przy otwarciu gry, zapis na dysku na 30 dni); brakujące pola z LaunchBox (Windows, potem MS-DOS), opis — gdy go brak — z Wikipedii | zrobione — `detailsOf` / `productDetails` (`lumen/src/main/xbox/catalog.ts`), `XboxProvider.productDetails` (zapis `xbox-catalog-details.json`), `xboxDetails` w `main/index.ts`; linia „Opis: katalog Microsoft Store” na stronie gry. Próba na żywo: FINAL FANTASY V (9N9C8SV0S16W) — opis, krótki opis, wydawca, gatunek, data 2024-09-26 (katalog nie ma polskiego tekstu tej gry — opis po angielsku) |
+| 23b | **Wikipedia jako ostatnie źródło dla każdej gry** (Steam, GOG, skróty, Xbox, EmuStart): gdy po dotychczasowych źródłach i LaunchBox nadal nie ma opisu, streszczenie artykułu z Wikipedii (pl, potem en; dopasowanie tytułu jak na serwerze EmuStart — `metadata.from_wikipedia`); wynik i brak wyniku zapisywane na dysku (brak — ponowna próba po 7 dniach). Gra Steam, której sklep nie zwraca (usunięta, brak sieci bez pamięci podręcznej) — LaunchBox, potem Wikipedia. Komunikat o „pozycji demonstracyjnej” tylko dla pozycji `demo:` | zrobione — `lumen/src/main/details/wikipedia.ts` (zapis `cache/meta/wikipedia.json`), `ownDetails` + `withWikipedia` w `main/index.ts`. Dopasowanie ostrzejsze niż na serwerze: te same numery części („Final Fantasy” ≠ „Final Fantasy V”). Wikimedia odmawia (HTTP 429) przy serii zapytań — sprawdzone na żywo — więc jedno zapytanie naraz (najnowsza gra pierwsza), po odmowie przerwa min. 2 min bez zapisu „brak artykułu”. Próba na żywo: Halo Infinite, Grounded, FINAL FANTASY V — pl; Forza Horizon 5 — en |
+| 23c | **Nazwa z okna grafik szuka też opisu:** nazwa gry wybrana w „Dopasowanie w SteamGridDB” (gdy nie ma nazwy w LaunchBox od administratora) jest nazwą do szukania opisu i faktów w LaunchBox i Wikipedii; po wyborze strona gry (pulpit i TV) od razu pobiera opis na nowo | zrobione — `detailsTitle` (`main/index.ts`; wybór czyści też fakty LaunchBox gry), `useDetails` (`tv/gameParts.tsx`, klucz z `artRev`), `screens/Details.tsx` (odświeżenie po zmianie dopasowania). Testy Lumena 448 (nowe w `tests/details.test.ts`), typy. **Niesprawdzone na żywo w działającym Lumenie** (zbudowana aplikacja, okno grafik → dopasowanie → strona gry) |
+
+**Czego NIE dotyka.** Kolejności i treści opisów, które już są (sklep Steam, GOG Manager, serwer EmuStart); grafik
+i ich kolejności źródeł (nazwa z dopasowania SteamGridDB działała dla grafik jak dotąd); przycisku „Nazwa w LaunchBox”
+(dalej tylko GOG i skróty — nazwy trzyma serwer); wyglądu strony gry poza linią „Opis: …” ze źródłem; serwera
+EmuStart.
+
 ### Plan: jedne grafiki i filtry dla pulpitu i trybu TV (prośba użytkownika 2026-11-17) — **wydane: EmuStart 0.68.0, Lumen 1.0.76**
 
 Zgłoszenie: Deck (jak pulpit) i tryb TV pokazywały inne plakaty gier FBA niż sobie nawzajem. Przyczyna: od Lumena
