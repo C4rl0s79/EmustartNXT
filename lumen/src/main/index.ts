@@ -1161,12 +1161,14 @@ async function syncArt(): Promise<void> {
 async function syncCollections(): Promise<void> {
   const sidsOf = (gameId: string): string[] =>
     isEmuGameId(gameId)
-      ? [emu.row(gameId)?.sid, ...emu.versionsOf(gameId).map((v) => emu.row(v.id)?.sid)].filter((x): x is string => !!x)
+      ? [emu.row(gameId)?.sid, ...emu.versionsOf(gameId).map((version) => emu.row(version.id)?.sid)].filter(
+          (sid): sid is string => Boolean(sid)
+        )
       : []
-  const r = await engine
+  const reply = await engine
     .call<{ ok?: boolean; reason?: string }>('collections_sync', [emuCollections(prefs.get(), sidsOf)], 60_000)
-    .catch((e: Error) => ({ ok: false, reason: e.message }))
-  if (r.ok === false) log.info('art', `kolekcje dla APK: ${r.reason ?? 'nieudane'}`)
+    .catch((err: Error) => ({ ok: false, reason: err.message }))
+  if (reply.ok === false) log.info('art', `kolekcje dla APK: ${reply.reason ?? 'nieudane'}`)
 }
 
 async function fileResponse(file: string): Promise<Response> {

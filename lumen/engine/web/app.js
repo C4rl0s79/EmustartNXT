@@ -365,7 +365,7 @@ function systemsInput(a) {
   else if (a === "right" && n) { S.sysIdx = (S.sysIdx + 1) % n; renderSystems(); }
   else if (a === "a" && n) {
     // krótko = wejdź do systemu, przytrzymane = opcje systemu (logo, nazwa, emulator…)
-    holdA(S.systems[S.sysIdx]?.group ? () => {} : openSystemOptions);
+    holdA(S.systems[S.sysIdx]?.group ? ignoreHold : openSystemOptions);
   }
   else if (a === "start") openMenu();
 }
@@ -376,7 +376,8 @@ async function openSystem(keepIdx) {
   if (!s) return;
   if (s.group) {
     if (!keepIdx || !S.group || S.group.kind !== s.group) S.group = { kind: s.group, open: -1, listIdx: 0 };
-    return openGroup(s, keepIdx);
+    await openGroup(s, keepIdx);
+    return;
   }
   S.group = null;
   const prevId = keepIdx && S.games[S.gameIdx] ? S.games[S.gameIdx].id : null;
@@ -396,6 +397,11 @@ async function openSystem(keepIdx) {
 /** „★ Serie” / „★ Kolekcje”: lista grup (wiersze-foldery), A — gry grupy, B — z powrotem do listy grup. */
 async function openGroup(s, keepIdx) {
   const g = S.group;
+  if (!s || !s.group || !g) {                // karta grupy zniknęła (np. serwer nie ma już serii)
+    S.group = null;
+    show("systems");
+    return;
+  }
   const prevId = keepIdx && S.games[S.gameIdx] ? S.games[S.gameIdx].id : null;
   if (g.open < 0) {
     g.list = await api().groups_list(g.kind);
@@ -403,7 +409,7 @@ async function openGroup(s, keepIdx) {
       tags: `${x.sub} · ${x.count} ${plural(x.count, "gra", "gry", "gier")}` }));
     $("listTitle").textContent = s.display;
   } else {
-    S.games = await api().group_games(g.kind, g.open);
+    S.games = await api().group_games(g.kind, g.list[g.open]?.key || "");
     $("listTitle").textContent = `${s.display} › ${g.list[g.open]?.name || ""}`;
   }
   S.allGames = S.games;
@@ -414,6 +420,7 @@ async function openGroup(s, keepIdx) {
   $("listCount").textContent = `${n} ${g.open < 0 ? groupWord(g.kind, n) : plural(n, "gra", "gry", "gier")}`;
   show("games");
 }
+function ignoreHold() { /* karta serii / kolekcji — bez opcji systemu */ }
 function enterGroup(i) {
   S.group.listIdx = i;
   S.group.open = i;
@@ -517,11 +524,18 @@ function gamesInput(a) {
     holdA(openGameOptions);
     return;
   }
-  else if (a === "y" && n) return S.games[S.gameIdx].folder ? undefined : togglePin();
-  else if (a === "x") return S.group ? undefined : openFilter();
+  else if (a === "y" && n) {
+    if (!S.games[S.gameIdx].folder) togglePin();
+    return;
+  }
+  else if (a === "x") {
+    if (!S.group) openFilter();
+    return;
+  }
   else if (a === "b") {
-    if (S.group && S.group.open >= 0) { S.group.open = -1; return openGroup(S.systems[S.sysIdx], false); }
-    return show("systems");
+    if (S.group && S.group.open >= 0) { S.group.open = -1; openGroup(S.systems[S.sysIdx], false); }
+    else show("systems");
+    return;
   }
   else if (a === "start") return openMenu();
   else return;
@@ -698,7 +712,10 @@ async function togglePin() {
 let launchPoll, lastNotice = "";
 async function launch(state = "", takeover = false, configure = false) {
   const g = S.games[S.gameIdx];
-  if (g && g.folder) return enterGroup(S.gameIdx);
+  if (g && g.folder) {
+    enterGroup(S.gameIdx);
+    return;
+  }
   if (S.modal === "launch") return;
   // okno od razu po A — sprawdzenie konta, BIOS-y i lista plików z serwera trwają chwilę,
   // a wcześniej przez ten czas nic się nie działo
@@ -1385,6 +1402,11 @@ async function refreshState() {
   S.platform = st.platform || "windows";
   const keep = S.systems[S.sysIdx]?.es;
   S.systems = st.systems.concat(groupCards(st));
+  // karta grupy, w której jest gracz, zniknęła — z powrotem na ekran systemów (nie na inny system pod tym indeksem)
+  if (S.group && !S.systems.some((s) => s.group === S.group.kind)) {
+    S.group = null;
+    if (S.screen === "games") show("systems");
+  }
   const i = S.systems.findIndex((s) => s.es === keep);
   S.sysIdx = i >= 0 ? i : Math.min(S.sysIdx, Math.max(0, S.systems.length - 1));
   const net = $("netInfo");

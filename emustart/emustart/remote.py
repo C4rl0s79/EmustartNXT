@@ -1155,7 +1155,12 @@ def collections_call(handler, method: str) -> None:
     if not authorized(handler):
         return _json(handler, {"error": "brak lub zły klucz serwera"}, 401)
     _seen(handler)
-    n = int(handler.headers.get("Content-Length") or 0) if method == "POST" else 0
+    try:
+        n = int(handler.headers.get("Content-Length") or 0) if method == "POST" else 0
+    except ValueError:
+        n = -1
+    if n < 0:
+        return _json(handler, {"ok": False, "reason": "zła długość treści"}, 400)
     if n > 8 << 20:
         return _json(handler, {"ok": False, "reason": "za duże zapytanie"}, 413)
     try:
@@ -1166,7 +1171,7 @@ def collections_call(handler, method: str) -> None:
         return _json(handler, usercollections.sync(acc, dev, (d or {}).get("items") if isinstance(d, dict) else None))
     except savesync.Denied as ex:
         return _json(handler, {"ok": False, "reason": str(ex)}, 403)
-    except (ValueError, usercollections.CollectionsError) as ex:
+    except ValueError as ex:                          # także usercollections.CollectionsError, zły JSON
         return _json(handler, {"ok": False, "reason": str(ex)}, 400)
 
 

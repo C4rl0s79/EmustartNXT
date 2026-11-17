@@ -229,7 +229,7 @@ describe('wybory grafik między urządzeniami', () => {
       gameCategories: { 'emu:ga': ['c1', 's1', 'c3'], 'emugrp:x': ['c1'], 'steam:10': ['c1', 'c2', 's1'] }
     } as never)
     const sids: Record<string, string[]> = { 'emu:ga': ['ga'], 'emugrp:x': ['gb', 'gc'] }
-    expect(emuCollections(p, (id) => sids[id] ?? [])).toEqual([{ id: 'c1', name: 'Kanapa', games: ['ga', 'gb', 'gc'] }])
+    expect(emuCollections(p, (gameId) => sids[gameId] ?? [])).toEqual([{ id: 'c1', name: 'Kanapa', games: ['ga', 'gb', 'gc'] }])
     expect(emuCollections(base({}), () => [])).toEqual([])
   })
   it('zmiana i usunięcie wyboru dostają znacznik czasu; stare wybory jako najstarsze', async () => {

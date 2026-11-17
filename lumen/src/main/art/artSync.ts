@@ -102,16 +102,16 @@ export function emuCollections(p: Prefs, sidsOf: (gameId: string) => string[]): 
   const games = new Map<string, Set<string>>()
   for (const [gameId, cats] of Object.entries(p.gameCategories ?? {})) {
     const sids = sidsOf(gameId)
-    if (!sids.length) continue
-    for (const c of cats) {
-      const set = games.get(c) ?? new Set<string>()
-      sids.forEach((s) => set.add(s))
-      games.set(c, set)
+    for (const cat of sids.length ? cats : []) {
+      const set = games.get(cat) ?? new Set<string>()
+      sids.forEach((sid) => set.add(sid))
+      games.set(cat, set)
     }
   }
-  return p.categories
-    .filter((c) => c.kind === 'custom' && c.name.trim() && games.get(c.id)?.size)
-    .map((c) => ({ id: c.id, name: c.name.trim(), games: [...games.get(c.id)!] }))
+  return p.categories.flatMap((cat) => {
+    const ids = games.get(cat.id)
+    return cat.kind === 'custom' && cat.name.trim() && ids?.size ? [{ id: cat.id, name: cat.name.trim(), games: [...ids] }] : []
+  })
 }
 
 /** `file` choices waiting for upload: [layout, game, kind, path] */

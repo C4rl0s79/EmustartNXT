@@ -535,11 +535,13 @@ class Api:
     def art_user_sync(self, items: list, names: dict | None = None) -> dict:
         return self._art_user("sync", items if isinstance(items, list) else [], names if isinstance(names, dict) else None)
 
-    def groups_list(self, kind: str) -> list:
+    @staticmethod
+    def groups_list(kind: str) -> list:
         """„★ Serie” / „★ Kolekcje” są tylko w APK (Bridge.kt); klient Windows ich nie pokazuje (lista tekstowa)."""
         return []
 
-    def group_games(self, kind: str, index: int) -> list:
+    @staticmethod
+    def group_games(kind: str, key: str) -> list:
         return []
 
     def collections_sync(self, items: list) -> dict:

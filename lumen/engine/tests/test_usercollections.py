@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 import keyhelp
 import pytest
 
@@ -55,6 +53,25 @@ def test_lumen_sends_apk_reads_per_device_sets_merge_by_name(data, srv, monkeypa
     # usunięta na PC — znika
     _req(srv, "POST", "/v1/collections", pc, body={"items": [{"id": "cat2", "name": "RPG", "games": [ZELDA]}]})
     assert [g["name"] for g in _req(srv, "GET", "/v1/collections", phone)[1]["collections"]] == ["RPG"]
+    # profil innego konta na tym samym PC (token profilu) — kolekcje tego profilu też się liczą
+    import urllib.parse
+    from emustart import accounts, remote
+    monkeypatch.setattr("emustart.config.save", lambda c: None)
+    assert not accounts.set_password("Ola", "Haslo-Testowe-123!")
+    tok = accounts.token(remote._secret(), "Ola")
+    st, c = _req(srv, "POST", "/v1/collections", pc, body={"items": [{"id": "o", "name": "Ola RPG", "games": [ZELDA]}]},
+                 headers={"X-EmuStart-Account": urllib.parse.quote("Ola"), "X-Profile-Token": tok})
+    assert st == 200 and [g["name"] for g in c["collections"]] == ["Ola RPG"], c
+    assert [g["name"] for g in usercollections.get("Ola")["collections"]] == ["Ola RPG"]
+    # zła długość treści — 400, nie zawieszony wątek
+    import http.client
+    host, port, _nas = srv
+    con = http.client.HTTPConnection(host, port, timeout=5)
+    con.putrequest("POST", "/v1/collections")
+    con.putheader("Authorization", f"Bearer {pc}")
+    con.putheader("Content-Length", "-1")
+    con.endheaders()
+    assert con.getresponse().status == 400
     # odwołane urządzenie się nie liczy
     _req(srv, "POST", "/v1/collections", tv, body={"items": [{"id": "t", "name": "Z TV", "games": [SONIC]}]})
     from emustart import devices

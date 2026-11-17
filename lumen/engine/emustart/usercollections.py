@@ -73,9 +73,13 @@ def clean(items) -> list:
     return out
 
 
-def _device_of_account(dev: str, account: str) -> bool:
-    from emustart import userart
-    return userart._device_of_account(dev, account)   # noqa: SLF001 — ta sama reguła co nazwy kolekcji
+def _device_active(dev: str) -> bool:
+    """Urządzenie istnieje i nie jest odwołane. Nie sprawdzamy, czy należy do konta: Lumen może wysłać kolekcje
+    profilu innego niż konto urządzenia (token profilu — remote._sync_identity), a takie zestawy też się liczą."""
+    if dev == "serwer":                                 # wspólny klucz serwera (userart.SHARED_KEY_DEVICE)
+        return True
+    from emustart import devices
+    return bool(devices.account_raw(dev))
 
 
 def sync(account: str, device: str, items) -> dict:
@@ -87,33 +91,43 @@ def sync(account: str, device: str, items) -> dict:
         by_dev = a.get("by_device")
         if not isinstance(by_dev, dict):
             by_dev = a["by_device"] = {}
-        changed = False
-        for dev in [k for k in by_dev if not _device_of_account(k, account)]:
-            del by_dev[dev]                     # urządzenie odwołane / przeniesione — plik nie rośnie
-            changed = True
+        stale = [k for k in by_dev if not _device_active(k)]   # odwołane — plik nie rośnie
+        for dev in stale:
+            del by_dev[dev]
         cur, now = by_dev.get(str(device)), time.time()
         # znacznik czasu najwyżej raz na dobę: synchronizacja co 10 minut nie zapisuje pliku bez zmian
-        if not isinstance(cur, dict) or cur.get("items") != items or now - float(cur.get("at") or 0) > 86400:
+        fresh = isinstance(cur, dict) and cur.get("items") == items and now - _at(cur) <= 86400
+        if not fresh:
             by_dev[str(device)] = {"items": items, "at": now}
-            changed = True
-        if changed:
+        if stale or not fresh:
             _save(d)
     return get(account)
 
 
+def _at(entry) -> float:
+    try:
+        return float(entry.get("at") or 0) if isinstance(entry, dict) else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _live_sets(account: str) -> list:
+    """Zestawy urządzeń konta, najnowszy pierwszy — bez odwołanych i nieaktywnych od 90 dni."""
+    by_dev = (_load()["accounts"].get(str(account).lower()) or {}).get("by_device") or {}
+    old = time.time() - MAX_AGE
+    live = [(dev, e) for dev, e in by_dev.items() if _at(e) >= old and _device_active(dev)]
+    return [e.get("items") or [] for _dev, e in sorted(live, key=lambda x: -_at(x[1]))]
+
+
 def get(account: str) -> dict:
     """Kolekcje konta ze wszystkich jego urządzeń: {"ok", "collections": [{name, games}]} — po nazwie (bez wielkości
-    liter), gry bez powtórzeń; zestawy urządzeń odwołanych albo nieaktywnych od 90 dni się nie liczą."""
-    a = (_load()["accounts"].get(str(account).lower()) or {})
-    old = time.time() - MAX_AGE
+    liter; pisownia z najnowszego zestawu), gry bez powtórzeń."""
     merged: dict = {}
-    for dev, e in sorted((a.get("by_device") or {}).items(), key=lambda x: -float((x[1] or {}).get("at") or 0)):
-        if not isinstance(e, dict) or float(e.get("at") or 0) < old or not _device_of_account(dev, account):
-            continue
-        for it in e.get("items") or []:
-            if not isinstance(it, dict) or not isinstance(it.get("games"), list):
+    for items in _live_sets(account):
+        for it in items:
+            if not isinstance(it, dict) or not isinstance(it.get("games"), list) or not it.get("name"):
                 continue
-            c = merged.setdefault(str(it.get("name") or "").lower(), {"name": it.get("name"), "games": {}})
+            c = merged.setdefault(str(it["name"]).lower(), {"name": it["name"], "games": {}})
             c["games"].update(dict.fromkeys(it["games"]))      # kolejność: pierwsze wystąpienie, bez powtórzeń
-    cols = [{"name": c["name"], "games": list(c["games"])} for k, c in merged.items() if k and c["games"]]
+    cols = [{"name": c["name"], "games": list(c["games"])} for c in merged.values() if c["games"]]
     return {"ok": True, "collections": sorted(cols, key=lambda c: str(c["name"]).lower())}
