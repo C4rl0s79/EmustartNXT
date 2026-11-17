@@ -11,19 +11,26 @@ import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs
 // and the facts about it, grouped the same way everywhere.
 
 const details: Record<string, DetailsResult> = {}
+const hasText = (r: DetailsResult): boolean =>
+  r.ok && Boolean(r.details.descriptionText?.trim() || r.details.descriptionHtml?.trim() || r.details.shortDescription?.trim())
 
 export function useDetails(game: Game | undefined): DetailsResult | null {
   const [d, setD] = useState<DetailsResult | null>(null)
+  // the name the description is looked up by: the art window's match or the administrator's LaunchBox name (etap 23c)
+  const name = useStore((s) => (game ? `${s.prefs?.art[game.id]?.sgdbGameId ?? 0}|${s.prefs?.lbTitles?.[game.id] ?? ''}` : ''))
   useEffect(() => {
     if (!game) return setD(null)
-    if (details[game.id]) return setD(details[game.id])
+    const key = `${game.id}|${name}`
+    if (details[key]) return setD(details[key])
     setD(null)
     let alive = true
     const t = setTimeout(() => {
       void api()
         .game.details(game.id)
         .then((r) => {
-          details[game.id] = r
+          // only a description is kept for the session: an error or a page without one (offline, the engine
+          // starting, Wikipedia pausing) is asked again the next time the game is selected
+          if (r.ok && hasText(r)) details[key] = r
           if (alive) setD(r)
         })
         .catch(() => undefined)
@@ -32,7 +39,7 @@ export function useDetails(game: Game | undefined): DetailsResult | null {
       alive = false
       clearTimeout(t)
     }
-  }, [game])
+  }, [game, name])
   return d
 }
 
