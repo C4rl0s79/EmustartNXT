@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c32b9732d9289b03af9cebec157fced535e1edec27cce5f710b17b82be50bb68",
+  "pageVersion": "sha256:6af46e4eb6147863abc84635b7005f7eb49870b3868a47cfb9968a32d044ade9",
   "claims": [
     {
       "id": "claim_33f79c16583346fab72c66b622aa1bd0",
@@ -21,7 +21,7 @@
       "statement": "Wywołania POST /api/<metoda> są przyjmowane tylko z tego komputera z poprawnym nagłówkiem Host i nagłówkiem X-EmuStart: 1; nazwa metody wskazuje metodę obiektu Api, a argumenty to lista JSON.",
       "evidence": [
         {
-          "resource": "repo://emustart/emustart/server.py#L166-L186",
+          "resource": "repo://emustart/emustart/server.py#L169-L189",
           "version": "repo-lines-v1:sha256:41c43031e09052b6de64c73f56f5eef7ef6f70d7a7a3d7f01fd1dcff8b748a59:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YTBkMThjZDRjZTcwYzY3YzNhNjMyZGQ2ZTEwZGM1MDc0MzliZmZhN2IwMWQyNGVjM2E5OTkyNDU5YmE0NzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OWU2ZmIxYmUyNWM4ZTZjNjY1NmQ1MWZkYWE5NDI0YWQzNmE4ODFkOTRlODAxOWI2M2U4M2UyZGU2MTdmNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhZGFhN2Q0ZjZiNTJkYTlhZjY3NDc4N2ZiZDM4MDQzM2FjMzMwYTRmNzIzMGUxMDM0N2MyMjJmYTlmNjJlN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyZDY1OWNmZjk3YWI2MGM3MGNlYTJmZWYwZmE4ZWY4YzJjZGM0MzliMmMyNDk1YmY3ZTIzODRmNzc2MWEyNDgifQ"
         },
         {
@@ -87,7 +87,7 @@
           "version": "repo-lines-v1:sha256:bb914d7391347dfafeddd89603e8269be888fd613c7131f35be6475452b57f24:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI5MTRkNzM5MTM0N2RmYWZlZGRkODk2MDNlODI2OWJlODg4ZmQ2MTNjNzEzMWYzNWJlNjQ3NTQ1MmI1N2YyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI5MTRkNzM5MTM0N2RmYWZlZGRkODk2MDNlODI2OWJlODg4ZmQ2MTNjNzEzMWYzNWJlNjQ3NTQ1MmI1N2YyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzM4ZTM0NzYzYWExNmNhODk5MjhjM2YxNWQ0MzRmMWNiZDY1YThhMjczN2FlMTUxYjgzY2JmMzdkNTNjY2FhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTNkNmIxMmVjODkxZDEzNjc1ZmI0ZmE5ZTk5ZmYyNjljMGI3NWQwNjI5N2I4MDcyOGE3MmI1YmY4YWRkMmIxYSJ9"
         },
         {
-          "resource": "repo://emustart/web/app.js#L1486-L1486",
+          "resource": "repo://emustart/web/app.js#L1565-L1565",
           "version": "repo-lines-v1:sha256:6766bc66ba43c3f4d21c3a11221286a3073c53fbf82a96bcdcb6ff11ccc44955:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc2NmJjNjZiYTQzYzNmNGQyMWMzYTExMjIxMjg2YTMwNzNjNTNmYmY4MmE5NmJjZGNiNmZmMTFjY2M0NDk1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc2NmJjNjZiYTQzYzNmNGQyMWMzYTExMjIxMjg2YTMwNzNjNTNmYmY4MmE5NmJjZGNiNmZmMTFjY2M0NDk1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTkwYTU3NWE0OGE4YmE3OTk2ZDgzNjhjNDI5Nzc5NjMzZDM3ZTk3NTgzMWZkZDFlM2VkMTNlNGIyZmY2NzRkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzhjNGM1MjdmYjk3NWJhOWNlZjIxN2RhMDIxM2NlMDJhOGZjNGQ4NTcxMzJiZmZkMGQ5NjA4MzhlMzMyZDQzNSJ9"
         }
       ]
@@ -139,10 +139,48 @@
           "version": "repo-lines-v1:sha256:20616020af06ba11f5965e5768700d7e1b32291bb1a5416d193bda5df65e2a6e:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MDI1MDI2NTQ3N2YyMzFjYTg1Yzc5MDgxNDRkNjE1OTg2MWJhN2UyODMyNjBlY2U3OGYzOTgwNWVkY2YxMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyOTJkMjIyZWRhMTgyYTZlMmMzODEzMGQwMTRiNGZiNGQ5NjI4ZTFiY2EwYTM3ODlmNDI0NDE4YjAxYWNlN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiODA1M2JkYmEzMjQzNmIyODRiNGI2NGQ4MjQwZWMzNDNmYWFkZjEzZGY0NmM3MTQ5YmMxZjZmNDM5ZWVmOGIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_41b02cc4b1634942b2ff462c937b9ee3",
+      "statement": "Karty „★ Serie” i „★ Kolekcje” pojawiają się na ekranie systemów tylko na Androidzie i tylko gdy liczba grup jest większa od zera; klient Windows zwraca puste listy grup.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/api.py#L538-L546",
+          "version": "repo-lines-v1:sha256:7ad9d87ea036458be35b68b4b85f72997bec2c73505948be5c4949203b0c2d8d:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg3ZjgyNTI3YTc2MDVlMGZlYWU1YTFiYTc4MGM0NjRmMTJiOGRkMDdhNjQ2MTk4YTg0YWIyNjQ3NjlkZjVkMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTY5ZTdhYmU3ZTMxMDkyNWViYzEwNmEzNGY3NDFkNjY3ZTMyZjg2ZTczNzA5NGM2NWEzNTRmOTE2ZjE2MGMzNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzU1NGU5OThmMmVmZjNmYmQ0NzhkYWFlZTA2YjNjZGVhZTVhZGYwNWQzNjliM2NiZWFkMzBiZmRhNTY5ZjUxNyJ9"
+        },
+        {
+          "resource": "repo://emustart/web/app.js#L1389-L1396",
+          "version": "repo-lines-v1:sha256:e7009e003f56effc2b263fb8e237719ef1ed4f8fbe687c55827580fe000727bc:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDJkNzEyMDkwN2I5MGM4MWMyMjA2YTdhZmRkMzZjMjQzYjQ1NDVjZGU5ZmQzZjJkOTg4MGNhYTE2Njc2NzUyZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDgyZjFmMTgxNDFiM2UwNTU5MDNkMTU1OTA4YTdlNTE3NTBiODQ4ZTFmNjg1ZTQ4MDdjYjNjMTQyZDY2ODk2MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmZjNzg0Y2EyM2Q3NDY4NjI2NDY2MTNmZjY3ZTRkMWQ1NWIyNDYyMmQzYWE5MmZlODcxNTQ2M2U0MDdlMTlkZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjQxMzZlYmIzNjA0NjAxZTlkNjVkMDY1NWZiY2QxYTVmZjY0ZmNhYmQ5NzU3MzYyZDMzYjU1YzQ1Mjc1ZWNlMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f4760ecca9104b87b981b694fcba2898",
+      "statement": "Most APK liczy serie i kolekcje w tle najwyżej co 10 minut z kopii pełnych list gier; listy wczytuje w tle tylko dla systemów do 5000 gier, a przy brakujących listach ponawia za minutę najwyżej 5 razy.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Bridge.kt#L573-L614",
+          "version": "repo-lines-v1:sha256:1782deb11ff3b8b0f3bd7fee341831525f9fae85c0506c4b87c741cd4af9f72c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwMjMwMmY1OTY0ZGNjMDBmODZlMzFkMDkzMzhiMGJlM2VhYjU5MjU0YzQ0YTFlMjY1NTlkMjEyNWE0NThjNzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNTQ0OTVmNWYyMDViZTA2NzIyY2M3OWVkMmNmMTFkZmExMjRkMWViMmNhYmIwZmY2YzdhNjFmNjY2Y2Y2M2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5MGQ2ZWFjMjU1ODA2ZDI5ZTFiMTFkNGY4YzcwNDhjY2QyYWJlNjY5NDI4ODhmNzRiZDA3ZjU5OGFjMTIwYmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d071cde1833d4c4393b5076e0b334102",
+      "statement": "Gry grupy są pobierane po stałym kluczu grupy (group_games(rodzaj, klucz)), a nie po pozycji na liście.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Bridge.kt#L695-L705",
+          "version": "repo-lines-v1:sha256:3d0e86fa995e50715c023effcc9e6f1305d48bc492ba5ed9ac5767184463dd37:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmVmNjE3NzM5MjBlMDAwNzQyNGYwYjg1OTcwZTU0ZDQwYjNlM2VhMDQxMDllOGY2MTg1NWIxNWQ1NTc2NjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3NzNkMTQ4MjM2MWI5YWU1MDYyOTYxMDliNjJjN2YyZGYzN2VmOGM4OWM1OThhZWVlYTYxZTliYWQ4NjhhYTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3NTI2ZDMwNmRjNjQzZTRlYjVmZGZkZDlhMTczNjcwYmY5M2U5N2Q4MTkxMGZmNTdjZjA0Y2ExMzFiZDI4NmUifQ"
+        },
+        {
+          "resource": "repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Bridge.kt#L92-L93",
+          "version": "repo-lines-v1:sha256:1db98f11b5189b84fd420bac4dd3f4f0c4e40d4fa7543d35c5a0c74b62a5245c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGIyNTRiYjE4ODgyZmFiN2JlOTc5YzcyZDRlZmFmMjczNmU5OWNlNTY4NDU5ZTYzNmY3YWJhYTY0YjlkZTdhNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjE5NWQyYzA5MzgyMWFiODc3ODYwODdlYmY0MzcxMjdhMmIyZjVhYjNmNjEzOGI3ZTY4OTE4OTZlNWNiY2JkNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjIwOTRmODMzZmE0OWFhYTQxMTM1Zjg2MTdlYjNmNjJkYjEwNDE3NWJiMGQ0NTZmMjA0OWUzYzdlMGZiZTc4OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTBlMWIzNTcwNWYwNzQ2YWYyMjM4ZTdlNGIwNjNkYmQwNjJlMTZmNjMzZjZkNGExZjc3ZmU3Zjg2ZjdiM2RmOSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T17:27:24.312Z"
   }
 }

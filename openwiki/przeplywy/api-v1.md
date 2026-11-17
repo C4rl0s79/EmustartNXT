@@ -5,7 +5,7 @@ description: "API urządzeń EmuStart Server pod /v1: wymóg HTTPS, logowanie ur
 tags: [api, v1, authentication, devices, savesync, protocol, emustart]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T17:27:24.312Z
 sources:
   - id: openwiki-source-e6e190788e03541d74c05a32
     resource: repo://emustart/docs/SAVE_SYNC_DESIGN.md
@@ -15,7 +15,7 @@ sources:
     resource: repo://emustart/emustart/remote.py
   - id: openwiki-source-a124d623671267edfd450054
     resource: repo://emustart/emustart/server.py
-generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
+generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
 ---
 
 # API /v1: urządzenia, konta, zapisy i grafiki
@@ -76,7 +76,7 @@ Każde zapytanie musi być autoryzowane (inaczej **401** „brak lub zły klucz 
 
 | Trasa | Odpowiedź |
 |---|---|
-| `/v1/info` | nazwa i wersja serwera, `api: 1`, lista `features` (m.in. `library`, `savesync`, `lock`, `themes`, `series`; `nas`, `savemgr`, `profiles` przy folderze profili; `gog`, gdy indeks archiwum GOG ma buildy), adresy serwera (`endpoints`), port i odcisk TLS |
+| `/v1/info` | nazwa i wersja serwera, `api: 1`, lista `features` (m.in. `library`, `savesync`, `lock`, `themes`, `series`, `collections`; `nas`, `savemgr`, `profiles` przy folderze profili; `gog`, gdy indeks archiwum GOG ma buildy), adresy serwera (`endpoints`), port i odcisk TLS |
 | `/v1/library`, `/v1/library?es=…&since=…` | systemy / gry systemu dla komputera bez folderów z grami (403, gdy konto nie pobiera gier) |
 | `/v1/systems`, `/v1/systems/<es>/games`, `/v1/games/<id>`, `/v1/games/<id>/file/<ścieżka>` | systemy, gry, szczegóły, plik gry z obsługą `Range` (wiele strumieni, wznawianie) |
 | `/v1/find`, `/v1/sysinfo?es=…` | wyszukiwanie gier, opis platformy |
@@ -85,7 +85,8 @@ Każde zapytanie musi być autoryzowane (inaczej **401** „brak lub zły klucz 
 | `/v1/nas/scan`, `list`, `stat`, `file` | folder profili (zapisy, ustawienia; plik zstd, nagłówek `X-Mtime`) |
 | `/v1/profiles`, `/v1/savemgr/catalog`, `/v1/gog/…` | profile graczy, menedżer zapisów, archiwum GOG |
 | `/v1/files/d/<token>` | pobranie paczki zapisów (adres z manifestu), z `Range` |
-| `/v1/series`, `/v1/series/progress` | serie gier z IGDB znane serwerowi (z polem `progress`) / sam postęp sprawdzania — zob. [Serie gier](serie-gier.md) |
+| `/v1/series`, `/v1/series/progress` | serie gier z IGDB znane serwerowi (z polem `progress`) / sam postęp sprawdzania — zob. [Serie i kolekcje gier](serie-gier.md) |
+| `/v1/collections` | kolekcje konta (kategorie Lumena) ze wszystkich jego urządzeń: `{"collections": [{name, games: [game_id]}]}`; konto z tokenu urządzenia albo tokenu profilu (`X-EmuStart-Account` + `X-Profile-Token`) — od 0.67.0, dla APK |
 | `/v1/themes/…` | paczki motywów trybu TV Lumena — zob. [Motywy trybu TV](motywy-tv.md) |
 
 ## POST / PUT / DELETE
@@ -96,6 +97,7 @@ Każde zapytanie musi być autoryzowane (inaczej **401** „brak lub zły klucz 
 | `PUT /v1/files/u/<token>` | `savesync` | treść paczki (adres z `upload/init`) |
 | `POST /v1/userart/…` | `userart` | grafiki użytkowników i wybory grafik |
 | `POST /v1/series` | `igdbseries` | tytuły spoza biblioteki serwera (gry Steam, skróty) do sprawdzenia w IGDB — na początek kolejki |
+| `POST /v1/collections` | `usercollections` | zestaw kolekcji urządzenia (Lumen) `{"items": [{id, name, games}]}` — zastępuje poprzedni zestaw tego urządzenia; zła lista albo `Content-Length` → 400 |
 | `POST /v1/lock/take`, `renew`, `release`, `status` | `plock` | jedna gra naraz na profil |
 | `PUT`/`DELETE /v1/nas/file?p=…` | `remote` | zapis atomowy pliku w folderze profili (poprzednia wersja do kopii, ostatnie 10) |
 

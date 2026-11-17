@@ -128,6 +128,19 @@ Jak na Windows ([Sterowanie](Sterowanie)): krzyżak/gałka, A — wybierz (gra),
 wstecz, X — filtry, Y — przypnij grę, LB/RB — strona, LT/RT — litera, Start — menu.
 Przycisk „wstecz” telefonu działa jak B.
 
+## Serie i kolekcje
+
+Od wersji 0.67.0 na końcu ekranu systemów są dwie dodatkowe pozycje (pokazują się, gdy coś zawierają):
+
+- **★ Serie** — gry jednej serii (według IGDB, z serwera), np. wszystkie części Donkey Kong Country na SNES,
+  w kolejności wydania.
+- **★ Kolekcje** — Twoje kategorie z Lumena (te same na komputerze i w telefonie), tylko z grami EmuStart, które
+  serwer udostępnia.
+
+A otwiera serię albo kolekcję, B wraca. Nowe kategorie z Lumena pojawiają się w telefonie po kilkunastu minutach
+(Lumen wysyła je co 10 minut, telefon odświeża co 10 minut). Lista gier systemu wygląda jak dotąd; w EmuStart na
+Windows tych pozycji nie ma.
+
 ## Gry w telefonie
 
 - Pobrana gra zostaje w telefonie — następnym razem startuje od razu.

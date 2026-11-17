@@ -1,22 +1,28 @@
 ---
 type: przepływ
-title: "Serie gier (IGDB)"
-description: "Serie gier w Lumenie: serwer EmuStart dopasowuje gry w IGDB (seria = kolekcja, grupa = franczyza, data oryginału), udostępnia wynik przez /v1/series, silnik pobiera go metodą series_sync, a Lumen układa gry jednej serii razem — z kluczem z platformą, kolejnością po dacie oryginału i ręcznymi poprawkami gracza."
-tags: [series, igdb, server, lumen, library, sorting]
+title: "Serie i kolekcje gier"
+description: "Serie gier w Lumenie: serwer EmuStart dopasowuje gry w IGDB (seria = kolekcja, grupa = franczyza, data oryginału), udostępnia wynik przez /v1/series, silnik pobiera go metodą series_sync, a Lumen układa gry jednej serii razem — z kluczem z platformą, kolejnością po dacie oryginału i ręcznymi poprawkami gracza. Od EmuStart 0.67.0 / Lumen 1.0.75 Lumen wysyła swoje kategorie na serwer (/v1/collections), a APK pokazuje „★ Serie” i „★ Kolekcje”."
+tags: [series, collections, igdb, server, lumen, android, library, sorting]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T15:15:29.370Z
+    at: 2026-11-17T17:27:24.312Z
 sources:
   - id: openwiki-source-a03805cf993ff2b37b1a1f8c
     resource: repo://emustart/emustart/igdbseries.py
+  - id: openwiki-source-f45e046b1b58142eb978eeae
+    resource: repo://emustart/emustart/usercollections.py
+  - id: openwiki-source-0249de2a4b6e41f78c81c34c
+    resource: repo://lumen/src/main/art/artSync.ts
+  - id: openwiki-source-d1b9ce3766cc38562686f8ba
+    resource: repo://lumen/src/main/index.ts
   - id: openwiki-source-65eabe37ea024bbd1d8fe067
     resource: repo://lumen/src/main/series.ts
   - id: openwiki-source-f891089b004ed1194d67eb3d
     resource: repo://lumen/src/shared/series.ts
-generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
+generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
 ---
 
-# Serie gier (IGDB)
+# Serie i kolekcje gier
 
 Na listach Lumena gry jednej serii stoją razem, pod nazwą serii, w kolejności wydania. Przynależności do serii nie
 da się wyczytać z samego tytułu, więc źródłem jest **IGDB** — zapytania robi **serwer EmuStart** swoimi kluczami
@@ -66,7 +72,25 @@ grupa. Okno „Seria” (`lumen/src/renderer/src/modals/SeriesEditor.tsx`, z Opc
 platformy, które gracz ma (jedna pozycja na grę, z rokiem oryginału i źródłem), wybór serii i grupy z listy
 z wyszukiwaniem, „Utwórz serię” na miejscu, przesuwanie gry „Wcześniej / Później”.
 
+## Kolekcje kont (od EmuStart 0.67.0, Lumen 1.0.75)
+
+Kategorie Lumena są lokalne, ale ich skład z grami EmuStart trafia na serwer, żeby APK mógł je pokazać.
+
+- **Lumen** (`emuCollections` w `lumen/src/main/art/artSync.ts`, `syncCollections` w `lumen/src/main/index.ts`):
+  po każdej synchronizacji grafik (co 10 minut) wysyła własne kategorie (`kind: custom`) z grami EmuStart; gra to
+  `sid` = `savesync.game_id(system, nazwa)`, a grupa wersji (`emugrp:`) — wszystkie jej wersje. Kolekcje Steam
+  i kategorie bez gier EmuStart nie są wysyłane. Silnik: `collections_sync` → `artsync.collections` →
+  `POST /v1/collections`; starszy serwer (404) — tylko wpis w logu.
+- **Serwer** (`emustart/emustart/usercollections.py`, plik `<dane serwera>/collections.json`): każde urządzenie konta
+  ma własny zestaw; nowy zestaw zastępuje tylko zestaw tego urządzenia (drugi komputer bez tych kategorii ich nie
+  kasuje). `GET /v1/collections` łączy zestawy po nazwie (bez wielkości liter, pisownia z najnowszego zestawu), bez
+  powtórzeń gier. Nie liczą się urządzenia odwołane ani nieaktywne od 90 dni; zestaw wysłany z tokenem profilu innego
+  konta (gracz zalogowany na cudzym komputerze) jest zapisany pod tym kontem i też się liczy.
+- **APK** pokazuje serie i kolekcje jako „★ Serie” i „★ Kolekcje” na ekranie systemów (seria = kolekcja IGDB
+  z co najmniej dwoma tytułami tego samego systemu) — [Klienci EmuStart](../architektura/klienci-emustart.md).
+  Ręczne poprawki serii z Lumena nie trafiają na serwer, więc APK pokazuje serie z IGDB.
+
 ## Testy
 
-`emustart/tests/test_igdb_series.py`, `emustart/tests/test_series_sync.py`, `lumen/tests/series.test.ts`,
-`lumen/tests/seriesSync.test.ts`.
+`emustart/tests/test_igdb_series.py`, `emustart/tests/test_series_sync.py`, `emustart/tests/test_usercollections.py`,
+`lumen/tests/series.test.ts`, `lumen/tests/seriesSync.test.ts`, `lumen/tests/prefs.test.ts` (kolekcje dla APK).

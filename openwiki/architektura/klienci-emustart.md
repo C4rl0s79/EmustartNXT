@@ -5,14 +5,18 @@ description: "Jak działa klient EmuStart na Windows (pywebview, Api, tryb --bro
 tags: [emustart, client, windows, android, pywebview, webview]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T17:27:24.312Z
 sources:
   - id: openwiki-source-3a86e937b3bdf9fc386b02ba
     resource: repo://emustart/android/app/build.gradle.kts
+  - id: openwiki-source-52845b30f62e547e350d2005
+    resource: repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Bridge.kt
   - id: openwiki-source-4378881d4321ebe09d3b9f31
     resource: repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/MainActivity.kt
   - id: openwiki-source-41d978605caa219b235d17c2
     resource: repo://emustart/android/app/src/main/java/io/github/c4rl0s79/emustart/Server.kt
+  - id: openwiki-source-945ea3efa39a975f0dd7693f
+    resource: repo://emustart/emustart/api.py
   - id: openwiki-source-0d61759cab48093068c68838
     resource: repo://emustart/emustart/dosmidi.py
   - id: openwiki-source-1f1d4f3bbb924e004b121a5b
@@ -31,7 +35,7 @@ sources:
     resource: repo://emustart/main.py
   - id: openwiki-source-f0e926c2a9db5ea4c80d614b
     resource: repo://emustart/web/app.js
-generated: { by: "claude-code", at: "2026-11-17T16:11:28.167Z" }
+generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
 ---
 
 # Klienci EmuStart: Windows i Android
@@ -155,6 +159,27 @@ Pozostałe pliki Kotlin dzielą się zadaniami: `Server.kt` (adres serwera, toke
 `DeviceKey.kt` (klucz urządzenia), `Downloader.kt`/`Cache.kt` (pobieranie i pamięć gier),
 `Emulators.kt`/`Installer.kt`/`EmuProfile.kt`/`Bios.kt` (emulatory i BIOS-y), `SaveSync.kt`/`Saves.kt`
 (zapisy), `Prefs.kt` (ustawienia).
+
+### „★ Serie” i „★ Kolekcje” (od 0.67.0)
+
+Na końcu karuzeli systemów aplikacja pokazuje dwie dodatkowe karty — tylko na Androidzie i tylko wtedy, gdy coś
+zawierają. Klient Windows ich nie ma: `groupCards` w `web/app.js` zwraca pustą listę, gdy `platform` nie jest
+`android`, a `groups_list` / `group_games` w `emustart/emustart/api.py` zwracają puste listy.
+
+- **Liczenie w tle.** `get_state` w `Bridge.kt` dokłada liczby grup (`groups`) i woła `refreshGroupsLater`:
+  najwyżej co 10 minut, w puli wątków, z kopii pełnych list gier systemów (pamięć albo plik `lista-gry-*`).
+  Systemu bez pełnej listy nie liczy od razu — wczytuje jego listę w tle, ale tylko dla systemów do 5000 gier;
+  wtedy ponawia za minutę, najwyżej 5 razy, potem znów co 10 minut. Błąd serwera zostawia poprzednie grupy.
+- **Serie** (`buildSeries`): `GET /v1/series`, klucz `system|tytuł` liczony jak `igdbseries.key_of` na serwerze;
+  seria = kolekcja IGDB z co najmniej dwoma tytułami tego samego systemu, gry w kolejności wydania.
+- **Kolekcje** (`buildCollections`): `GET /v1/collections` z kontem gracza (profil telefonu, jak przy zapisach);
+  gry dopasowane po `SaveSync.gameId(system, nazwa)`, gry, których serwer telefonu nie ma, są pomijane.
+- **Interfejs.** Lista grup to wiersze-foldery na ekranie listy gier; A otwiera grupę (`group_games(rodzaj,
+  klucz)` — po stałym kluczu, bo lista może się przeliczyć w tle), B wraca na listę grup, a z niej do systemów.
+  Na wierszu grupy nie ma opcji gry, przypięcia ani filtrów. Gdy karta zniknie, kiedy gracz jest w środku, interfejs
+  wraca na ekran systemów.
+
+Szczegóły serii i kolekcji (serwer, Lumen): [Serie i kolekcje gier](../przeplywy/serie-gier.md).
 
 ### Wybór adresu serwera na Androidzie
 
