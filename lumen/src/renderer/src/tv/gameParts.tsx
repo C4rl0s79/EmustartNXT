@@ -72,10 +72,12 @@ export function neighbourGames(games: Game[], idx: number, around: number): Game
   return out
 }
 
-/** logo do pamięci obrazów, chyba że już tam jest albo go nie ma (404) */
+/** logo do pamięci obrazów, chyba że już tam jest albo go nie ma (404); inny błąd (sieć, 5xx) — następnym razem od nowa */
 export function prefetchLogo(url: string): void {
   if (noLogo.has(url) || readyArt(url)) return
-  loadArt(url).catch(() => noLogo.add(url))
+  loadArt(url).catch((err: unknown) => {
+    if (err instanceof Error && err.message === 'HTTP 404') noLogo.add(url)
+  })
 }
 
 /**
@@ -84,11 +86,12 @@ export function prefetchLogo(url: string): void {
  * po wyświetleniu gry. Przy przytrzymanym kierunku nic się nie pobiera (wybór nie stoi).
  */
 export function usePrefetchLogos(games: Game[], idx: number, settled: boolean, around = 2): void {
-  const artRev = useStore((s) => s.artRev)
   useEffect(() => {
     if (!settled || games.length < 2) return
+    // wersje grafik czytane tu, bez subskrypcji: zmiana grafiki dowolnej gry nie rysuje od nowa całej listy
+    const artRev = useStore.getState().artRev
     for (const game of neighbourGames(games, idx, around)) prefetchLogo(api().art.url(game.id, 'logo', artRev[game.id] ?? 0, 'tv', true))
-  }, [settled, idx, games, artRev, around])
+  }, [settled, idx, games, around])
 }
 
 /**

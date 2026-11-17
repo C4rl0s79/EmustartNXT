@@ -81,7 +81,7 @@ export function TvGames({
     return () => clearTimeout(t)
   }, [sel?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   // logo sąsiednich gier do pamięci, gdy wybór stoi: krok w bok pokazuje logo od razu (TvSummary, wiersze z logo)
-  usePrefetchLogos(games, idx, backdrop?.id === sel?.id)
+  usePrefetchLogos(games, Math.min(idx, games.length - 1), backdrop?.id === sel?.id) // jak `sel`: po zawężeniu listy idx bywa poza nią
   // wstęga (Horyzont): pozycja bez modulo — rośnie / maleje z każdym krokiem, więc wstęga kręci się bez końca, bez
   // przeskoku na początek, także przy jednej grze; gra = pozycja modulo długość listy (flowWindow)
   const [pos, setPos] = useState(idx)
