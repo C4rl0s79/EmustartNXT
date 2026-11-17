@@ -23,14 +23,12 @@ export function defaultPrefs(): Prefs {
   return { version: PREFS_VERSION, categories: SMART_CATEGORIES.map((c) => ({ ...c })), gameCategories: {}, favorites: [], art: {}, artStamps: {}, artDefaults: {}, versions: {}, platformOverrides: {}, pinnedGroups: [], lbTitles: {}, series: {} }
 }
 
-export function migratePrefs(raw: unknown): Prefs {
-  const base = defaultPrefs()
-  if (!raw || typeof raw !== 'object') return base
-  const r = raw as Partial<Prefs>
+/** categories of older prefs: known ones, every smart category exactly once, v2 / v3 changes applied */
+function migrateCategories(r: Partial<Prefs>, smart: Category[]): Category[] {
   let categories = Array.isArray(r.categories) ? r.categories.filter(isCategory).filter((c) => !REMOVED_SMART.has(c.id)) : []
   // make sure every smart category exists exactly once (new ones may be added in updates)
-  for (const smart of base.categories) {
-    if (!categories.some((c) => c.id === smart.id)) categories.push({ ...smart, order: categories.length })
+  for (const one of smart) {
+    if (!categories.some((c) => c.id === one.id)) categories.push({ ...one, order: categories.length })
   }
   if ((r.version ?? 1) < 2) {
     // v2: home screen shows "recently played" itself; pinned categories became top-bar group tabs
@@ -42,34 +40,51 @@ export function migratePrefs(raw: unknown): Prefs {
     // v3: "all games" is the Steam platform tab (emulator platforms come from Steam collections)
     categories = categories.map((c) => (c.id === 'smart:all' ? { ...c, name: 'Steam' } : c))
   }
+  return categories
+}
+
+/** a stored map with only the entries whose value passes `keep` */
+function cleanMap<T>(value: unknown, keep: (entry: unknown) => entry is T): Record<string, T> {
+  if (!isRecord(value)) return {}
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, T] => keep(entry[1])))
+}
+const isNumber = (value: unknown): value is number => typeof value === 'number'
+const isString = (value: unknown): value is string => typeof value === 'string'
+const isOverride = (value: unknown): value is string => typeof value === 'string' && validOverride(value)
+
+/**
+ * v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces the
+ * flat tabs. Pinned Lumen categories and Steam collections stay quick-access pins (in their order). EmuStart
+ * platforms were pinned automatically (every new platform), not by the player — they live in the hierarchy now;
+ * their old flags stay in `categories` untouched.
+ */
+function pinsFromTabs(categories: Category[]): string[] {
+  return [...categories]
+    .sort((a, b) => a.order - b.order)
+    .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
+    .map((c) => `col/${c.id}`)
+}
+
+export function migratePrefs(raw: unknown): Prefs {
+  const base = defaultPrefs()
+  if (!raw || typeof raw !== 'object') return base
+  const r = raw as Partial<Prefs>
+  const categories = migrateCategories(r, base.categories)
   const prefs: Prefs = {
     version: PREFS_VERSION,
     categories,
     gameCategories: isRecord(r.gameCategories) ? sanitizeGameCategories(r.gameCategories) : {},
-    favorites: Array.isArray(r.favorites) ? r.favorites.filter((x) => typeof x === 'string') : [],
+    favorites: Array.isArray(r.favorites) ? r.favorites.filter(isString) : [],
     art: isRecord(r.art) ? (r.art as Record<string, GameArtPrefs>) : {},
     artDefaults: isRecord(r.artDefaults) ? (r.artDefaults as Prefs['artDefaults']) : {},
-    artStamps: isRecord(r.artStamps) ? Object.fromEntries(Object.entries(r.artStamps).filter((e): e is [string, number] => typeof e[1] === 'number')) : {},
-    versions: isRecord(r.versions)
-      ? Object.fromEntries(Object.entries(r.versions).filter((e): e is [string, string] => typeof e[1] === 'string'))
-      : {},
-    platformOverrides: isRecord(r.platformOverrides)
-      ? Object.fromEntries(Object.entries(r.platformOverrides).filter((e): e is [string, string] => typeof e[1] === 'string' && validOverride(e[1])))
-      : {},
+    artStamps: cleanMap(r.artStamps, isNumber),
+    versions: cleanMap(r.versions, isString),
+    platformOverrides: cleanMap(r.platformOverrides, isOverride),
     pinnedGroups: Array.isArray(r.pinnedGroups) ? [...new Set(r.pinnedGroups.filter((x): x is string => typeof x === 'string' && validPin(x)))] : [],
     lbTitles: cleanLbTitles(r.lbTitles),
     series: cleanSeriesPrefs(r.series)
   }
-  if ((r.version ?? 1) < 4) {
-    // v4: the library hierarchy (PC / Komputery / Konsole / Arcade, Kolekcje, Ulubione, Ostatnio grane) replaces
-    // the flat tabs. Pinned Lumen categories and Steam collections stay quick-access pins (in their order).
-    // EmuStart platforms were pinned automatically (every new platform), not by the player — they live in the
-    // hierarchy now; their old flags stay in `categories` untouched.
-    prefs.pinnedGroups = [...categories]
-      .sort((a, b) => a.order - b.order)
-      .filter((c) => c.pinned && (c.kind === 'custom' || c.kind === 'steam'))
-      .map((c) => `col/${c.id}`)
-  }
+  if ((r.version ?? 1) < 4) prefs.pinnedGroups = pinsFromTabs(categories)
   return normalizeOrder(mergeTvArt(prefs, (r as { artTv?: unknown }).artTv))
 }
 

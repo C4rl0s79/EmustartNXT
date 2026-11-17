@@ -317,6 +317,46 @@ def _with_old_keys(choices: dict) -> dict:
     return out
 
 
+def _save_names(acc: dict, account: str, names: dict, device: str) -> bool:
+    """Nazwy kolekcji z tego urządzenia zastępują jego poprzedni zestaw. True, gdy coś zmieniono."""
+    by_dev = acc.get("group_names_by_device")
+    if not isinstance(by_dev, dict):
+        by_dev = acc["group_names_by_device"] = {}
+    changed = False
+    # wpisy urządzeń odwołanych / przeniesionych do innego konta — plik nie rośnie przy każdym parowaniu
+    for dev in [k for k in by_dev if not _device_of_account(k, account)]:
+        del by_dev[dev]
+        changed = True
+    dev = str(device or "")
+    cur = by_dev.get(dev)
+    now = time.time()
+    # znacznik czasu odświeżany najwyżej raz na dobę: synchronizacja co 10 minut nie zapisuje pliku bez zmian
+    if not isinstance(cur, dict) or cur.get("names") != names or now - _at(cur) > 86400:
+        by_dev[dev] = {"names": names, "at": now}
+        changed = True
+    # zestaw całego konta z 0.63.4 — dopiero gdy urządzenie konta przysłało własne nazwy
+    if acc.pop("group_names", None) is not None:
+        changed = True
+    return changed
+
+
+def _apply_item(choices: dict, item) -> bool:
+    """Jeden wybór z urządzenia: zapisany, gdy nowszy (pusty `tv|…` i błędne wpisy pomijane). True, gdy zapisany."""
+    lay, game, kind = str(item["key"]).split("|")
+    _check(game, kind)
+    if lay not in LAYOUTS or _no_tv_override(f"{lay}|", item.get("choice")):
+        return False
+    key = _one_key(f"{lay}|{game}|{kind}")
+    at = float(item.get("at") or 0)
+    if at > time.time() + 86400:                   # zegar urządzenia z przyszłości nie zablokuje późniejszych zmian
+        at = time.time()
+    cur = choices.get(key)
+    if cur is not None and at <= float(cur.get("at") or 0):
+        return False
+    choices[key] = {"choice": _valid_choice(item.get("choice")), "at": at}
+    return True
+
+
 def sync(account: str, items: list, names=None, device: str = "") -> dict:
     """Wybory z urządzenia → serwer (nowszy `at` wygrywa, błędny wpis jest pomijany); wynik: wszystkie wybory konta.
     `names` — wszystkie kolekcje widoczne w bibliotece Lumena na tym urządzeniu; zastępują poprzedni zestaw tego
@@ -326,45 +366,16 @@ def sync(account: str, items: list, names=None, device: str = "") -> dict:
         raise ArtError("zła lista wyborów")
     names = _clean_names(names) if isinstance(names, dict) else None
     with _lock:
-        d = _load()
-        a = _acc(d, account)
-        changed = _fold_views(a["choices"])
+        data = _load()
+        acc = _acc(data, account)
+        changed = _fold_views(acc["choices"])
         if names is not None:
-            by_dev = a.get("group_names_by_device")
-            if not isinstance(by_dev, dict):
-                by_dev = a["group_names_by_device"] = {}
-            # wpisy urządzeń odwołanych / przeniesionych do innego konta — plik nie rośnie przy każdym parowaniu
-            for dev in [k for k in by_dev if not _device_of_account(k, account)]:
-                del by_dev[dev]
-                changed = True
-            dev = str(device or "")
-            cur = by_dev.get(dev)
-            now = time.time()
-            # znacznik czasu odświeżany najwyżej raz na dobę: synchronizacja co 10 minut nie zapisuje pliku bez zmian
-            if not isinstance(cur, dict) or cur.get("names") != names or now - _at(cur) > 86400:
-                by_dev[dev] = {"names": names, "at": now}
-                changed = True
-            # zestaw całego konta z 0.63.4 — dopiero gdy urządzenie konta przysłało własne nazwy
-            if a.pop("group_names", None) is not None:
-                changed = True
-        for it in items:
+            changed = _save_names(acc, account, names, device) or changed
+        for item in items:
             try:
-                lay, game, kind = str(it["key"]).split("|")
-                _check(game, kind)
-                if lay not in LAYOUTS:
-                    continue
-                if _no_tv_override(f"{lay}|", it.get("choice")):
-                    continue
-                key = _one_key(f"{lay}|{game}|{kind}")
-                at = float(it.get("at") or 0)
-                if at > time.time() + 86400:           # zegar urządzenia z przyszłości nie zablokuje późniejszych zmian
-                    at = time.time()
-                cur = a["choices"].get(key)
-                if cur is None or at > float(cur.get("at") or 0):
-                    a["choices"][key] = {"choice": _valid_choice(it.get("choice")), "at": at}
-                    changed = True
+                changed = _apply_item(acc["choices"], item) or changed
             except (KeyError, TypeError, ValueError):
                 continue
         if changed:
-            _save(d)
-        return {"ok": True, "choices": _with_old_keys(a["choices"])}
+            _save(data)
+        return {"ok": True, "choices": _with_old_keys(acc["choices"])}

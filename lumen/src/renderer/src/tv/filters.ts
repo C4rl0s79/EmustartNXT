@@ -159,7 +159,7 @@ export function filterId(sub: { id: string } | undefined, group: { id: string } 
  */
 export function oldTvKeys(id: string, es?: string): string[] {
   const keys = [es, id === 'pc/steam' ? 'steam' : undefined, `pin:${id}`, id.endsWith('/all') ? `grp:${id.slice(0, -4)}` : undefined]
-  return keys.filter((k): k is string => !!k)
+  return keys.filter((oldKey): oldKey is string => Boolean(oldKey))
 }
 
 /** a desktop view's own install filter and order, kept apart until Lumen 1.0.75 */
@@ -173,18 +173,18 @@ function read(key: string): Partial<Filter> | null {
 
 /** the old separate records of a group: the TV's first (its old ids), then the desktop's; null — none */
 function oldFilter(id: string, es?: string): Filter | null {
-  for (const k of oldTvKeys(id, es)) {
-    const tv = read(KEY(k))
+  for (const oldKey of oldTvKeys(id, es)) {
+    const tv = read(KEY(oldKey))
     if (tv) return { ...FILTER_DEFAULT, ...tv }
   }
   const desk = read(KEY(`group:nav:${id}`))
   const rawView = localStorage.getItem(`lumen.group.nav:${id}`)
   if (!desk && rawView === null) return null
   const view = JSON.parse(rawView ?? '{}') as { filter?: string; sort?: string }
-  const f: Filter = { ...FILTER_DEFAULT, ...(desk ?? {}) }
-  if (f.show === 'all' && view.filter && OLD_DESKTOP_SHOW[view.filter]) f.show = OLD_DESKTOP_SHOW[view.filter]
-  if (f.sort === 'title' && view.sort && OLD_DESKTOP_SORT[view.sort]) f.sort = OLD_DESKTOP_SORT[view.sort]
-  return f
+  const merged: Filter = { ...FILTER_DEFAULT, ...(desk ?? {}) }
+  if (merged.show === 'all' && view.filter && OLD_DESKTOP_SHOW[view.filter]) merged.show = OLD_DESKTOP_SHOW[view.filter]
+  if (merged.sort === 'title' && view.sort && OLD_DESKTOP_SORT[view.sort]) merged.sort = OLD_DESKTOP_SORT[view.sort]
+  return merged
 }
 
 /**

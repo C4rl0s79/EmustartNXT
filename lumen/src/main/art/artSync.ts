@@ -22,13 +22,13 @@ const key = (gameId: string, kind: ArtKind): string => `desktop|${gameId}|${kind
 export function localItems(p: Prefs): SyncItem[] {
   const out: SyncItem[] = []
   const seen = new Set<string>()
-  for (const [gameId, a] of Object.entries(p.art))
+  for (const [gameId, gameArt] of Object.entries(p.art))
     for (const kind of KINDS) {
-      const c = a[kind]
-      if (!c || c.type === 'file') continue // uploaded first, then sent as a `user` choice
-      const k = key(gameId, kind)
-      seen.add(k)
-      out.push({ key: k, choice: c, at: p.artStamps[k] ?? 1 })
+      const choice = gameArt[kind]
+      if (!choice || choice.type === 'file') continue // uploaded first, then sent as a `user` choice
+      const itemKey = key(gameId, kind)
+      seen.add(itemKey)
+      out.push({ key: itemKey, choice, at: p.artStamps[itemKey] ?? 1 })
     }
   // stamps without a choice: removed here
   for (const [k, at] of Object.entries(p.artStamps)) if (!seen.has(k) && !isFileChoice(p, k)) out.push({ key: k, choice: null, at })
@@ -119,10 +119,10 @@ export function emuCollections(p: Prefs, sidsOf: (gameId: string) => string[]): 
 /** `file` choices waiting for upload: [game, kind, path] */
 export function pendingFiles(p: Prefs): [string, ArtKind, string][] {
   const out: [string, ArtKind, string][] = []
-  for (const [gameId, a] of Object.entries(p.art))
+  for (const [gameId, gameArt] of Object.entries(p.art))
     for (const kind of KINDS) {
-      const c = a[kind]
-      if (c?.type === 'file') out.push([gameId, kind, c.file])
+      const choice = gameArt[kind]
+      if (choice?.type === 'file') out.push([gameId, kind, choice.file])
     }
   return out
 }
