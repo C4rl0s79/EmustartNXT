@@ -21,7 +21,7 @@ sources:
     resource: repo://emustart/emustart/gogsaves.py
   - id: openwiki-source-8bd3c9138154900e2ed25a05
     resource: repo://lumen/src/main/gog/provider.ts
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
 ---
 
 # Gry GOG z archiwum serwera

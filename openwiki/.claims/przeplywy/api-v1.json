@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3d0d8d93608ba650237ac05fcde237e1c63f1f00bf0ef1af9b6c6d18b645343d",
+  "pageVersion": "sha256:43106ff5c87f87a040b4324e65856e9a44621ebfff028e1b1849d8438b608622",
   "claims": [
     {
       "id": "claim_771bf5e9f0784994a117e3c00bc03e12",
@@ -101,10 +101,52 @@
           "version": "repo-lines-v1:sha256:cf530c1dcbccfcb8929265c78a835b0efa49eb362e0b10fa8df68a549b6d2a2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYTE4YmEzMDZjMjg4YWRlNDBjOWQ1M2VlYmNlMDBiMWNlNWFhM2ZmZTIwMGQ5NmE1YmMzZDZkMWRkNDJiMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZTcyOGUxYmNmODhlYjhiZGFmNjg5NDM0ZDQ4NDg5MTIxYTJiMmJmODg1Nzk1MjEyNzc3NjNlYzYyZGNmZmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViYjIzNGEzMDdjZTc0Y2EyYzUwYzk4OTA5Y2RjNmQwMGJlMjJkNjMwYTYzNjM2MWZmN2NjZGJkN2Y1OWQzMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxYjkwYzQzZjYwOGUyOWU0YTg0NmZlZjUxOGU2MTc5MDllYTQ0MDExZDdlNjIzMjA2YmZhMmE5ZWZhYjAzNmUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_baed89e8fe17481c9f29b02a50909c8a",
+      "statement": "Serwer trzyma jeden wybór grafiki na grę i rodzaj pod kluczem desktop|…: klucz tv|… z zapytania zapisuje jako ten sam wybór (nowszy wygrywa), pusty wybór tv|… pomija, a stare wpisy tv|… w indeksie łączy z desktop|… przy synchronizacji.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/userart.py#L290-L312",
+          "version": "repo-lines-v1:sha256:82443b5e41221076f4b9bc0640fedd3f955f928510441e39814919b3796d96d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhZmY3N2VjYjI0ZThjMzYyNzY0NmVlNzA1YzQzZWQ5YWJhOTY5OTBhM2ExODIzZjdiNjhkYzQ1YzkwYWYxZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyMzMzNTlmOWRiMzE4ZmE1MWM1NzJlNzFiZjI5YTBkMDE5OTNiYTU1ZTVhYTVmNDcwNTAwYWJkODBkZDQ0MGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmZmIzZGJiNjVhMGQ4NDg0YzMzYzk2N2ZlN2E3ZTk2YmEyMzBlZGFhMjQyNGQ3N2RjYzFiNDM5Njg1MGM0NjAifQ"
+        },
+        {
+          "resource": "repo://emustart/emustart/userart.py#L343-L358",
+          "version": "repo-lines-v1:sha256:32a0a81e9d0e639e3d88271693d12e6e4d144579b8b63ce668b12e15c9097e3f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1ZDZiODlhMDZhMTVkNjQ5NTlhMTE4ZGY0YWU4YmJhMTk5ODk2YTFlYTRiZmJhMTAyNjhmODJlZmNlYmQyZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmOTM4ZmFiNzI0NGIwMGVmOTQxMzBkMmZkNzY1ZDdmMmQxMTNlM2U2ODdlNTA1MDU0ODJkMGY5NDI0ZWE0MmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3MzU0MjkyYTQzZjc2NjhkYTYyNWMyNTFjNmY4NWRiMzk0YjU5N2JmOTBjZTFiN2EyMGEyZmVhMTA4OTMzOTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_155e71db452b47caa374dfb87952edfc",
+      "statement": "Odpowiedź synchronizacji wyborów grafik podaje każdy wybór także pod kluczem tv|… dla starszych klientów, bez zapisywania tej kopii w indeksie.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/userart.py#L313-L318",
+          "version": "repo-lines-v1:sha256:128b497779b924707c0998e40a8b4b38e26456b6a78f10db8cbdba507b56ba60:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmZkZTExNGEzMGJmYTBmMzM5YzU2ZWNjMDkzYzRhNDBmMGVlODAzNTMzMDUwNjI5MWY0OWQ0OWZlMjQ2ZGVkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGI2ZDUxNTg1OWMzZmU3YWZlOTA2NzBkY2RmNDBlMWVmYzg2OTVmYjZlYmQxMGY5ZWQ1OTNlZjNiNTJmODY1ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTU2YjA4ZTRkYzgzOWQ4YWRjNWNkYzE3YjZhNjY0ZWRmYTNkMjdiN2IyYWQzM2IwMmE1MTk2NjU4YTU4YzEyMiJ9"
+        },
+        {
+          "resource": "repo://emustart/emustart/userart.py#L360-L380",
+          "version": "repo-lines-v1:sha256:ac16258a69618c6a0c06fe1803b4740dee9c1f6a9b74f5ad3d22b8225f681e3a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4NTdhYzAyNmZiODM3MDVhMmJiNmEzNjhmZTMwOTM2OTljNjgyYTM1ZjI3N2E4OTgwZGRkNDM0MzI4MmM4MmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhZTY4MmEwZjllNGIyMGVkNTZhZjc0Y2QxZWZiMzZjMGU3OGUzMmU0ZGVlNjc0ZjRkNWYzOTcxMjFmMTNmNjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5MzQyYTVjNTg5ZjcyNjVkMTUwZTllZjRjOTdiMjM2MmZiMTdiMWRiMTQ4YzI2MzZlZjcyNGRkMjJkMjQ3YmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MjIzODQ1MmZkMzQxZjYwYjM5N2Q3YWRiNGM3YjQ2YzZhNzU1NzIzNThkN2U0ODk2NmMyMGI5ZmNhOGZmOWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1164c49f51404162a3ceb682a441cbdc",
+      "statement": "Klient EmuStart wysyła własne grafiki gier jako wybory desktop|…, a Lumen traktuje tv|… z serwera jak ten sam wybór i pomija pusty tv|….",
+      "evidence": [
+        {
+          "resource": "repo://emustart/emustart/ownart.py#L162-L175",
+          "version": "repo-lines-v1:sha256:7f0fade981eea84561480e922f9f841b103238435a4e675e2baa5b045978035a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzMjViYzY4ZDM2MTFlZGM4YzdlMzBjZTgyNjkxNDI4YmE1MTZmNjZkMGU4MWQ5OTA0ZGVkNmNjNjdlMWQ1Y2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MTdkODU0NjBiZGI4Mjk0YmZkM2Y3YjhiYjgzODM4NmI3OTgwMDZmODAzYWY1NzEwNmFlMjgyOWQ3Yjg1OTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5NTJkMWQ5MzI1Mzk5OTUzNDVlYjkyODEwMGMyMmU5NTIxY2M2MmVlZDcwMzY4OTI0ZTFiNzRkZThmNTI1NGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjZmFhNThlY2ExZDU5YWYxZDhiYTViOTlhZjJlMTM4ODcyYTEyNGJhNzQ4MGU4YWY5YTBlODg0YjEzZWM4ZDMifQ"
+        },
+        {
+          "resource": "repo://lumen/src/main/art/artSync.ts#L44-L60",
+          "version": "repo-lines-v1:sha256:6adf946c6853dc7ed6e81b025b86f10b56facc8442838202b0cd857370eaab67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2NGRjNWM1ZDA3NzFlYjQxN2E3ZmEwNDA3ZTUwOTQ5YTM1NDZmYTQ0ZDBlMmYxZTVlOTEyZjM5ZjA5MzAzOWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjNzU5ODJlNzRlNjcyYjBlNjFiZDhmY2U1MTQ4Zjg5ZDUyOGNhOWEyMTkwM2ZkM2JiYTA1MGRhOGViMDhiNWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MjRkYzhiZTE2ZWNkOGNlZWU4NWJjYWM5YmRjOTNiNzBhMmM1NjZkNWYyN2M1ZTMyMWY1YWYzZjM2ZTcxMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYzlkMzM0MjIxMTc3NjVmYTJkZGZhYWYzY2FkNjE0YjAzZDQ4NzM2MjJiMzlkY2VkNGQ1MmQ1OWI1N2EzOWYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T17:27:24.312Z"
+    "at": "2026-11-17T19:02:08.485Z"
   }
 }

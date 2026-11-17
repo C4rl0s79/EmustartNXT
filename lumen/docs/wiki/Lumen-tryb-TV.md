@@ -12,7 +12,7 @@ Po wybraniu grupy (np. PC → Steam albo system emulatora) pokazuje się lista g
 |---|---|---|
 | A | Enter | **Strona gry** (szczegóły i wszystkie opcje) |
 | X | F | **Graj** od razu, bez wchodzenia na stronę gry |
-| Y | S | Filtry i sortowanie (zapamiętane dla grupy) |
+| Y | S | Filtry i sortowanie (zapamiętane dla grupy — te same co na pulpicie) |
 | L3 | Z | Szukaj w tytułach |
 | R3 | U | Ulubiona / usuń z ulubionych |
 | LB / RB | Q / E | O stronę |
@@ -30,6 +30,15 @@ Każda grupa może mieć własny układ — **menu Start → „Układ listy”*
   Horyzont okładki mają odbicie (animowane okładki odbijają się razem z ruchem);
 - **Plakaty** — logo gry na jej tle w lewym górnym rogu, płaski rząd plakatów na dole; kropka na plakacie
   pokazuje stan (zielona — gotowa do gry, niebieska — pobieranie albo w grze).
+
+### Wspólne z pulpitem
+
+Tryb TV i pulpit to dwa widoki tej samej biblioteki (od Lumena 1.0.76):
+
+- **Grafiki gier** są te same w trybie TV, na pulpicie i w Decku. Zmiana grafiki w **Opcje gry → Grafiki** w trybie
+  TV zmienia ją też na pulpicie i odwrotnie. Tryb TV pokazuje okładkę w całości.
+- **Filtry i sortowanie** grupy są wspólne: filtr ustawiony na pulpicie działa w trybie TV i odwrotnie. W filtrach
+  są też „tylko niezainstalowane” (gry EmuStart: „tylko poza cache”) i sortowanie „nowo dodane”.
 
 ## Strona gry
 

@@ -15,7 +15,7 @@ sources:
     resource: repo://lumen/src/renderer/src/lib/themeLayers.ts
   - id: openwiki-source-3e83ad3e84c0b4bfbc76fbec
     resource: repo://lumen/src/renderer/src/tv/usePackages.ts
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
 ---
 
 # Motywy trybu TV jako paczki z serwera

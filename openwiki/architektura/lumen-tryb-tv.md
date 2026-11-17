@@ -1,18 +1,26 @@
 ---
 type: architektura
 title: "Lumen — tryb TV i ustawienia"
-description: "Układ TV Lumena: ekrany (systemy, podgrupy, lista gier, strona gry), trzy układy listy (lista, wstęga, plakaty) wybierane dla grupy, motywy wbudowane, sterowanie padem, Ustawienia w siedmiu działach z „Zaawansowane”, kopiuj / wklej."
+description: "Układ TV Lumena: ekrany (systemy, podgrupy, lista gier, strona gry), trzy układy listy (lista, wstęga, plakaty) wybierane dla grupy, grafiki, filtry i sortowanie wspólne z pulpitem, motywy wbudowane, sterowanie padem, Ustawienia w siedmiu działach z „Zaawansowane”, kopiuj / wklej."
 tags: [lumen, tv-mode, react, navigation, settings, themes]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T15:15:29.370Z
+    at: 2026-11-17T19:02:08.485Z
 sources:
   - id: openwiki-source-e868c5f48de252372a102b58
     resource: repo://lumen/src/main/editMenu.ts
+  - id: openwiki-source-d1b9ce3766cc38562686f8ba
+    resource: repo://lumen/src/main/index.ts
+  - id: openwiki-source-09c571f087696e3e2b1cfee0
+    resource: repo://lumen/src/main/store/prefs.ts
   - id: openwiki-source-f1d754446827eee77cdff1aa
     resource: repo://lumen/src/renderer/src/lib/primary.ts
+  - id: openwiki-source-8d8eb4637b8ad24e583b4a7c
+    resource: repo://lumen/src/renderer/src/screens/Group.tsx
   - id: openwiki-source-21c4358c86ff6f976f631820
     resource: repo://lumen/src/renderer/src/screens/Settings.tsx
+  - id: openwiki-source-7e5c6e51406f51842496057b
+    resource: repo://lumen/src/renderer/src/tv/filters.ts
   - id: openwiki-source-e080b6221e297cf7c50b630e
     resource: repo://lumen/src/renderer/src/tv/gameParts.tsx
   - id: openwiki-source-5e75babc84cf5ff414c20fe0
@@ -27,7 +35,7 @@ sources:
     resource: repo://lumen/src/renderer/src/tv/TvGamePage.tsx
   - id: openwiki-source-7ebb2eee42acf299ab5362e6
     resource: repo://lumen/src/renderer/src/tv/TvGames.tsx
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+generated: { by: "claude-code", at: "2026-11-17T19:02:08.485Z" }
 ---
 
 # Lumen — tryb TV i ustawienia
@@ -60,8 +68,28 @@ albo „jeszcze nie grana”, rok i system; wszystkie szczegóły są na stronie
 jeden znacznik (`stateTag`: w grze → pobieranie → na dysku → lokalnie / zainstalowana).
 
 Sterowanie listy: A — strona gry, X — „Graj” od razu (`usePrimaryAction`, ta sama główna akcja co w szczegółach
-pulpitu), Y — filtry i sortowanie (`TvFilters`, zapamiętane dla grupy), L3 — szukaj, R3 — ulubiona, LB / RB —
-o stronę, LT / RT — skok po literach (`letters.ts`, według klucza sortowania), Start — menu.
+pulpitu), Y — filtry i sortowanie (`TvFilters`, zapamiętane dla grupy, wspólne z pulpitem — niżej), L3 — szukaj,
+R3 — ulubiona, LB / RB — o stronę, LT / RT — skok po literach (`letters.ts`, według klucza sortowania), Start — menu.
+
+### Wspólne z pulpitem: grafiki, filtry i sortowanie
+
+Tryb TV i pulpit to dwa widoki tej samej biblioteki (ustalenie z 2026-11-17, Lumen 1.0.76). Różnią się
+pokazaniem, nie danymi:
+
+- **Grafiki gry.** Pulpit, Deck i tryb TV czytają jeden zbiór wyborów `prefs.art` (także grafiki grup biblioteki
+  `navgrp:…`) i tę samą kolejność źródeł: żądanie obrazka gry idzie tą samą drogą w każdym widoku (`emuArt` /
+  `artwork.resolve` w `lumen/src/main/index.ts`); osobną funkcję ma tylko grafika grupy (`groupArt`: wybór gracza,
+  potem domyślna z serwera). Okno grafik otwarte w trybie TV zmienia te same grafiki co na pulpicie; tryb TV
+  różni się tylko nazwami rodzajów („Okładka”, „Zrzut / tło”) i brakiem ikon. Lumen 1.0.9–1.0.75 trzymał osobne
+  wybory TV (`artTv`); przy wczytaniu ustawień przechodzą one do `art` (`mergeTvArt` w
+  `lumen/src/main/store/prefs.ts`): wybór tylko w TV — ten wybór, przy obu — nowszy według znacznika czasu.
+- **Filtry i sortowanie grupy.** Jeden zapis na grupę (`lumen.filter.<id podgrupy>`, `filterId` w
+  `tv/filters.ts`; cała grupa na karuzeli — jej „Wszystkie”, np. `fav/all`) czytany przez `TvGames` i pulpit
+  (`screens/Group.tsx`). Filtr instalacji z paska pulpitu to pole „Pokaż” (`local` / `notlocal`), „Sortuj” —
+  sortowanie (`title` / `last` / `added` / `time`); oba widoki filtrują i sortują tą samą funkcją `apply`. W oknie
+  filtrów TV są więc też „tylko niezainstalowane” (gry EmuStart: „tylko poza cache”) i sortowanie „nowo dodane”.
+  Stare osobne zapisy (≤ 1.0.75) są czytane raz: najpierw zapis TV grupy (`oldTvKeys`), bez niego — pulpitu, i od
+  razu zapisywane jako wspólny, więc oba widoki widzą to samo.
 
 Skok po literach bierze literę z klucza sortowania gry (`sortName`, bez „The / A / An”). Gry jednej serii stoją
 na liście razem pod nazwą serii ([Serie gier](../przeplywy/serie-gier.md)), więc gra w takim bloku liczy się do
