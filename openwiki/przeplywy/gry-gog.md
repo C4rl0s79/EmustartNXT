@@ -19,7 +19,7 @@ sources:
     resource: repo://emustart/emustart/goginstall.py
   - id: openwiki-source-4f8116fc21f8acbfcb3dc65d
     resource: repo://emustart/emustart/gogsaves.py
-generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
+generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
 ---
 
 # Gry GOG z archiwum serwera

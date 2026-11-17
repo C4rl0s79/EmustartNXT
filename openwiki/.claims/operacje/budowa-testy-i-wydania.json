@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:495449b437547e760cb86ee1f64025d6ea50db2ba568b1de21334018db4a7124",
+  "pageVersion": "sha256:7346041651861ca8af7ab3f2840de3e57aed0af012b26cbda8966170c06f1d5d",
   "claims": [
     {
       "id": "claim_9173fb4ee5df47cc9e0e312f8ddb4a47",
@@ -24,11 +24,11 @@
     },
     {
       "id": "claim_20ea5d0756534e388e4435fe74f24410",
-      "statement": "Wyzwalacz tagów emustart-v* w workflow Android jest wyłączony do czasu przeniesienia sekretów podpisu APK; workflow buduje assembleRelease z JDK 17 i Gradle 8.11.1.",
+      "statement": "Workflow Android buduje APK (assembleRelease, JDK 17, Gradle 8.11.1) także przy tagach emustart-v*; przy tagu podpisuje je podpisem wydania i dołącza APK z plikiem .sig do wydania.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/android.yml#L1-L45",
-          "version": "repo-lines-v1:sha256:595ac00bc2cf80b47d4bc360c98003134b7baa096f40015e00281d5ad83a2679:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1MTQ5YWQ3MDQwNGI4YzQxNzZhZjU3YjhlZDIzYTVjMTFiYzU2ZDQ5YWMyNDJlMTM3ZjM1NjM5YmZiMDU1NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhZjFhYzE2YWEzODRlZmYyNDZlMTJlYzc1Yzk2MDM0YWUwOWVhNTQ1YzIwMjAyOTM4Y2MyMWRhMTg1NzY3M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNWVjNTliOWYxOTBlYjZhY2YyOTVmZmYxYTJjMjQxZmJkZThmYzgxNjU2ZDhhYmYxNjg5NmY1YzVmY2FjZDUifQ"
+          "resource": "repo://.github/workflows/android.yml#L1-L77",
+          "version": "repo-lines-v1:sha256:d3ca3b4ab4a2e9e5faaf702bff5741427dbf6a635068eb48f376c85517adaa44:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmNGE5NGViMzVkYzFhYThiNjAzMzkxNGU2NWI2NDYxOGEwZGQ4MjdmZmQzYmE1MDNiZWQ3Mzc0M2I4MjgzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NTZlM2Y5YzgyMWU0Y2M4YjEyNTNjMTRlOWZjOWYxMzQzZDhjNGJjMjNiZjk2NDA3MjIzNTE2Y2FjY2ZhYzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -151,10 +151,20 @@
           "version": "repo-lines-v1:sha256:e9d8984dd90222b271983d5c4e217e08fe6c423d4921606d07f9888e7a0382a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmNWVjMmIzNTAyZjcxZGY5NzJjZmFmOWVlYTIwODJlOGM5NWQ1ZWZiNjk0MjAxMmQ1Y2M5YmExYTliMGIxNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyMjlmNzIwYTRiNDQ0MmNmNzA0M2NiZDA2MTkyNjdmMjE3NDc0YWM2ZTEwYzlmOTVjYmVmNTZiNjY0MDE1NzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxYzkxYzZhYWIzOTQ1N2U2NTk5NjA0YTI4YThlZTlhNjhlNTgyMGQ3OTAwZjM1NWQ1MGI5ZGQ5ZTkxZWU1NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlODhlYzQ4NTg5ZTcwM2E2Y2VmNzhkOTQzNGM0MWNiYzQzZWU5ZDZkNzFmZmY5ODU0YWVmNDFhOWYwNWE5MjAifQ"
         }
       ]
+    },
+    {
+      "id": "claim_5948a412a9394356b61fcd2df698967e",
+      "statement": "Gradle podpisuje APK kluczem z sekretu ANDROID_KEYSTORE_B64 (alias domyślnie emustart, hasło klucza domyślnie hasło magazynu), a bez tego sekretu kluczem debug.",
+      "evidence": [
+        {
+          "resource": "repo://emustart/android/app/build.gradle.kts#L13-L51",
+          "version": "repo-lines-v1:sha256:f7c08bc4239afee33826bdc86bb2ff402cdc98eef50b754d1124cdb4793612e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNTRlYzJhNzE5YTU1MzNmMTRkOWU3MTgwOTgxYWQwOTdjN2E2ZDYyZmE5NzE4MWRiODkxMWU5YWFmNDU0YjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNTFiZmFiY2ZiNmQ4OWZkOWY0ZTNiN2JjNGExNzRmZDkwYzk5ODE4NmU0ZmRlMmM4ZmEzNGU2ZDVjMjkzYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhYjFlZDU0YzlkOThlOTQ2MTFhZWY4MWZhMThkZTJkMTEzMjExZTJjZTcwNTFkMDBiNzkwNDkxOGM1OTQzN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjNGE0ZmEyYjFlZWY5NDQ5NDRmMzRjMThmYjliNTFmMzdkYWU0MGJiZTFkYzViMjNmMGRmZTM4MzQ5MWI1NzQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T00:45:56.894Z"
+    "at": "2026-11-17T15:15:29.370Z"
   }
 }

@@ -5,7 +5,7 @@ description: "Jak zbudować i przetestować EmuStart (build.ps1, PyInstaller, Gr
 tags: [build, ci, release, testing, signing, github-actions, openwiki]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T00:45:56.894Z
+    at: 2026-11-17T15:15:29.370Z
 sources:
   - id: openwiki-source-4e3e538728489e7a1208c697
     resource: repo://.github/workflows/android.yml
@@ -17,6 +17,8 @@ sources:
     resource: repo://.github/workflows/windows.yml
   - id: openwiki-source-8037e2358a2c4f9b2c722a11
     resource: repo://AGENTS.md
+  - id: openwiki-source-3a86e937b3bdf9fc386b02ba
+    resource: repo://emustart/android/app/build.gradle.kts
   - id: openwiki-source-8157ecc58d2847ca6e5feddb
     resource: repo://emustart/build.ps1
   - id: openwiki-source-5938cfad97d428b6e016845b
@@ -31,7 +33,7 @@ sources:
     resource: repo://lumen/scripts/sign-release.mjs
   - id: openwiki-source-ee4b9047b69765a31df0868a
     resource: repo://scripts/publish_wiki.py
-generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
+generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
 ---
 
 # Budowa, testy i wydania
@@ -71,7 +73,7 @@ Wersja programu jest w `emustart/emustart/__init__.py`; APK bierze ją stamtąd.
 | Workflow | Wyzwalacz | Co robi |
 |---|---|---|
 | `.github/workflows/windows.yml` | push na `main` i PR (zmiany w `emustart/…`), tag `emustart-v*`, ręcznie | `windows-latest`, Python 3.14, `build.ps1` (testy + PyInstaller), ZIP-y jako artefakty; przy tagu: podpis i dołączenie do wydania |
-| `.github/workflows/android.yml` | push na `main` (zmiany w Androidzie), ręcznie | `ubuntu-latest`, JDK 17, Gradle 8.11.1, `gradle -p android assembleRelease`; APK jako artefakt |
+| `.github/workflows/android.yml` | push na `main` (zmiany w Androidzie), tag `emustart-v*`, ręcznie | `ubuntu-latest`, JDK 17, Gradle 8.11.1, `gradle -p android assembleRelease`; APK jako artefakt; przy tagu: podpis wydania i dołączenie do wydania |
 
 Przy tagu `emustart-v*` `windows.yml`:
 
@@ -81,10 +83,14 @@ Przy tagu `emustart-v*` `windows.yml`:
    w `emustart/CHANGELOG.md`;
 3. dołącza ZIP-y i pliki `.sig` (`gh release upload --clobber`).
 
-Wyzwalacz tagów w `android.yml` jest **wyłączony** (`# tags: ["emustart-v*"]` — „do przeniesienia
-sekretów podpisu APK do EmustartNXT”), więc wydania nie dostają dziś APK z CI. Sekrety podpisu APK
-używane przez workflow: `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
-`ANDROID_KEY_PASSWORD`.
+Przy tagu `emustart-v*` `android.yml` buduje podpisane APK, podpisuje je też podpisem wydania
+(`tools/release_sign.py`, sekret `EMUSTART_SIGNING_KEY` — serwer sprawdza go przed udostępnieniem APK), czeka,
+aż `windows.yml` założy wydanie, i dołącza APK z `.sig`. Wyzwalacz tagów był wyłączony do przeniesienia sekretów
+podpisu APK z dawnego repozytorium EmuStart; od 2026-11-17 (EmuStart 0.66.2) są w EmustartNXT — ten sam klucz co
+dotychczasowa aplikacja, więc telefon instaluje APK jako aktualizację. Sekrety podpisu APK używane przez Gradle
+(`emustart/android/app/build.gradle.kts`): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS` (bez niego alias `emustart`), `ANDROID_KEY_PASSWORD` (bez niego hasło magazynu); bez
+`ANDROID_KEYSTORE_B64` APK jest podpisane kluczem debug.
 
 > W `lumen/engine/.github/workflows/` leżą stare kopie workflowów z repozytorium EmuStart. GitHub
 > uruchamia tylko workflowy z `.github/workflows/` w katalogu głównym, więc te kopie nie działają.

@@ -5,7 +5,7 @@ description: "Układ TV Lumena: ekrany (systemy, podgrupy, lista gier, strona gr
 tags: [lumen, tv-mode, react, navigation, settings, themes]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T00:45:56.894Z
+    at: 2026-11-17T15:15:29.370Z
 sources:
   - id: openwiki-source-e868c5f48de252372a102b58
     resource: repo://lumen/src/main/editMenu.ts
@@ -15,13 +15,19 @@ sources:
     resource: repo://lumen/src/renderer/src/screens/Settings.tsx
   - id: openwiki-source-e080b6221e297cf7c50b630e
     resource: repo://lumen/src/renderer/src/tv/gameParts.tsx
+  - id: openwiki-source-5e75babc84cf5ff414c20fe0
+    resource: repo://lumen/src/renderer/src/tv/letters.ts
   - id: openwiki-source-995bad65fd78393a2ee6c0bb
     resource: repo://lumen/src/renderer/src/tv/themes.ts
+  - id: openwiki-source-60b01e1365e3b6ce63063912
+    resource: repo://lumen/src/renderer/src/tv/tv.css
+  - id: openwiki-source-75d0318f11821f4372c5ba8d
+    resource: repo://lumen/src/renderer/src/tv/TvCoverflow.tsx
   - id: openwiki-source-6557b9db6c3c9c21c234f34c
     resource: repo://lumen/src/renderer/src/tv/TvGamePage.tsx
   - id: openwiki-source-7ebb2eee42acf299ab5362e6
     resource: repo://lumen/src/renderer/src/tv/TvGames.tsx
-generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
+generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
 ---
 
 # Lumen — tryb TV i ustawienia
@@ -57,11 +63,30 @@ Sterowanie listy: A — strona gry, X — „Graj” od razu (`usePrimaryAction`
 pulpitu), Y — filtry i sortowanie (`TvFilters`, zapamiętane dla grupy), L3 — szukaj, R3 — ulubiona, LB / RB —
 o stronę, LT / RT — skok po literach (`letters.ts`, według klucza sortowania), Start — menu.
 
+Skok po literach bierze literę z klucza sortowania gry (`sortName`, bez „The / A / An”). Gry jednej serii stoją
+na liście razem pod nazwą serii ([Serie gier](../przeplywy/serie-gier.md)), więc gra w takim bloku liczy się do
+litery serii: `TvGames` pobiera klucze bloków przez `placedSeriesKeys(system.games)` — te same, których użyło
+`arrangeSeries` przy układaniu grupy — i tylko przy sortowaniu po tytule (inne sortowanie i „Ostatnio grane”
+rozrzucają serie, więc tam litera jest z tytułu). Bez tego skok zatrzymywał się w środku bloku serii (zgłoszenie
+z listy Amiga WHDLoad). Litery z akcentem spoza polskiego alfabetu (É, Ü, Ø, Æ) liczą się jak litera bazowa, bo
+tak sortuje lista; polskie (Ł, Ó…) są osobnymi literami.
+
 Główną akcję gry (X na liście, „Graj” na stronie) wykonuje wspólne `runPrimary` (`lib/primary.ts`): akcja
 niedostępna pokazuje powód zamiast działać. „Graj od początku” to `launchFromStart` — to samo w oknie „Opcje gry”.
 
 Wydajność (decyzje z sesji z zacięciami): tło i logo gry wczytują się dopiero ~350 ms po zatrzymaniu wyboru,
-wstęga używa małych kopii okładek, a animowane plakaty stają tylko w trakcie przewijania.
+wstęga używa małych kopii okładek, a animowane plakaty stają tylko w trakcie przewijania. Gdy wybór stoi,
+`usePrefetchLogos` (`gameParts.tsx`) wczytuje do pamięci obrazów logo dwóch gier z każdej strony, więc krok w bok
+pokazuje logo od razu; logo bez pliku (HTTP 404) nie jest pobierane ponownie, inny błąd — przy następnym
+zatrzymaniu. Miejsce na logo pod listą (`.tv-summary__logo`) ma minimalną wysokość równą wysokości logo, więc
+wczytane logo nie przesuwa wstęgi, a długi tytuł nadal może je powiększyć.
+
+Wstęga (`coverflow`): odbicie okładki (motywy z `games.reflection`, np. Horyzont) to odwrócona kopia okładki
+(`.tv-flow__mirror` w `TvCoverflow.tsx`) z maską zanikania, a nie `-webkit-box-reflect` — Chromium rysował nim
+jedną klatkę, więc odbicie animowanej okładki stało. Kopia używa tego samego adresu obrazu, czyli tego samego
+pliku z pamięci obrazów. Tło wybranej gry zajmuje w tym układzie górną połowę ekranu na całą szerokość (bez
+powolnego przybliżania, które przycinało boki), z kryciem `var(--tv-flow-backdrop, 0.75)` — motyw może je ustawić;
+najwyższa okładka ma 44vh (`--tv-flow-max`).
 
 ### Strona gry
 

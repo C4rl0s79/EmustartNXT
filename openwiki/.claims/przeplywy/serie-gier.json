@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d7013777745b010032a8112dfb19a88f00569109dc33231996519b3de437a268",
+  "pageVersion": "sha256:9f619b802f8aa4e05d37820ee6940de6dba4a736c8bfc2e6822a998ab66582e0",
   "claims": [
     {
       "id": "claim_ca8f170d0e124d7284dff89956dbecc4",
@@ -55,10 +55,20 @@
           "version": "repo-lines-v1:sha256:cf7dd1b9a22397e459ac848fbc7aa49632cf1ddd28bd7fda9456401eabb989b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiMmU1NTEwM2U2NjVjOTJiZmY2Y2QyMTA5NGI5ODk0ZWI5ZWRhMjFlMzI4MjgzNGQxODI3MDc0YmFmODc0NDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNTQzMWVjZmM4MDRmZmRmMDg1ZjhhMWQwMThjNGY0MTY5NGIzMzhlZjEyZjY3YTdmMmM0NDIzNDU2OTIyM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NDQwYzY0MWYzZjJmYTAxYmI4NTI0ZDhlMDI5Zjg3NDY0MDIxZmYxYzBkMTk3YWIyZGViZjNiMTI2MmM1NWYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e09281e5a9e54b2186b82e182961f21d",
+      "statement": "arrangeSeries zapamiętuje dla zwróconej listy klucze sortowania, pod którymi postawił bloki serii; placedSeriesKeys zwraca je dla tej listy, a dla listy spoza arrangeSeries zwraca undefined.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/shared/series.ts#L268-L310",
+          "version": "repo-lines-v1:sha256:3b2fc22e895011ff49ec36f00bf938b5b788afa13022b28256373231a4d14592:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMDQzZjk2MjNlMWQwNzMzNzZjYWRiNzI3NmQ3ZmIzMmI0YzRjODYyOTFiNjI3ODY0ZDFlODFhZmQ5NDU2MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1ZmVjYjIxY2E5MWM0YTg4NzBjYmRiNTgxY2Y5Nzk5NmI4ZDJjOTA0MjhmMmIwN2MzMDEzZTk5NGI1MDMxNzQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-16T23:16:42.429Z"
+    "at": "2026-11-17T15:15:29.370Z"
   }
 }
