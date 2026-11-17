@@ -950,8 +950,30 @@
   height: calc(var(--tv-listlogo-h) + 2.5vh);
 }
 /* the mirror image under each cover, fading out towards the floor */
-.tv-flow--mirror .tv-flow__cover {
-  -webkit-box-reflect: below 0.8vh linear-gradient(transparent 60%, rgba(255, 255, 255, 0.3));
+/* a flipped copy of the cover (TvCoverflow), not -webkit-box-reflect: Chromium's reflection keeps one
+   frame, so an animated cover had a still reflection. The mask is drawn before the flip, as box-reflect's */
+.tv-flow__mirror {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.8vh);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  transform: scaleY(-1);
+  -webkit-mask-image: linear-gradient(transparent 60%, rgba(0, 0, 0, 0.3));
+  mask-image: linear-gradient(transparent 60%, rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+}
+.tv-flow__mirror .art,
+.tv-flow__mirror .art-placeholder {
+  position: relative;
+}
+.tv-flow__mirror .art-fit__bg {
+  display: none;
+}
+.tv-flow__mirror .art--fit {
+  object-fit: cover;
 }
 /* the selected cover: a ring in the theme's accent (part of the pad contract — always visible) */
 .tv-flow__item.sel .tv-flow__cover {
@@ -1230,10 +1252,13 @@
   gap: 0.8vh;
   min-width: 0;
 }
+/* a fixed height, as tall as the logo: the logo replacing the title (it loads later) moves nothing —
+   with min-height a logo taller than the title made the row grow and pushed the ribbon up. A title
+   wrapping past it overflows upwards (align-items: flex-end), not into the layout */
 .tv-summary__logo {
   display: flex;
   align-items: flex-end;
-  min-height: 9vh;
+  height: 11vh;
 }
 .tv-summary__logo h1 {
   margin: 0;
@@ -1283,6 +1308,30 @@
 .tv-games--posters > .tv-backdrop {
   opacity: 0.78;
 }
+/* the ribbon (layout "coverflow"): the game's art across the top half, the whole width — a wide "hero" picture
+   (~3:1) fits it with hardly anything cut at the sides; no slow zoom (it cut them); clearer than the hint it was,
+   fading into the page towards the covers. The covers are lower (--tv-flow-max), standing under it */
+.tv .tv-games--flow:not(.tv-games--posters) {
+  --tv-flow-max: 44vh;
+}
+.tv .tv-games--flow:not(.tv-games--posters) > .tv-backdrop {
+  inset: 0 0 50vh 0;
+  opacity: 0.75;
+}
+.tv .tv-games--flow:not(.tv-games--posters) > .tv-backdrop .art {
+  object-position: center 30%;
+  animation: none;
+}
+.tv .tv-games--flow:not(.tv-games--posters) > .tv-backdrop::after {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tv-bg) 35%, transparent) 0%,
+    transparent 22%,
+    transparent 55%,
+    color-mix(in srgb, var(--tv-bg) 70%, transparent) 82%,
+    var(--tv-bg) 100%
+  );
+}
 .tv-games--posters > .tv-backdrop::after {
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--tv-bg) 80%, transparent) 0%, transparent 55%),
@@ -1300,7 +1349,7 @@
   max-width: 60vw;
 }
 .tv-games--posters .tv-posters__summary .tv-summary__logo {
-  min-height: 20vh;
+  height: 20vh;
 }
 .tv-games--posters .tv-posters__summary .tv-logo .tv-logo__img {
   height: 20vh;

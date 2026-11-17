@@ -17,7 +17,7 @@ import { listTop } from './listWindow'
 import { letterJump } from './letters'
 import { TvCoverflow } from './TvCoverflow'
 import type { TvTheme } from './themes'
-import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails } from './gameParts'
+import { LogoTitle, TvBackdrop, TvSummary, stateTag, useDetails, usePrefetchLogos } from './gameParts'
 import { TvGamePage } from './TvGamePage'
 
 // Game list of one system (EmuStart look): titles on the left, cover | details | screenshot on the
@@ -80,6 +80,8 @@ export function TvGames({
     const t = setTimeout(() => setBackdrop(sel), 350)
     return () => clearTimeout(t)
   }, [sel?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // logo sąsiednich gier do pamięci, gdy wybór stoi: krok w bok pokazuje logo od razu (TvSummary, wiersze z logo)
+  usePrefetchLogos(games, idx, backdrop?.id === sel?.id)
   // wstęga (Horyzont): pozycja bez modulo — rośnie / maleje z każdym krokiem, więc wstęga kręci się bez końca, bez
   // przeskoku na początek, także przy jednej grze; gra = pozycja modulo długość listy (flowWindow)
   const [pos, setPos] = useState(idx)

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { DetailsResult, EmuGameOptions, Game } from '@shared/types'
 import { api, useStore } from '../store'
-import { readyArt } from '../lib/artCache'
+import { loadArt, readyArt } from '../lib/artCache'
 import { Art } from '../components/Art'
 import { useGameJob } from '../components/Jobs'
 import { formatBytes, formatLastPlayed, plural, formatPlaytime, htmlToParagraphs, stateLabel } from '../lib/format'
@@ -58,6 +58,29 @@ export function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
       )}
     </>
   )
+}
+
+// logo bez pliku (404): nie pobierać go przy każdym zatrzymaniu wyboru obok (do ponownego uruchomienia okna)
+const noLogo = new Set<string>()
+
+/**
+ * Logo gier obok wybranej, wczytane do pamięci obrazów, gdy wybór stoi (`settled`) — jak okładki na wstędze:
+ * krok w bok pokazuje logo od razu (LogoTitle bierze je z pamięci bez czekania), zamiast pobierać je dopiero
+ * po wyświetleniu gry. Przy przytrzymanym kierunku nic się nie pobiera (wybór nie stoi).
+ */
+export function usePrefetchLogos(games: Game[], idx: number, settled: boolean, around = 2): void {
+  const artRev = useStore((s) => s.artRev)
+  useEffect(() => {
+    const n = games.length
+    if (!settled || n < 2) return
+    for (let d = 1; d <= around; d++)
+      for (const i of [idx + d, idx - d]) {
+        const g = games[((i % n) + n) % n]
+        const url = api().art.url(g.id, 'logo', artRev[g.id] ?? 0, 'tv', true)
+        if (noLogo.has(url) || readyArt(url)) continue
+        loadArt(url).catch(() => noLogo.add(url))
+      }
+  }, [settled, idx, games, artRev, around])
 }
 
 /**
