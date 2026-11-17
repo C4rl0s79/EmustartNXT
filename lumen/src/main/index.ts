@@ -9,6 +9,7 @@ import { ThemeStore } from './themes'
 import { SeriesService } from './series'
 import { XboxProvider } from './xbox/provider'
 import { isStoreId } from './xbox/catalog'
+import { WikipediaDescriptions } from './details/wikipedia'
 import { accountTitles, clearLoginSession, flowFor, loginWindow, packLogin, refreshTokens, unpackLogin, xblIdentity, type MsTokens } from './xbox/account'
 import { SeriesPassWatch, serverActivity } from './serverActivity'
 import { watchProcesses, watchWindow } from './hangWatch'
@@ -197,6 +198,8 @@ const updater = new Updater({
   quit: () => app.quit()
 })
 const meta = new StoreMetadataProvider(paths.metaCache, () => settings.get().language)
+/** opisy z Wikipedii — ostatnie źródło dla każdej gry (etap 23b); czyszczone razem z pamięcią sklepu */
+const wiki = new WikipediaDescriptions(path.join(paths.metaCache, 'wikipedia.json'))
 const launchbox = new LaunchBoxService(paths.launchbox)
 const hidPads = new RawHidPads()
 const pads = new XInputPoller(() => hidPads.pads())
@@ -970,9 +973,100 @@ function withLaunchBox(gameId: string, r: DetailsResult): DetailsResult {
   return { ...r, details: fillFromLaunchBox(r.details, lb) }
 }
 
-/** the name to look a GOG game / shortcut up in LaunchBox: the administrator's (server) or the store's */
-function lbTitle(gameId: string, name: string): string {
-  return prefs.get().lbTitles[gameId] || name
+/**
+ * the name to look a game's description and facts up by (LaunchBox, Wikipedia): the administrator's LaunchBox
+ * name, else the game chosen in the art window's "Dopasowanie w SteamGridDB" (etap 23c), else the store's
+ */
+function detailsTitle(gameId: string, name: string): string {
+  const p = prefs.get()
+  return p.lbTitles[gameId] || p.art[gameId]?.sgdbGameName || name
+}
+
+const hasDescription = (d: GameDetails): boolean => !!(d.descriptionHtml?.trim() || d.descriptionText?.trim() || d.shortDescription?.trim())
+
+/** LaunchBox entry of a PC game (Windows, then MS-DOS), when the database is downloaded */
+async function pcLaunchBox(name: string): Promise<GameDetails | null> {
+  return (await launchbox.status()).ready ? gogLaunchBox(name) : null
+}
+
+/** the last source for every game (etap 23b): a Wikipedia summary when no other source had a description */
+async function withWikipedia(name: string, r: DetailsResult): Promise<DetailsResult> {
+  if (r.ok && hasDescription(r.details)) return r
+  const w = await wiki.summary(name).catch(() => null)
+  if (!w) return r.ok ? r : { ok: false, error: `${r.error} Wikipedia też nie ma artykułu o tej grze.` }
+  const info = { lang: w.lang, title: w.title, ...(w.url ? { url: w.url } : {}) }
+  if (r.ok) return { ...r, details: { ...r.details, descriptionText: w.text, wiki: info } }
+  return { ok: true, stale: false, details: { appId: 0, fetchedAt: Date.now(), source: 'wikipedia', name, descriptionText: w.text, wiki: info } }
+}
+
+/** Xbox game (etap 23a): the Microsoft product page, what it lacks from LaunchBox */
+async function xboxDetails(game: Game, title: string): Promise<DetailsResult> {
+  const x = await xbox.productDetails(game.xbox?.storeId ?? '')
+  const lb = await pcLaunchBox(title)
+  if (x && (x.description || x.short || x.developer || x.publisher || x.genres?.length)) {
+    const own: GameDetails = {
+      appId: 0,
+      fetchedAt: Date.now(),
+      source: 'xbox',
+      name: game.name,
+      shortDescription: x.short,
+      descriptionText: x.description || x.short,
+      genres: x.genres,
+      releaseDate: x.release,
+      developers: x.developer ? [x.developer] : undefined,
+      publishers: x.publisher ? [x.publisher] : undefined
+    }
+    return { ok: true, stale: false, details: lb ? { ...fillFromLaunchBox(own, lb), launchboxName: lb.name } : own }
+  }
+  if (lb) return { ok: true, stale: false, details: { ...lb, launchboxName: lb.name } }
+  return { ok: false, error: 'Nie znaleziono opisu tej gry w katalogu Microsoft ani w bazie LaunchBox.' }
+}
+
+/** a game's description from its own sources (store, GOG Manager, EmuStart server, Microsoft) and LaunchBox */
+async function ownDetails(gameId: string, game: Game | undefined, title: string, force?: boolean): Promise<DetailsResult> {
+  if (game?.emu) {
+    if (engine.state !== 'ready')
+      return withLaunchBox(gameId, { ok: false, error: engine.message ?? 'Silnik EmuStart nie działa — opis jest niedostępny.' })
+    return withLaunchBox(gameId, emuDetails(await engine.call<Record<string, unknown>>('game_detail', [game.emu.id], 30_000)))
+  }
+  if (game?.gog) {
+    // description from GOG Manager's game folder on the server, what it lacks (rating, players, age
+    // rating…) from the LaunchBox database; without a GOG description — LaunchBox alone
+    const info = gog.info(gameId)
+    const st = await launchbox.status()
+    const lb = st.ready ? gogLaunchBox(title) : null
+    if (info?.description || info?.lead) {
+      const own: GameDetails = {
+        appId: 0,
+        fetchedAt: Date.now(),
+        source: 'gog',
+        name: game.name,
+        shortDescription: info.lead || undefined,
+        descriptionText: info.description || info.lead,
+        genres: info.tags?.length ? info.tags : undefined,
+        releaseDate: info.release || undefined,
+        developers: info.developers?.length ? info.developers : undefined,
+        publishers: info.publishers?.length ? info.publishers : undefined
+      }
+      return { ok: true, stale: false, details: lb ? { ...fillFromLaunchBox(own, lb), launchboxName: lb.name } : own }
+    }
+    if (!st.ready) return { ok: false, error: 'Opisy gier GOG wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
+    return lb ? { ok: true, details: lb, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
+  }
+  if (game?.shortcut) {
+    const st = await launchbox.status()
+    if (!st.ready) return { ok: false, error: 'Opisy gier spoza Steama wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
+    const d = launchbox.details(title, platformForTags(game.shortcut.tags))
+    return d ? { ok: true, details: d, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
+  }
+  if (game?.source === 'xbox') return xboxDetails(game, title)
+  const appId = steamAppIdOf(gameId)
+  if (!appId) return { ok: false, error: gameId.startsWith('demo:') ? 'Brak danych dla pozycji demonstracyjnej.' : 'Brak opisu tej gry.' }
+  const r = await meta.get(appId, force)
+  if (r.ok || !game) return r
+  // the store does not return the game (removed from sale, offline without a cached copy): LaunchBox
+  const lb = await pcLaunchBox(title)
+  return lb ? { ok: true, stale: false, details: { ...lb, launchboxName: lb.name } } : r
 }
 
 /** list facts from LaunchBox per game (cleared when the administrator changes a game's name) */
@@ -1610,7 +1704,7 @@ function registerIpc(): void {
   const fromLaunchBox = (g: Game): GameFacts | undefined => {
     const hit = lbFacts.get(g.id)
     if (hit || !launchbox.ready) return hit
-    const name = lbTitle(g.id, g.name)
+    const name = detailsTitle(g.id, g.name)
     const d = g.source === 'gog' ? gogLaunchBox(name) : launchbox.details(name, g.shortcut ? platformForTags(g.shortcut.tags) : 'Windows')
     const f = d ? factsOf(d) : {}
     lbFacts.set(g.id, f)
@@ -1668,44 +1762,9 @@ function registerIpc(): void {
 
   handle(IPC.gameDetails, async (gameId: string, force?: boolean) => {
     const game = findGame(gameId)
-    if (game?.emu) {
-      if (engine.state !== 'ready')
-        return withLaunchBox(gameId, { ok: false, error: engine.message ?? 'Silnik EmuStart nie działa — opis jest niedostępny.' })
-      return withLaunchBox(gameId, emuDetails(await engine.call<Record<string, unknown>>('game_detail', [game.emu.id], 30_000)))
-    }
-    if (game?.gog) {
-      // description from GOG Manager's game folder on the server, what it lacks (rating, players, age
-      // rating…) from the LaunchBox database; without a GOG description — LaunchBox alone
-      const info = gog.info(gameId)
-      const st = await launchbox.status()
-      const lb = st.ready ? gogLaunchBox(lbTitle(gameId, game.name)) : null
-      if (info?.description || info?.lead) {
-        const own: GameDetails = {
-          appId: 0,
-          fetchedAt: Date.now(),
-          source: 'gog',
-          name: game.name,
-          shortDescription: info.lead || undefined,
-          descriptionText: info.description || info.lead,
-          genres: info.tags?.length ? info.tags : undefined,
-          releaseDate: info.release || undefined,
-          developers: info.developers?.length ? info.developers : undefined,
-          publishers: info.publishers?.length ? info.publishers : undefined
-        }
-        return { ok: true, stale: false, details: lb ? { ...fillFromLaunchBox(own, lb), launchboxName: lb.name } : own }
-      }
-      if (!st.ready) return { ok: false, error: 'Opisy gier GOG wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
-      return lb ? { ok: true, details: lb, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
-    }
-    if (game?.shortcut) {
-      const st = await launchbox.status()
-      if (!st.ready) return { ok: false, error: 'Opisy gier spoza Steama wymagają bazy LaunchBox — pobierz ją w Ustawieniach.' }
-      const d = launchbox.details(lbTitle(gameId, game.name), platformForTags(game.shortcut.tags))
-      return d ? { ok: true, details: d, stale: false } : { ok: false, error: 'Nie znaleziono tej gry w bazie LaunchBox.' }
-    }
-    const appId = steamAppIdOf(gameId)
-    if (!appId) return { ok: false, error: 'Brak danych dla pozycji demonstracyjnej.' }
-    return meta.get(appId, force)
+    if (!game) return ownDetails(gameId, undefined, '', force)
+    const title = detailsTitle(gameId, game.name)
+    return withWikipedia(title, await ownDetails(gameId, game, title, force))
   })
 
   handle(IPC.launchboxStatus, () => launchbox.status())
@@ -1845,6 +1904,7 @@ function registerIpc(): void {
   })
   handle(IPC.artSetMatch, async (gameId: string, g: SgdbGame | null) => {
     const p = await updatePrefs((pr) => ops.setSgdbMatch(pr, gameId, g?.id, g?.name))
+    lbFacts.delete(gameId) // the chosen name is also the description's (etap 23c)
     bumpArt(gameId)
     return p
   })

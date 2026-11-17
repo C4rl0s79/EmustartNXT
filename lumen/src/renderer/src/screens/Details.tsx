@@ -28,6 +28,8 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
   const [logoOk, setLogoOk] = useState(true)
   // bumped after the LaunchBox name changed: the description is read again
   const [detailsRev, setDetailsRev] = useState(0)
+  // a new match in the art window is also the name the description is looked up by (etap 23c)
+  const matchRev = useStore((s) => s.prefs?.art[gameId]?.sgdbGameId ?? 0)
   const isEmu = game?.source === 'emustart'
   const emuSummary = useStore((s) => s.snapshot?.emustart)
   const allJobs = useStore((s) => s.jobs.jobs)
@@ -47,7 +49,7 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
     return () => {
       alive = false
     }
-  }, [gameId, detailsRev])
+  }, [gameId, detailsRev, matchRev])
 
   // the open game lights the room with its own colour (its cover, as on the grid)
   useEffect(() => setGlowFrom(api().art.url(gameId, 'grid', useStore.getState().artRev[gameId] ?? 0)), [gameId])
@@ -301,7 +303,13 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
         )}
         {details === null && game.source !== 'demo' && (
           <p className="details__loading">
-            {game.emu ? 'Wczytywanie opisu z EmuStart…' : game.shortcut ? 'Szukanie w bazie LaunchBox…' : 'Wczytywanie informacji ze sklepu Steam…'}
+            {game.emu
+              ? 'Wczytywanie opisu z EmuStart…'
+              : game.shortcut
+                ? 'Szukanie w bazie LaunchBox…'
+                : game.source === 'xbox'
+                  ? 'Wczytywanie opisu z katalogu Microsoft…'
+                  : 'Wczytywanie informacji ze sklepu Steam…'}
           </p>
         )}
         {details && !details.ok && game.source !== 'demo' && <p className="details__muted">{details.error}</p>}
@@ -316,6 +324,17 @@ export function DetailsScreen({ gameId }: { gameId: string }) {
           <p className="details__muted">
             Opis i grafiki: folder gry GOG Managera na serwerze EmuStart (zmiana grafik: „Grafiki”)
             {d.launchboxName ? ` · uzupełnione z LaunchBox („${d.launchboxName}”)` : ''}.
+          </p>
+        )}
+        {details?.ok && d?.source === 'xbox' && (
+          <p className="details__muted">
+            Opis: katalog Microsoft Store{d.launchboxName ? ` · uzupełnione z LaunchBox („${d.launchboxName}”)` : ''}
+            {d.wiki ? '' : '.'}
+          </p>
+        )}
+        {details?.ok && d?.wiki && (
+          <p className="details__muted">
+            Opis: Wikipedia ({d.wiki.lang === 'pl' ? 'polska' : 'angielska'}, „{d.wiki.title}”) — inne źródła nie miały opisu tej gry.
           </p>
         )}
         {details?.ok && d?.source === 'emustart' && <p className="details__muted">Opis: biblioteka serwera EmuStart. Plakat i tło: SteamGridDB albo grafiki z serwera i LaunchBox — według ustawienia „Najpierw grafiki ze SteamGridDB” (zmiana dla tej gry: „Grafiki”).</p>}

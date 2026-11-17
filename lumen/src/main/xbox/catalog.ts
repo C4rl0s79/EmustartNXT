@@ -77,6 +77,55 @@ export function productOf(p: Record<string, unknown>): XboxProduct | null {
   }
 }
 
+/** opis gry ze strony produktu (etap 23a) — pobierany przy otwarciu gry, nie razem z katalogiem */
+export interface XboxDetails {
+  description?: string
+  short?: string
+  developer?: string
+  publisher?: string
+  genres?: string[]
+  /** data premiery RRRR-MM-DD */
+  release?: string
+}
+
+/** jeden produkt z odpowiedzi displaycatalog → opis; pierwszy język z treścią (pl, potem en) */
+export function detailsOf(p: Record<string, unknown>): XboxDetails {
+  const lps = (p.LocalizedProperties as Record<string, unknown>[] | undefined) ?? []
+  const first = (k: string): string | undefined =>
+    lps.map((lp) => (typeof lp[k] === 'string' ? (lp[k] as string).trim() : '')).find((s) => !!s) || undefined
+  const props = (p.Properties as { Categories?: unknown; Category?: unknown } | undefined) ?? {}
+  const cats = [...(Array.isArray(props.Categories) ? props.Categories : []), props.Category]
+    .map((c) => (typeof c === 'string' ? c.trim() : ''))
+    .filter((c, i, a) => c && a.indexOf(c) === i)
+  const market = (p.MarketProperties as { OriginalReleaseDate?: string }[] | undefined) ?? []
+  const date = /^(\d{4}-\d{2}-\d{2})/.exec(String(market[0]?.OriginalReleaseDate ?? ''))?.[1]
+  const year = Number(date?.slice(0, 4))
+  const out: XboxDetails = {}
+  const description = first('ProductDescription')
+  const short = first('ShortDescription')
+  const developer = first('DeveloperName')
+  const publisher = first('PublisherName')
+  if (description) out.description = description
+  if (short) out.short = short
+  if (developer) out.developer = developer
+  if (publisher) out.publisher = publisher
+  if (cats.length) out.genres = cats
+  // 1601-01-01 i podobne — „brak daty” w katalogu Microsoft
+  if (date && year > 1970 && year < 3000) out.release = date
+  return out
+}
+
+/** opis jednej gry ze strony produktu Microsoft */
+export async function productDetails(storeId: string, fetcher = fetchWithTimeout): Promise<XboxDetails | null> {
+  const id = storeId.toUpperCase()
+  if (!STORE_ID.test(id)) return null
+  const r = await fetcher(`https://displaycatalog.mp.microsoft.com/v7.0/products?bigIds=${id}&market=${MARKET}&languages=${LANG},en-us`, {}, 20_000)
+  const d = (await r.json()) as { Products?: Record<string, unknown>[] }
+  if (!Array.isArray(d?.Products)) throw new Error('katalog produktów Microsoft: zła odpowiedź')
+  const p = d.Products.find((x) => String(x.ProductId ?? '').toUpperCase() === id)
+  return p ? detailsOf(p) : null
+}
+
 /** opisy produktów po StoreId (po 20 na pytanie) */
 export async function products(ids: string[], fetcher = fetchWithTimeout): Promise<Record<string, XboxProduct>> {
   const out: Record<string, XboxProduct> = {}

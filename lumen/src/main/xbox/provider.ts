@@ -3,7 +3,7 @@ import type { Game, XboxSummary } from '@shared/types'
 import { JsonFile } from '../store/jsonFile'
 import { log } from '../logger'
 import { sortKey } from '../library/merge'
-import { gamePassIds, isStoreId, products, type XboxProduct } from './catalog'
+import { gamePassIds, isStoreId, productDetails, products, type XboxDetails, type XboxProduct } from './catalog'
 import { scanInstalled, type XboxInstalled } from './installed'
 
 /**
@@ -18,6 +18,8 @@ interface Cache {
 }
 
 const DAY = 24 * 3600_000
+/** opis gry ze strony produktu — odświeżany po 30 dniach */
+const DETAILS_TTL = 30 * DAY
 const EMPTY: Cache = { at: 0, gamePass: [], products: {} }
 
 /** Gry z danych: zainstalowane, z konta i z Game Pass — jedna pozycja na StoreId. */
@@ -70,13 +72,36 @@ export class XboxProvider extends EventEmitter {
   private busy: Promise<void> | null = null
   private account: { gamertag: string } | null = null
   private accountError = ''
+  private details: Record<string, { at: number; d: XboxDetails }> | null = null
+  private detailsFile: JsonFile<Record<string, { at: number; d: XboxDetails }>>
 
   constructor(
     cacheFile: string,
-    private readonly showGamePass: () => boolean = () => true
+    private readonly showGamePass: () => boolean = () => true,
+    detailsFile = cacheFile.replace(/\.json$/i, '') + '-details.json'
   ) {
     super()
     this.file = new JsonFile<Cache>(cacheFile, () => EMPTY, (raw) => clean(raw))
+    this.detailsFile = new JsonFile(detailsFile, () => ({}))
+  }
+
+  /** opis gry (etap 23a): z dysku, gdy młodszy niż 30 dni; bez sieci — ostatni zapis; null — brak produktu */
+  async productDetails(storeId: string): Promise<XboxDetails | null> {
+    const id = storeId.toUpperCase()
+    if (!isStoreId(id)) return null
+    this.details ??= await this.detailsFile.load()
+    const known = this.details[id]
+    if (known && Date.now() - known.at < DETAILS_TTL) return known.d
+    try {
+      const d = await productDetails(id)
+      if (!d) return known?.d ?? null
+      this.details[id] = { at: Date.now(), d }
+      await this.detailsFile.save(this.details).catch(() => undefined)
+      return d
+    } catch (e) {
+      log.warn('xbox', `opis ${id}: ${(e as Error).message}`)
+      return known?.d ?? null
+    }
   }
 
   get currentGames(): Game[] {

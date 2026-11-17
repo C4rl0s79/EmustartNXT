@@ -14,16 +14,19 @@ const details: Record<string, DetailsResult> = {}
 
 export function useDetails(game: Game | undefined): DetailsResult | null {
   const [d, setD] = useState<DetailsResult | null>(null)
+  // a new match chosen in the art window is also the name the description is looked up by (etap 23c)
+  const rev = useStore((s) => (game ? (s.artRev[game.id] ?? 0) : 0))
   useEffect(() => {
     if (!game) return setD(null)
-    if (details[game.id]) return setD(details[game.id])
+    const key = `${game.id}|${rev}`
+    if (details[key]) return setD(details[key])
     setD(null)
     let alive = true
     const t = setTimeout(() => {
       void api()
         .game.details(game.id)
         .then((r) => {
-          details[game.id] = r
+          details[key] = r
           if (alive) setD(r)
         })
         .catch(() => undefined)
@@ -32,7 +35,7 @@ export function useDetails(game: Game | undefined): DetailsResult | null {
       alive = false
       clearTimeout(t)
     }
-  }, [game])
+  }, [game, rev])
   return d
 }
 
