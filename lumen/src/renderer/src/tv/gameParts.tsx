@@ -63,6 +63,21 @@ export function LogoTitle({ game, text }: { game: Game; text: ReactNode }) {
 // logo bez pliku (404): nie pobierać go przy każdym zatrzymaniu wyboru obok (do ponownego uruchomienia okna)
 const noLogo = new Set<string>()
 
+/** gry obok wybranej (`idx`), do `around` z każdej strony; lista idzie w kółko */
+export function neighbourGames(games: Game[], idx: number, around: number): Game[] {
+  const count = games.length
+  const out: Game[] = []
+  for (let step = 1; step <= around; step++)
+    for (const pos of [idx + step, idx - step]) out.push(games[((pos % count) + count) % count])
+  return out
+}
+
+/** logo do pamięci obrazów, chyba że już tam jest albo go nie ma (404) */
+export function prefetchLogo(url: string): void {
+  if (noLogo.has(url) || readyArt(url)) return
+  loadArt(url).catch(() => noLogo.add(url))
+}
+
 /**
  * Logo gier obok wybranej, wczytane do pamięci obrazów, gdy wybór stoi (`settled`) — jak okładki na wstędze:
  * krok w bok pokazuje logo od razu (LogoTitle bierze je z pamięci bez czekania), zamiast pobierać je dopiero
@@ -71,15 +86,8 @@ const noLogo = new Set<string>()
 export function usePrefetchLogos(games: Game[], idx: number, settled: boolean, around = 2): void {
   const artRev = useStore((s) => s.artRev)
   useEffect(() => {
-    const n = games.length
-    if (!settled || n < 2) return
-    for (let d = 1; d <= around; d++)
-      for (const i of [idx + d, idx - d]) {
-        const g = games[((i % n) + n) % n]
-        const url = api().art.url(g.id, 'logo', artRev[g.id] ?? 0, 'tv', true)
-        if (noLogo.has(url) || readyArt(url)) continue
-        loadArt(url).catch(() => noLogo.add(url))
-      }
+    if (!settled || games.length < 2) return
+    for (const game of neighbourGames(games, idx, around)) prefetchLogo(api().art.url(game.id, 'logo', artRev[game.id] ?? 0, 'tv', true))
   }, [settled, idx, games, artRev, around])
 }
 
