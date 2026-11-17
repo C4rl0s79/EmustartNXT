@@ -16,7 +16,7 @@ Po wybraniu grupy (np. PC → Steam albo system emulatora) pokazuje się lista g
 | L3 | Z | Szukaj w tytułach |
 | R3 | U | Ulubiona / usuń z ulubionych |
 | LB / RB | Q / E | O stronę |
-| LT / RT | PgUp / PgDn | Skok do poprzedniej / następnej litery |
+| LT / RT | PgUp / PgDn | Skok do poprzedniej / następnej litery (gry jednej serii stoją razem pod nazwą serii i liczą się do jej litery) |
 | B | Esc | Wstecz |
 | Start | O | Menu |
 
@@ -26,7 +26,8 @@ Każda grupa może mieć własny układ — **menu Start → „Układ listy”*
 
 - **z motywu** — układ, który wybrał motyw (domyślnie);
 - **Lista** — tytuły w kolumnie, okładka i zrzut ekranu obok (wygodna przy tysiącach gier emulatora);
-- **Wstęga** — okładki w perspektywie, wybrana na środku;
+- **Wstęga** — okładki w perspektywie, wybrana na środku, nad nimi tło wybranej gry w górnej połowie ekranu; w motywie
+  Horyzont okładki mają odbicie (animowane okładki odbijają się razem z ruchem);
 - **Plakaty** — logo gry na jej tle w lewym górnym rogu, płaski rząd plakatów na dole; kropka na plakacie
   pokazuje stan (zielona — gotowa do gry, niebieska — pobieranie albo w grze).
 

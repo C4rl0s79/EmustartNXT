@@ -29,7 +29,7 @@ sources:
     resource: repo://lumen/src/preload/index.ts
   - id: openwiki-source-7bdeef8798e03468fa7ab86d
     resource: repo://lumen/src/renderer/src/lib/artCache.ts
-generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
+generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
 ---
 
 # Lumen — launcher Electron

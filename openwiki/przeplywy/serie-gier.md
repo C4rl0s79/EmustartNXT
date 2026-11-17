@@ -5,7 +5,7 @@ description: "Serie gier w Lumenie: serwer EmuStart dopasowuje gry w IGDB (seria
 tags: [series, igdb, server, lumen, library, sorting]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T15:15:29.370Z
 sources:
   - id: openwiki-source-a03805cf993ff2b37b1a1f8c
     resource: repo://emustart/emustart/igdbseries.py
@@ -13,7 +13,7 @@ sources:
     resource: repo://lumen/src/main/series.ts
   - id: openwiki-source-f891089b004ed1194d67eb3d
     resource: repo://lumen/src/shared/series.ts
-generated: { by: "claude-code", at: "2026-11-17T00:45:56.894Z" }
+generated: { by: "claude-code", at: "2026-11-17T15:15:29.370Z" }
 ---
 
 # Serie gier (IGDB)
@@ -55,6 +55,9 @@ pasek pod „EmuStart” i Ustawienia → Konta i sklepy → EmuStart → „Ser
 - klucz bez przedrostków marki („Sid Meier's”, „Tom Clancy's”…), znaków ™®©, z „&” = „and”, a tytuł bez dopisków
   wydania (Gold / Enhanced / Definitive / GOTY Edition, Remastered, HD…);
 - seria stoi na liście **pod własną nazwą** (`arrangeSeries`), nie w miejscu pierwszej gry;
+  `arrangeSeries` zapamiętuje dla zwróconej listy klucze, pod którymi postawił bloki serii
+  (`placedSeriesKeys(lista)`; lista nie z `arrangeSeries` — `undefined`); skok po literach w trybie TV bierze z nich
+  literę gry w bloku, więc nie zatrzymuje się w środku serii ([Lumen — tryb TV](../architektura/lumen-tryb-tv.md));
 - kolejność (`orderSeries`): miejsce ustawione przez gracza, potem data oryginału z IGDB dla każdej gry, która ją
   ma, gry bez niej — między znane po numerze części (arabskim lub rzymskim), dalej data wydania i tytuł.
 

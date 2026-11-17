@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94b824595d7962446eba45c4042f547f3eaff5bf69a0d3eee164f9d4b35fc73c",
+  "pageVersion": "sha256:9a24eae4aa69fe10b90da11c2bad6303c5cd825ad8ae9c38a6f3d7bc373a7260",
   "claims": [
     {
       "id": "claim_5254db77d2cf4df4b62730d48c17f947",
       "statement": "Układ listy gier w trybie TV to wybór gracza dla grupy (Settings.tvLayouts) albo, bez wyboru, układ motywu; układy list i wstęgi/plakatów różnią się sterowaniem kierunkami.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L43-L50",
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L44-L51",
           "version": "repo-lines-v1:sha256:51ee743d11c56f07699c10bc2eb5636aeed856670212d762d03d34a059ffb5e1:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTNjYjliMmUxY2JjYjZjNGQ5M2E5NjM5MjBiMGIwMjU1M2RiMjY3MWQwNTZjNTM3OWU3NGZmMjkzMzA0YWVjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWNiYjQ4NTE5ZGI4MmRjOGU2MTQyNDM5MTYxNDdiNGMwZTNhY2I5YzRkYmM5NWNmY2Q2YzU1NWZlZmQ0NDlkZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNWFjZTFhNWUwZTI0ZDQ2YmIwZjU1YzgwNjJjNWMzNDQzYTZkM2U2OWY2Mjg2OTRjMzlkZTQ0ZWQ0ZGQ0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzVhOGQwNzQ2OGE4MWM2YjI1NTAwZDljZGM1YjA2Zjc3OTJjOTNiZWQ4YzAxNGI5YTdmMzRjMjE0ZDJjNWY4MiJ9"
         }
       ]
@@ -17,7 +17,7 @@
       "statement": "Na liście gier TV przycisk A otwiera stronę gry, X uruchamia główną akcję gry, a Y otwiera filtry.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L163-L173",
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L173-L183",
           "version": "repo-lines-v1:sha256:84319daad0f8593ac81006ac39a1127d5d86037bfbaf3e1e095d4e12b5544505:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZTQyOGJmM2Q3ZmNkYmFjOTJjMjhjOWI4ZGY4NmIwNzhmMWRlNzRlM2JlMmQ1OGU4ZDZjM2I3MDE4YTRjOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjOGUzYjY0MGJlNDEyMDg5MmZhNjZlMjM0MzliNDQyOWJlNjgxMjM0MGM5MWYwZThmZTU3ZDgwZmY3Njk1YjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyNGNiNTUxZjRjNzhmY2FiZWFhZTYwZDc5ZjE0MGIyNzA1YjcyNWM4ZTM5Mjc2N2M3OGUzMTZjZDhjMTAyY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4MDY2Y2ZhYzRjMjZlNjZlMDJmMWNkY2IyNDUzYTRmNTU0YTJmNWY3MDUyMjhlMWE0MDBkODRhNGQ0NjlhYTgifQ"
         }
       ]
@@ -31,7 +31,7 @@
           "version": "repo-lines-v1:sha256:b5ad7e7af1f215d1abf5d64b5505f09e74c6377fb82d2f478043ffa0a4925fda:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiM2YwZTJhZmU2ZDlmNDM5ZjExYTIyNGNhZmNlZTk5NjY3YjNkYWU1ZmM3YmI5MGM4MzBjZjU0ZmVlMmMwMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOGMwODk3MjVjZjVkN2M2ODBhNGI2YWIyNGIxMjllM2I3NjA5OWY4Njc0OWFkYzhiM2Y5NDgyNjAxMjNhZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzM2IyZjgyY2JkMTI2YTY2MzI3OGNmM2JlMDdkODVhMzgxYWU0YWYzNTI0ODJhMzg0ZDBhY2IyYWY2MTFmODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlYTIxMmQwMzhmODI4Y2JmMDZlY2MxMWRkZjAwNmJlZjc1ZDYzZTY5Mzc3YzcyZmIxYjFiNDg1MzI1NmZjMjEifQ"
         },
         {
-          "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L206-L265",
+          "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L240-L299",
           "version": "repo-lines-v1:sha256:76ba2f929d26a980b2ff3fe738f68a6a67a8f3e641f76ab7a81dcca021ba3fd5:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2NhYjM5ZWFmMjk5NzY2YzE4YmY2N2IwYjFjZmNhZWEyZmNjZDZjNmViOTJjNzIzNmFkM2RlMmY4NjY2NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxN2Y4OWNiMjI4YzBlNDY1NDA0NTc3MGEzNjk3NmMxNDQxMTIzNTY1NGMyY2ZjMDQ3YmMwMjk4YzFlMTEyYjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NDlkZmFkOTIwZjBkYjQ1OTdkNjJlNDMyYzY1MTVhMDg0ZDE0YThjYWMyYjM4NDc2NDQ5NTNkNDg5ODU0NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4MDAzMmZkZGViNzBmMTg0NjBlM2JiZGEyMDRmYjg3ZmVkMmU4ZTQ1N2FkZGFkOGFmZDc2NTA1NGY2NGRhODMifQ"
         }
       ]
@@ -71,7 +71,7 @@
       "statement": "Strona gry TV trzyma grę po identyfikatorze; gdy gra wypadnie z grupy, jest brana z całej biblioteki.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L60-L67",
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L61-L68",
           "version": "repo-lines-v1:sha256:68beaf6866844e16b09220710e83d725b922f0b57f8992ede34f10e7a44f7d07:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiYjg0OWNiOTJlNjQwMWNiN2U4ZGI4OWFlMzRhN2YzNDA4NmIzZDNiNDMyNjVmMTc3OTJkZjdkZjIyYTAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzJhZTU5YjE2OTk1Mjc1OGEwNjEzNzQ5NDVlZTM2MmMzYjliZTMzYmJkZjM1NTA1MjlhYWVkMDMwMzU5Yzc2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWI2OGFlOWI2Njk3OTg3OTc3YWEwODRmMzFiNzdkZTJkNjViYTUwYmRkZmYwOWJhZTE0MjczZmNlZGQzMzZjMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmFlODhhODI3NjE2MGRiNTY4OTk2MmU4NTFlZjdjZTc1NjgzMGE2ZWM5MjAxZWU4NTYwNWU3MGU0ZDQxZTc5NiJ9"
         }
       ]
@@ -95,10 +95,58 @@
           "version": "repo-lines-v1:sha256:fbac23fc39fb824d3c9588ce60a6a981339016c2810b4448613be17460a95431:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxM2Q0ODcxODc1NTQxZWU2OTU0M2FiMmEwM2M2NDFkODRkMDMyYWE5MmM0ZTRhYzg3Njk4NmZiZDY3ZGViM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiNzJhZTNhMjRlMWM0NTExNmIzZmJiODNkNmZmMGZkZGY0YjEwZGYxZTJkYTc3NmE4MjM2MDdhYzBmYmY4NTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxOGE2ODA1MTkxYjEyYzllNzllMDQ4MzgyODMyMWQyODU0YzM1MjBlM2M0Y2M4MWY5YjljYWFkNGM4Y2U2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxNDliMzZmZjg2NTQ1Mzc2MzczMDk2YmZhMjUwOWE2OGQ2MDA1MWY3ZGYzNDkxMTk0MWMzMzcyMjcwMDg4MjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2c55b75def8449559503ee42256f3107",
+      "statement": "Skok po literach w trybie TV bierze dla gry w bloku serii klucz serii z placedSeriesKeys(system.games), tylko gdy lista jest sortowana po tytule; w innym przypadku literę z klucza sortowania gry.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvGames.tsx#L149-L157",
+          "version": "repo-lines-v1:sha256:7c963eff768f2616d2b1d715815c8b7fed8cbe4a039db6617636759f271a0c0f:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWY2ODAwMTY3NTBjNTk2ZTUyNjJiZDlhYmYzZTMxYTIxMWEwYzc4ODE2NDNiMGRkNDlhMjZmZTdkMjA1ZTA5YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjU4ZjM2ZWJiNjgyNjY2MDc0ODIyMjgwOGU1NTVlOTc0MDU3MWE4YjM1ZTc1N2FjZTg0MzBlYjI4YmEyNDQyOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjQ1ZGYzOTNhZjc0MDRkMTYxMTY3NzFiZDM0YjM3YWFmN2ZiODU1NzIyYWNjNmI0NzQ2OTk0OWYzNmU3ZTM2MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGZjZTEwMmM3NTA1ZWEzN2I3OWUwYzViZGZhYjZjODQzOWZkM2YwMGFlODlmYmYyOWU0ZDQ5MjdlMmU5NTI5NyJ9"
+        },
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/letters.ts#L9-L37",
+          "version": "repo-lines-v1:sha256:bb0d69a62ef7d94e6ccdc49412dda1bf3d8a90fa6b1ebbd8656b8a68c0a447b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4NzBjMTlkZDczZWI2ZmYwYTczN2Q5MTkzMTA0ZDE4ZTM5OTRkYmVlMWJhYzg0MTIzNDUxYzc5NWIxMzYyZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlOWE0YWVlNWFiZGNhYTY2NDZiZmE0NzRmOTMyZWY1OGMzMjNlOTBhMzM0ZDkyOTZjMDM4ZWU5MjU3ZDMxMjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhZjk5ZmIyYTI2OGM1OTgzMDU2NDllOGVmOWQ3Zjg5Y2UzNGJmZDc0ZGUzMWVmZDhhYzE5OTY1MmM5ZWFiZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_381bcb55f7734137b257d2b9cc56f0ce",
+      "statement": "Gdy wybór na liście stoi, usePrefetchLogos wczytuje do pamięci obrazów logo sąsiednich gier (domyślnie dwóch z każdej strony), a logo, które zwróciło HTTP 404, nie jest pobierane ponownie.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/gameParts.tsx#L63-L95",
+          "version": "repo-lines-v1:sha256:bfab5e2ed21cc1002d2e59e8e3d68e465fc06bc072e60f3c57910918ed5a7bfd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5NTliM2RhZmY4YzU3YmFlMzc3MDc0ZTUxMDAxMmFmYmE1MThkN2EyZTdkYWNhZGIwMmUwZjY0ODIzZTExNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0MGM1ZDNkYzNhNzczMDc5M2M4OTI3OTQ4YjU1OTY2NDIwN2Y3OWJhODc3NzNjMjE1MDA0NDMxOTYyZmQ0ODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4Nzk2MzZkNTgwOTYyMTkwZmE3NDlhZWIyMDUyNDRhZjY2NjZmYmFlOTI1NDdhOTNjNmI4YjAwYmFlMzY0MzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1c2461d092774e1b855c2d1476957e1c",
+      "statement": "Odbicie okładek na wstędze to odwrócona kopia okładki (.tv-flow__mirror) z maską zanikania, renderowana tylko przy motywie z odbiciem, zamiast -webkit-box-reflect.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/TvCoverflow.tsx#L199-L208",
+          "version": "repo-lines-v1:sha256:3f6cfb93616505c0a48a1f743ad8e5e25aa9a911edd735272561657195c0c8bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZjNjZmQxMWRhNjE1MDE5N2FjZWVkMDg0MDZhYzY0YjA1MDM0MGRlN2JjMDQxMjRhNGNiN2VmYTY3MTM0MGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNTYzMDRiMGVlYWJkODhhZDRjYmRkNjBiZGY0NjY1MWFkODU3YWQxZTAxMDRlNDJhYmZmNmIwNDNhZThlYTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3OGI2ZWQ1OWI4YTAwNTNkODQ3NzlkZmYyZjU1MzZiYzIzOThmZTdkM2ZjNjAxZWZmNTBlNDg3ZTYzMjM1ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4ZDM4NjhiMGE5YjM4YzgyMGMwMDMwNWJiYzA4NTZhMzliYjNkZjI5YTUzZmU5NzRhOTgxYjY2MjMzNWZlYzYifQ"
+        },
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/tv.css#L950-L970",
+          "version": "repo-lines-v1:sha256:00a5b95d56c074a6c7b05b9e6313b808bde44549ce047c8b5dd9bfa81e5f07f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxNDgxY2NhZDM0YzJkMjMwYTJhZDdjYTNkZmU0OGU4Y2IzMWU4ZDRiZGZhMjkyYmNkNmMyYWI3NmU0Njk2OWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxMDE5NGQxYWJmYmUwZTE1MGQ5MTI0YjQ4NjA5OTg0NTkyYTZiZmNiZTNlNTEyNGFhNzVlMzk1MWIzMGFjNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMGQwY2ZhYTczYjU2MjVjOGVhMjdjZDIzZjE4NTMxZTI3NTU1NjIzYTBlNGMyMTZjYzYyYWNhNGM2NGE4ZTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1423645b968b4543884c7a8921e2cdc2",
+      "statement": "W układzie wstęgi (bez plakatów) tło wybranej gry zajmuje górną połowę ekranu z kryciem var(--tv-flow-backdrop, 0.75), a najwyższa okładka ma 44vh.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/tv/tv.css#L1300-L1330",
+          "version": "repo-lines-v1:sha256:c516ef2fbb729ce31ae3db52da195e4f9f0a1f94dff3aa7ea366bdf07d0be1ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlYmE4MDE4MjhjYzVmNDllNmQ5YWY5OGM5ZjJjY2RjOGQ3ZWY5ZDM1YzhkMGQxYjQ5ZDI1NDdmODFiOWRlYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNWUyYWQ4MWFiNDRiMjlmODlkNTY3ZjM3NzU3N2E1ZGIyNmQwMzNjNDAxM2UzOGMwNDY3Y2FkNGMxYjM4YmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmMDAyNjZiODI5ZmM0MmY3ODkxMzY1ZWY2ZTE0NTkzZTJiNTE3NTRmNzZkZTc3MDNiZjM2YzNkZWVjMWYxMDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyYzlhODZmZDMzZDhlZjI3MzhlOGRlMjdiODY1YWYyYmYyYjNiNzUwNGYxNmM2NGRhZGYxZTdiMzliNzQ1ODAifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T00:45:56.894Z"
+    "at": "2026-11-17T15:15:29.370Z"
   }
 }
