@@ -3,7 +3,8 @@
 Źródła (repozytorium jest jedynym miejscem edycji — strony na wiki są nadpisywane):
   emustart/docs/wiki/*.md   — EmuStart dla gracza (format wiki GitHub; jej Home.md staje się stroną „EmuStart”)
   lumen/docs/wiki/*.md      — Lumen dla gracza (tryb TV, poradniki kluczy API)
-  openwiki/**/*.md          — dokumentacja techniczna z OpenWiki: strony „Technika-…”, bez nagłówka YAML, linki .md
+  openwiki/**/*.md          — dokumentacja techniczna z OpenWiki: strony „Technika-…”, bez nagłówka YAML,
+                              linki .md
                               przepisane na strony wiki, pliki źródłowe jako linki do GitHuba
 Home.md i _Sidebar.md powstają tutaj (mapa trzech sekcji).
 
@@ -29,7 +30,8 @@ GITHUB = "https://github.com/C4rl0s79/EmustartNXT"
 MARK = "<!-- wiki: z repozytorium EmustartNXT (scripts/publish_wiki.py) — zmiany wprowadzaj w repozytorium: {src} -->"
 MARK_RE = re.compile(r"^<!-- wiki: z repozytorium EmustartNXT")
 
-# OpenWiki: ścieżka strony → nazwa strony na wiki (strony index.md katalogów — sama lista plików — prowadzą do mapy)
+# OpenWiki: ścieżka strony → nazwa strony na wiki
+# (strony index.md katalogów — sama lista plików — prowadzą do mapy)
 OPENWIKI_PAGES = {
     "quickstart.md": "Dla-deweloperów",
     "architektura/przeglad-systemu.md": "Technika-Przegląd-systemu",
@@ -114,21 +116,24 @@ def build() -> dict[str, str]:
         body = rewrite_openwiki_links(body, rel)
         srcs = openwiki_sources(front)
         if srcs:
-            body += "\n\n## Pliki źródłowe\n\n" + "\n".join(f"- [`{s}`]({GITHUB}/blob/main/{s})" for s in srcs) + "\n"
+            links = "\n".join(f"- [`{s}`]({GITHUB}/blob/main/{s})" for s in srcs)
+            body += "\n\n## Pliki źródłowe\n\n" + links + "\n"
         body += (
-            "\n---\n_Strona wygenerowana przez OpenWiki z kodu repozytorium; fragmenty oznaczone „TODO: do weryfikacji” "
+            "\n---\n_Strona wygenerowana przez OpenWiki z kodu repozytorium; "
+            "fragmenty oznaczone „TODO: do weryfikacji” "
             "nie zostały jeszcze sprawdzone._\n"
         )
         put(name, f"openwiki/{rel}", body)
 
     tech = [(n, (ow / r).read_text(encoding="utf-8")) for r, n in OPENWIKI_PAGES.items() if n != DIR_INDEX]
     titles = {n: (re.search(r'^title:\s*"?(.*?)"?\s*$', t, re.M) or [None, n])[1] for n, t in tech}
-    lumen = ["Lumen", "Lumen-tryb-TV", "Klucze-API", "Klucz-Steam-Web-API", "Klucz-SteamGridDB", "Klucze-IGDB", "Klucz-TheGamesDB", "Xbox-aplikacja-Azure"]
+    lumen = ["Lumen", "Lumen-tryb-TV", "Klucze-API", "Klucz-Steam-Web-API", "Klucz-SteamGridDB", "Klucze-IGDB",
+             "Klucz-TheGamesDB", "Xbox-aplikacja-Azure"]
     missing = [n for n in lumen if n not in pages]
     if missing:
         raise SystemExit(f"brak stron Lumena: {missing}")
 
-    home = f"""# EmustartNXT — wiki
+    home = """# EmustartNXT — wiki
 
 System do grania na emulowanych platformach i w gry Steam / GOG / Xbox: **serwer EmuStart** trzyma kolekcję gier,
 grafiki, konta i zapisy; **Lumen** (Windows) i aplikacja **EmuStart na Androida** biorą wszystko od niego.
@@ -190,7 +195,8 @@ def main() -> None:
         return                                     # tylko złożenie: kopia wiki bez commita i bez dodawania do gita
     if status:
         subprocess.run(git + ["add", "-A"], check=True)
-        rev = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+        rev = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
+                             check=True, capture_output=True, text=True).stdout.strip()
         subprocess.run(git + ["commit", "-q", "-m", f"Wiki z repozytorium EmustartNXT ({rev})"], check=True)
     # także commit z wcześniejszego przebiegu, którego push się nie udał (sieć, logowanie)
     ahead = subprocess.run(git + ["rev-list", "--count", "@{u}..HEAD"], capture_output=True, text=True).stdout.strip()
