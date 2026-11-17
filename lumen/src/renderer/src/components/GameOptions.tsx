@@ -3,7 +3,7 @@ import type { EmuGameOptions, EmuMetaField, EmuSettingsChange, Game, GogMidi } f
 import { api, askChoice, attempt, useStore } from '../store'
 import { focusFirst } from '../nav/engine'
 import { formatBytes, formatLastPlayed, plural, versionCountLabel } from '../lib/format'
-import { usePrimaryAction } from '../lib/primary'
+import { launchFromStart, usePrimaryAction } from '../lib/primary'
 import { Modal } from './Modal'
 import { EmuSaves } from './EmuSaves'
 import { OnScreenKeyboard } from './TextField'
@@ -239,6 +239,7 @@ function EmuGameOptions({ game, onClose, start }: { game: Game; onClose: () => v
   const play = async (state?: string): Promise<void> => {
     onClose()
     if (state === undefined) return void primary?.run?.()
+    if (state === '__od_poczatku__') return launchFromStart(game.id)
     const r = await attempt(api().emustart.launch(game.id, state))
     if (r && !r.ok) toast(r.error ?? 'Nie udało się uruchomić gry.', 'error')
   }

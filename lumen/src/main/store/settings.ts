@@ -56,7 +56,6 @@ export function cleanAbsDir(v: unknown): string | undefined {
   return p && path.isAbsolute(p) && !/[<>"|?*\x00-\x1f]/.test(p.slice(2)) ? path.normalize(p) : undefined
 }
 
-/** per-theme looks: theme id → { key: number | short string } — anything else is dropped */
 /** układ listy TV dla grup: tylko znane układy, klucze grup krótkie (bez śmieci z uszkodzonego pliku) */
 function cleanLayouts(v: unknown): Record<string, TvGamesLayout> {
   const out: Record<string, TvGamesLayout> = {}
@@ -66,6 +65,7 @@ function cleanLayouts(v: unknown): Record<string, TvGamesLayout> {
   return out
 }
 
+/** per-theme looks: theme id → { key: number | short string } — anything else is dropped */
 function cleanLooks(v: unknown): Record<string, Record<string, number | string>> {
   const out: Record<string, Record<string, number | string>> = {}
   if (!v || typeof v !== 'object') return out

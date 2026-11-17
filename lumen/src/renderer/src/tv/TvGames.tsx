@@ -5,7 +5,7 @@ import { useActions } from '../nav/input'
 import { Art } from '../components/Art'
 import { Icon } from '../components/Icon'
 import { SystemLogo } from './SystemLogo'
-import { usePrimaryAction } from '../lib/primary'
+import { runPrimary, usePrimaryAction } from '../lib/primary'
 import { plural, versionCountLabel } from '../lib/format'
 import type { TvSystem } from './data'
 import { TvFilters } from './TvFilters'
@@ -58,8 +58,13 @@ export function TvGames({
     setIdx(0)
   }
   const [filters, setFilters] = useState(false)
-  // the game's page over the list (A); the list stays mounted under it, on the same game
-  const [gamePage, setGamePage] = useState(false)
+  // the game's page over the list (A), by the game's id — not the list position: a filter or the order can change
+  // under the open page (unfavouriting in Ulubione, a launch re-sorting „ostatnio grane”) and it keeps its game
+  const [pageId, setPageId] = useState<string | null>(null)
+  // a group built from a state (Ulubione) can drop the game — then it comes from the whole library
+  const library = useStore((s) => s.snapshot?.games)
+  const pageGame = pageId ? (system.games.find((g) => g.id === pageId) ?? library?.find((g) => g.id === pageId) ?? null) : null
+  const gamePage = !!pageGame
   const isFav = (id: string): boolean => !!favorites?.includes(id)
   const ratings = useRatings(system.games, filter.sort)
   const { games: known, missing } = useFacts(system.games, filters || needsFacts(filter))
@@ -140,13 +145,11 @@ export function TvGames({
   }
   const jumpLetter = (dir: 1 | -1): boolean => (sel ? go(letterJump(games, idx, dir)) : true)
   const openPage = (): boolean => {
-    if (sel) setGamePage(true)
+    if (sel) setPageId(sel.id)
     return true
   }
   const play = (): boolean => {
-    if (!primary || busy) return true
-    if (primary.disabled || !primary.run) useStore.getState().toast(primary.note ?? primary.label, 'info')
-    else void primary.run()
+    runPrimary(primary, busy)
     return true
   }
 
@@ -227,11 +230,17 @@ export function TvGames({
   const empty = <p className="tv-dim">Brak gier{activeFilters.length ? ' dla tych filtrów (Y — zmień albo wyczyść)' : ''}.</p>
   const modals = (
     <>
-      {gamePage && sel && (
+      {pageGame && (
         <TvGamePage
-          game={sel}
+          key={pageGame.id}
+          game={pageGame}
           onMenu={onMenu}
-          onBack={() => setGamePage(false)}
+          onBack={() => {
+            // back on the game whose page it was (when it is still on the list)
+            const i = games.findIndex((g) => g.id === pageGame.id)
+            if (i >= 0) setIdx(i)
+            setPageId(null)
+          }}
         />
       )}
       {filters && (

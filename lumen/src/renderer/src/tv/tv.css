@@ -370,64 +370,12 @@
 .tv-snap {
   justify-self: end;
 }
-/* the bar at the bottom of the screen, across the whole width (list and preview): the game's logo on
-   the left, the details next to it in a few lines */
-.tv-info {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 2vw;
-  min-width: 0;
-  padding: 1.2vh 1.6vw;
-  background: var(--tv-panel);
-  border: 1px solid var(--tv-line);
-  border-radius: 14px;
-}
-.tv-info__logo {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  max-width: 28vw;
-  min-width: 0;
-}
-.tv-info__body {
-  flex: 1;
-  min-width: 0;
-}
-.tv-info h1 {
-  margin: -0.15em 0 0;
-  font-size: calc(1.45em * var(--tv-fs-title));
-  line-height: 1.15;
-  font-weight: 600;
-}
-/* the details as one flowing block of "label value" pairs (2-3 lines) */
-.tv-info dl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em 1.8em;
-  margin: 0;
-  font-size: calc(0.92em * var(--tv-fs-meta));
-}
+
 .tv-dlrow {
   display: flex;
   gap: 0.5em;
   min-width: 0;
   max-width: 100%;
-}
-.tv-info dt {
-  color: var(--tv-dim);
-}
-.tv-info dd {
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tv-info .st-c {
-  color: var(--tv-ok);
-}
-.tv-info .st-n {
-  color: var(--tv-accent2);
 }
 .tv-note {
   margin: 0.4em 0 0;
@@ -577,7 +525,6 @@
   font-size: calc(1em * var(--tv-fs-menu));
 }
 
-
 .tv-filters-on {
   color: var(--tv-accent2);
   font-size: 0.85em;
@@ -607,11 +554,6 @@
 .tv-row .tv-logo .tv-logo__img {
   height: calc(var(--tv-row) * var(--tv-tlogo-h));
   max-width: var(--tv-tlogo-w);
-}
-.tv-info .tv-logo .tv-logo__img {
-  height: 8vh;
-  max-width: 28vw;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
 }
 
 /* look editor (Menu → Wygląd): a side panel over the live layout — every change shows at once */
@@ -869,33 +811,14 @@
 .tv-games--flow > .tv-flow {
   grid-area: 1 / 1 / 3;
 }
-.tv-games--flow > .tv-flow__panel {
-  grid-area: 3 / 1;
-}
 /* no games: the message stays below the head, where it was */
 .tv-games--flow > .tv-flow > .tv-dim {
   margin-top: calc(var(--tv-listlogo-h) + 3.7vh);
 }
-.tv-flow__panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 1.4vw;
-  min-height: 0;
-}
-.tv-flow__main {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1vh;
-  min-height: 0;
-  /* the game's logo stands above the panel (.tv-flow__title): the text starts at the top */
-  padding: 1.6vh 1.8vw;
-  background: var(--tv-panel);
-  border: 1px solid var(--tv-line);
-  border-radius: 14px;
-}
 .tv-flow {
   position: relative;
+  /* the covers' z-index (up to 20) stays inside the ribbon: nothing of it draws over the game's page */
+  isolation: isolate;
   min-height: 0;
   container-type: size;
   /* the horizon (the covers' feet): a fixed room below it for the reflections */
@@ -1037,63 +960,6 @@
     0 0 46px color-mix(in srgb, var(--tv-accent) 45%, transparent),
     0 26px 60px rgba(0, 0, 0, 0.6);
 }
-/* the game's logo (or name) just above the panel, out of it: the description gets its row */
-.tv-flow__title {
-  position: absolute;
-  bottom: calc(100% + 1vh);
-  left: 1.4vw;
-  max-width: calc(100% - 2.8vw);
-  display: flex;
-  align-items: flex-end;
-  pointer-events: none;
-}
-.tv-flow__title h1 {
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
-}
-.tv-flow__title h1 {
-  margin: 0;
-  font-size: calc(2.1em * var(--tv-fs-title));
-  font-weight: 600;
-  line-height: 1.1;
-}
-.tv-flow__title .tv-logo .tv-logo__img {
-  height: 11vh;
-  max-width: 30vw;
-  object-position: left bottom;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
-}
-/* the description fills the panel: full text colour, roomy lines; longer ones scroll (useDescScroll) */
-.tv-desc.tv-flow__desc {
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: none;
-  color: var(--tv-text);
-  font-size: calc(1.05em * var(--tv-fs-desc));
-  line-height: 1.55;
-}
-/* the details as a column of label / value rows, not one long line — beside the description */
-.tv-games--flow .tv-info {
-  grid-column: auto;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  overflow: hidden;
-  min-height: 0;
-}
-/* two pairs of label / value columns, filled row by row (Status | Rozmiar, Ostatnio | Czas gry…) */
-.tv-games--flow .tv-info dl {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
-  gap: 0.5em 1em;
-  font-size: calc(1em * var(--tv-fs-meta));
-}
-.tv-games--flow .tv-dlrow {
-  display: contents;
-}
-/* half the width: a long value goes to a second line instead of being cut */
-.tv-games--flow .tv-info dd {
-  white-space: normal;
-}
 
 /* the selected game's art behind everything, fading into the page at the bottom */
 .tv-backdrop {
@@ -1140,7 +1006,7 @@
 
 /* headings and names in the theme's display typeface, at their own proportions (not x-height matched:
    engraved capitals or squared display faces keep their character) */
-.tv :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-summary__logo h1, .tv-gamepage__logo h1, .tv-look h2) {
+.tv :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-panel h2, .tv-summary__logo h1, .tv-gamepage__logo h1, .tv-look h2) {
   font-family: var(--tv-font-head, inherit);
   font-size-adjust: none;
 }
@@ -1212,7 +1078,7 @@
 .tv-gamepage {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 30;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
@@ -1479,6 +1345,6 @@
 }
 
 /* kopiuj / wklej: tekst do czytania w trybie TV da się zaznaczyć myszą (opis, wartości szczegółów, linia faktów) */
-.tv :is(.tv-desc, .tv-card dd, .tv-summary__facts, .tv-info dd) {
+.tv :is(.tv-desc, .tv-card dd, .tv-summary__facts) {
   user-select: text;
 }

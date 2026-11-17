@@ -26,7 +26,7 @@
     var(--tv-bg);
 }
 
-.tv[data-theme='sf'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-info h1, .tv-panel h2, .tv-flow__title h1, .tv-summary__logo h1, .tv-gamepage__logo h1) {
+.tv[data-theme='sf'] :is(.tv-brand, .tv-sysinfo h1, .tv-syscard .txt, .tv-listhead h2, .tv-panel h2, .tv-summary__logo h1, .tv-gamepage__logo h1) {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -86,12 +86,9 @@
     linear-gradient(var(--tv-hud), var(--tv-hud)) bottom right / 2px 2.4vh;
   background-repeat: no-repeat;
 }
-.tv[data-theme='sf'] .tv-flow__title h1 {
-  text-shadow: 0 0 30px rgba(126, 224, 255, 0.3);
-}
 
 /* panels: dark glass, a thin ice edge and corner brackets */
-.tv[data-theme='sf'] :is(.tv-info, .tv-panel, .tv-flow__main) {
+.tv[data-theme='sf'] :is(.tv-panel) {
   border-radius: 4px;
   border: 1px solid rgba(126, 224, 255, 0.22);
   background: var(--tv-panel);
@@ -115,9 +112,7 @@
     bottom right;
   background-repeat: no-repeat;
 }
-.tv[data-theme='sf'] .tv-info dt {
-  color: var(--tv-dim);
-}
+
 .tv[data-theme='sf'] .tv-menulist li {
   border-radius: 3px;
 }
@@ -195,13 +190,6 @@
 .tv[data-theme='sf'] .tv-backdrop {
   opacity: 0.32;
 }
-.tv[data-theme='sf'] .tv-flow__title h1 {
-  font-size: calc(1.7em * var(--tv-fs-title));
-}
-.tv[data-theme='sf'] .tv-info dt {
-  color: var(--tv-dim);
-  font-weight: 500;
-}
 
 .tv[data-theme='sf'] .tv-console::before {
   content: '';
@@ -210,4 +198,9 @@
   z-index: 1;
   background: linear-gradient(180deg, rgba(126, 224, 255, 0.05), rgba(76, 42, 140, 0.12));
   mix-blend-mode: screen;
+}
+
+/* the game's name under the ribbon / over the posters: the ice glow the old title panel had */
+.tv[data-theme='sf'] .tv-summary__logo h1 {
+  text-shadow: 0 0 30px rgba(126, 224, 255, 0.3);
 }

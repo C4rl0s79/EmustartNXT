@@ -184,15 +184,21 @@ def main() -> None:
         (wiki / f"{name}.md").write_text(text, encoding="utf-8", newline="\n")
     print(f"zapisano {len(pages)} stron w {wiki}")
     git = ["git", "-C", str(wiki)]
-    subprocess.run(git + ["add", "-A"], check=True)
     status = subprocess.run(git + ["status", "--short"], check=True, capture_output=True, text=True).stdout
     print(status or "bez zmian")
-    if "--push" in sys.argv and status:
+    if "--push" not in sys.argv:
+        return                                     # tylko złożenie: kopia wiki bez commita i bez dodawania do gita
+    if status:
+        subprocess.run(git + ["add", "-A"], check=True)
         rev = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
         subprocess.run(git + ["commit", "-q", "-m", f"Wiki z repozytorium EmustartNXT ({rev})"], check=True)
+    # także commit z wcześniejszego przebiegu, którego push się nie udał (sieć, logowanie)
+    ahead = subprocess.run(git + ["rev-list", "--count", "@{u}..HEAD"], capture_output=True, text=True).stdout.strip()
+    if status or (ahead.isdigit() and int(ahead) > 0):
         subprocess.run(git + ["push", "-q"], check=True)
         print("opublikowano")
-
+    else:
+        print("wiki aktualna — nic do wysłania")
 
 if __name__ == "__main__":
     main()

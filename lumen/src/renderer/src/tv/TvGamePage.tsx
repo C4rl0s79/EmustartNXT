@@ -3,7 +3,7 @@ import type { Game } from '@shared/types'
 import { api, attempt, useStore } from '../store'
 import { useActions } from '../nav/input'
 import { focusFirst } from '../nav/engine'
-import { usePrimaryAction } from '../lib/primary'
+import { launchFromStart, runPrimary, usePrimaryAction } from '../lib/primary'
 import { versionCountLabel } from '../lib/format'
 import { GameOptions, type OptionsStart } from '../components/GameOptions'
 import { Icon } from '../components/Icon'
@@ -25,26 +25,19 @@ export function TvGamePage({ game, onBack, onMenu }: { game: Game; onBack: () =>
   const facts = useGameFacts(game, d, rev)
   const { primary, busy } = usePrimaryAction(game)
   const isFav = useStore((s) => !!s.prefs?.favorites.includes(game.id))
-  const toast = useStore((s) => s.toast)
   const [options, setOptions] = useState<OptionsStart | null>(null)
   const rootRef = useRef<HTMLElement>(null)
   const e = game.emu
   const extras = game.gog?.extras?.length ?? 0
+  // dodatki GOG czyta silnik — jak w oknie „Opcje gry”: bez działającego silnika przycisku nie ma
+  const engineReady = useStore((s) => s.snapshot?.emustart?.engine === 'ready')
 
   useEffect(() => {
     const t = setTimeout(() => rootRef.current && focusFirst(rootRef.current), 0)
     return () => clearTimeout(t)
   }, [])
 
-  const play = (): void => {
-    if (!primary || busy) return
-    if (primary.disabled || !primary.run) toast(primary.note ?? primary.label, 'info')
-    else void primary.run()
-  }
-  const fromStart = async (): Promise<void> => {
-    const r = await attempt(api().emustart.launch(game.id, '__od_poczatku__'))
-    if (r && !r.ok) toast(r.error ?? 'Nie udało się uruchomić gry.', 'error')
-  }
+  const play = (): void => runPrimary(primary, busy)
 
   useActions(
     {
@@ -94,7 +87,7 @@ export function TvGamePage({ game, onBack, onMenu }: { game: Game; onBack: () =>
             <Icon name="play" /> {primary?.label ?? 'Graj'}
           </button>
           {e && (
-            <button className="tv-act" data-nav disabled={!primary?.run || primary.disabled} onClick={() => void fromStart()}>
+            <button className="tv-act" data-nav disabled={busy || !primary?.run || primary.disabled} onClick={() => void launchFromStart(game.id)}>
               Graj od początku
             </button>
           )}
@@ -104,7 +97,7 @@ export function TvGamePage({ game, onBack, onMenu }: { game: Game; onBack: () =>
           <button className={`tv-act ${isFav ? 'is-on' : ''}`} data-nav onClick={() => void attempt(api().prefs.toggleFavorite(game.id))}>
             <Icon name={isFav ? 'starFilled' : 'star'} /> {isFav ? 'W ulubionych' : 'Ulubiona'}
           </button>
-          {extras > 0 && (
+          {extras > 0 && engineReady && (
             <button className="tv-act" data-nav onClick={() => setOptions('extras')}>
               Dodatki ({extras})
             </button>

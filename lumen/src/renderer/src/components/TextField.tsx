@@ -148,12 +148,15 @@ export function OnScreenKeyboard({
     if (one) editRef.current(one)
     else useStore.getState().toast('Schowek jest pusty.', 'info')
   }
-  const copy = async (): Promise<void> => {
+  /** → true, gdy tekst jest w schowku (Ctrl+X czyści pole tylko wtedy) */
+  const copy = async (): Promise<boolean> => {
     try {
       await navigator.clipboard.writeText(edRef.current.text)
       useStore.getState().toast('Skopiowano do schowka.', 'info')
+      return true
     } catch {
       useStore.getState().toast('Nie udało się skopiować.', 'error')
+      return false
     }
   }
   const editRef = useRef(edit)
@@ -162,6 +165,9 @@ export function OnScreenKeyboard({
   pasteRef.current = paste
   const copyRef = useRef(copy)
   copyRef.current = copy
+  // aktualne clear (z aktualnym onChange rodzica) dla obsługi klawiszy, która nie odświeża się przy każdym renderze
+  const clearRef = useRef(clear)
+  clearRef.current = clear
 
   // physical keys also work while the OSK is open: letters, space, Backspace; Enter submits (a
   // controller's A goes through the input layer instead and presses the focused key)
@@ -185,7 +191,7 @@ export function OnScreenKeyboard({
         e.stopImmediatePropagation()
         e.preventDefault()
         if (secret) return
-        void copyRef.current().then(() => k === 'x' && apply({ text: '', caret: 0 }))
+        void copyRef.current().then((ok) => ok && k === 'x' && clearRef.current())
         return
       }
       const isChar = e.key.length === 1 && !e.ctrlKey && !e.altKey

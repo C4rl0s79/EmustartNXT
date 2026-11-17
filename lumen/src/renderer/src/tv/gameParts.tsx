@@ -255,30 +255,6 @@ export function FactRow({ f }: { f: Fact }) {
   )
 }
 
-/**
- * The details as a column of label / value rows (list and ribbon layouts), the game's logo above them unless
- * the layout shows it elsewhere.
- */
-export function TvInfo({ game, details: dr, note, rev, noLogo }: { game: Game; details: DetailsResult | null; note?: string; rev: number; noLogo?: boolean }) {
-  const facts = useGameFacts(game, dr, rev)
-  return (
-    <div className="tv-info">
-      {!noLogo && (
-        <div className="tv-info__logo">
-          <LogoTitle key={game.id} game={game} text={<h1>{game.name}</h1>} />
-        </div>
-      )}
-      <div className="tv-info__body">
-        <dl>
-          {facts.map((f) => (
-            <FactRow key={f.k} f={f} />
-          ))}
-        </dl>
-        {note && <p className="tv-note">{note}</p>}
-      </div>
-    </div>
-  )
-}
 
 /** the state of a game in one word, for the one tag on its row / poster (the most important state wins) */
 export function stateTag(game: Game): { label: string; kind: 'run' | 'dl' | 'ok' | 'keep' } | null {

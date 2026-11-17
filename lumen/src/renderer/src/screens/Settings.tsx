@@ -118,17 +118,44 @@ let lastPage = PAGES[0].id // kept while the program runs
 
 /** Ustawienia od razu na sekcji `id` (menu Decka: „Wszystkie ustawienia Decka…”) */
 export function openSettingsPage(id: string): void {
-  id = PAGE_OF[id] ?? id
-  if (!PAGES.some((p) => p.id === id)) return
-  lastPage = id
-  window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: id }))
+  const page = PAGE_OF[id] ?? id
+  if (!PAGES.some((p) => p.id === page)) return
+  // dawna sekcja (np. „deck”) leży teraz w większym dziale — fokus od razu na niej, nie na górze działu
+  goToPage(page, page === id ? undefined : id)
   useStore.getState().setTab('settings')
+}
+
+/** sekcja do pokazania po otwarciu działu (Ustawienia mogły nie być jeszcze otwarte, gdy przyszła prośba) */
+let pendingSection: string | undefined
+
+/** go to a page of the settings (both modes); focus goes into that page — onto `section` when given — so the pad
+ *  keeps working (the focused button of the previous page is gone with it) */
+function goToPage(page: string, section?: string): void {
+  lastPage = page
+  pendingSection = section ?? ''
+  window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: page }))
 }
 
 export function SettingsScreen({ active }: { active: boolean }) {
   const [page, setPageState] = useState(lastPage)
   useEffect(() => {
-    const on = (e: Event): void => setPageState((e as CustomEvent<string>).detail)
+    // fokus w dziale po goToPage: na sekcji, gdy ją wskazano, inaczej na pierwszym elemencie działu
+    const focusPending = (): void => {
+      if (pendingSection === undefined) return
+      const section = pendingSection
+      pendingSection = undefined
+      setTimeout(() => {
+        const root = paneRef.current
+        if (!root) return
+        const target = section ? root.querySelector<HTMLElement>(`[data-section="${CSS.escape(section)}"]`) : null
+        focusFirst(target ?? root)
+      }, 0)
+    }
+    const on = (e: Event): void => {
+      setPageState((e as CustomEvent<string>).detail)
+      focusPending()
+    }
+    focusPending() // prośba sprzed otwarcia Ustawień (menu Decka)
     window.addEventListener('lumen:settings-page', on)
     return () => window.removeEventListener('lumen:settings-page', on)
   }, [])
@@ -204,9 +231,9 @@ export function SettingsScreen({ active }: { active: boolean }) {
   )
 }
 
-function Section({ title, children, desc }: { title: string; desc?: ReactNode; children: ReactNode }) {
+function Section({ title, children, desc, id }: { title: string; desc?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <section className="card">
+    <section className="card" data-section={id}>
       <h2>{title}</h2>
       {desc && <p className="card__desc">{desc}</p>}
       {children}
@@ -783,12 +810,6 @@ function NamePrompt({ title, initial, onClose, onSubmit }: { title: string; init
   )
 }
 
-/** go to another page of the settings without leaving them (both modes) */
-function goToPage(id: string): void {
-  lastPage = id
-  window.dispatchEvent(new CustomEvent('lumen:settings-page', { detail: id }))
-}
-
 /** where a field was before it moved to "Zaawansowane": what moved, and a button that goes there */
 function AdvancedNote({ what }: { what: string }) {
   return (
@@ -1241,6 +1262,7 @@ function DeckSection() {
 
   return (
     <Section
+      id="deck"
       title="Deck"
       desc="Belka platform na pulpicie — nad tapetą, pod oknami programów. Zakładki to podgrupy biblioteki Lumen (platformy i kolekcje); Deck pokazuje gry, które są na tym komputerze (zainstalowane albo pobrane). Zamknięcie okna Lumen przy włączonym Decku tylko je ukrywa — Lumen działa dalej; otworzysz albo zamkniesz go z ikony Lumen w zasobniku systemowym albo z menu Decka (prawy klik)."
     >
