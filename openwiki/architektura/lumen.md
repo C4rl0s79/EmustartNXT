@@ -5,7 +5,7 @@ description: "Budowa Lumena: proces główny Electron, preload window.lumen, ren
 tags: [lumen, electron, react, deck, updater, architecture]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T16:11:28.167Z
+    at: 2026-11-17T21:56:42.171Z
 sources:
   - id: openwiki-source-0e32751ee2661d39a58dab3e
     resource: repo://lumen/electron-builder.yml
@@ -19,6 +19,8 @@ sources:
     resource: repo://lumen/src/main/dataDir.ts
   - id: openwiki-source-5302eff1bb3714b91bee1699
     resource: repo://lumen/src/main/deckWindow.ts
+  - id: openwiki-source-740669e92b73cb34609f9e8a
+    resource: repo://lumen/src/main/details/wikipedia.ts
   - id: openwiki-source-6f89370f7dc09be72fbc87a4
     resource: repo://lumen/src/main/elevation.ts
   - id: openwiki-source-d1b9ce3766cc38562686f8ba
@@ -33,9 +35,11 @@ sources:
     resource: repo://lumen/src/renderer/src/deck/DeckPanel.tsx
   - id: openwiki-source-7bdeef8798e03468fa7ab86d
     resource: repo://lumen/src/renderer/src/lib/artCache.ts
+  - id: openwiki-source-e080b6221e297cf7c50b630e
+    resource: repo://lumen/src/renderer/src/tv/gameParts.tsx
   - id: openwiki-source-de906671f09d6ccb0be869a2
     resource: repo://lumen/src/shared/deck.ts
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # Lumen — launcher Electron
@@ -88,6 +92,40 @@ Wspólna lista zadań (pobieranie Steam, uruchamianie/pobieranie/emulatory/zapis
 w `src/main/core/jobs.ts`. Pobieranie Steam ma bajty z `appmanifest_<id>.acf`; prędkość i czas do końca liczy
 `RateMeter` z kolejnych odczytów (okno 30 s, zegar monotoniczny, liczniki stojące dłużej niż okno — bez prędkości),
 a `UnifiedLibrary` odświeża zadania co 10 s, gdy trwa pobieranie Steam.
+
+## Opis i szczegóły gry (strona gry)
+
+Kanał IPC `gameDetails` (`src/main/index.ts`) zbiera opis i fakty gry w dwóch krokach (od Lumena 1.0.77):
+
+1. **Własne źródła** (`ownDetails`, osobna funkcja na rodzaj gry):
+
+   | Gra | Źródło | Braki uzupełnia |
+   |---|---|---|
+   | EmuStart | silnik (`game_detail`) | LaunchBox (po identyfikatorze) |
+   | GOG | folder gry GOG Managera na serwerze | LaunchBox (Windows, potem MS-DOS) |
+   | skrót Steam spoza sklepu | LaunchBox (platforma z tagów skrótu) | — |
+   | Xbox / Microsoft Store | strona produktu w katalogu Microsoft ([Xbox](../integracje/xbox-microsoft-store.md)) | LaunchBox |
+   | Steam | sklep Steam (pamięć `cache/meta`) | gra, której sklep nie zwraca — LaunchBox |
+
+2. **Wikipedia — ostatnie źródło dla każdej gry** (`withWikipedia`, `src/main/details/wikipedia.ts`), gdy po
+   kroku 1 nadal nie ma opisu: wyszukiwanie „<tytuł> gra” w polskiej, potem „<tytuł> video game” w angielskiej
+   Wikipedii (jak `metadata.from_wikipedia` na serwerze EmuStart), artykuł o tytule podobnym w co najmniej 75 %
+   i z tymi samymi numerami części (`wikiCandidates`: „Final Fantasy” ≠ „Final Fantasy V”), streszczenie bez stron
+   ujednoznaczniających. Wynik i brak artykułu są zapisywane w `cache/meta/wikipedia.json` (artykuł — 90 dni,
+   brak — 7 dni; czyszczone razem z pamięcią podręczną).
+   Wikimedia odmawia (HTTP 429) przy serii zapytań, więc zapytania idą pojedynczo (najnowsza gra pierwsza),
+   a po odmowie jest przerwa 2–30 min (`pauseAfter429`). Strona gry czeka na Wikipedię najwyżej 5 s
+   (`WIKI_WAIT_MS`); wolniejsze szukanie kończy się w tle i opis pokazuje się przy następnym otwarciu.
+   „Wikipedia też nie ma artykułu” Lumen pisze tylko po faktycznym sprawdzeniu — brak sieci, przerwa i wolna
+   odpowiedź nic nie dodają (odpowiedź `hit` / `miss` / `unknown`).
+
+**Nazwa do szukania** (`detailsTitle`): nazwa w LaunchBox ustawiona przez administratora serwera, potem gra
+wybrana w oknie grafik („Dopasowanie w SteamGridDB”, `prefs.art[id].sgdbGameName`), potem nazwa ze sklepu.
+Zmiana dopasowania czyści fakty LaunchBox gry, a strona gry na pulpicie (`screens/Details.tsx`) i w trybie TV
+(`useDetails` w `tv/gameParts.tsx`) pobiera opis na nowo. W trybie TV opis jest trzymany przez sesję tylko wtedy,
+gdy go znaleziono — błąd albo strona bez opisu są pytane ponownie. Pozycje demonstracyjne (`demo:`) nie są nigdzie
+szukane. Pod opisem strona gry podaje źródło („Opis: katalog Microsoft Store”, „Opis: Wikipedia (…)”; przy opisie
+z Wikipedii inne źródła figurują jako „Szczegóły: …”). Testy: `lumen/tests/details.test.ts`.
 
 ## Dwa układy jednego interfejsu
 

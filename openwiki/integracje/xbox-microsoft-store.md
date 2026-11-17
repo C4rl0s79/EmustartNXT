@@ -5,17 +5,19 @@ description: "Gry Xbox / Microsoft Store w bibliotece Lumena: zainstalowane paki
 tags: [lumen, xbox, microsoft-store, game-pass, oauth, integration]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-16T23:16:42.429Z
+    at: 2026-11-17T21:56:42.171Z
 sources:
   - id: openwiki-source-d1b9ce3766cc38562686f8ba
     resource: repo://lumen/src/main/index.ts
   - id: openwiki-source-09cc82d5a5407fc108b34403
     resource: repo://lumen/src/main/xbox/account.ts
+  - id: openwiki-source-01466423d3d9499a09b71cf6
+    resource: repo://lumen/src/main/xbox/catalog.ts
   - id: openwiki-source-67e60d666767661b8cf70353
     resource: repo://lumen/src/main/xbox/installed.ts
   - id: openwiki-source-34523804e7fa18e29878403b
     resource: repo://lumen/src/main/xbox/provider.ts
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # Xbox i Microsoft Store w Lumenie
@@ -47,6 +49,26 @@ Xbox.
 - Kopia na dysku, odświeżana raz na dobę; bez sieci działa ostatnia kopia. Zła odpowiedź (pusty katalog, brak
   produktów) to błąd, a nie pusta lista — stara kopia zostaje (`tests/xbox.test.ts`).
 - Ustawienie „Pokazuj katalog PC Game Pass” (`xboxGamePass`) ukrywa gry z Game Pass spoza komputera i konta.
+
+## Opis gry (strona gry, od Lumena 1.0.77)
+
+Opis nie jest pobierany razem z katalogiem, tylko przy otwarciu strony gry (`xboxDetails` w
+`lumen/src/main/index.ts`):
+
+- `productDetails` (`catalog.ts`) pyta `displaycatalog.mp.microsoft.com/v7.0/products` o jeden StoreId (rynek PL,
+  języki `pl-pl`, potem `en-us`); `detailsOf` bierze z pierwszego języka, który ma treść: opis
+  (`ProductDescription`), krótki opis, producenta (`DeveloperName`), wydawcę (`PublisherName`), gatunki
+  (`Categories` / `Category`) i datę premiery (`OriginalReleaseDate`; „1601-01-01” to w katalogu brak daty).
+  Katalog nie zawsze ma tekst polski — wtedy opis jest angielski.
+- `XboxProvider.productDetails` (`provider.ts`) zapisuje wynik w `xbox-catalog-details.json` obok kopii katalogu:
+  opis — na 30 dni, produkt, którego katalog nie zna — na 7 dni (strona gry nie czeka za każdym razem na katalog);
+  bez sieci zostaje ostatni zapis; odświeżenie wymuszone (`force`) omija zapis.
+- Czego katalog nie ma, uzupełnia LaunchBox (Windows, potem MS-DOS); bez opisu po obu — Wikipedia, jak dla każdej
+  gry ([Lumen — opis i szczegóły gry](../architektura/lumen.md)). Gra zainstalowana bez StoreId (`PFN-…`) od razu
+  idzie do LaunchBox i Wikipedii.
+
+Wcześniej gry Xbox trafiały na ścieżkę gier Steam i strona pokazywała „Brak danych dla pozycji demonstracyjnej”.
+Testy: `lumen/tests/details.test.ts`.
 
 ## Konto Xbox (`account.ts`)
 

@@ -12,7 +12,7 @@ Po wybraniu grupy (np. PC → Steam albo system emulatora) pokazuje się lista g
 |---|---|---|
 | A | Enter | **Strona gry** (szczegóły i wszystkie opcje) |
 | X | F | **Graj** od razu, bez wchodzenia na stronę gry |
-| Y | S | Filtry i sortowanie (zapamiętane dla grupy) |
+| Y | S | Filtry i sortowanie (zapamiętane dla grupy — te same co na pulpicie) |
 | L3 | Z | Szukaj w tytułach |
 | R3 | U | Ulubiona / usuń z ulubionych |
 | LB / RB | Q / E | O stronę |
@@ -31,6 +31,15 @@ Każda grupa może mieć własny układ — **menu Start → „Układ listy”*
 - **Plakaty** — logo gry na jej tle w lewym górnym rogu, płaski rząd plakatów na dole; kropka na plakacie
   pokazuje stan (zielona — gotowa do gry, niebieska — pobieranie albo w grze).
 
+### Wspólne z pulpitem
+
+Tryb TV i pulpit to dwa widoki tej samej biblioteki (od Lumena 1.0.76):
+
+- **Grafiki gier** są te same w trybie TV, na pulpicie i w Decku. Zmiana grafiki w **Opcje gry → Grafiki** w trybie
+  TV zmienia ją też na pulpicie i odwrotnie. Tryb TV pokazuje okładkę w całości.
+- **Filtry i sortowanie** grupy są wspólne: filtr ustawiony na pulpicie działa w trybie TV i odwrotnie. W filtrach
+  są też „tylko niezainstalowane” (gry EmuStart: „tylko poza cache”) i sortowanie „nowo dodane”.
+
 ## Strona gry
 
 A na liście otwiera stronę gry: tło gry, logo, przyciski i opis z miejscem do czytania.
@@ -41,6 +50,12 @@ A na liście otwiera stronę gry: tło gry, logo, przyciski i opis z miejscem do
 - Szczegóły w trzech kartach: **Na tym komputerze** (stan, rozmiar, emulator, zapisy), **Twoja gra** (ostatnio,
   czas gry, uruchomienia), **O grze** (rok, gatunek, producent, wydawca, gracze, wiek, oceny w jednej linii).
 - X — Graj, Y — Opcje gry, R3 — Ulubiona, B — z powrotem na listę, na tę samą grę.
+- **Skąd opis** (także na stronie gry na pulpicie): sklep Steam, GOG Manager, serwer EmuStart, a dla gier Xbox —
+  katalog Microsoft Store; czego tam brak, Lumen bierze z bazy LaunchBox, a gdy nadal nie ma opisu — z Wikipedii
+  (polskiej, potem angielskiej). Pod opisem widać, skąd pochodzi. Jeśli opis pasuje do innej gry albo go nie ma,
+  wybierz właściwą grę w **Opcje gry… → Grafiki → Zmień dopasowanie gry** (potrzebny
+  [klucz SteamGridDB](Klucz-SteamGridDB)) — pod tą nazwą Lumen szuka też opisu.
+  Wikipedia przyjmuje tylko kilka zapytań naraz; gdy odmówi, opis pojawi się przy następnym otwarciu gry.
 
 ## Ustawienia
 

@@ -5,17 +5,23 @@ description: "API urządzeń EmuStart Server pod /v1: wymóg HTTPS, logowanie ur
 tags: [api, v1, authentication, devices, savesync, protocol, emustart]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T17:27:24.312Z
+    at: 2026-11-17T19:02:08.485Z
 sources:
   - id: openwiki-source-e6e190788e03541d74c05a32
     resource: repo://emustart/docs/SAVE_SYNC_DESIGN.md
   - id: openwiki-source-da0d05a6e7df92c8b78ca329
     resource: repo://emustart/emustart/enroll.py
+  - id: openwiki-source-e1872d6a09c29595f1544c23
+    resource: repo://emustart/emustart/ownart.py
   - id: openwiki-source-39316019f7b366045ad545d4
     resource: repo://emustart/emustart/remote.py
   - id: openwiki-source-a124d623671267edfd450054
     resource: repo://emustart/emustart/server.py
-generated: { by: "claude-code", at: "2026-11-17T17:27:24.312Z" }
+  - id: openwiki-source-453193849f1b78f45db49783
+    resource: repo://emustart/emustart/userart.py
+  - id: openwiki-source-0249de2a4b6e41f78c81c34c
+    resource: repo://lumen/src/main/art/artSync.ts
+generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
 ---
 
 # API /v1: urządzenia, konta, zapisy i grafiki
@@ -111,6 +117,22 @@ urządzeniu, `core_id` jest obowiązkowy dla RetroArcha, a `bundle_kind` to `sav
 `memcards`. Paczka to pełny zestaw plików, zmiany wykrywa SHA-256 zestawu. Rozbieżne zmiany
 z dwóch urządzeń to **konflikt rozstrzygany przez gracza**; przegrana wersja zostaje w historii
 na serwerze.
+
+## Wybory grafik (`emustart/emustart/userart.py`)
+
+`POST /v1/userart/choices` wymienia wybory grafik konta: klient wysyła swoje wybory `{key, choice, at}`, serwer
+przyjmuje nowsze (`at`) i oddaje wszystkie wybory konta. Od EmuStart 0.68.0 jest **jeden wybór na grę i rodzaj
+grafiki** (klucz `desktop|<gra>|<rodzaj>`), bo pulpit, Deck i tryb TV Lumena pokazują te same grafiki
+([Lumen — tryb TV](../architektura/lumen-tryb-tv.md)). Zgodność ze starszymi klientami (Lumen ≤ 1.0.75, klient
+EmuStart ≤ 0.67.0), które znały osobne wybory trybu TV:
+
+- klucz `tv|…` z zapytania jest zapisywany jako ten sam wybór `desktop|…` (nowszy wygrywa); pusty wybór `tv|…`
+  znaczył „TV bez własnej grafiki” i jest pomijany, więc nie usuwa wspólnej grafiki;
+- stare wpisy `tv|…` w indeksie konta są przy synchronizacji łączone z `desktop|…` (nowszy zostaje);
+- odpowiedź podaje każdy wybór także pod `tv|…` — tylko w odpowiedzi, nie w danych serwera.
+
+Klient EmuStart (`ownart.py`) wysyła swoje grafiki jako `desktop|…`. Lumen (`lumen/src/main/art/artSync.ts`)
+traktuje `tv|…` z serwera jak ten sam wybór i pomija pusty `tv|…`.
 
 ## Kody błędów
 
