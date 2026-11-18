@@ -27,7 +27,7 @@ sources:
     resource: repo://lumen/src/main/hangWatch.ts
   - id: openwiki-source-09cc82d5a5407fc108b34403
     resource: repo://lumen/src/main/xbox/account.ts
-generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
+generated: { by: "claude-code", at: "2026-11-18T00:22:21.680Z" }
 ---
 
 # Rozwiązywanie problemów

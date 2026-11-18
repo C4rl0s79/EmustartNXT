@@ -25,7 +25,7 @@ sources:
     resource: repo://emustart/emustart/tls.py
   - id: openwiki-source-dc1c4e0ec4611cab17206a30
     resource: repo://emustart/server_main.py
-generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
+generated: { by: "claude-code", at: "2026-11-18T00:22:21.680Z" }
 ---
 
 # EmuStart Server

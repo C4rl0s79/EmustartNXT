@@ -5,7 +5,7 @@ description: "Serie gier w Lumenie: serwer EmuStart dopasowuje gry w IGDB (seria
 tags: [series, collections, igdb, server, lumen, android, library, sorting]
 verified:
   - by: openwiki/0.9.0
-    at: 2026-11-17T17:27:24.312Z
+    at: 2026-11-18T00:22:21.680Z
 sources:
   - id: openwiki-source-a03805cf993ff2b37b1a1f8c
     resource: repo://emustart/emustart/igdbseries.py
@@ -17,9 +17,13 @@ sources:
     resource: repo://lumen/src/main/index.ts
   - id: openwiki-source-65eabe37ea024bbd1d8fe067
     resource: repo://lumen/src/main/series.ts
+  - id: openwiki-source-4992b7a30a0c4b8a493253e2
+    resource: repo://lumen/src/renderer/src/modals/SeriesEditor.tsx
   - id: openwiki-source-f891089b004ed1194d67eb3d
     resource: repo://lumen/src/shared/series.ts
-generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
+  - id: openwiki-source-95f2a27a2ed573ca82ae6d3f
+    resource: repo://lumen/tests/seriesSummary.test.ts
+generated: { by: "claude-code", at: "2026-11-18T00:22:21.680Z" }
 ---
 
 # Serie i kolekcje gier
@@ -72,6 +76,13 @@ grupa. Okno „Seria” (`lumen/src/renderer/src/modals/SeriesEditor.tsx`, z Opc
 platformy, które gracz ma (jedna pozycja na grę, z rokiem oryginału i źródłem), wybór serii i grupy z listy
 z wyszukiwaniem, „Utwórz serię” na miejscu, przesuwanie gry „Wcześniej / Później”.
 
+**Seria gracza od pierwszej gry** (od Lumena 1.0.78): seria rozpoznana (IGDB, tytuł) liczy się w opcjach gry
+i w oknie „Seria” dopiero od dwóch gier, ale seria z nazwą nadaną przez gracza (`prefs.series[id].name`) — od
+pierwszej. Opcje gry pokazują wtedy np. „Dragon Lance · 1 z 1” (`seriesSummary`), a okno „Seria” — nazwę serii
+i podpowiedź, że kolejne gry dołącza się z ich opcji („Dołącz do serii…” → ta seria na liście, ta sama platforma;
+lista `seriesOnScope` pokazuje serię gracza z jedną grą). „Wcześniej / Później w serii” pojawia się od dwóch gier.
+Wcześniej nowa seria z jedną grą zapisywała się, ale opcje gry pokazywały „brak — można dołączyć do serii”.
+
 ## Kolekcje kont (od EmuStart 0.67.0, Lumen 1.0.75)
 
 Kategorie Lumena są lokalne, ale ich skład z grami EmuStart trafia na serwer, żeby APK mógł je pokazać.
@@ -93,4 +104,5 @@ Kategorie Lumena są lokalne, ale ich skład z grami EmuStart trafia na serwer, 
 ## Testy
 
 `emustart/tests/test_igdb_series.py`, `emustart/tests/test_series_sync.py`, `emustart/tests/test_usercollections.py`,
-`lumen/tests/series.test.ts`, `lumen/tests/seriesSync.test.ts`, `lumen/tests/prefs.test.ts` (kolekcje dla APK).
+`lumen/tests/series.test.ts`, `lumen/tests/seriesSync.test.ts`, `lumen/tests/prefs.test.ts` (kolekcje dla APK),
+`lumen/tests/seriesSummary.test.ts` (seria gracza z jedną grą w opcjach gry).

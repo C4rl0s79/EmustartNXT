@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4286f2ad0c2e498b92a749580cfaa0eaa367066baeda566437dd1e579ef3c675",
+  "pageVersion": "sha256:26a955f84f797b740230d660a15a0fe7ba95b48f2d393d20c26c58c74f3e70b7",
   "claims": [
     {
       "id": "claim_ca8f170d0e124d7284dff89956dbecc4",
@@ -71,11 +71,11 @@
       "statement": "Lumen wysyła na serwer tylko własne kategorie (kind custom) z grami EmuStart, identyfikowanymi przez sid; grupa wersji wysyła wszystkie wersje, a kolekcje Steam są pomijane.",
       "evidence": [
         {
-          "resource": "repo://lumen/src/main/art/artSync.ts#L95-L116",
+          "resource": "repo://lumen/src/main/art/artSync.ts#L97-L118",
           "version": "repo-lines-v1:sha256:322d04ff1c650321406ad63967926731f3658cb10f9f49bec39316c447a597bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyZTI3MTM1YmRmZmQ5Yzg4NTRjMzE3ZTgxZGM5Y2E3NjQ2ODQwOTE5Nzc3NmQ4YmQ2NDIyNTE5ZDM0YjExOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4NzVmZGM0ZDJhZjcxNGU3NjhjNWIzZWExNDBhNTcxZDM3MTk2MTQzNjMzNDZlN2MwODFjNmNkNDA1OTY4ZGUifQ"
         },
         {
-          "resource": "repo://lumen/src/main/index.ts#L1161-L1172",
+          "resource": "repo://lumen/src/main/index.ts#L1269-L1280",
           "version": "repo-lines-v1:sha256:1f6f891f4bd7905618f7e2ef2869641541e5a3ebc7a6c346654e656421cb46b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3ZWRiZDk5NjRjYjRhMDQ1NzM3MzIxMDcxMTQ2MjQxMWRhNzEwMjhkMGFhN2M2ODU3YzYyZDBmZDM5OTJmYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzNTVjNWFiMGFhNTgwM2QxNzNlYWY2MmJlOTNhMzdhYzI2ZjE0NDU2ZWRiZDIwNTgxZGE4MDEwNzJhYjllMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMzkxOTQ4ZDgzZWQ5YjA2ZjM0ZWE3MTEyMmE1NjkzNGRmZmNiNzRlNzY1NjUxZmI2OWNmNzFhZjBhMzU4MTMifQ"
         }
       ]
@@ -99,10 +99,38 @@
           "version": "repo-lines-v1:sha256:ce78d2584b7844fae1aca3bc0a6e2f2542d1ff5601b672cd89e7ebb3b69ae0e6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2ZWFkNTJlMDNkNTU3NmZhOWEyN2NiMDBkMzU3ODMxOTgyNzRhZDUyN2JlZmRmNzdhZTIyNDMwOWU2YmUyZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNmFiMTBlMGI4ZGFhNDg0MTQ2MjhlYzNhN2YxMGViNGQ3NDIwMWI0MWU4ZmM3N2ExMzMxNDhjNTRiYzAwYmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3ZTVhMWY2YmNhZDBmNWMwOWE4YTI1MzRkOTIxMzQyMTJkMDFhNjY2YWZkZWQ3ODYwYjNjMWYzYjMwNzRkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_09d58e07839c416687a30284e3d7fd0d",
+      "statement": "Seria z nazwą nadaną przez gracza (prefs.series[id].name) liczy się w opcjach gry i oknie „Seria” od pierwszej gry, a seria rozpoznana — od dwóch; przyciski „Wcześniej / Później w serii” są dostępne od dwóch gier.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/renderer/src/modals/SeriesEditor.tsx#L15-L21",
+          "version": "repo-lines-v1:sha256:9f3d0401d58d2b495ab8792acc04802942068cc521e3ceaecf9c2d9ba774ac8a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRhMTZiNDk5OGE2NzgyNTIwZTM0NzNiODNhYjFiOTFmNDEzMWM3Zjk4OThmNTg0OWY2MGE5ZjE3ZTA2NjVlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTU1MWM4MGU5OTVjZjEyOTY4ZDcyOWEwMzlmMTRkODM1MGU1Mjc4NTAxMmRiNTIxOTBiMTVlOTMzNGRiN2NlMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWY5NGE4YmRlZDZiZWQ4ZGYwZDU4OWI5NGFlOTk3Mjg1MDJkMzNiNjlmNTJmZmIwNWQ2NzQ5YjNmZDE3YThkZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJlNjlhOGU5MzA3MTQ5NDFlMDQxMTJmZDI3MzBmYmNkYThkNTg5MGM5NTEzYjdiYWNmMDUzY2E5ZjAyMmNjNCJ9"
+        },
+        {
+          "resource": "repo://lumen/src/renderer/src/modals/SeriesEditor.tsx#L66-L70",
+          "version": "repo-lines-v1:sha256:150f01db5ae6c4028e82945f30a38a817b0c61025f464d18d6f08a7330cf6b21:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQwMmFkOGJjYmY4YmE1MzExNDM5NzBmYjg0ZDdiYTk5MThhZDQ3ZDY3YTNhODdkMzFlNDFkMGQ0OTcxODBhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMxNzUxMmZlM2QwMGM2NmYyZmUyMTllZDcxYmMyOGMxZTYzMjJkOGE0ZmQ2OTg3YThmODlkNjczMzMxOTI1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTE3MzY1NWNiZTAzZjBmN2VmMjg5MTU0ODFhNTViMGRlYmMwOGI5M2ZkYmIwY2NiODVjNWNhMjA3MGFhMmJkYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDVlZGNkM2FiYmNjNGNlZDM1NGZkODQxNDAyYTU4ODU4NGY2YmI4NTY5MzcxMTM0MDQ3NmYyMWY3MzU1MGIyMiJ9"
+        },
+        {
+          "resource": "repo://lumen/tests/seriesSummary.test.ts",
+          "version": "repo-file-v1:sha256:5d2c0c63d48d4547947595116c7ce1a4cb5597a27dd850bd924358df8bd4c1bf"
+        }
+      ]
+    },
+    {
+      "id": "claim_5924de7c9101455182023b2fa8ed87eb",
+      "statement": "Lista serii do wyboru (seriesOnScope) pomija serie z jedną grą, chyba że nazwę nadał gracz.",
+      "evidence": [
+        {
+          "resource": "repo://lumen/src/shared/series.ts#L334-L340",
+          "version": "repo-lines-v1:sha256:efd80be1f017946abc266c77e053057ca81d9c32cab62760d90b778e85438f9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTlhMGUzYmY1MzM5YTdlYWMxM2VmMDg5NDIxYTdiZTRhMmZlMWMxMWQ5NjJiYzRlMDQyYzkyYTkyYzE2ZDAxZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTA4OTljZTQ3M2RmOTIwN2ZlZjdiYjY1ZWU2YTQxMDFkY2NjZjgwY2Y0YTFkMzI1MWZlYjY3MmU3MzdjNjIwZSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.9.0",
-    "at": "2026-11-17T17:27:24.312Z"
+    "at": "2026-11-18T00:22:21.680Z"
   }
 }

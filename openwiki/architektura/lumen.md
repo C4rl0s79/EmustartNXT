@@ -39,7 +39,7 @@ sources:
     resource: repo://lumen/src/renderer/src/tv/gameParts.tsx
   - id: openwiki-source-de906671f09d6ccb0be869a2
     resource: repo://lumen/src/shared/deck.ts
-generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
+generated: { by: "claude-code", at: "2026-11-18T00:22:21.680Z" }
 ---
 
 # Lumen — launcher Electron
