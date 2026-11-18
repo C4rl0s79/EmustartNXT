@@ -6,6 +6,21 @@ Wszystkie istotne zmiany w EmuStart. Format oparty na
 
 ## [Nieopublikowane]
 
+### Plan: nowa seria z jedną grą znika z opcji gry (zgłoszenie użytkownika 2026-11-18) — **wydane: Lumen 1.0.78**
+
+Zgłoszenie: „Opcje gry → Seria → Dołącz do serii… → Utwórz serię «Dragon Lance»” dla Champions of Krynn — lista
+wyboru pokazuje nową serię z jedną grą, ale po wyjściu opcje gry piszą „brak — można dołączyć do serii”, a okno
+„Seria” — „Ta gra nie stoi w żadnej serii”. Przyczyna: wybór zapisywał się (`prefs.series`), ale `seriesSummary`
+i `SeriesEditor` uznawały serię za istniejącą dopiero od dwóch gier — także serię nadaną przez gracza, która z natury
+zaczyna od jednej gry (lista wyboru, `seriesOnScope`, już ją pokazywała).
+
+| Etap | Zakres | Stan |
+|---|---|---|
+| 24a | **Seria gracza z jedną grą jest serią:** opcje gry pokazują „Dragon Lance · 1 z 1”, okno „Seria” — nazwę serii z podpowiedzią, że kolejne gry dołącza się z ich opcji („Dołącz do serii…” → ta seria na liście); bez „Wcześniej / Później”, dopóki seria ma jedną grę | zrobione — `seriesSummary` i `SeriesEditor` (`lumen/src/renderer/src/modals/SeriesEditor.tsx`) liczą serię gracza (`prefs.series[id].name`) od jednej gry; test `lumen/tests/seriesSummary.test.ts` (na starym kodzie nie przechodzi). Nie sprawdzone na żywo w oknie Lumena |
+
+**Czego NIE dotyka.** Rozpoznawania serii z IGDB i z tytułów (seria automatyczna dalej od dwóch gier); list gier
+(blok serii na liście dalej od dwóch gier); zasady, że seria nie miesza platform; zapisu w `prefs.series`.
+
 ### Plan: opisy i szczegóły dla każdej gry (prośba użytkownika 2026-11-17) — **wydane: Lumen 1.0.77**
 
 Zgłoszenie: gry Xbox nie miały opisu ani szczegółów, a strona gry pokazywała „Brak danych dla pozycji
