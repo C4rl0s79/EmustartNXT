@@ -16,7 +16,8 @@ export function seriesSummary(game: Game, all: Game[], prefs: SeriesPrefs | unde
   if (prefs?.[game.id]?.none) return 'nie należy do serii'
   const s = seriesOf(game, prefs)
   const members = onePerGame(seriesMembers(game, all, prefs), game.id)
-  if (!s || members.length < 2) return 'brak — można dołączyć do serii'
+  // seria nadana przez gracza jest serią od pierwszej gry (następne dołącza się z ich opcji); rozpoznana — od dwóch
+  if (!s || (members.length < 2 && !prefs?.[game.id]?.name)) return 'brak — można dołączyć do serii'
   return `${s.name} · ${members.findIndex((x) => x.games.some((g) => g.id === game.id)) + 1} z ${members.length}`
 }
 
@@ -65,7 +66,8 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   const items = useMemo(() => onePerGame(members, game.id), [members, game.id])
   const own = series?.[game.id]
   const s = seriesOf(game, series)
-  const inSeries = !!s && items.length > 1
+  const inSeries = !!s && (items.length > 1 || !!own?.name) // własna seria gracza — także z jedną grą
+  const canMove = inSeries && items.length > 1
   const pickItem = items.find((x) => x.games.some((g) => g.id === picked)) ?? items[0]
 
   useEffect(() => {
@@ -113,7 +115,7 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
   }
 
   const rows: { key: string; label: string; value?: string; act?: () => void; mark?: boolean; dim?: boolean }[] = [
-    ...(inSeries
+    ...(canMove
       ? [
           { key: 'up', label: 'Wcześniej w serii', value: pickItem.lead.name, act: () => move(-1) },
           { key: 'down', label: 'Później w serii', value: pickItem.lead.name, act: () => move(1) }
@@ -150,9 +152,11 @@ export function SeriesEditor({ game, onClose }: { game: Game; onClose: () => voi
       ]}
     >
       <p className="details__muted">
-        {inSeries
-          ? `${s!.group ? `${s!.group} → ` : ''}${s!.name}: gry tej platformy stoją razem na listach po tytule, w tej kolejności. Wybierz grę z listy (▸), potem „Wcześniej / Później w serii”.`
-          : 'Ta gra nie stoi w żadnej serii.'}
+        {!inSeries
+          ? 'Ta gra nie stoi w żadnej serii.'
+          : canMove
+            ? `${s!.group ? `${s!.group} → ` : ''}${s!.name}: gry tej platformy stoją razem na listach po tytule, w tej kolejności. Wybierz grę z listy (▸), potem „Wcześniej / Później w serii”.`
+            : `${s!.group ? `${s!.group} → ` : ''}${s!.name}: na razie tylko ta gra. Kolejne dołączysz z ich opcji: „Seria” → „Dołącz do serii…” → „${s!.name}” (ta sama platforma).`}
       </p>
       <div className="gopt__list" ref={listRef}>
         {rows.map((r) => (
