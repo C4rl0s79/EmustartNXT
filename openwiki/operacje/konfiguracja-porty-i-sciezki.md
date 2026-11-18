@@ -27,7 +27,7 @@ sources:
     resource: repo://lumen/src/main/net.ts
   - id: openwiki-source-d80b43594aac1c5181443946
     resource: repo://lumen/src/main/store/settings.ts
-generated: { by: "claude-code", at: "2026-11-17T21:56:42.171Z" }
+generated: { by: "claude-code", at: "2026-11-18T00:22:21.680Z" }
 ---
 
 # Konfiguracja, porty, ścieżki i logi
